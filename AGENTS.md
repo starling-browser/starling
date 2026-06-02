@@ -46,8 +46,28 @@ agent sees the state.
 | One file per work package under `tasks/M*/wp-*.md` | Touch only your claimed package's file (plus your code changes) |
 | `tasks/INDEX.md` reflects the current status | Update INDEX.md when you change a status |
 | Work happens on `main`; commits carry the wp id in the subject | Prefix commit messages with `wp:<id> —` so history is greppable |
+| Inbound contributions require a CLA | Make sure the contributor has a CLA on file before the work lands |
 | Dependencies are explicit in `depends_on` | Don't start a package whose deps aren't `complete` |
 | Stale claims age out at 72 h | Add a handoff log entry every session, even if you're "still going" |
+
+## Contribution provenance
+
+Inbound contributions require a signed Contributor License Agreement. The CLA
+text is in `CLA.md`, and the hosted CLA Assistant setup notes are in
+`CLA_ASSISTANT.md`.
+
+Direct commits to `main` should only be made by people who already have a CLA on
+file. Bots should be listed in the CLA Assistant allowlist.
+
+AI-assisted work is allowed. The contributor is responsible for the change,
+including license, security, and correctness review. If you add a generated
+port, translated code, parser table, large generated file, or copied algorithm,
+call it out in the PR or handoff log. Small autocomplete-style suggestions do
+not need a disclosure.
+
+Add `// SPDX-License-Identifier: Apache-2.0` to new owned C# files. Do not add
+Starling SPDX headers to vendored data, generated files, submodules, or
+third-party assets.
 
 ## Repo map
 

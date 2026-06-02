@@ -3,12 +3,14 @@
 This directory mirrors a focused slice of the upstream
 [`web-platform-tests/wpt/encoding/`](https://github.com/web-platform-tests/wpt/tree/master/encoding)
 suite that we exercise from `tests/Starling.Engine.Tests/EngineEncodingTests.cs`.
+Upstream Web Platform Tests material is BSD-3-Clause.
 
 We do not vendor the WPT HTML harnesses (`*-decode-form.html`,
 `single-byte-decoder.html`, etc.) — they require a browser test runner.
 Instead we vendor JSON corpora that encode the same expectations the WPT
 HTML harnesses assert, derived directly from the WHATWG Encoding
 Standard indexes (https://encoding.spec.whatwg.org/, snapshot 2026-04-22).
+The WHATWG Encoding Standard has its own terms for standard text and indexes.
 
 ## Files
 

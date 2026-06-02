@@ -3,6 +3,7 @@
 Source: https://github.com/html5lib/html5lib-tests
 Commit: `e4463205ac3c4500e1379103daadfdcfe5e33af5` (2026-05-05)
 Path:   `tree-construction/`
+License: MIT
 
 The runner that consumes these fixtures lives at
 `tests/Starling.Html.Tests/TreeBuilder/Html5LibTreeConstructionTests.cs`

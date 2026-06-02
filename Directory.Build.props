@@ -20,6 +20,9 @@
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <Authors>Cody Mullins</Authors>
+    <Copyright>Copyright 2026 Cody Mullins</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 
     <!-- CI supplies the license via the SIXLABORS_LICENSE_KEY secret (exposed
          as an env var on the build jobs). MSBuild surfaces env vars as

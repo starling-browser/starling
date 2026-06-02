@@ -137,9 +137,10 @@ Each subsystem has a focused doc in [`browser-plan/`](browser-plan/). For agent-
 packages with explicit inputs / outputs / acceptance, see
 [`14_AGENT_TASKS.md`](browser-plan/14_AGENT_TASKS.md).
 
-**New here?** Start with the design spec ([`browser-plan/00_INDEX.md`](browser-plan/00_INDEX.md))
-and the engineering conventions in [`AGENTS.md`](AGENTS.md). Bug reports,
-questions, and proposals are welcome via GitHub issues.
+**New here?** Start with the design spec ([`browser-plan/00_INDEX.md`](browser-plan/00_INDEX.md)),
+the engineering conventions in [`AGENTS.md`](AGENTS.md), and the contribution
+rules in [`CONTRIBUTING.md`](CONTRIBUTING.md). Bug reports, questions, and
+proposals are welcome via GitHub issues.
 
 **Implementation agents:** start with [`AGENTS.md`](AGENTS.md) and the queue at
 [`tasks/INDEX.md`](tasks/INDEX.md). Multiple agents can work in parallel — claim
@@ -154,4 +155,13 @@ via `./tasks/lib/claim.sh complete <wp-id>`. The full workflow is in
 
 ## License
 
-[BSD 2-Clause License](LICENSE) — Copyright (c) 2026, Cody Mullins.
+Starling source code is licensed under [Apache-2.0](LICENSE) — Copyright 2026
+Cody Mullins.
+
+Third-party code, data, fonts, and fixtures may use different licenses. See
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). The current paint path also
+requires a separate Six Labors license key to build. See
+[Six Labors license](#six-labors-license).
+
+The Starling name, logo, icons, and branding are not licensed with the source
+code. See [`TRADEMARKS.md`](TRADEMARKS.md).
