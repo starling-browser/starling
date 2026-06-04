@@ -187,7 +187,7 @@ public class JsLexerTests
     public void Unterminated_block_comment_reports_error()
     {
         var sink = new RecordingSink();
-        new JsLexer("/* nope", sink).Drain();
+        Drain(new JsLexer("/* nope", sink));
         sink.Errors.Should().ContainSingle()
             .Which.code.Should().Be(JsLexError.UnterminatedComment);
     }
@@ -298,10 +298,10 @@ public class JsLexerTests
     public void Peek_does_not_consume()
     {
         var l = new JsLexer("a b");
-        l.Peek().Lexeme.Should().Be("a");
-        l.Peek().Lexeme.Should().Be("a"); // still
-        l.Next().Lexeme.Should().Be("a");
-        l.Next().Lexeme.Should().Be("b");
+        l.Peek().Lexeme.ToString().Should().Be("a");
+        l.Peek().Lexeme.ToString().Should().Be("a"); // still
+        l.Next().Lexeme.ToString().Should().Be("a");
+        l.Next().Lexeme.ToString().Should().Be("b");
     }
 
     // ----- Leading-dot numeric literals (§12.9.3 DecimalLiteral) -----------
@@ -575,7 +575,7 @@ public class JsLexerTests
     public void Numeric_separator_trailing_is_error()
     {
         var sink = new RecordingSink();
-        new JsLexer("1_", sink).Drain();
+        Drain(new JsLexer("1_", sink));
         sink.Errors.Should().ContainSingle()
             .Which.code.Should().Be(JsLexError.InvalidNumericLiteral);
     }
@@ -585,7 +585,7 @@ public class JsLexerTests
     public void Numeric_separator_doubled_is_error()
     {
         var sink = new RecordingSink();
-        new JsLexer("1__0", sink).Drain();
+        Drain(new JsLexer("1__0", sink));
         sink.Errors.Should().NotBeEmpty()
             .And.Contain(e => e.code == JsLexError.InvalidNumericLiteral);
     }
@@ -595,7 +595,7 @@ public class JsLexerTests
     public void Numeric_separator_after_dot_is_error()
     {
         var sink = new RecordingSink();
-        new JsLexer("1._0", sink).Drain();
+        Drain(new JsLexer("1._0", sink));
         sink.Errors.Should().NotBeEmpty()
             .And.Contain(e => e.code == JsLexError.InvalidNumericLiteral);
     }
@@ -605,7 +605,7 @@ public class JsLexerTests
     public void Numeric_separator_after_hex_prefix_is_error()
     {
         var sink = new RecordingSink();
-        new JsLexer("0x_1", sink).Drain();
+        Drain(new JsLexer("0x_1", sink));
         sink.Errors.Should().NotBeEmpty()
             .And.Contain(e => e.code == JsLexError.InvalidNumericLiteral);
     }
@@ -615,7 +615,7 @@ public class JsLexerTests
     public void Numeric_separator_after_binary_prefix_is_error()
     {
         var sink = new RecordingSink();
-        new JsLexer("0b_1", sink).Drain();
+        Drain(new JsLexer("0b_1", sink));
         sink.Errors.Should().NotBeEmpty()
             .And.Contain(e => e.code == JsLexError.InvalidNumericLiteral);
     }
@@ -625,7 +625,7 @@ public class JsLexerTests
     public void Numeric_separator_after_octal_prefix_is_error()
     {
         var sink = new RecordingSink();
-        new JsLexer("0o_1", sink).Drain();
+        Drain(new JsLexer("0o_1", sink));
         sink.Errors.Should().NotBeEmpty()
             .And.Contain(e => e.code == JsLexError.InvalidNumericLiteral);
     }
@@ -636,7 +636,7 @@ public class JsLexerTests
     {
         // `1_e1` — the trailing `_` after `1` is invalid (no digit follows; `e` is not a digit)
         var sink = new RecordingSink();
-        new JsLexer("1_e1", sink).Drain();
+        Drain(new JsLexer("1_e1", sink));
         sink.Errors.Should().NotBeEmpty()
             .And.Contain(e => e.code == JsLexError.InvalidNumericLiteral);
     }
@@ -647,7 +647,7 @@ public class JsLexerTests
     {
         // `1e_1` — `_` immediately after `e` is invalid
         var sink = new RecordingSink();
-        new JsLexer("1e_1", sink).Drain();
+        Drain(new JsLexer("1e_1", sink));
         sink.Errors.Should().NotBeEmpty()
             .And.Contain(e => e.code == JsLexError.InvalidNumericLiteral);
     }
@@ -658,7 +658,7 @@ public class JsLexerTests
     {
         // `1_n` — trailing `_` immediately before `n` is invalid
         var sink = new RecordingSink();
-        new JsLexer("1_n", sink).Drain();
+        Drain(new JsLexer("1_n", sink));
         sink.Errors.Should().NotBeEmpty()
             .And.Contain(e => e.code == JsLexError.InvalidNumericLiteral);
     }
@@ -669,22 +669,44 @@ public class JsLexerTests
     {
         // `0_10` — legacy octal / non-octal-decimal literals do not allow separators
         var sink = new RecordingSink();
-        new JsLexer("0_10", sink).Drain();
+        Drain(new JsLexer("0_10", sink));
         sink.Errors.Should().NotBeEmpty()
             .And.Contain(e => e.code == JsLexError.InvalidNumericLiteral);
     }
 
     // ----- Helpers --------------------------------------------------------
 
-    private static List<JsToken> Tokens(string s) => new JsLexer(s).Drain();
+    // JsToken is a ref struct and can't be stored in a List, so the
+    // collection-based helpers copy the asserted fields into this plain record.
+    private readonly record struct Tok(
+        JsTokenKind Kind, string Lexeme, object? Value, bool PrecededByLineTerminator,
+        JsPosition Start, JsPosition End);
+
+    private static Tok ToTok(in JsToken t)
+        => new(t.Kind, t.Lexeme.ToString(), t.Value, t.PrecededByLineTerminator, t.Start, t.End);
+
+    private static List<Tok> Tokens(string s)
+    {
+        var lex = new JsLexer(s);
+        var tokens = new List<Tok>();
+        while (true)
+        {
+            var t = lex.Next();
+            tokens.Add(ToTok(t));
+            if (t.Kind == JsTokenKind.EndOfFile) return tokens;
+        }
+    }
 
     private static List<JsTokenKind> Kinds(string s)
         => Tokens(s).Select(t => t.Kind).ToList();
 
-    private static JsToken First(string s)
+    private static Tok First(string s) => ToTok(new JsLexer(s).Next());
+
+    // Drain a lexer for its side effects (error reporting); replaces the removed
+    // JsLexer.Drain() now that JsToken can't be collected into a List.
+    private static void Drain(JsLexer lex)
     {
-        var l = new JsLexer(s);
-        return l.Next();
+        while (lex.Next().Kind != JsTokenKind.EndOfFile) { }
     }
 
     private sealed class RecordingSink : IJsLexErrorSink

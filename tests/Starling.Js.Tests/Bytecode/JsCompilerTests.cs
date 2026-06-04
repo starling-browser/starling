@@ -12,7 +12,7 @@ public class JsCompilerTests
     {
         var c = Compile("");
         // No statements → just Halt.
-        c.Code.Should().Equal((byte)Opcode.Halt);
+        c.Code.ToArray().Should().Equal((byte)Opcode.Halt);
     }
 
     [TestMethod]
@@ -20,7 +20,7 @@ public class JsCompilerTests
     {
         // Expression statement: LoadZero, Pop, Halt.
         var c = Compile("0;");
-        c.Code.Should().Equal(
+        c.Code.ToArray().Should().Equal(
             (byte)Opcode.LoadZero,
             (byte)Opcode.Pop,
             (byte)Opcode.Halt);
@@ -30,27 +30,27 @@ public class JsCompilerTests
     public void Nonzero_numeric_literal_loads_from_constant_pool()
     {
         var c = Compile("42;");
-        c.Constants.Should().Contain(42.0);
+        c.Constants.ToArray().Should().Contain(42.0);
         // LoadConst(idx) Pop Halt
-        c.Code[0].Should().Be((byte)Opcode.LoadConst);
-        c.Code[3].Should().Be((byte)Opcode.Pop);
+        c.Code.Span[0].Should().Be((byte)Opcode.LoadConst);
+        c.Code.Span[3].Should().Be((byte)Opcode.Pop);
     }
 
     [TestMethod]
     public void String_literal_interned_in_pool()
     {
         var c = Compile("\"hello\";");
-        c.Constants.Should().Contain("hello");
+        c.Constants.ToArray().Should().Contain("hello");
     }
 
     [TestMethod]
     public void Boolean_and_null_use_dedicated_opcodes()
     {
         var t = Compile("true;");
-        t.Code[0].Should().Be((byte)Opcode.LoadTrue);
+        t.Code.Span[0].Should().Be((byte)Opcode.LoadTrue);
 
         var n = Compile("null;");
-        n.Code[0].Should().Be((byte)Opcode.LoadNull);
+        n.Code.Span[0].Should().Be((byte)Opcode.LoadNull);
     }
 
     [TestMethod]
@@ -276,7 +276,13 @@ public class JsCompilerTests
         var c = Compile("'a'; 'a'; 'a';");
         // Three identical string literals should produce a single
         // constant-pool entry.
-        c.Constants.Count(x => Equals(x, "a")).Should().Be(1);
+        var count = 0;
+        var constants = c.Constants.Span;
+        for (var i = 0; i < constants.Length; i++)
+        {
+            if (Equals(constants[i], "a")) count++;
+        }
+        count.Should().Be(1);
     }
 
     [TestMethod]
@@ -297,9 +303,10 @@ public class JsCompilerTests
     /// constant index).</summary>
     private static string DisassembleNestedFunction(Chunk script)
     {
-        foreach (var c in script.Constants)
+        var constants = script.Constants.Span;
+        for (var i = 0; i < constants.Length; i++)
         {
-            if (c is JsFunction fn) return Disassembler.Disassemble(fn.Body);
+            if (constants[i] is JsFunction fn) return Disassembler.Disassemble(fn.Body);
         }
         throw new System.InvalidOperationException("script chunk has no embedded function template");
     }

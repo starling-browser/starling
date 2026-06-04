@@ -8,7 +8,7 @@ namespace Starling.Js.Parse;
 /// in <c>JsParser.cs</c> via partial class. Method names mirror
 /// ES2024 §14 sub-sections.
 /// </summary>
-public sealed partial class JsParser
+public ref partial struct JsParser
 {
     /// <summary>wp:M3-71 — §19.2.1.1 — parse a DIRECT-eval program seeding the
     /// caller's lexical context: caller strictness, in-function-ness (so
@@ -37,7 +37,7 @@ public sealed partial class JsParser
         // in the body depend on it). The prologue is parsed twice-tolerant: we
         // collect the leading string-literal statements, set _strict if any is
         // "use strict", then continue parsing the body under that strictness.
-        ScanDirectivePrologue(body, ParseProgramStatement);
+        ScanDirectivePrologue(body, programLevel: true);
         while (!Check(JsTokenKind.EndOfFile))
         {
             body.Add(ParseProgramStatement());
@@ -81,16 +81,19 @@ public sealed partial class JsParser
     }
 
     /// <summary>§11.2.1 — parse the directive prologue (leading
-    /// ExpressionStatements that are bare StringLiterals) using
-    /// <paramref name="parseOne"/>, appending each parsed statement to
-    /// <paramref name="into"/>. Sets <see cref="_strict"/> if a "use strict"
-    /// directive is present. Stops at (and does not consume) the first
-    /// non-directive statement.</summary>
-    private void ScanDirectivePrologue(List<Statement> into, Func<Statement> parseOne)
+    /// ExpressionStatements that are bare StringLiterals), appending each parsed
+    /// statement to <paramref name="into"/>. When <paramref name="programLevel"/>
+    /// is true each statement is parsed with <see cref="ParseProgramStatement"/>,
+    /// otherwise <see cref="ParseStatement"/>. Sets <see cref="_strict"/> if a
+    /// "use strict" directive is present. Stops at (and does not consume) the
+    /// first non-directive statement.</summary>
+    private void ScanDirectivePrologue(List<Statement> into, bool programLevel)
     {
         // §11.2.1 — if a "use strict" directive appears, any directive in the
         // prologue that contained a legacy octal escape is a SyntaxError, even
         // though that directive was lexed/parsed before strictness was known.
+        // (A ref struct can't capture `this` into a Func, so the statement
+        // parser is selected by flag rather than passed as a delegate.)
         JsPosition? sawOctalDirective = null;
         while (_current.Kind == JsTokenKind.StringLiteral)
         {
@@ -99,7 +102,7 @@ public sealed partial class JsParser
             var lexeme = _current.Lexeme;
             var octal = _current.LegacyOctal;
             var octalPos = _current.Start;
-            var stmt = parseOne();
+            var stmt = programLevel ? ParseProgramStatement() : ParseStatement();
             into.Add(stmt);
             if (!IsDirective(stmt))
                 break; // a string used as part of a larger expression ends the prologue
@@ -143,13 +146,13 @@ public sealed partial class JsParser
         }
         // 'let' is contextual; treat as variable decl when followed by an
         // identifier or pattern starter, else expression statement.
-        if (_current.Kind == JsTokenKind.Identifier && _current.Lexeme == "let"
+        if (_current.Kind == JsTokenKind.Identifier && _current.Lexeme is "let"
             && IsLetDeclarationStart())
         {
             return ParseVar("let");
         }
         // B1b-2c — `async function` at statement level → async function decl.
-        if (_current.Kind == JsTokenKind.Identifier && _current.Lexeme == "async"
+        if (_current.Kind == JsTokenKind.Identifier && _current.Lexeme is "async"
             && _lex.Peek().Kind == JsTokenKind.Function)
         {
             var asyncStart = _current.Start;
@@ -304,7 +307,7 @@ public sealed partial class JsParser
         // wp:M3-04g — `for await (… of …)`. `await` is a contextual keyword
         // (an Identifier here); consume it and require an of-iteration form.
         bool isAwait = false;
-        if (_current.Kind == JsTokenKind.Identifier && _current.Lexeme == "await")
+        if (_current.Kind == JsTokenKind.Identifier && _current.Lexeme is "await")
         {
             isAwait = true;
             Advance();
@@ -317,7 +320,7 @@ public sealed partial class JsParser
         {
             if (_current.Kind == JsTokenKind.Var
                 || _current.Kind == JsTokenKind.Const
-                || (_current.Kind == JsTokenKind.Identifier && _current.Lexeme == "let"
+                || (_current.Kind == JsTokenKind.Identifier && _current.Lexeme is "let"
                     && IsLetDeclarationStart()))
             {
                 var kind = _current.Kind == JsTokenKind.Var ? "var"
@@ -381,7 +384,7 @@ public sealed partial class JsParser
     }
 
     private bool IsContextualOf()
-        => _current.Kind == JsTokenKind.Identifier && _current.Lexeme == "of";
+        => _current.Kind == JsTokenKind.Identifier && _current.Lexeme is "of";
 
     private ForInStatement FinishForIn(JsPosition start, AstNode left)
     {
@@ -460,7 +463,7 @@ public sealed partial class JsParser
         string? label = null;
         if (!_current.PrecededByLineTerminator && Check(JsTokenKind.Identifier))
         {
-            label = _current.Lexeme;
+            label = GetPooledName(_current.Lexeme);
             Advance();
         }
         var end = _current.End;
@@ -475,7 +478,7 @@ public sealed partial class JsParser
         string? label = null;
         if (!_current.PrecededByLineTerminator && Check(JsTokenKind.Identifier))
         {
-            label = _current.Lexeme;
+            label = GetPooledName(_current.Lexeme);
             Advance();
         }
         var end = _current.End;
@@ -581,7 +584,7 @@ public sealed partial class JsParser
     private LabeledStatement ParseLabeledStatement()
     {
         var start = _current.Start;
-        var label = _current.Lexeme;
+        var label = GetPooledName(_current.Lexeme);
         // §13.3.10.1 / §14.4 — `await` may not be a LabelIdentifier in an async
         // context, and `yield` may not be one in a generator (it arrives here as
         // an Identifier only outside a generator; the in-generator `yield:` form
@@ -762,10 +765,10 @@ public sealed partial class JsParser
                 // §15.8.1 — an async FunctionExpression's BindingIdentifier is
                 // [+Await], so it may not be `await` (`async function await(){}`,
                 // `async function* await(){}`).
-                if (isAsync && tok.Lexeme == "await")
+                if (isAsync && tok.Lexeme is "await")
                     throw new JsParseException(
                         "'await' may not be used as the name of an async function", tok.Start);
-                fnName = new Identifier(tok.Lexeme, tok.Start, tok.End);
+                fnName = new Identifier(GetPooledName(tok.Lexeme), tok.Start, tok.End);
             }
             // §15.2.1 / §12.7.1 — a non-generator FunctionExpression's
             // BindingIdentifier uses the [~Yield] context regardless of the
@@ -778,7 +781,7 @@ public sealed partial class JsParser
             else if (!generator && Check(JsTokenKind.Yield))
             {
                 var tok = Advance();
-                fnName = new Identifier(tok.Lexeme, tok.Start, tok.End);
+                fnName = new Identifier(GetPooledName(tok.Lexeme), tok.Start, tok.End);
             }
             // §15 — a function establishes a fresh await/yield context for its
             // own parameters and body (an async/generator turns the keyword on;
@@ -814,7 +817,7 @@ public sealed partial class JsParser
         Advance(); // function
         var generator = Match(JsTokenKind.Star);
         var nameTok = Expect(JsTokenKind.Identifier, "function name expected");
-        var name = new Identifier(nameTok.Lexeme, nameTok.Start, nameTok.End);
+        var name = new Identifier(GetPooledName(nameTok.Lexeme), nameTok.Start, nameTok.End);
         var savedStrict = _strict;
         var (savedAsync, savedGen) = (_inAsync, _inGenerator);
         var savedModuleAwait = _moduleTopAwait;

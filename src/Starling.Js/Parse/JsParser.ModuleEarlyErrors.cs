@@ -25,7 +25,7 @@ namespace Starling.Js.Parse;
 /// reserved word is never a keyword) run while parsing each
 /// import/export specifier via <see cref="CheckModuleBindingName"/>.
 /// </summary>
-public sealed partial class JsParser
+public ref partial struct JsParser
 {
     /// <summary>Run the whole-module §16.2.1.6.2 early-error checks over the
     /// already-parsed ModuleItemList.</summary>
@@ -184,16 +184,20 @@ public sealed partial class JsParser
     /// <summary>The exported names contributed by an <c>export</c> on a
     /// declaration (<c>export const a, b</c> / <c>export function f</c> /
     /// <c>export class C</c>).</summary>
-    private static IEnumerable<string> ExportedDeclarationNames(Statement decl)
+    private static List<string> ExportedDeclarationNames(Statement decl)
     {
+        // Materialized rather than a yield iterator: JsParser is a ref struct,
+        // which cannot declare iterator methods.
+        var names = new List<string>();
         switch (decl)
         {
             case VariableDeclaration vd:
-                foreach (var n in BoundNamesOf(vd)) yield return n.Name;
+                foreach (var n in BoundNamesOf(vd)) names.Add(n.Name);
                 break;
-            case FunctionDeclaration fd: yield return fd.Name.Name; break;
-            case ClassDeclaration cd: yield return cd.Name.Name; break;
+            case FunctionDeclaration fd: names.Add(fd.Name.Name); break;
+            case ClassDeclaration cd: names.Add(cd.Name.Name); break;
         }
+        return names;
     }
 
     // -----------------------------------------------------------------------
@@ -297,9 +301,9 @@ public sealed partial class JsParser
         // §16.2.1.6.2 — `await` is reserved in module code, so it is never a
         // valid imported-binding name (the general strict check below does not
         // cover it because `await` is not a strict FutureReservedWord).
-        if (token.Lexeme == "await")
+        if (token.Lexeme is "await")
             throw new JsParseException(
                 "'await' may not be used as a binding identifier in a module", token.Start);
-        CheckBindingIdentifier(token.Lexeme, token.Start);
+        CheckBindingIdentifier(GetPooledName(token.Lexeme), token.Start);
     }
 }

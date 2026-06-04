@@ -92,27 +92,27 @@ public sealed record ObjectProperty(
 // -----------------------------------------------------------------------
 
 public sealed record BinaryExpression(
-    string Op, Expression Left, Expression Right,
+    JsTokenKind Op, Expression Left, Expression Right,
     JsPosition Start, JsPosition End)
     : Expression(Start, End);
 
 public sealed record LogicalExpression(
-    string Op, Expression Left, Expression Right,
+    JsTokenKind Op, Expression Left, Expression Right,
     JsPosition Start, JsPosition End)
     : Expression(Start, End);
 
 public sealed record UnaryExpression(
-    string Op, Expression Argument, bool Prefix,
+    JsTokenKind Op, Expression Argument, bool Prefix,
     JsPosition Start, JsPosition End)
     : Expression(Start, End);
 
 public sealed record UpdateExpression(
-    string Op, Expression Argument, bool Prefix,
+    JsTokenKind Op, Expression Argument, bool Prefix,
     JsPosition Start, JsPosition End)
     : Expression(Start, End);
 
 public sealed record AssignmentExpression(
-    string Op, Expression Target, Expression Value,
+    JsTokenKind Op, Expression Target, Expression Value,
     JsPosition Start, JsPosition End)
     : Expression(Start, End);
 

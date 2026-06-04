@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using Starling.Js.Ast;
+using Starling.Js.Lex;
 using Starling.Js.Bytecode;
 using Starling.Js.Parse;
 using Starling.Js.Runtime;
@@ -55,7 +56,7 @@ public class JsParserRegExpLiteralTests
         // so `/` is division (lexer emits Slash and ParsePrimary is not
         // called for it).
         var bin = Parse("1 / 2 / 3").Should().BeOfType<BinaryExpression>().Subject;
-        bin.Op.Should().Be("/");
+        bin.Op.Should().Be(JsTokenKind.Slash);
     }
 
     // ----- Runtime: semantics ---------------------------------------------

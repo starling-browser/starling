@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using Starling.Js.Ast;
+using Starling.Js.Lex;
 using Starling.Js.Parse;
 namespace Starling.Js.Tests.Parse;
 
@@ -41,9 +42,9 @@ public class JsParserExpressionTests
     {
         // 1 + 2 * 3 → BinaryExpr(+, 1, BinaryExpr(*, 2, 3))
         var bin = Parse("1 + 2 * 3").Should().BeOfType<BinaryExpression>().Subject;
-        bin.Op.Should().Be("+");
+        bin.Op.Should().Be(JsTokenKind.Plus);
         bin.Right.Should().BeOfType<BinaryExpression>()
-            .Which.Op.Should().Be("*");
+            .Which.Op.Should().Be(JsTokenKind.Star);
     }
 
     [TestMethod]
@@ -51,10 +52,10 @@ public class JsParserExpressionTests
     {
         // 2 ** 3 ** 4 → BinaryExpr(**, 2, BinaryExpr(**, 3, 4))
         var bin = Parse("2 ** 3 ** 4").Should().BeOfType<BinaryExpression>().Subject;
-        bin.Op.Should().Be("**");
+        bin.Op.Should().Be(JsTokenKind.StarStar);
         bin.Left.Should().BeOfType<NumericLiteral>().Which.Value.Should().Be(2);
         bin.Right.Should().BeOfType<BinaryExpression>()
-            .Which.Op.Should().Be("**");
+            .Which.Op.Should().Be(JsTokenKind.StarStar);
     }
 
     [TestMethod]
@@ -62,9 +63,9 @@ public class JsParserExpressionTests
     {
         // (1 + 2) * 3 → BinaryExpr(*, BinaryExpr(+, 1, 2), 3)
         var bin = Parse("(1 + 2) * 3").Should().BeOfType<BinaryExpression>().Subject;
-        bin.Op.Should().Be("*");
+        bin.Op.Should().Be(JsTokenKind.Star);
         bin.Left.Should().BeOfType<BinaryExpression>()
-            .Which.Op.Should().Be("+");
+            .Which.Op.Should().Be(JsTokenKind.Plus);
     }
 
     [TestMethod]
@@ -72,9 +73,9 @@ public class JsParserExpressionTests
     {
         // a < b && c > d → Logical(&&, Binary(<, a, b), Binary(>, c, d))
         var log = Parse("a < b && c > d").Should().BeOfType<LogicalExpression>().Subject;
-        log.Op.Should().Be("&&");
-        log.Left.Should().BeOfType<BinaryExpression>().Which.Op.Should().Be("<");
-        log.Right.Should().BeOfType<BinaryExpression>().Which.Op.Should().Be(">");
+        log.Op.Should().Be(JsTokenKind.AmpAmp);
+        log.Left.Should().BeOfType<BinaryExpression>().Which.Op.Should().Be(JsTokenKind.Lt);
+        log.Right.Should().BeOfType<BinaryExpression>().Which.Op.Should().Be(JsTokenKind.Gt);
     }
 
     [TestMethod]
@@ -87,8 +88,8 @@ public class JsParserExpressionTests
 
         // The parenthesized form is valid: `a ?? (b || c)`.
         var log = Parse("a ?? (b || c)").Should().BeOfType<LogicalExpression>().Subject;
-        log.Op.Should().Be("??");
-        log.Right.Should().BeOfType<LogicalExpression>().Which.Op.Should().Be("||");
+        log.Op.Should().Be(JsTokenKind.QuestionQuestion);
+        log.Right.Should().BeOfType<LogicalExpression>().Which.Op.Should().Be(JsTokenKind.PipePipe);
     }
 
     // ----- Unary and update -----------------------------------------------
@@ -98,23 +99,23 @@ public class JsParserExpressionTests
     {
         // -a * b → Binary(*, Unary(-, a), b)
         var bin = Parse("-a * b").Should().BeOfType<BinaryExpression>().Subject;
-        bin.Left.Should().BeOfType<UnaryExpression>().Which.Op.Should().Be("-");
-        bin.Op.Should().Be("*");
+        bin.Left.Should().BeOfType<UnaryExpression>().Which.Op.Should().Be(JsTokenKind.Minus);
+        bin.Op.Should().Be(JsTokenKind.Star);
     }
 
     [TestMethod]
     public void Typeof_and_void()
     {
         var u = Parse("typeof x").Should().BeOfType<UnaryExpression>().Subject;
-        u.Op.Should().Be("typeof");
-        Parse("void 0").Should().BeOfType<UnaryExpression>().Which.Op.Should().Be("void");
+        u.Op.Should().Be(JsTokenKind.Typeof);
+        Parse("void 0").Should().BeOfType<UnaryExpression>().Which.Op.Should().Be(JsTokenKind.Void);
     }
 
     [TestMethod]
     public void Postfix_increment()
     {
         var u = Parse("a++").Should().BeOfType<UpdateExpression>().Subject;
-        u.Op.Should().Be("++");
+        u.Op.Should().Be(JsTokenKind.PlusPlus);
         u.Prefix.Should().BeFalse();
     }
 
@@ -122,7 +123,7 @@ public class JsParserExpressionTests
     public void Prefix_decrement()
     {
         var u = Parse("--a").Should().BeOfType<UpdateExpression>().Subject;
-        u.Op.Should().Be("--");
+        u.Op.Should().Be(JsTokenKind.MinusMinus);
         u.Prefix.Should().BeTrue();
     }
 
@@ -142,14 +143,14 @@ public class JsParserExpressionTests
     {
         // a = b = c → Assign(=, a, Assign(=, b, c))
         var a = Parse("a = b = c").Should().BeOfType<AssignmentExpression>().Subject;
-        a.Op.Should().Be("=");
-        a.Value.Should().BeOfType<AssignmentExpression>().Which.Op.Should().Be("=");
+        a.Op.Should().Be(JsTokenKind.Eq);
+        a.Value.Should().BeOfType<AssignmentExpression>().Which.Op.Should().Be(JsTokenKind.Eq);
     }
 
     [TestMethod]
     public void Compound_assignment()
     {
-        Parse("a += 1").Should().BeOfType<AssignmentExpression>().Which.Op.Should().Be("+=");
+        Parse("a += 1").Should().BeOfType<AssignmentExpression>().Which.Op.Should().Be(JsTokenKind.PlusEq);
     }
 
     // ----- Member access and calls ----------------------------------------

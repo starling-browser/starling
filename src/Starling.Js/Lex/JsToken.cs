@@ -1,19 +1,45 @@
 namespace Starling.Js.Lex;
 
 /// <summary>
-/// A lexer token. <see cref="Lexeme"/> is the raw source slice;
-/// <see cref="Value"/> carries the decoded literal value (a <c>double</c>
-/// for numeric, a <c>string</c> for string literals, <c>null</c>
-/// otherwise). For BigInt literals, <see cref="Value"/> is the raw digits
-/// string (BigInteger conversion lives in the JS runtime, not the lexer).
+/// A lexer token. <see cref="Lexeme"/> is the raw source slice carried as a
+/// <see cref="ReadOnlySpan{T}"/>: for plain identifiers, keywords, numbers,
+/// strings, punctuators, etc. it points straight into the lexer's source
+/// buffer, so producing a token allocates nothing. <see cref="Value"/> carries
+/// the decoded literal value (a <c>double</c> for numeric, a <c>string</c> for
+/// string literals, <c>null</c> otherwise). For BigInt literals,
+/// <see cref="Value"/> is the raw digits string (BigInteger conversion lives in
+/// the JS runtime, not the lexer).
 /// </summary>
-public readonly record struct JsToken(
-    JsTokenKind Kind,
-    string Lexeme,
-    JsPosition Start,
-    JsPosition End,
-    object? Value = null)
+/// <remarks>
+/// A <c>ref struct</c> precisely because it holds a span: a token never
+/// outlives the source buffer it slices, and the parser consumes it the moment
+/// it is produced. For an escaped identifier / private name the lexeme can't be
+/// a source slice (the escapes are decoded into fresh text); there the span
+/// points at that decoded string, which the span keeps alive for the token's
+/// lifetime.
+/// </remarks>
+public readonly ref struct JsToken
 {
+    public JsToken(
+        JsTokenKind kind,
+        ReadOnlySpan<char> lexeme,
+        JsPosition start,
+        JsPosition end,
+        object? value = null)
+    {
+        Kind = kind;
+        Lexeme = lexeme;
+        Start = start;
+        End = end;
+        Value = value;
+    }
+
+    public JsTokenKind Kind { get; }
+    public ReadOnlySpan<char> Lexeme { get; }
+    public JsPosition Start { get; }
+    public JsPosition End { get; }
+    public object? Value { get; }
+
     /// <summary>True if this token was preceded by a line terminator in the
     /// source — needed by the parser's automatic-semicolon-insertion rules.</summary>
     public bool PrecededByLineTerminator { get; init; }

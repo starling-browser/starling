@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using Starling.Js.Ast;
+using Starling.Js.Lex;
 using Starling.Js.Parse;
 namespace Starling.Js.Tests.Parse;
 
@@ -68,7 +69,7 @@ public class JsParserStatementTests
         var p = ParseProgram("let + 1;");
         p.Body[0].Should().BeOfType<ExpressionStatement>()
             .Which.Expression.Should().BeOfType<BinaryExpression>()
-            .Which.Op.Should().Be("+");
+            .Which.Op.Should().Be(JsTokenKind.Plus);
     }
 
     // ----- Blocks / if / while / do ---------------------------------------

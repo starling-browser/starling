@@ -31,7 +31,7 @@ public class JsLexerTemplateRegexTests
 
         var ident = lex.Next();
         ident.Kind.Should().Be(JsTokenKind.Identifier);
-        ident.Lexeme.Should().Be("name");
+        ident.Lexeme.ToString().Should().Be("name");
 
         // The parser would close the substitution by seeing `}` as RBrace,
         // then call ScanTemplateContinuation. The lexer first emits `}` as
@@ -49,14 +49,14 @@ public class JsLexerTemplateRegexTests
     {
         var lex = new JsLexer("`${a}-${b}`");
         lex.Next().Kind.Should().Be(JsTokenKind.TemplateHead);
-        lex.Next().Lexeme.Should().Be("a");
+        lex.Next().Lexeme.ToString().Should().Be("a");
         lex.Next().Kind.Should().Be(JsTokenKind.RBrace);
 
         var mid = lex.ScanTemplateContinuation();
         mid.Kind.Should().Be(JsTokenKind.TemplateMiddle);
         mid.Value.Should().Be("-");
 
-        lex.Next().Lexeme.Should().Be("b");
+        lex.Next().Lexeme.ToString().Should().Be("b");
         lex.Next().Kind.Should().Be(JsTokenKind.RBrace);
 
         var tail = lex.ScanTemplateContinuation();
@@ -109,7 +109,7 @@ public class JsLexerTemplateRegexTests
     {
         var lex = new JsLexer("#!/usr/bin/env node\nlet x;");
         var letTok = lex.Next();
-        letTok.Lexeme.Should().Be("let");
+        letTok.Lexeme.ToString().Should().Be("let");
         letTok.Kind.Should().Be(JsTokenKind.Identifier);
     }
 }

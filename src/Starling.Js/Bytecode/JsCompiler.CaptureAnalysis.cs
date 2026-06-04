@@ -1,4 +1,5 @@
 using Starling.Js.Ast;
+using Starling.Js.Lex;
 
 namespace Starling.Js.Bytecode;
 
@@ -281,7 +282,7 @@ internal static class CaptureAnalysis
         {
             case Identifier id: return id.Name == "arguments";
             case AssignmentPattern ap: return EvalCABindingTarget(ap.Target);
-            case AssignmentExpression { Op: "=" } a: return EvalCABindingTarget(a.Target);
+            case AssignmentExpression { Op: JsTokenKind.Eq } a: return EvalCABindingTarget(a.Target);
             case RestElement re: return EvalCABindingTarget(re.Argument);
             case SpreadElement sp: return EvalCABindingTarget(sp.Argument);
             case ArrayPattern arr:
@@ -979,7 +980,7 @@ internal static class CaptureAnalysis
         switch (pattern)
         {
             case Identifier id: scope.Add(id.Name); return;
-            case AssignmentExpression a when a.Op == "=": AddBindingNames(a.Target, scope); return;
+            case AssignmentExpression a when a.Op == JsTokenKind.Eq: AddBindingNames(a.Target, scope); return;
             case AssignmentPattern a: AddBindingNames(a.Target, scope); return;
             case ArrayPattern arr:
                 foreach (var el in arr.Elements)

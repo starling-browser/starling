@@ -8,7 +8,7 @@ namespace Starling.Js.Parse;
 /// <see cref="ParseProgram()"/> so static import/export declarations remain
 /// restricted to program scope.
 /// </summary>
-public sealed partial class JsParser
+public ref partial struct JsParser
 {
     private Statement ParseProgramStatement()
     {
@@ -47,7 +47,7 @@ public sealed partial class JsParser
         {
             Advance(); // .
             var meta = ExpectIdentifierName("expected 'meta' after 'import.'");
-            if (meta.Lexeme != "meta")
+            if (meta.Lexeme is not "meta")
                 throw new JsParseException(
                     $"the only valid meta-property for import is 'import.meta' (got 'import.{meta.Lexeme}')",
                     meta.Start);
@@ -150,7 +150,7 @@ public sealed partial class JsParser
                 // `as`-target above (so `import { eval }` / `import { await }`
                 // are early errors).
                 CheckBindingIdentifier(id.Name, id.Start);
-                local = new Identifier(id.Name, id.Start, id.End);
+                local = new Identifier(GetPooledName(id.Name), id.Start, id.End);
             }
             else
             {
@@ -192,9 +192,9 @@ public sealed partial class JsParser
             JsTokenKind.Const => ParseVar("const"),
             JsTokenKind.Function => ParseFunctionDeclaration(),
             JsTokenKind.Class => ParseClassDeclarationWithExtendsTracking(),
-            _ when _current.Kind == JsTokenKind.Identifier && _current.Lexeme == "let" && IsLetDeclarationStart()
+            _ when _current.Kind == JsTokenKind.Identifier && _current.Lexeme is "let" && IsLetDeclarationStart()
                 => ParseVar("let"),
-            _ when _current.Kind == JsTokenKind.Identifier && _current.Lexeme == "async" && _lex.Peek().Kind == JsTokenKind.Function
+            _ when _current.Kind == JsTokenKind.Identifier && _current.Lexeme is "async" && _lex.Peek().Kind == JsTokenKind.Function
                 => ParseAsyncFunctionDeclaration(),
             _ => throw new JsParseException("expected declaration, 'default', '*', or named export list after 'export'", _current.Start),
         };
@@ -219,7 +219,7 @@ public sealed partial class JsParser
         {
             declaration = ParseClassExpression();
         }
-        else if (_current.Kind == JsTokenKind.Identifier && _current.Lexeme == "async" && _lex.Peek().Kind == JsTokenKind.Function)
+        else if (_current.Kind == JsTokenKind.Identifier && _current.Lexeme is "async" && _lex.Peek().Kind == JsTokenKind.Function)
         {
             var asyncStart = _current.Start;
             Advance(); // async
@@ -244,7 +244,7 @@ public sealed partial class JsParser
         if (MatchContextualIdentifier("as"))
         {
             var name = ExpectIdentifierName("expected exported namespace name after 'as'");
-            exportedName = new Identifier(name.Lexeme, name.Start, name.End);
+            exportedName = new Identifier(GetPooledName(name.Lexeme), name.Start, name.End);
         }
         ExpectContextualIdentifier("from", "expected 'from' after export *");
         var (source, end) = ParseModuleSpecifierString();
@@ -284,7 +284,7 @@ public sealed partial class JsParser
         // §16.2.2 ImportedBinding is a BindingIdentifier in strict (module) code:
         // `eval`/`arguments`/reserved words (incl. `await`) are SyntaxErrors.
         CheckModuleBindingName(tok);
-        return new Identifier(tok.Lexeme, tok.Start, tok.End);
+        return new Identifier(GetPooledName(tok.Lexeme), tok.Start, tok.End);
     }
 
     private Expression ParseModuleExportName(string message)
@@ -295,7 +295,7 @@ public sealed partial class JsParser
             return new StringLiteral((string)tok.Value!, tok.Start, tok.End);
         }
         var name = ExpectIdentifierName(message);
-        return new Identifier(name.Lexeme, name.Start, name.End);
+        return new Identifier(GetPooledName(name.Lexeme), name.Start, name.End);
     }
 
     private (string Source, JsPosition End) ParseModuleSpecifierString()
@@ -315,7 +315,7 @@ public sealed partial class JsParser
         // §16.2.2 / §16.2.3 — the contextual keywords `as` and `from` may not
         // contain a UnicodeEscapeSequence (an escaped `from` / `as` is
         // not the keyword), so reject an escaped spelling here.
-        if (_current.Kind != JsTokenKind.Identifier || _current.Lexeme != lexeme
+        if (_current.Kind != JsTokenKind.Identifier || !_current.Lexeme.SequenceEqual(lexeme)
             || _current.ContainsEscape) return false;
         Advance();
         return true;

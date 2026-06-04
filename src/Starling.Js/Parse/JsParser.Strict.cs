@@ -9,15 +9,15 @@ namespace Starling.Js.Parse;
 /// 15.7, B.1.2). Strictness is tracked by <see cref="JsParser._strict"/> with a
 /// stack discipline; the per-scope helpers here save and restore it.
 /// </summary>
-public sealed partial class JsParser
+public ref partial struct JsParser
 {
     /// <summary>§11.2.2 — true when <paramref name="s"/> is a "use strict"
     /// directive: an ExpressionStatement consisting of a single StringLiteral
     /// whose RAW source slice is exactly <c>"use strict"</c> or
     /// <c>'use strict'</c> (no escapes, no continuations).</summary>
-    private static bool IsUseStrictDirective(Statement s, string rawLexeme)
+    private static bool IsUseStrictDirective(Statement s, ReadOnlySpan<char> rawLexeme)
         => s is ExpressionStatement { Expression: StringLiteral }
-        && (rawLexeme == "\"use strict\"" || rawLexeme == "'use strict'");
+        && rawLexeme is "\"use strict\"" or "'use strict'";
 
     /// <summary>True when a parsed statement could still be part of the
     /// directive prologue — i.e. it is an ExpressionStatement wrapping a bare
@@ -238,14 +238,6 @@ public sealed partial class JsParser
     /// around its whole parse (including the parameter list, whose early errors
     /// use the resulting strictness per §15.2.1 — the directive prologue's
     /// effect applies to the entire function definition).</summary>
-    /// <summary>§15.2.1 — true when the most recently parsed FunctionBody's
-    /// directive prologue literally contained a <c>"use strict"</c> directive
-    /// (ContainsUseStrict). Read by callers right after
-    /// <see cref="ParseFunctionBody"/> to enforce the simple-parameter-list
-    /// rule, independent of any inherited strictness.</summary>
-    private bool _lastBodyContainsUseStrict;
-    private bool _prologueHadUseStrict;
-
     private (BlockStatement Body, bool Strict) ParseFunctionBody()
     {
         var start = _current.Start;
@@ -268,7 +260,7 @@ public sealed partial class JsParser
         {
             var body = new List<Statement>();
             // The directive prologue can flip this body to strict.
-            ScanDirectivePrologue(body, ParseStatement);
+            ScanDirectivePrologue(body, programLevel: false);
             while (!Check(JsTokenKind.RBrace) && !Check(JsTokenKind.EndOfFile))
                 body.Add(ParseStatement());
             var end = _current.End;

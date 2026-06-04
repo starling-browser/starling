@@ -1,4 +1,5 @@
 using Starling.Js.Ast;
+using Starling.Js.Lex;
 using Starling.Js.Runtime;
 
 namespace Starling.Js.Bytecode;
@@ -962,7 +963,7 @@ public sealed partial class JsCompiler
                     }
                 }
                 return;
-            case AssignmentExpression a when a.Op == "=": PreallocateCapturedInPattern(a.Target, lexical); return;
+            case AssignmentExpression a when a.Op == JsTokenKind.Eq: PreallocateCapturedInPattern(a.Target, lexical); return;
             case AssignmentPattern a: PreallocateCapturedInPattern(a.Target, lexical); return;
             case ArrayPattern arr:
                 foreach (var el in arr.Elements)
@@ -1041,7 +1042,7 @@ public sealed partial class JsCompiler
         switch (pattern)
         {
             case Identifier id: MarkConst(id.Name); return;
-            case AssignmentExpression { Op: "=" } a: MarkConstNames(a.Target); return;
+            case AssignmentExpression { Op: JsTokenKind.Eq } a: MarkConstNames(a.Target); return;
             case AssignmentPattern a: MarkConstNames(a.Target); return;
             case ArrayPattern arr:
                 foreach (var el in arr.Elements)
@@ -1078,7 +1079,7 @@ public sealed partial class JsCompiler
         switch (pattern)
         {
             case Identifier id: HoistLexicalName(id.Name); return;
-            case AssignmentExpression { Op: "=" } a: HoistLexicalPattern(a.Target); return;
+            case AssignmentExpression { Op: JsTokenKind.Eq } a: HoistLexicalPattern(a.Target); return;
             case AssignmentPattern a: HoistLexicalPattern(a.Target); return;
             case ArrayPattern arr:
                 foreach (var el in arr.Elements)
@@ -2476,12 +2477,12 @@ public sealed partial class JsCompiler
                 EmitLogical(log);
                 return;
             case UnaryExpression u:
-                if (u.Op == "delete")
+                if (u.Op == JsTokenKind.Delete)
                 {
                     EmitDelete(u);
                     return;
                 }
-                if (u.Op == "void")
+                if (u.Op == JsTokenKind.Void)
                 {
                     EmitExpression(u.Argument);
                     _b.Emit(Opcode.Pop);
@@ -2492,7 +2493,7 @@ public sealed partial class JsCompiler
                 // binding yields "undefined" instead of throwing, so its read
                 // uses the silent (unchecked) global load. Any other operand
                 // shape evaluates normally and throws where the spec requires.
-                if (u.Op == "typeof" && u.Argument is Identifier typeofId)
+                if (u.Op == JsTokenKind.Typeof && u.Argument is Identifier typeofId)
                 {
                     EmitIdLoad(typeofId, checkedGlobal: false);
                     _b.Emit(Opcode.TypeOf);
@@ -2974,10 +2975,10 @@ public sealed partial class JsCompiler
         _b.Emit(Opcode.Dup);
         Opcode jmp = log.Op switch
         {
-            "&&" => Opcode.JumpIfFalse,
-            "||" => Opcode.JumpIfTrue,
-            "??" => Opcode.JumpIfNotNullish,
-            _ => throw new NotSupportedException(log.Op),
+            JsTokenKind.AmpAmp => Opcode.JumpIfFalse,
+            JsTokenKind.PipePipe => Opcode.JumpIfTrue,
+            JsTokenKind.QuestionQuestion => Opcode.JumpIfNotNullish,
+            _ => throw new NotSupportedException(log.Op.ToString()),
         };
         var jumpAddr = _b.EmitJump(jmp);
         _b.Emit(Opcode.Pop); // discard the duplicated left-hand value
@@ -3000,7 +3001,7 @@ public sealed partial class JsCompiler
                 _b.Emit(Opcode.Add);                            // [ToNumber(old)]
                 if (!up.Prefix) _b.Emit(Opcode.Dup);            // postfix: keep old
                 _b.EmitU16(Opcode.LoadConst, _b.AddConstant(1.0));
-                _b.Emit(up.Op == "++" ? Opcode.Add : Opcode.Sub);
+                _b.Emit(up.Op == JsTokenKind.PlusPlus ? Opcode.Add : Opcode.Sub);
                 if (up.Prefix) _b.Emit(Opcode.Dup);             // prefix: keep new
                 EmitIdStore(id.Name, needsTdzCheck: false);
                 return;
@@ -3017,7 +3018,7 @@ public sealed partial class JsCompiler
                 else EmitLoadLocalSlot(slot);
                 if (!up.Prefix) _b.Emit(Opcode.Dup);
                 _b.EmitU16(Opcode.LoadConst, _b.AddConstant(1.0));
-                _b.Emit(up.Op == "++" ? Opcode.Add : Opcode.Sub);
+                _b.Emit(up.Op == JsTokenKind.PlusPlus ? Opcode.Add : Opcode.Sub);
                 if (up.Prefix) _b.Emit(Opcode.Dup);
                 EmitStoreLocalSlot(slot);
                 return;
@@ -3028,7 +3029,7 @@ public sealed partial class JsCompiler
                     ? Opcode.LoadUpvalueChecked : Opcode.LoadUpvalue, upIdx);
                 if (!up.Prefix) _b.Emit(Opcode.Dup);
                 _b.EmitU16(Opcode.LoadConst, _b.AddConstant(1.0));
-                _b.Emit(up.Op == "++" ? Opcode.Add : Opcode.Sub);
+                _b.Emit(up.Op == JsTokenKind.PlusPlus ? Opcode.Add : Opcode.Sub);
                 if (up.Prefix) _b.Emit(Opcode.Dup);
                 // §16.2.1.6.2 — `import++`/`--` writes to an immutable binding.
                 if (IsImmutableUpvalue(id.Name))
@@ -3048,7 +3049,7 @@ public sealed partial class JsCompiler
             _b.EmitU16(Opcode.LoadGlobalChecked, nameIdx);
             if (!up.Prefix) _b.Emit(Opcode.Dup);
             _b.EmitU16(Opcode.LoadConst, _b.AddConstant(1.0));
-            _b.Emit(up.Op == "++" ? Opcode.Add : Opcode.Sub);
+            _b.Emit(up.Op == JsTokenKind.PlusPlus ? Opcode.Add : Opcode.Sub);
             if (up.Prefix) _b.Emit(Opcode.Dup);
             _b.EmitU16(Opcode.StoreGlobal, nameIdx);
             return;
@@ -3068,7 +3069,7 @@ public sealed partial class JsCompiler
             if (me.Object is SuperPropertyExpression)
                 throw new NotSupportedException("update of super property not yet supported (wp:M3-15)");
 
-            var isIncrement = up.Op == "++";
+            var isIncrement = up.Op == JsTokenKind.PlusPlus;
 
             if (!me.Computed)
             {
@@ -3211,7 +3212,7 @@ public sealed partial class JsCompiler
             // §13.15.1: a destructuring (array/object) assignment target only
             // pairs with the plain `=` operator — a compound operator such as
             // `[a] += x` is an early SyntaxError.
-            if (a.Op != "=") throw new Parse.JsParseException("compound assignment with a destructuring target is a SyntaxError", a.Start);
+            if (a.Op != JsTokenKind.Eq) throw new Parse.JsParseException("compound assignment with a destructuring target is a SyntaxError", a.Start);
             // ECMA-262 §13.15 destructuring assignment evaluates the RHS once,
             // performs the pattern writes, and the whole expression returns the RHS.
             var rhsSlot = _b.ReserveLocal();
@@ -3241,12 +3242,12 @@ public sealed partial class JsCompiler
             // pair re-resolves the name on the store side, which would miss the
             // (now-deleted) binding and write the outer binding instead. The
             // WithCompoundLoad/WithCompoundStore pair captures the base once.
-            if (a.Op != "=" && ShouldRouteWith(id.Name))
+            if (a.Op != JsTokenKind.Eq && ShouldRouteWith(id.Name))
             {
                 EmitWithCompoundAssignment(id.Name, a);
                 return;
             }
-            if (a.Op != "=")
+            if (a.Op != JsTokenKind.Eq)
             {
                 // Compound: load + apply binary + store.
                 EmitIdLoad(id.Name);
@@ -3265,7 +3266,7 @@ public sealed partial class JsCompiler
             // TDZ — a write to a lexical binding before initialization throws.
             // For a compound assignment the preceding EmitIdLoad already checked
             // the sentinel, so only the plain `=` form needs the checked store.
-            var needsTdzCheck = a.Op == "=";
+            var needsTdzCheck = a.Op == JsTokenKind.Eq;
             EmitIdStore(id.Name, needsTdzCheck);
             return;
         }
@@ -3282,7 +3283,7 @@ public sealed partial class JsCompiler
                 // through the home object's prototype. LoadSuperProperty /
                 // StoreSuperProperty carry the name as a constant operand.
                 var name = ((Identifier)sptarget.Property).Name;
-                if (a.Op != "=")
+                if (a.Op != JsTokenKind.Eq)
                 {
                     _b.EmitU16(Opcode.LoadSuperProperty, _b.AddConstant(name));  // [oldVal]
                     EmitExpression(a.Value);                                     // [oldVal, rhs]
@@ -3294,7 +3295,7 @@ public sealed partial class JsCompiler
                 _b.EmitU16(Opcode.StoreSuperProperty, _b.AddConstant(name));     // [value]
                 return;
             }
-            if (a.Op != "=")
+            if (a.Op != JsTokenKind.Eq)
             {
                 // Compound `super[k] op= v`: evaluate the key once, dup it for the
                 // read, apply the op, then store back to `this`.
@@ -3321,7 +3322,7 @@ public sealed partial class JsCompiler
             {
                 var mangled = ResolvePrivateName(pne.Name, pne.Start);
                 var pneIdx = _b.AddConstant(mangled);
-                if (a.Op != "=")
+                if (a.Op != JsTokenKind.Eq)
                 {
                     // §13.15.2 — evaluate the base ONCE: dup it for the read,
                     // PrivateGet the old value, apply the op, then PrivateSet
@@ -3349,7 +3350,7 @@ public sealed partial class JsCompiler
             // expression was non-pure. Fix: dup the resolved base (+ key
             // for computed) before the read, then reuse those dup'd
             // values on the store side.
-            if (a.Op != "=")
+            if (a.Op != JsTokenKind.Eq)
             {
                 EmitExpression(me.Object);
                 if (me.Computed)
@@ -4068,7 +4069,7 @@ public sealed partial class JsCompiler
         ArrayExpression => true,
         ObjectExpression => true,
         BindingPattern => true,
-        AssignmentExpression { Op: "=" } a => IsPattern(a.Target),
+        AssignmentExpression { Op: JsTokenKind.Eq } a => IsPattern(a.Target),
         AssignmentPattern a => IsPattern(a.Target),
         _ => false,
     };
@@ -4275,7 +4276,7 @@ public sealed partial class JsCompiler
         {
             case null: return false;
             case Identifier id: return id.Name == "arguments";
-            case AssignmentExpression { Op: "=" } a: return ParamBindsArguments(a.Target);
+            case AssignmentExpression { Op: JsTokenKind.Eq } a: return ParamBindsArguments(a.Target);
             case AssignmentPattern a: return ParamBindsArguments(a.Target);
             case SpreadElement sp: return ParamBindsArguments(sp.Argument);
             case RestElement re: return ParamBindsArguments(re.Argument);
@@ -4314,7 +4315,7 @@ public sealed partial class JsCompiler
             case null:
             case Identifier:
                 return false;
-            case AssignmentExpression { Op: "=" }:
+            case AssignmentExpression { Op: JsTokenKind.Eq }:
             case AssignmentPattern:
                 return true;
             case SpreadElement sp: return HasParamDefault(sp.Argument);
@@ -4404,7 +4405,7 @@ public sealed partial class JsCompiler
                     }
                 }
                 return;
-            case AssignmentExpression { Op: "=" } a:
+            case AssignmentExpression { Op: JsTokenKind.Eq } a:
                 DeclarePatternBindings(a.Target, functionScoped);
                 return;
             case AssignmentPattern a:
@@ -4478,7 +4479,7 @@ public sealed partial class JsCompiler
             case MemberExpression me:
                 StoreMemberTarget(me);
                 return;
-            case AssignmentExpression { Op: "=" } a:
+            case AssignmentExpression { Op: JsTokenKind.Eq } a:
                 EmitDefaultedPattern(a.Target, a.Value, isDeclaration);
                 return;
             case AssignmentPattern a:
@@ -4634,7 +4635,7 @@ public sealed partial class JsCompiler
                 case SpreadElement spread:
                     elems.Add(new ArrayElem(ArrayElemKind.Rest, spread.Argument, null));
                     break;
-                case AssignmentExpression { Op: "=" } a:
+                case AssignmentExpression { Op: JsTokenKind.Eq } a:
                     elems.Add(new ArrayElem(ArrayElemKind.Element, a.Target, a.Value));
                     break;
                 case AssignmentPattern ap:
@@ -4975,57 +4976,57 @@ public sealed partial class JsCompiler
         _b.Emit(Opcode.New, (byte)ne.Arguments.Count);
     }
 
-    private static Opcode BinaryOpToOpcode(string op) => op switch
+    private static Opcode BinaryOpToOpcode(JsTokenKind op) => op switch
     {
-        "+" => Opcode.Add,
-        "-" => Opcode.Sub,
-        "*" => Opcode.Mul,
-        "/" => Opcode.Div,
-        "%" => Opcode.Mod,
-        "**" => Opcode.Pow,
-        "|" => Opcode.BitOr,
-        "&" => Opcode.BitAnd,
-        "^" => Opcode.BitXor,
-        "<<" => Opcode.Shl,
-        ">>" => Opcode.Shr,
-        ">>>" => Opcode.Ushr,
-        "==" => Opcode.Eq,
-        "!=" => Opcode.NEq,
-        "===" => Opcode.StrictEq,
-        "!==" => Opcode.StrictNEq,
-        "<" => Opcode.Lt,
-        "<=" => Opcode.LtEq,
-        ">" => Opcode.Gt,
-        ">=" => Opcode.GtEq,
-        "instanceof" => Opcode.Instanceof,
-        "in" => Opcode.In,
+        JsTokenKind.Plus => Opcode.Add,
+        JsTokenKind.Minus => Opcode.Sub,
+        JsTokenKind.Star => Opcode.Mul,
+        JsTokenKind.Slash => Opcode.Div,
+        JsTokenKind.Percent => Opcode.Mod,
+        JsTokenKind.StarStar => Opcode.Pow,
+        JsTokenKind.Pipe => Opcode.BitOr,
+        JsTokenKind.Amp => Opcode.BitAnd,
+        JsTokenKind.Caret => Opcode.BitXor,
+        JsTokenKind.LtLt => Opcode.Shl,
+        JsTokenKind.GtGt => Opcode.Shr,
+        JsTokenKind.GtGtGt => Opcode.Ushr,
+        JsTokenKind.EqEq => Opcode.Eq,
+        JsTokenKind.BangEq => Opcode.NEq,
+        JsTokenKind.EqEqEq => Opcode.StrictEq,
+        JsTokenKind.BangEqEq => Opcode.StrictNEq,
+        JsTokenKind.Lt => Opcode.Lt,
+        JsTokenKind.LtEq => Opcode.LtEq,
+        JsTokenKind.Gt => Opcode.Gt,
+        JsTokenKind.GtEq => Opcode.GtEq,
+        JsTokenKind.Instanceof => Opcode.Instanceof,
+        JsTokenKind.In => Opcode.In,
         _ => throw new NotSupportedException($"binary op '{op}'"),
     };
 
-    private static Opcode UnaryOpToOpcode(string op) => op switch
+    private static Opcode UnaryOpToOpcode(JsTokenKind op) => op switch
     {
-        "-" => Opcode.Neg,
-        "+" => Opcode.UnaryPlus,
-        "!" => Opcode.Not,
-        "~" => Opcode.BitNot,
-        "typeof" => Opcode.TypeOf,
+        JsTokenKind.Minus => Opcode.Neg,
+        JsTokenKind.Plus => Opcode.UnaryPlus,
+        JsTokenKind.Bang => Opcode.Not,
+        JsTokenKind.Tilde => Opcode.BitNot,
+        JsTokenKind.Typeof => Opcode.TypeOf,
         _ => throw new NotSupportedException($"unary op '{op}'"),
     };
 
-    private static Opcode CompoundOpToBinaryOpcode(string op) => op switch
+    private static Opcode CompoundOpToBinaryOpcode(JsTokenKind op) => op switch
     {
-        "+=" => Opcode.Add,
-        "-=" => Opcode.Sub,
-        "*=" => Opcode.Mul,
-        "/=" => Opcode.Div,
-        "%=" => Opcode.Mod,
-        "**=" => Opcode.Pow,
-        "|=" => Opcode.BitOr,
-        "&=" => Opcode.BitAnd,
-        "^=" => Opcode.BitXor,
-        "<<=" => Opcode.Shl,
-        ">>=" => Opcode.Shr,
-        ">>>=" => Opcode.Ushr,
+        JsTokenKind.PlusEq => Opcode.Add,
+        JsTokenKind.MinusEq => Opcode.Sub,
+        JsTokenKind.StarEq => Opcode.Mul,
+        JsTokenKind.SlashEq => Opcode.Div,
+        JsTokenKind.PercentEq => Opcode.Mod,
+        JsTokenKind.StarStarEq => Opcode.Pow,
+        JsTokenKind.PipeEq => Opcode.BitOr,
+        JsTokenKind.AmpEq => Opcode.BitAnd,
+        JsTokenKind.CaretEq => Opcode.BitXor,
+        JsTokenKind.LtLtEq => Opcode.Shl,
+        JsTokenKind.GtGtEq => Opcode.Shr,
+        JsTokenKind.GtGtGtEq => Opcode.Ushr,
         _ => throw new NotSupportedException($"compound op '{op}'"),
     };
 
@@ -5033,7 +5034,7 @@ public sealed partial class JsCompiler
     /// Unlike the arithmetic/bitwise compound ops these short-circuit, so
     /// they need a dedicated conditional-jump lowering in
     /// <see cref="EmitLogicalAssignment"/> rather than the binary-op path.</summary>
-    private static bool IsLogicalAssignOp(string op) => op is "||=" or "&&=" or "??=";
+    private static bool IsLogicalAssignOp(JsTokenKind op) => op is JsTokenKind.PipePipeEq or JsTokenKind.AmpAmpEq or JsTokenKind.QuestionQuestionEq;
 
     /// <summary>Map a logical assignment operator to the conditional jump that
     /// detects its short-circuit case (when no assignment occurs and the
@@ -5048,11 +5049,11 @@ public sealed partial class JsCompiler
     /// </list>
     /// Each of these jumps POPS the test operand, so the lowering Dups the
     /// current value first (mirroring <see cref="EmitLogical"/>).</summary>
-    private static Opcode LogicalAssignShortCircuitJump(string op) => op switch
+    private static Opcode LogicalAssignShortCircuitJump(JsTokenKind op) => op switch
     {
-        "||=" => Opcode.JumpIfTrue,
-        "&&=" => Opcode.JumpIfFalse,
-        "??=" => Opcode.JumpIfNotNullish,
+        JsTokenKind.PipePipeEq => Opcode.JumpIfTrue,
+        JsTokenKind.AmpAmpEq => Opcode.JumpIfFalse,
+        JsTokenKind.QuestionQuestionEq => Opcode.JumpIfNotNullish,
         _ => throw new NotSupportedException($"logical assign op '{op}'"),
     };
 }

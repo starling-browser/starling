@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using Starling.Js.Ast;
+using Starling.Js.Lex;
 using Starling.Js.Parse;
 
 namespace Starling.Js.Tests.Parse;
@@ -181,7 +182,7 @@ public class JsParserModuleTests
     {
         var export = ParseSingle<ExportDefaultDeclaration>("export default a + b;");
         export.Declaration.Should().BeOfType<BinaryExpression>()
-            .Which.Op.Should().Be("+");
+            .Which.Op.Should().Be(JsTokenKind.Plus);
     }
 
     [TestMethod]

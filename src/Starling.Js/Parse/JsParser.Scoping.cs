@@ -11,7 +11,7 @@ namespace Starling.Js.Parse;
 /// classic <c>let x; let x;</c> / <c>let f; var f;</c> / two-function-decls
 /// redeclaration <see cref="JsParseException"/>s.
 /// </summary>
-public sealed partial class JsParser
+public ref partial struct JsParser
 {
     /// <summary>Statement-list scope flavours. They differ only in whether a
     /// top-level FunctionDeclaration is lexically or var-scoped.</summary>
@@ -174,7 +174,7 @@ public sealed partial class JsParser
     {
         // A lexical declaration head is never a valid Statement here.
         if (_current.Kind is JsTokenKind.Const
-            || (_current.Kind == JsTokenKind.Identifier && _current.Lexeme == "let"
+            || (_current.Kind == JsTokenKind.Identifier && _current.Lexeme is "let"
                 && IsLetDeclarationStart()))
             throw new JsParseException(
                 "lexical declaration cannot appear in a single-statement context",
@@ -196,7 +196,7 @@ public sealed partial class JsParser
                     _current.Start);
         }
         // `async function …` declaration is never allowed as a sub-statement.
-        if (_current.Kind == JsTokenKind.Identifier && _current.Lexeme == "async"
+        if (_current.Kind == JsTokenKind.Identifier && _current.Lexeme is "async"
             && _lex.Peek().Kind == JsTokenKind.Function)
             throw new JsParseException(
                 "async function declaration cannot appear in a single-statement context",

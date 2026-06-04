@@ -3,7 +3,7 @@ using Starling.Js.Lex;
 
 namespace Starling.Js.Parse;
 
-public sealed partial class JsParser
+public ref partial struct JsParser
 {
     private Expression ParseBindingTarget()
     {
@@ -21,16 +21,16 @@ public sealed partial class JsParser
         if (!_strict && Check(JsTokenKind.Yield))
         {
             var y = Advance();
-            return new Identifier(y.Lexeme, y.Start, y.End);
+            return new Identifier(GetPooledName(y.Lexeme), y.Start, y.End);
         }
         // §13.3.10.1 / §16.2.1.6.2 — in an await context (async function OR
         // Module top level), `await` is the AwaitExpression keyword and may NOT
         // be a BindingIdentifier.
-        if (AwaitIsKeyword && Check(JsTokenKind.Identifier) && _current.Lexeme == "await")
+        if (AwaitIsKeyword && Check(JsTokenKind.Identifier) && _current.Lexeme is "await")
             throw new JsParseException(
                 "'await' may not be used as a binding identifier in an await context", _current.Start);
         var id = Expect(JsTokenKind.Identifier, "expected binding name or pattern");
-        return new Identifier(id.Lexeme, id.Start, id.End);
+        return new Identifier(GetPooledName(id.Lexeme), id.Start, id.End);
     }
 
     private Expression ParseParameter()
@@ -170,7 +170,7 @@ public sealed partial class JsParser
         if (_current.Kind == JsTokenKind.Identifier || IsReservedNameAllowedAsPropertyName(_current.Kind))
         {
             var t = Advance();
-            return (new Identifier(t.Lexeme, t.Start, t.End), false);
+            return (new Identifier(GetPooledName(t.Lexeme), t.Start, t.End), false);
         }
         throw new JsParseException($"expected property name, got {_current.Kind}", _current.Start);
     }
@@ -180,7 +180,7 @@ public sealed partial class JsParser
         {
             ArrayExpression array => ReinterpretArrayPattern(array),
             ObjectExpression obj => ReinterpretObjectPattern(obj),
-            AssignmentExpression { Op: "=" } assignment => new AssignmentPattern(
+            AssignmentExpression { Op: JsTokenKind.Eq } assignment => new AssignmentPattern(
                 ReinterpretAssignmentTarget(assignment.Target), assignment.Value, assignment.Start, assignment.End),
             AssignmentPattern assignment => new AssignmentPattern(
                 ReinterpretAssignmentTarget(assignment.Target), assignment.Default, assignment.Start, assignment.End),
@@ -214,7 +214,7 @@ public sealed partial class JsParser
     private Expression ReinterpretBindingParameter(Expression expr)
         => expr switch
         {
-            AssignmentExpression { Op: "=" } assignment => new AssignmentPattern(
+            AssignmentExpression { Op: JsTokenKind.Eq } assignment => new AssignmentPattern(
                 ReinterpretBindingParameter(assignment.Target), assignment.Value, assignment.Start, assignment.End),
             AssignmentPattern assignment => new AssignmentPattern(
                 ReinterpretBindingParameter(assignment.Target), assignment.Default, assignment.Start, assignment.End),
@@ -252,12 +252,12 @@ public sealed partial class JsParser
                 // §13.15.5.1 — a rest element's AssignmentRestElement is a bare
                 // DestructuringAssignmentTarget; it may NOT carry an Initializer
                 // (`[...x = 1] = …` is a SyntaxError).
-                if (spread.Argument is AssignmentExpression { Op: "=" } or AssignmentPattern)
+                if (spread.Argument is AssignmentExpression { Op: JsTokenKind.Eq } or AssignmentPattern)
                     throw new JsParseException("rest element may not have a default value", spread.Start);
                 elements.Add(new ArrayPatternRestElement(ReinterpretAssignmentTarget(spread.Argument), spread.Start, spread.End));
                 continue;
             }
-            if (element is AssignmentExpression { Op: "=" } assignment)
+            if (element is AssignmentExpression { Op: JsTokenKind.Eq } assignment)
             {
                 var target = ReinterpretAssignmentTarget(assignment.Target);
                 elements.Add(new ArrayPatternBindingElement(target, assignment.Value, assignment.Start, assignment.End));
@@ -289,7 +289,7 @@ public sealed partial class JsParser
 
             var value = prop.Value;
             Expression? fallback = null;
-            if (value is AssignmentExpression { Op: "=" } assignment)
+            if (value is AssignmentExpression { Op: JsTokenKind.Eq } assignment)
             {
                 value = assignment.Target;
                 fallback = assignment.Value;
