@@ -118,6 +118,31 @@ jobs:
               src/Starling.Loop/     \
               src/Starling.Engine/
 
+  # v2 (vnext) builds on .NET 11 with the C# preview language version, separate
+  # from the v1 net10 jobs above. It is informational only (continue-on-error)
+  # while the C# union syntax and net11 preview SDK are in flux, so a v2 break
+  # never blocks a v1 PR. Runs from src/v2 so it picks up src/v2/global.json
+  # (which allows the net11 preview SDK); the repo-root global.json stays pinned
+  # to net10 for v1.
+  v2-build:
+    name: v2 build-and-test (net11 preview, non-blocking)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: src/v2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+          dotnet-quality: 'preview'
+      - name: Build (v2)
+        run: dotnet build Starling.v2.slnx -c Release
+      - name: Test (v2)
+        run: dotnet test Starling.v2.slnx -c Release --no-build
+
   # Live-network acceptance for the M2 exit demo (wp:M2-07b). Opt-in via
   # STARLING_ALLOW_NETWORK=1 so the main matrix is not at the mercy of
   # third-party hosts. Linux-only: the live golden under

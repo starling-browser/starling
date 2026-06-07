@@ -52,7 +52,7 @@ native types, no ImageSharp. This replaces v1's `DisplayList`-as-contract center
 - Commands are value types stored in one list, with transforms in a side table.
 - The resource table dedups images by content hash and fonts by face key.
 - A layer carries an accessibility tree and an optional typed action.
-- `dotnet build src/v2/Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
+- `cd src/v2 && dotnet build Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
 
 ## Notes
 - Namespaces are flat: every type is in `Starling.Scene`. Folder layout is by concern.
@@ -63,7 +63,7 @@ native types, no ImageSharp. This replaces v1's `DisplayList`-as-contract center
 
 ## Handoff log
 - 2026-06-07T00:00Z — created and landed in the v2 planning pass. All types written.
-  Build and test pending: the planning environment had no .NET 10 SDK and no package
+  Build and test pending: the planning environment had no .NET SDK and no package
   feed (the package host is blocked), so `dotnet build` and `dotnet test` could not run
   here.
 - 2026-06-07T01:00Z — design finalization. Reconciled against the source design chat.

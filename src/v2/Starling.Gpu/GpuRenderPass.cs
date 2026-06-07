@@ -17,6 +17,10 @@ public sealed class GpuRenderPass
         _native = native;
     }
 
-    /// <summary>Ends the pass. After this the encoder can be finished.</summary>
-    public void End() => _backend.EndRenderPass(_native);
+    /// <summary>Ends the pass and releases it. After this the encoder can be finished.</summary>
+    public void End()
+    {
+        _backend.EndRenderPass(_native);
+        _backend.Release(_native);
+    }
 }

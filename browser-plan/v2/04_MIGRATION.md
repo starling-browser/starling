@@ -21,10 +21,16 @@ and `Starling.Gpu` touch neither ImageSharp nor a native graphics library.
 
 v2 targets **.NET 11** with the **C# preview** language version, so it can use new
 features (for example C# 15 union types) for correctness and exhaustiveness modeling,
-per the performance policy in `AGENTS.md`. The repo-root `global.json` rolls forward to
-the latest major and allows prerelease, so a .NET 11 preview software development kit
-builds v2 while the v1 solution still builds on the .NET 10 kit. The v1 continuous
-integration job builds `Starling.slnx`, not `src/v2/Starling.v2.slnx`, so it is unaffected.
+per the performance policy in `AGENTS.md`.
+
+The repo-root `global.json` stays pinned to the .NET 10 kit, so v1 builds stay
+predictable (a loosened root kit was tried and it made the v1 jobs pick a different
+software development kit, which broke them). A scoped `src/v2/global.json` rolls forward
+to the latest major and allows prerelease, so a .NET 11 preview kit is selected only for
+v2 builds. Build v2 from that folder: `cd src/v2 && dotnet build Starling.v2.slnx`. The
+v1 continuous integration job builds `Starling.slnx` from the repo root, never descends
+into `src/v2/`, and never sees the v2 kit, so it is unaffected. The v2 build runs as a
+separate, non-blocking CI job on a .NET 11 preview kit.
 
 ## B. Phase order
 

@@ -53,7 +53,7 @@ migration doc.
   surface, adapter, device, queue, buffer, texture, configure, acquire, view, encode,
   render pass clear, render pass end, finish, submit, present, plus release of owned
   resources.
-- `dotnet test src/v2/Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
+- `cd src/v2 && dotnet test Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
 
 ## Notes
 - The fake backend proves the GPU seam is implementable with no native code in the loop.
@@ -64,10 +64,10 @@ migration doc.
 - 2026-06-07T00:00Z — created and landed in the v2 planning pass. The code is written to
   the repo's strict settings (warnings as errors, the analyzer set, file-scoped
   namespaces, static lambdas, no unused usings). It was not built or run: the planning
-  environment had no .NET 10 SDK and the package host was blocked.
+  environment had no .NET SDK and the package host was blocked.
 - 2026-06-07T01:00Z — design finalization. Rewrote the tests for the path-first IR, the
   LayerContent union, the accessibility tree, typed actions, and the concrete GPU facade
   over a single `IGpuBackend`. Retargeted to .NET 11 and C# preview. First action for
-  the next session: `dotnet build src/v2/Starling.v2.slnx` then `dotnet test src/v2/Starling.v2.slnx`
+  the next session: `cd src/v2 && dotnet build Starling.v2.slnx` then `cd src/v2 && dotnet test Starling.v2.slnx`
   on a .NET 11 preview SDK, fix any analyzer fallout, then promote V2P1-01..03 to
   complete.

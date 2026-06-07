@@ -49,7 +49,7 @@ touches a raw wgpu or Silk.NET pointer.
   present.
 - The seam is implementable with a fake backend and no native code (proven in
   wp:V2P1-03).
-- `dotnet build src/v2/Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
+- `cd src/v2 && dotnet build Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
 
 ## Notes
 - `GpuRenderPass` is Phase 1 minimal: begin, clear, end. Pipelines, bind groups,
@@ -62,7 +62,7 @@ touches a raw wgpu or Silk.NET pointer.
 
 ## Handoff log
 - 2026-06-07T00:00Z — created and landed in the v2 planning pass. Build and test pending
-  for the same reason as wp:V2P1-01 (no .NET 10 SDK, package host blocked).
+  for the same reason as wp:V2P1-01 (no .NET SDK, package host blocked).
 - 2026-06-07T01:00Z — design finalization. Reshaped from interface-per-type
   (`IGpuDevice`, `IGpuBuffer`, ...) to concrete facade classes plus a single
   `IGpuBackend`, following the WebGPU instance-to-adapter-to-device chain. Retargeted to

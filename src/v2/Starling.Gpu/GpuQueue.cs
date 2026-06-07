@@ -20,5 +20,10 @@ public sealed class GpuQueue
         => _backend.WriteTexture(_native, texture.Native, data, layout);
 
     public void Submit(GpuCommandBuffer commandBuffer)
-        => _backend.Submit(_native, commandBuffer.Native);
+    {
+        // A command buffer is single-use: it is consumed by submission. Release
+        // its backend token here so submitting each frame does not leak.
+        _backend.Submit(_native, commandBuffer.Native);
+        _backend.Release(commandBuffer.Native);
+    }
 }

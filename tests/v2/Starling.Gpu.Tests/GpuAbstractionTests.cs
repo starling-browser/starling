@@ -60,6 +60,8 @@ public class GpuAbstractionTests
 
         log.Should().Contain("release:buffer");
         log.Should().Contain("release:view");
+        // The command buffer is single-use and released by Submit, not leaked.
+        log.Should().Contain("release:commandBuffer");
         log.Should().Contain("disposeBackend");
     }
 

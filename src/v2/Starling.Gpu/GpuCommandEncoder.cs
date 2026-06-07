@@ -16,7 +16,11 @@ public sealed class GpuCommandEncoder
     public GpuRenderPass BeginRenderPass(in RenderPassDescriptor descriptor)
         => new(_backend, _backend.BeginRenderPass(_native, descriptor.ColorTarget.Native, descriptor.Clear, descriptor.ClearColor));
 
-    /// <summary>Closes the encoder and returns the recorded commands.</summary>
+    /// <summary>Closes the encoder and returns the recorded commands. The encoder is consumed and released here.</summary>
     public GpuCommandBuffer Finish()
-        => new(_backend, _backend.FinishEncoder(_native));
+    {
+        var commandBuffer = _backend.FinishEncoder(_native);
+        _backend.Release(_native);
+        return new GpuCommandBuffer(_backend, commandBuffer);
+    }
 }
