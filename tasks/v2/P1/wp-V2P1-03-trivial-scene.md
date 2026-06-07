@@ -2,7 +2,8 @@
 id: "wp:V2P1-03-trivial-scene"
 parent: ""
 milestone: "V2-P1"
-status: "in_review"
+status: "complete"
+completed_at: "2026-06-07T16:28:00Z"
 claimed_by: "agent-claude-v2planning"
 claimed_at: "2026-06-07T00:00:00Z"
 branch: "claude/starling-v2-architecture-xnwsP"
@@ -71,3 +72,6 @@ migration doc.
   the next session: `cd src/v2 && dotnet build Starling.v2.slnx` then `cd src/v2 && dotnet test Starling.v2.slnx`
   on a .NET 11 preview SDK, fix any analyzer fallout, then promote V2P1-01..03 to
   complete.
+- 2026-06-07T16:28Z — the net11 CI job built and ran the v2 tests green on the .NET 11
+  preview SDK (commit ec4ac91): the trivial scene, resource, hit-region, surface-graph,
+  and GPU present-path tests all pass. Marking complete.

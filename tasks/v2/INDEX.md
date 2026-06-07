@@ -13,15 +13,14 @@ their own meaning.
 
 | Package | Status | Subsystem |
 |---|---|---|
-| [wp:V2P1-01-scene-model](P1/wp-V2P1-01-scene-model.md) | 🟡 in_review | Starling.Scene |
-| [wp:V2P1-02-gpu-abstraction](P1/wp-V2P1-02-gpu-abstraction.md) | 🟡 in_review | Starling.Gpu |
-| [wp:V2P1-03-trivial-scene](P1/wp-V2P1-03-trivial-scene.md) | 🟡 in_review | Starling.Scene.Tests, Starling.Gpu.Tests |
+| [wp:V2P1-01-scene-model](P1/wp-V2P1-01-scene-model.md) | 🟢 complete | Starling.Scene |
+| [wp:V2P1-02-gpu-abstraction](P1/wp-V2P1-02-gpu-abstraction.md) | 🟢 complete | Starling.Gpu |
+| [wp:V2P1-03-trivial-scene](P1/wp-V2P1-03-trivial-scene.md) | 🟢 complete | Starling.Scene.Tests, Starling.Gpu.Tests |
 
-**in_review** here means the code is landed but has not been built or tested on a machine
-with the .NET 11 preview software development kit (SDK). v2 targets .NET 11 with the C#
-preview language version. The planning session had no SDK and no package feed. Run
-`cd src/v2 && dotnet build Starling.v2.slnx` and `cd src/v2 && dotnet test Starling.v2.slnx` on a .NET 11 preview
-SDK, then promote these to complete.
+**complete** — the non-blocking `v2 build-and-test (net11 preview)` CI job builds and
+tests `src/v2/Starling.v2.slnx` green on the .NET 11 preview SDK (commit ec4ac91),
+including the C# 15 `union` type for `LayerContent`. Build v2 locally with
+`cd src/v2 && dotnet build Starling.v2.slnx`.
 
 The shapes were finalized against the source design chat: a path-first scene IR with
 brush handles, a LayerContent union with LayerId and content hash, a concrete GPU facade

@@ -2,7 +2,8 @@
 id: "wp:V2P1-01-scene-model"
 parent: ""
 milestone: "V2-P1"
-status: "in_review"
+status: "complete"
+completed_at: "2026-06-07T16:28:00Z"
 claimed_by: "agent-claude-v2planning"
 claimed_at: "2026-06-07T00:00:00Z"
 branch: "claude/starling-v2-architecture-xnwsP"
@@ -87,3 +88,5 @@ native types, no ImageSharp. This replaces v1's `DisplayList`-as-contract center
   VideoContent, NativeGuestContent)`. Early .NET 11 previews need `UnionAttribute` and
   `IUnion` declared in the project, so added `UnionSupport.cs` and suppressed CS0436 so
   it is safe whether or not the runtime ships those types. Applied the union.
+- 2026-06-07T16:28Z — the net11 CI job built and tested `Starling.Scene` green on the
+  .NET 11 preview SDK (commit ec4ac91), including the union type. Marking complete.

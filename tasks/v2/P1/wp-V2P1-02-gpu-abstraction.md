@@ -2,7 +2,8 @@
 id: "wp:V2P1-02-gpu-abstraction"
 parent: ""
 milestone: "V2-P1"
-status: "in_review"
+status: "complete"
+completed_at: "2026-06-07T16:28:00Z"
 claimed_by: "agent-claude-v2planning"
 claimed_at: "2026-06-07T00:00:00Z"
 branch: "claude/starling-v2-architecture-xnwsP"
@@ -67,3 +68,6 @@ touches a raw wgpu or Silk.NET pointer.
   (`IGpuDevice`, `IGpuBuffer`, ...) to concrete facade classes plus a single
   `IGpuBackend`, following the WebGPU instance-to-adapter-to-device chain. Retargeted to
   .NET 11 and C# preview. Pending a build on a .NET 11 preview SDK.
+- 2026-06-07T16:28Z — the net11 CI job built `Starling.Gpu` clean on the .NET 11 preview
+  SDK (commit ec4ac91); the facade and `IGpuBackend` design and the command-buffer
+  lifetime fix compile and the seam tests pass. Marking complete.
