@@ -15,4 +15,10 @@
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- .NET 11 prunes Microsoft.Extensions.Logging.Abstractions into the shared
+         framework, so the reference inherited from the repo-root Directory.Build.props
+         trips NU1510 under warnings-as-errors. v2 does not use logging, so drop it. -->
+    <PackageReference Remove="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
 </Project>

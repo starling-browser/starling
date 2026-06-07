@@ -9,6 +9,9 @@
   <ItemGroup>
     <PackageReference Include="MSTest" />
     <PackageReference Include="AwesomeAssertions" />
+    <!-- .NET 11 prunes this into the shared framework; the inherited reference from
+         Directory.Build.props trips NU1510 under warnings-as-errors. v2 has no logging. -->
+    <PackageReference Remove="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\v2\Starling.Scene\Starling.Scene.csproj" />
