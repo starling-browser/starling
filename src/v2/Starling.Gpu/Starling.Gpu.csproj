@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Starling v2 GPU abstraction. A small WebGPU-shaped seam (device, queue,
+    buffer, texture, surface, command encoder). Interfaces only, pure managed.
+    Only Starling.Gpu.WgpuNative (Phase 2) implements these against wgpu-native.
+    No renderer or compositor code may touch a native GPU handle directly.
+  -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>
