@@ -36,5 +36,5 @@ public sealed class SurfaceLayer
     public HitRegionSet HitRegions { get; } = new();
 
     /// <summary>The render scene, when the content is a render scene. Null for texture, video, or guest layers.</summary>
-    public RenderScene? Scene => (Content as RenderSceneContent)?.Scene;
+    public RenderScene? Scene => Content is RenderSceneContent content ? content.Scene : null;
 }

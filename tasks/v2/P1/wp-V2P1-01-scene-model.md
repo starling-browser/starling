@@ -71,5 +71,9 @@ native types, no ImageSharp. This replaces v1's `DisplayList`-as-contract center
   menu), made layer content a closed union with LayerId and content hash (was a single
   RenderScene plus a kind enum), added the accessibility tree and a typed `ActionRef`
   (was a string action id). Retargeted to .NET 11 and C# preview. Still pending a build
-  on a .NET 11 preview SDK. Note: `LayerContent` is the intended C# 15 union-type
-  adoption site once buildable.
+  on a .NET 11 preview SDK.
+- 2026-06-07T02:00Z — converted `LayerContent` to a C# 15 union type (unverified, by
+  request). The syntax is preview and was not built here, so `LayerContent.cs` keeps the
+  sealed-record fallback in a comment for a one-step revert. Call sites use `is` pattern
+  matching, so a revert is local to that file. First build on the net11 preview SDK
+  confirms or rejects the union syntax.

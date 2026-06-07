@@ -13,7 +13,7 @@ public class SurfaceGraphTests
         var layer = graph.AddRenderSceneLayer();
 
         graph.Layers.Should().HaveCount(1);
-        layer.Content.Should().BeOfType<RenderSceneContent>();
+        (layer.Content is RenderSceneContent).Should().BeTrue();
         layer.Scene.Should().NotBeNull();
         layer.Opacity.Should().Be(1f);
         layer.Transform.IsIdentity.Should().BeTrue();
@@ -41,7 +41,7 @@ public class SurfaceGraphTests
         var graph = new SurfaceGraph(new PxSize(100, 100), scale: 1f);
         var video = graph.AddLayer(new VideoContent(new VideoHandle(1)));
 
-        video.Content.Should().BeOfType<VideoContent>();
+        (video.Content is VideoContent).Should().BeTrue();
         video.Scene.Should().BeNull();
     }
 

@@ -46,8 +46,10 @@ layer a stable `LayerId`. The compositor consumes one graph per frame.
   Framework.
 
 A video or guest layer has no commands, so forcing a render scene on every layer would
-be wrong. The union models content honestly. (The hierarchy is the adoption site for a
-C# 15 union type once v2 builds on the .NET 11 preview software development kit.)
+be wrong. The union models content honestly. It is written as a C# 15 union type; that
+syntax is preview and has not been built against the .NET 11 preview software development
+kit yet, so `LayerContent.cs` carries the sealed-record closed-hierarchy fallback in a
+comment for a one-step revert.
 
 Each layer also carries a `ContentHash`. The compositor pairs `LayerId` with
 `ContentHash` to reuse a resident texture and to compute damage, so an unchanged layer
