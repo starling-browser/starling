@@ -40,7 +40,7 @@ public sealed class Brush
         GradientStart = start;
         GradientEnd = end;
         GradientStops = stops;
-        Image = image;
+        ImageHandle = image;
     }
 
     public BrushKind Kind { get; }
@@ -54,7 +54,7 @@ public sealed class Brush
     public IReadOnlyList<GradientStop> GradientStops { get; }
 
     /// <summary>The image, for a <see cref="BrushKind.Image"/> brush.</summary>
-    public ImageId Image { get; }
+    public ImageId ImageHandle { get; }
 
     public static Brush Solid(RgbaColor color)
         => new(BrushKind.Solid, color, default, default, NoStops, ImageId.Invalid);

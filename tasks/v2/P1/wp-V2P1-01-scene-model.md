@@ -74,6 +74,10 @@ native types, no ImageSharp. This replaces v1's `DisplayList`-as-contract center
   on a .NET 11 preview SDK.
 - 2026-06-07T02:00Z — converted `LayerContent` to a C# 15 union type (unverified, by
   request). The syntax is preview and was not built here, so `LayerContent.cs` keeps the
-  sealed-record fallback in a comment for a one-step revert. Call sites use `is` pattern
-  matching, so a revert is local to that file. First build on the net11 preview SDK
-  confirms or rejects the union syntax.
+  sealed-record fallback in a comment for a one-step revert.
+- 2026-06-07T03:00Z — the net11 CI job built v2 for the first time. `Starling.Gpu`
+  compiled clean. `Starling.Scene` had two real errors: a `Brush.Image` property vs
+  factory name clash (CS0102), and the union syntax — preview.4 rejected the record-style
+  cases (CS9370 "union must specify at least one case type", CS9374 no single-parameter
+  constructors). Renamed the brush property to `ImageHandle` and reverted `LayerContent`
+  to the sealed-record closed union. Union keyword adoption waits on the confirmed spec.
