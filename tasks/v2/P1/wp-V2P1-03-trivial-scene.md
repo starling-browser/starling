@@ -34,8 +34,9 @@ migration doc.
   `TrivialSceneTests.cs`
 - `tests/v2/Starling.Gpu.Tests/` — `Fakes/FakeGpuBackend.cs` (recording `IGpuBackend`)
   and `GpuAbstractionTests.cs`
-- `Starling.v2.slnx` at the repo root, wiring the two source projects and two test
-  projects (all net11.0, C# preview).
+- `src/v2/Starling.v2.slnx`, wiring the two source projects and two test projects (all
+  net11.0, C# preview). It sits in `src/v2/`, not the repo root, so the v1 continuous
+  integration job's single-solution auto-discovery still finds only `Starling.slnx`.
 
 ## Acceptance
 - The trivial scene test builds a card surface with a filled rounded-rect path, an
@@ -52,7 +53,7 @@ migration doc.
   surface, adapter, device, queue, buffer, texture, configure, acquire, view, encode,
   render pass clear, render pass end, finish, submit, present, plus release of owned
   resources.
-- `dotnet test Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
+- `dotnet test src/v2/Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
 
 ## Notes
 - The fake backend proves the GPU seam is implementable with no native code in the loop.
@@ -67,6 +68,6 @@ migration doc.
 - 2026-06-07T01:00Z — design finalization. Rewrote the tests for the path-first IR, the
   LayerContent union, the accessibility tree, typed actions, and the concrete GPU facade
   over a single `IGpuBackend`. Retargeted to .NET 11 and C# preview. First action for
-  the next session: `dotnet build Starling.v2.slnx` then `dotnet test Starling.v2.slnx`
+  the next session: `dotnet build src/v2/Starling.v2.slnx` then `dotnet test src/v2/Starling.v2.slnx`
   on a .NET 11 preview SDK, fix any analyzer fallout, then promote V2P1-01..03 to
   complete.

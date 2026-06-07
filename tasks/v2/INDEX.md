@@ -20,7 +20,7 @@ their own meaning.
 **in_review** here means the code is landed but has not been built or tested on a machine
 with the .NET 11 preview software development kit (SDK). v2 targets .NET 11 with the C#
 preview language version. The planning session had no SDK and no package feed. Run
-`dotnet build Starling.v2.slnx` and `dotnet test Starling.v2.slnx` on a .NET 11 preview
+`dotnet build src/v2/Starling.v2.slnx` and `dotnet test src/v2/Starling.v2.slnx` on a .NET 11 preview
 SDK, then promote these to complete.
 
 The shapes were finalized against the source design chat: a path-first scene IR with

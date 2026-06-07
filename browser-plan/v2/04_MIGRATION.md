@@ -10,7 +10,7 @@
 
 ## A. The parallel-tree rule
 
-v2 code lives under `src/v2/` with its own solution, `Starling.v2.slnx`. v1 keeps
+v2 code lives under `src/v2/` with its own solution, `src/v2/Starling.v2.slnx`. v1 keeps
 building the whole time. This is on purpose. v1 is the oracle. Each v2 piece is correct
 when it matches v1 output on the same input, so v1 has to stay runnable until v2 can
 stand alone.
@@ -24,7 +24,7 @@ features (for example C# 15 union types) for correctness and exhaustiveness mode
 per the performance policy in `AGENTS.md`. The repo-root `global.json` rolls forward to
 the latest major and allows prerelease, so a .NET 11 preview software development kit
 builds v2 while the v1 solution still builds on the .NET 10 kit. The v1 continuous
-integration job builds `Starling.slnx`, not `Starling.v2.slnx`, so it is unaffected.
+integration job builds `Starling.slnx`, not `src/v2/Starling.v2.slnx`, so it is unaffected.
 
 ## B. Phase order
 

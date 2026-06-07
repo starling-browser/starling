@@ -49,7 +49,7 @@ touches a raw wgpu or Silk.NET pointer.
   present.
 - The seam is implementable with a fake backend and no native code (proven in
   wp:V2P1-03).
-- `dotnet build Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
+- `dotnet build src/v2/Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
 
 ## Notes
 - `GpuRenderPass` is Phase 1 minimal: begin, clear, end. Pipelines, bind groups,
