@@ -32,29 +32,41 @@ migration doc.
 - `tests/v2/Starling.Scene.Tests/` — `RenderCommandBufferTests.cs`,
   `RenderResourceTableTests.cs`, `HitRegionSetTests.cs`, `SurfaceGraphTests.cs`,
   `TrivialSceneTests.cs`
-- `tests/v2/Starling.Gpu.Tests/` — `Fakes/` recording backend and `GpuAbstractionTests.cs`
+- `tests/v2/Starling.Gpu.Tests/` — `Fakes/FakeGpuBackend.cs` (recording `IGpuBackend`)
+  and `GpuAbstractionTests.cs`
 - `Starling.v2.slnx` at the repo root, wiring the two source projects and two test
-  projects.
+  projects (all net11.0, C# preview).
 
 ## Acceptance
-- The trivial scene test builds a card surface with a rounded rect, an image, a glyph
-  run, a fill, and a clip, plus a hit region that routes a click to a typed action.
-- The resource table test proves an image added twice returns one id and uploads once.
+- The trivial scene test builds a card surface with a filled rounded-rect path, an
+  image, a glyph run with a brush, and a clip, plus a hit region and an accessibility
+  node that route to a typed action.
+- The command-buffer test proves path-first commands (FillPath/StrokePath/SetBlendMode)
+  carry path and brush handles correctly.
+- The resource table test proves an image added twice returns one id and uploads once,
+  and that paths and brushes round-trip.
+- The surface-graph test proves layers get distinct ids and that a video or guest layer
+  has no render scene.
 - The hit-region test proves the topmost region wins and a miss returns null.
-- The GPU test records the present path in order: write buffer, write texture, configure,
-  acquire, create view, encode, render pass clear, render pass end, finish, submit,
-  present, plus dispose of owned resources.
+- The GPU test records the present path in order over the facade: create instance,
+  surface, adapter, device, queue, buffer, texture, configure, acquire, view, encode,
+  render pass clear, render pass end, finish, submit, present, plus release of owned
+  resources.
 - `dotnet test Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
 
 ## Notes
-- The fake device proves the seam is implementable with no native code in the loop.
+- The fake backend proves the GPU seam is implementable with no native code in the loop.
 - Tests follow the repo convention: MSTest on the Microsoft Testing Platform with
-  AwesomeAssertions, snake_case test names, one type per file.
+  AwesomeAssertions, snake_case test names.
 
 ## Handoff log
 - 2026-06-07T00:00Z — created and landed in the v2 planning pass. The code is written to
   the repo's strict settings (warnings as errors, the analyzer set, file-scoped
   namespaces, static lambdas, no unused usings). It was not built or run: the planning
-  environment had no .NET 10 SDK and the package host was blocked. First action for the
-  next session: `dotnet build Starling.v2.slnx` then `dotnet test Starling.v2.slnx`, fix
-  any analyzer fallout, then promote V2P1-01..03 to complete.
+  environment had no .NET 10 SDK and the package host was blocked.
+- 2026-06-07T01:00Z — design finalization. Rewrote the tests for the path-first IR, the
+  LayerContent union, the accessibility tree, typed actions, and the concrete GPU facade
+  over a single `IGpuBackend`. Retargeted to .NET 11 and C# preview. First action for
+  the next session: `dotnet build Starling.v2.slnx` then `dotnet test Starling.v2.slnx`
+  on a .NET 11 preview SDK, fix any analyzer fallout, then promote V2P1-01..03 to
+  complete.

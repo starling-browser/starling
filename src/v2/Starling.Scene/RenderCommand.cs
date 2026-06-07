@@ -4,39 +4,40 @@ namespace Starling.Scene;
 /// <summary>
 /// One entry in a <see cref="RenderCommandBuffer"/>. Commands are compact value
 /// types so a buffer of thousands costs one array, not thousands of objects.
-/// Variable-size payloads (transforms, glyph runs, images) live in side tables
-/// and are reached through <see cref="Index"/>; the meaning of each field depends
+/// Geometry, brushes, and glyph runs live in the resource table and are reached
+/// through <see cref="A"/> and <see cref="B"/>; the meaning of each field depends
 /// on <see cref="Kind"/>.
 /// </summary>
 public readonly struct RenderCommand
 {
-    internal RenderCommand(RenderCommandKind kind, PxRect rect, RgbaColor color, float param, int index)
+    internal RenderCommand(RenderCommandKind kind, PxRect rect, float param, int a, int b)
     {
         Kind = kind;
         Rect = rect;
-        Color = color;
         Param = param;
-        Index = index;
+        A = a;
+        B = b;
     }
 
     public RenderCommandKind Kind { get; }
 
     /// <summary>
-    /// Geometry. Fill/rounded/image bounds, the clip rectangle, or the layer
-    /// bounds. For <see cref="RenderCommandKind.DrawGlyphRun"/> the run origin is
-    /// in <see cref="PxRect.X"/> and <see cref="PxRect.Y"/>.
+    /// Geometry for the commands that carry it inline: the DrawImage destination,
+    /// the layer bounds for PushLayer, and the glyph-run origin in
+    /// <see cref="PxRect.X"/> and <see cref="PxRect.Y"/> for DrawGlyphRun.
     /// </summary>
     public PxRect Rect { get; }
 
-    /// <summary>Fill color for the rect commands; unused otherwise.</summary>
-    public RgbaColor Color { get; }
-
-    /// <summary>Corner radius for a rounded rect, or layer opacity for a push layer.</summary>
+    /// <summary>Layer opacity for PushLayer, or stroke width for StrokePath.</summary>
     public float Param { get; }
 
     /// <summary>
-    /// A resource id value (image or glyph run) or a transform side-table index
-    /// for a push transform. -1 when the command needs no payload.
+    /// Primary handle or index: a PathId value (FillPath, StrokePath, PushClip),
+    /// an ImageId value (DrawImage), a GlyphRunId value (DrawGlyphRun), a transform
+    /// side-table index (PushTransform), or a BlendMode (SetBlendMode). -1 if unused.
     /// </summary>
-    public int Index { get; }
+    public int A { get; }
+
+    /// <summary>Secondary handle: a BrushId value for FillPath, StrokePath, and DrawGlyphRun. -1 otherwise.</summary>
+    public int B { get; }
 }

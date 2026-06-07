@@ -29,21 +29,29 @@ native types, no ImageSharp. This replaces v1's `DisplayList`-as-contract center
   design but no v1 code is imported.
 
 ## Outputs
-- `src/v2/Starling.Scene/Starling.Scene.csproj`
+- `src/v2/Starling.Scene/Starling.Scene.csproj` (net11.0, C# preview)
 - Geometry: `PxRect.cs`, `PxSize.cs`, `RgbaColor.cs`
-- Scene tree: `SurfaceGraph.cs`, `SurfaceLayer.cs`, `SurfaceLayerKind.cs`,
-  `RenderScene.cs`
-- Commands: `RenderCommandBuffer.cs`, `RenderCommand.cs`, `RenderCommandKind.cs`
-- Resources: `RenderResourceTable.cs`, `ResourceId.cs`, `ImageResource.cs`,
-  `FontResource.cs`, `GlyphRun.cs`, `PositionedGlyph.cs`
+- Scene tree: `SurfaceGraph.cs`, `SurfaceLayer.cs`, `LayerId.cs`, `LayerContent.cs`,
+  `Handles.cs`, `RenderScene.cs`
+- Path-first commands: `RenderCommandBuffer.cs`, `RenderCommand.cs`,
+  `RenderCommandKind.cs`, `BlendMode.cs`
+- Geometry and paint: `Path.cs`, `PathBuilder.cs`, `Brush.cs`, `StrokeStyle.cs`
+- Resources: `RenderResourceTable.cs`, `ResourceIds.cs` (PathId, BrushId, ImageId,
+  FontId, GlyphRunId), `ImageResource.cs`, `FontResource.cs`, `GlyphRun.cs`,
+  `PositionedGlyph.cs`
 - Hit testing: `HitRegion.cs`, `HitRegionSet.cs`
-- Provenance: `ProvenanceTag.cs`, `PermissionScope.cs`
+- Accessibility: `AccessibilityRole.cs`, `AccessibilityNode.cs`
+- Provenance and actions: `ProvenanceTag.cs`, `ActionRef.cs`, `PermissionScope.cs`
 
 ## Acceptance
 - `Starling.Scene` builds with no package reference beyond the shared analyzers.
-- The command set is the small floor in the plan, not a copy of CSS paint primitives.
+- The command set is path-first (FillPath/StrokePath with brush handles), not a
+  FillRect menu and not a copy of CSS paint primitives.
+- A layer's content is a closed union (render scene, external texture, video, native
+  guest); a layer carries a LayerId and a content hash.
 - Commands are value types stored in one list, with transforms in a side table.
 - The resource table dedups images by content hash and fonts by face key.
+- A layer carries an accessibility tree and an optional typed action.
 - `dotnet build Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
 
 ## Notes
@@ -57,4 +65,11 @@ native types, no ImageSharp. This replaces v1's `DisplayList`-as-contract center
 - 2026-06-07T00:00Z — created and landed in the v2 planning pass. All types written.
   Build and test pending: the planning environment had no .NET 10 SDK and no package
   feed (the package host is blocked), so `dotnet build` and `dotnet test` could not run
-  here. Verify on a machine with the SDK, then promote to complete.
+  here.
+- 2026-06-07T01:00Z — design finalization. Reconciled against the source design chat.
+  Reworked to the path-first scene IR with brush handles (was a FillRect/FillRoundedRect
+  menu), made layer content a closed union with LayerId and content hash (was a single
+  RenderScene plus a kind enum), added the accessibility tree and a typed `ActionRef`
+  (was a string action id). Retargeted to .NET 11 and C# preview. Still pending a build
+  on a .NET 11 preview SDK. Note: `LayerContent` is the intended C# 15 union-type
+  adoption site once buildable.

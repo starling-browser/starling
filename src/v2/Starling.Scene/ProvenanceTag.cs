@@ -8,10 +8,10 @@ namespace Starling.Scene;
 /// </summary>
 public readonly struct ProvenanceTag
 {
-    public ProvenanceTag(string source, string? actionId, PermissionScope scope)
+    public ProvenanceTag(string source, ActionRef? action, PermissionScope scope)
     {
         Source = source;
-        ActionId = actionId;
+        Action = action;
         Scope = scope;
     }
 
@@ -19,7 +19,7 @@ public readonly struct ProvenanceTag
     public string Source { get; }
 
     /// <summary>The typed action this region maps to, if any.</summary>
-    public string? ActionId { get; }
+    public ActionRef? Action { get; }
 
     public PermissionScope Scope { get; }
 }

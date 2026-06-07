@@ -12,8 +12,11 @@ public class GpuAbstractionTests
     {
         var log = new List<string>();
 
-        using (var device = new FakeGpuDevice(log))
-        using (var surface = new FakeGpuSurface(log))
+        using (var backend = new FakeGpuBackend(log))
+        using (var instance = GpuInstance.Create(backend))
+        using (var surface = instance.CreateSurface(new NativeSurfaceDescriptor(window: 0, display: 0, "win")))
+        using (var adapter = instance.RequestAdapter())
+        using (var device = adapter.RequestDevice())
         {
             using var vertices = device.CreateBuffer(
                 new BufferDescriptor(256, GpuBufferUsage.Vertex | GpuBufferUsage.CopyDestination, "verts"));
@@ -36,6 +39,11 @@ public class GpuAbstractionTests
         }
 
         log.Should().ContainInOrder(
+            "createInstance",
+            "createSurface:win",
+            "requestAdapter:HighPerformance",
+            "requestDevice",
+            "getQueue",
             "createBuffer:verts:256",
             "queue.writeBuffer:16",
             "createTexture:64x48",
@@ -50,17 +58,19 @@ public class GpuAbstractionTests
             "queue.submit",
             "surface.present");
 
-        log.Should().Contain("disposeBuffer");
-        log.Should().Contain("disposeSurface");
-        log.Should().Contain("disposeDevice");
+        log.Should().Contain("release:buffer");
+        log.Should().Contain("release:view");
+        log.Should().Contain("disposeBackend");
     }
 
     [TestMethod]
-    public void Device_reports_limits()
+    public void Adapter_reports_device_limits()
     {
         var log = new List<string>();
-        using var device = new FakeGpuDevice(log);
+        using var backend = new FakeGpuBackend(log);
+        using var instance = GpuInstance.Create(backend);
+        using var adapter = instance.RequestAdapter();
 
-        device.Limits.MaxTextureDimension2D.Should().Be(8192);
+        adapter.Limits.MaxTextureDimension2D.Should().Be(8192);
     }
 }

@@ -21,48 +21,57 @@ only on the seam. One backend project holds every raw handle.
 ```
 Starling.Renderer.WebGpu        depends on Starling.Gpu
 Starling.Compositor             depends on Starling.Gpu
-Starling.Gpu                    interfaces only, pure managed
+Starling.Gpu                    facade classes + one backend interface, pure managed
 Starling.Gpu.WgpuNative         the only project with raw wgpu / Silk pointers
 Starling.Gpu.Dawn               a later second provider, same seam
 ```
 
-## B. The seam
+## B. The shape: facade classes plus one backend
 
-The seam is shaped like WebGPU on purpose. wgpu, Dawn, and the web platform all speak
-the same model, so the abstraction maps cleanly onto any of them.
+The public surface is concrete classes shaped like WebGPU, following the init chain
+instance to adapter to device to queue. They are a thin facade: each holds an opaque
+backend token and forwards calls. The single swap point is `IGpuBackend`.
 
 ```
-IGpuDevice          create buffers, textures, encoders; expose the queue and limits
-IGpuQueue           write buffers, write textures, submit command buffers
-IGpuBuffer          size, usage
-IGpuTexture         width, height, format, usage, create a view
-IGpuTextureView     a render target or a bind-group entry
-IGpuSurface         configure, acquire the next texture, present  (zero readback)
-IGpuCommandEncoder  begin a render pass, finish into a command buffer
-IGpuRenderPass      Phase 1: begin, clear, end
-IGpuCommandBuffer   a finished, submittable list of work
+GpuInstance         RequestAdapter, CreateSurface          (GpuInstance.Create over a backend)
+GpuAdapter          RequestDevice, Limits
+GpuDevice           Queue, CreateBuffer, CreateTexture, CreateCommandEncoder
+GpuQueue            WriteBuffer, WriteTexture, Submit
+GpuBuffer           size, usage
+GpuTexture          width, height, format, usage, CreateView
+GpuTextureView      a render target or a bind-group entry
+GpuSurface          Configure, AcquireNextTexture, Present  (zero readback)
+GpuCommandEncoder   BeginRenderPass, Finish
+GpuRenderPass       Phase 1: End
+GpuCommandBuffer    a finished, submittable list of work
+
+IGpuBackend         the one interface a backend implements
 ```
 
-Descriptors and enums (`BufferDescriptor`, `TextureDescriptor`, `RenderPassDescriptor`,
-`GpuTextureFormat`, `GpuTextureUsage`, `GpuBufferUsage`, `GpuLimits`) are small value
-types. Clear color uses a four-component vector in the zero-to-one range.
+Only `Starling.Gpu.WgpuNative` implements `IGpuBackend` and maps the opaque tokens to
+real wgpu handles. Renderer code uses `GpuDevice` and friends and never sees a handle.
+Swapping in Dawn later means a second `IGpuBackend`, not a change to any caller. The
+abstraction stays close to WebGPU on purpose, not a giant engine abstraction, so it
+maps onto wgpu, Dawn, and the web platform cleanly.
 
 `IGpuSurface` is the zero-readback present seam carried from v1. The compositor blends
 resident textures straight into the acquired frame texture and presents, with no copy
-back to the processor. A surface is created by the native backend, not by the device,
-because it needs platform window handles.
+back to the processor. A surface is created from an instance, since it needs platform
+window handles, not from the device.
 
 ## C. What Phase 1 covers and what it defers
 
-Phase 1 ships the resource lifetime, the upload paths, and the present path: create a
-buffer and a texture, write to them, configure a surface, acquire a frame, run a render
-pass that clears, finish, submit, and present. The Phase 1 test proves all of that with
-a recording fake device, so the seam is proven implementable with no native code in the
+Phase 1 ships the init chain, the resource lifetime, the upload paths, and the present
+path: create an instance, pick an adapter, request a device, create a buffer and a
+texture, write to them, configure a surface, acquire a frame, run a render pass that
+clears, finish, submit, and present. The Phase 1 test proves all of that with a
+recording fake backend, so the seam is proven implementable with no native code in the
 loop.
 
-Phase 2 adds the draw surface: shader modules, render pipelines, bind groups, vertex and
-index buffers, and draw calls on `IGpuRenderPass`. That is where `Starling.Renderer.WebGpu`
-lives, and where `Starling.Gpu.WgpuNative` first touches a real graphics processor.
+Phase 2 adds the draw surface to `GpuDevice` and `GpuRenderPass`: shader modules, render
+pipelines, bind groups, samplers, vertex and index buffers, and draw calls. That is
+where `Starling.Renderer.WebGpu` lives, and where `Starling.Gpu.WgpuNative` first
+touches a real graphics processor.
 
 ## D. The backend rule
 
@@ -74,17 +83,18 @@ cleaner contract.
 
 The rule that makes this safe:
 
-> Renderer code calls `Starling.Gpu`. Only `Starling.Gpu.WgpuNative` knows about raw
-> handles. Adding Dawn means a second backend project, not a change to any renderer or
-> compositor code.
+> Renderer code uses the `Starling.Gpu` facade. Only `Starling.Gpu.WgpuNative`
+> implements `IGpuBackend` and knows about raw handles. Adding Dawn means a second
+> backend project, not a change to any renderer or compositor code.
 
 ---
 
 ## Acceptance Tests
 
 1. Which project is allowed to hold a raw wgpu pointer, and what does every other GPU
-   consumer depend on instead?
-2. Why is the seam shaped like WebGPU?
-3. What does the Phase 1 fake device prove?
+   consumer use instead?
+2. What is the one interface a backend implements, and how do the public classes reach
+   it?
+3. What does the Phase 1 fake backend prove?
 4. What has to be added to the seam before a real rectangle reaches the screen?
 5. How does adding Dawn later avoid touching renderer code?

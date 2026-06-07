@@ -89,9 +89,13 @@ that core.
 | Topic | Decision | Source |
 |---|---|---|
 | Foundation | Path A. A C# renderer core. The renderer core is not Rust or Vello. | user |
+| Platform | .NET 11, C# preview language version. New features (for example C# 15 union types) allowed for correctness modeling. | user |
 | First GPU provider | wgpu-native, behind the `Starling.Gpu` seam. | user |
 | Native boundary | Native lives only in `Starling.Gpu.*` backends and the existing `Starling.Codecs` seam. | user |
 | Repo layout | A parallel tree. v2 code under `src/v2/`. v1 keeps building. | user |
+| Scene IR | Path-first commands (FillPath/StrokePath) with brush handles. Not a FillRect menu, not DisplayList. | user |
+| Layer content | A closed union: render scene, external texture, video, or native guest. Plus LayerId and content hash. | user |
+| GPU seam | Concrete facade classes over a single `IGpuBackend`. WebGPU init chain. | user |
 | Scene owner | Starling. Not ImageSharp, not Vello, not wgpu, not Chromium. | this plan |
 | Present owner | The Starling compositor. Backends render into textures or external surfaces. | this plan |
 
@@ -101,4 +105,5 @@ that core.
 
 | Date | Author | Note |
 |---|---|---|
-| 2026-06-07 | Claude (v2 planning pass) | Hard-branch plan for Path A. Phase 1 projects landed: `Starling.Scene`, `Starling.Gpu`, with tests. Pending a build on a machine with the .NET 10 SDK. |
+| 2026-06-07 | Claude (v2 planning pass) | Hard-branch plan for Path A. Phase 1 projects landed: `Starling.Scene`, `Starling.Gpu`, with tests. |
+| 2026-06-07 | Claude (design finalization) | Reconciled against the source design chat. Reworked Phase 1 to the decided shapes: path-first scene IR with brush handles, LayerContent union plus LayerId and content hash, concrete GPU facade over one `IGpuBackend`, accessibility tree and typed actions in the scene. Retargeted v2 to .NET 11 and C# preview. Pending a build on a machine with the .NET 11 preview SDK. |

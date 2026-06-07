@@ -29,17 +29,21 @@ touches a raw wgpu or Silk.NET pointer.
   model the seam must support. No v1 code is imported.
 
 ## Outputs
-- `src/v2/Starling.Gpu/Starling.Gpu.csproj`
-- Interfaces: `IGpuDevice.cs`, `IGpuQueue.cs`, `IGpuBuffer.cs`, `IGpuTexture.cs`,
-  `IGpuTextureView.cs`, `IGpuSurface.cs`, `IGpuCommandEncoder.cs`, `IGpuRenderPass.cs`,
-  `IGpuCommandBuffer.cs`
-- Descriptors and enums: `BufferDescriptor.cs`, `TextureDescriptor.cs`,
-  `RenderPassDescriptor.cs`, `TextureWrite.cs`, `GpuLimits.cs`, `GpuTextureFormat.cs`,
-  `GpuTextureUsage.cs`, `GpuBufferUsage.cs`
+- `src/v2/Starling.Gpu/Starling.Gpu.csproj` (net11.0, C# preview)
+- Backend seam: `IGpuBackend.cs` (the one interface a backend implements)
+- Facade classes: `GpuInstance.cs`, `GpuAdapter.cs`, `GpuDevice.cs`, `GpuQueue.cs`,
+  `GpuBuffer.cs`, `GpuTexture.cs`, `GpuTextureView.cs`, `GpuSurface.cs`,
+  `GpuCommandEncoder.cs`, `GpuRenderPass.cs`, `GpuCommandBuffer.cs`
+- Descriptors and enums: `GpuAdapterOptions.cs`, `GpuPowerPreference.cs`,
+  `GpuDeviceDescriptor.cs`, `NativeSurfaceDescriptor.cs`, `BufferDescriptor.cs`,
+  `TextureDescriptor.cs`, `RenderPassDescriptor.cs`, `TextureWrite.cs`, `GpuLimits.cs`,
+  `GpuTextureFormat.cs`, `GpuTextureUsage.cs`, `GpuBufferUsage.cs`
 
 ## Acceptance
 - `Starling.Gpu` builds with no package reference beyond the shared analyzers.
 - `Starling.Gpu` does not depend on `Starling.Scene`.
+- The public surface is concrete facade classes following the WebGPU init chain
+  (instance, adapter, device, queue); the single swap point is `IGpuBackend`.
 - The seam covers resource lifetime, buffer and texture upload, and a zero-readback
   surface present path: configure, acquire, render pass with clear, finish, submit,
   present.
@@ -48,12 +52,18 @@ touches a raw wgpu or Silk.NET pointer.
 - `dotnet build Starling.v2.slnx` is green. (Pending: no SDK in the planning session.)
 
 ## Notes
-- `IGpuRenderPass` is Phase 1 minimal: begin, clear, end. Pipelines, bind groups,
-  vertex buffers, and draw calls land in Phase 2 with `Starling.Renderer.WebGpu`.
-- `IGpuSurface` is created by the native backend, not the device, because it needs
-  platform window handles.
+- `GpuRenderPass` is Phase 1 minimal: begin, clear, end. Pipelines, bind groups,
+  shader modules, samplers, vertex buffers, and draw calls land in Phase 2 on
+  `GpuDevice` and `GpuRenderPass`, with `Starling.Renderer.WebGpu`.
+- `GpuSurface` is created from the instance, not the device, because it needs platform
+  window handles.
+- The facade classes hold opaque backend tokens and forward to `IGpuBackend`. No raw
+  graphics handle ever escapes a backend project.
 
 ## Handoff log
 - 2026-06-07T00:00Z — created and landed in the v2 planning pass. Build and test pending
-  for the same reason as wp:V2P1-01 (no .NET 10 SDK, package host blocked). Verify on a
-  machine with the SDK, then promote to complete.
+  for the same reason as wp:V2P1-01 (no .NET 10 SDK, package host blocked).
+- 2026-06-07T01:00Z — design finalization. Reshaped from interface-per-type
+  (`IGpuDevice`, `IGpuBuffer`, ...) to concrete facade classes plus a single
+  `IGpuBackend`, following the WebGPU instance-to-adapter-to-device chain. Retargeted to
+  .NET 11 and C# preview. Pending a build on a .NET 11 preview SDK.

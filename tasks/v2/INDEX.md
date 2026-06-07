@@ -18,9 +18,14 @@ their own meaning.
 | [wp:V2P1-03-trivial-scene](P1/wp-V2P1-03-trivial-scene.md) | 🟡 in_review | Starling.Scene.Tests, Starling.Gpu.Tests |
 
 **in_review** here means the code is landed but has not been built or tested on a machine
-with the .NET 10 software development kit (SDK). The planning session had no SDK and no
-package feed. Run `dotnet build Starling.v2.slnx` and `dotnet test Starling.v2.slnx`,
-then promote these to complete.
+with the .NET 11 preview software development kit (SDK). v2 targets .NET 11 with the C#
+preview language version. The planning session had no SDK and no package feed. Run
+`dotnet build Starling.v2.slnx` and `dotnet test Starling.v2.slnx` on a .NET 11 preview
+SDK, then promote these to complete.
+
+The shapes were finalized against the source design chat: a path-first scene IR with
+brush handles, a LayerContent union with LayerId and content hash, a concrete GPU facade
+over a single `IGpuBackend`, and an accessibility tree plus typed actions in the scene.
 
 ## Phase 2 and later — not yet broken into packages
 

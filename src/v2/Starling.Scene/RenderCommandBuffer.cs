@@ -4,10 +4,10 @@ using System.Numerics;
 namespace Starling.Scene;
 
 /// <summary>
-/// An append-only list of <see cref="RenderCommand"/> plus a transform side
-/// table. This is the renderer-facing contract that replaces v1's
-/// <c>DisplayList</c>: a backend (WebGPU, later Vello or Blend2D) walks the
-/// commands and draws. Producers append in paint order.
+/// An append-only list of path-first <see cref="RenderCommand"/> plus a transform
+/// side table. This is the renderer-facing contract that replaces v1's
+/// <c>DisplayList</c>. Producers append in paint order; geometry and brushes are
+/// added to the scene's <see cref="RenderResourceTable"/> and referenced by id.
 /// </summary>
 public sealed class RenderCommandBuffer
 {
@@ -20,42 +20,45 @@ public sealed class RenderCommandBuffer
     /// <summary>Resolves the transform a <see cref="RenderCommandKind.PushTransform"/> command refers to.</summary>
     public Matrix3x2 GetTransform(int index) => _transforms[index];
 
-    public void FillRect(PxRect rect, RgbaColor color)
-        => _commands.Add(new RenderCommand(RenderCommandKind.FillRect, rect, color, 0f, -1));
+    public void FillPath(PathId path, BrushId brush)
+        => _commands.Add(new RenderCommand(RenderCommandKind.FillPath, default, 0f, path.Value, brush.Value));
 
-    public void FillRoundedRect(PxRect rect, RgbaColor color, float cornerRadius)
-        => _commands.Add(new RenderCommand(RenderCommandKind.FillRoundedRect, rect, color, cornerRadius, -1));
+    public void StrokePath(PathId path, BrushId brush, StrokeStyle style)
+        => _commands.Add(new RenderCommand(RenderCommandKind.StrokePath, default, style.Width, path.Value, brush.Value));
 
-    public void DrawImage(PxRect destination, ResourceId image)
-        => _commands.Add(new RenderCommand(RenderCommandKind.DrawImage, destination, RgbaColor.Transparent, 0f, image.Value));
+    public void DrawImage(PxRect destination, ImageId image)
+        => _commands.Add(new RenderCommand(RenderCommandKind.DrawImage, destination, 0f, image.Value, -1));
 
-    public void DrawGlyphRun(Vector2 origin, ResourceId glyphRun)
+    public void DrawGlyphRun(Vector2 origin, GlyphRunId glyphRun, BrushId brush)
         => _commands.Add(new RenderCommand(
             RenderCommandKind.DrawGlyphRun,
             new PxRect(origin.X, origin.Y, 0f, 0f),
-            RgbaColor.Transparent,
             0f,
-            glyphRun.Value));
+            glyphRun.Value,
+            brush.Value));
 
-    public void PushClip(PxRect rect)
-        => _commands.Add(new RenderCommand(RenderCommandKind.PushClip, rect, RgbaColor.Transparent, 0f, -1));
+    public void PushClip(PathId path)
+        => _commands.Add(new RenderCommand(RenderCommandKind.PushClip, default, 0f, path.Value, -1));
 
     public void PopClip()
-        => _commands.Add(new RenderCommand(RenderCommandKind.PopClip, default, RgbaColor.Transparent, 0f, -1));
+        => _commands.Add(new RenderCommand(RenderCommandKind.PopClip, default, 0f, -1, -1));
 
     public void PushTransform(Matrix3x2 transform)
     {
         int index = _transforms.Count;
         _transforms.Add(transform);
-        _commands.Add(new RenderCommand(RenderCommandKind.PushTransform, default, RgbaColor.Transparent, 0f, index));
+        _commands.Add(new RenderCommand(RenderCommandKind.PushTransform, default, 0f, index, -1));
     }
 
     public void PopTransform()
-        => _commands.Add(new RenderCommand(RenderCommandKind.PopTransform, default, RgbaColor.Transparent, 0f, -1));
+        => _commands.Add(new RenderCommand(RenderCommandKind.PopTransform, default, 0f, -1, -1));
 
     public void PushLayer(float opacity, PxRect bounds)
-        => _commands.Add(new RenderCommand(RenderCommandKind.PushLayer, bounds, RgbaColor.Transparent, opacity, -1));
+        => _commands.Add(new RenderCommand(RenderCommandKind.PushLayer, bounds, opacity, -1, -1));
 
     public void PopLayer()
-        => _commands.Add(new RenderCommand(RenderCommandKind.PopLayer, default, RgbaColor.Transparent, 0f, -1));
+        => _commands.Add(new RenderCommand(RenderCommandKind.PopLayer, default, 0f, -1, -1));
+
+    public void SetBlendMode(BlendMode mode)
+        => _commands.Add(new RenderCommand(RenderCommandKind.SetBlendMode, default, 0f, (int)mode, -1));
 }

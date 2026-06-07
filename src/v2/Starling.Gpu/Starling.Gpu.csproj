@@ -1,11 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    Starling v2 GPU abstraction. A small WebGPU-shaped seam (device, queue,
-    buffer, texture, surface, command encoder). Interfaces only, pure managed.
-    Only Starling.Gpu.WgpuNative (Phase 2) implements these against wgpu-native.
-    No renderer or compositor code may touch a native GPU handle directly.
+    Starling v2 GPU abstraction. Concrete WebGPU-shaped facade classes (GpuInstance,
+    GpuAdapter, GpuDevice, GpuQueue, GpuBuffer, GpuTexture, GpuSurface, ...) over a
+    single IGpuBackend swap point. Only Starling.Gpu.WgpuNative (Phase 2) implements
+    IGpuBackend against wgpu-native. No renderer or compositor code touches a native
+    GPU handle directly.
+
+    v2 targets .NET 11 with the C# preview language version. These override the
+    repo-wide net10.0 / C# 14 defaults in Directory.Build.props.
   -->
   <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 </Project>

@@ -1,10 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
     Starling v2 scene IR. The non-replaceable core: surface graph, render scene,
-    resource table, hit regions, text model handles, and provenance metadata.
+    resource table, hit regions, accessibility tree, text handles, and provenance.
     Pure managed, no native, no GPU, no ImageSharp. See browser-plan/v2/.
+
+    v2 targets .NET 11 with the C# preview language version so it can use new
+    features (for example C# 15 union types) for correctness/exhaustiveness
+    modeling, per the performance policy in AGENTS.md. These override the
+    repo-wide net10.0 / C# 14 defaults in Directory.Build.props.
   -->
   <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 </Project>

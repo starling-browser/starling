@@ -19,6 +19,13 @@ A v2 project is pure managed unless it is a `Starling.Gpu.*` backend. The v2 sol
 builds with no native prerequisite and no Six Labors license, because `Starling.Scene`
 and `Starling.Gpu` touch neither ImageSharp nor a native graphics library.
 
+v2 targets **.NET 11** with the **C# preview** language version, so it can use new
+features (for example C# 15 union types) for correctness and exhaustiveness modeling,
+per the performance policy in `AGENTS.md`. The repo-root `global.json` rolls forward to
+the latest major and allows prerelease, so a .NET 11 preview software development kit
+builds v2 while the v1 solution still builds on the .NET 10 kit. The v1 continuous
+integration job builds `Starling.slnx`, not `Starling.v2.slnx`, so it is unaffected.
+
 ## B. Phase order
 
 ### Phase 1 — Drop ImageSharp as the boundary. Build the core. (done)
@@ -27,9 +34,13 @@ Create the core types before the renderer exists: `SurfaceGraph`, `RenderScene`,
 `ResourceTable`, and the `Starling.Gpu` seam. Build a trivial scene in tests: solid
 rects, rounded rects, images, glyph quads, basic clipping, and a surface present path.
 
-Shipped: `src/v2/Starling.Scene`, `src/v2/Starling.Gpu`, and their tests. The trivial
-scene is a unit test that builds a card surface with every primitive. The present path
-is proven with a recording fake device.
+Shipped: `src/v2/Starling.Scene`, `src/v2/Starling.Gpu`, and their tests. The scene IR
+is path-first (FillPath/StrokePath with brush handles, not a FillRect menu). A layer's
+content is a closed union (render scene, external texture, video, or native guest), with
+a LayerId and a content hash for compositor caching. The scene carries an accessibility
+tree and typed actions. The GPU seam is concrete facade classes over a single
+`IGpuBackend`. The trivial scene is a unit test that builds a card surface with every
+primitive. The present path is proven with a recording fake backend.
 
 ### Phase 2 — Build the C# WebGPU renderer
 
@@ -68,12 +79,12 @@ important. Both fit under the same seams with no renderer changes.
 
 | v1 today | v2 replacement | Note |
 |---|---|---|
-| `DisplayList` + `DisplayItem` (`Starling.Paint/DisplayList`) | `RenderCommandBuffer` + `RenderCommand` | small value-type command set, not CSS-shaped |
+| `DisplayList` + `DisplayItem` (`Starling.Paint/DisplayList`) | `RenderCommandBuffer` + `RenderCommand` | path-first (FillPath/StrokePath), brushes as handles, value-type commands |
 | `IPaintBackend` (DisplayList to `RenderedBitmap`) | `Starling.Renderer.*` over `Starling.Gpu` | the renderer-facing contract becomes RenderScene |
 | `IGpuTexturePaintBackend` via ImageSharp `WebGPURenderTarget` (reflection) | `Starling.Renderer.WebGpu` with Starling shaders | no reflection bridge, no ImageSharp |
-| `CompositorLayer` (`Starling.Paint/Compositor`) | `SurfaceLayer` + `RenderScene` | content split from compositing parameters |
+| `CompositorLayer` (`Starling.Paint/Compositor`) | `SurfaceLayer` (LayerContent union) + `LayerId` + `ContentHash` | content split from compositing parameters; cache key kept |
 | `CompositedFrameRequest` (`Starling.Gui.Core/Rendering`) box-tree roots | `SurfaceGraph` of `SurfaceLayer` | every root becomes a surface producer |
-| `GpuBlendEngine`, `GpuSurfacePresenter` (raw Silk.NET) | `Starling.Compositor` over `Starling.Gpu` + `Starling.Gpu.WgpuNative` | raw handles move behind the seam |
+| `GpuBlendEngine`, `GpuSurfacePresenter` (raw Silk.NET) | `Starling.Compositor` over `Starling.Gpu` facade + `Starling.Gpu.WgpuNative` (`IGpuBackend`) | raw handles move behind the seam |
 | `FramePacket`, texture retirement (`compositor-thread-scope.md`) | same idea, on `Starling.Gpu` | carried forward, not reset |
 | HTML-string chrome (`NativeBrowserWindow.cs`) | semantic chrome components to RenderScene | Phase 4 |
 

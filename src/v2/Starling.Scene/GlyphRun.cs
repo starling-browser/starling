@@ -8,14 +8,14 @@ namespace Starling.Scene;
 /// </summary>
 public sealed class GlyphRun
 {
-    public GlyphRun(ResourceId font, float fontSize, IReadOnlyList<PositionedGlyph> glyphs)
+    public GlyphRun(FontId font, float fontSize, IReadOnlyList<PositionedGlyph> glyphs)
     {
         Font = font;
         FontSize = fontSize;
         Glyphs = glyphs;
     }
 
-    public ResourceId Font { get; }
+    public FontId Font { get; }
     public float FontSize { get; }
     public IReadOnlyList<PositionedGlyph> Glyphs { get; }
 }

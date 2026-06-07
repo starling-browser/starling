@@ -45,6 +45,19 @@ public class RenderResourceTableTests
     }
 
     [TestMethod]
+    public void Paths_and_brushes_round_trip()
+    {
+        var table = new RenderResourceTable();
+        var path = table.AddPath(Path.RoundedRect(new PxRect(0, 0, 40, 20), radius: 6f));
+        var brush = table.AddBrush(Brush.Solid(RgbaColor.White));
+
+        table.PathCount.Should().Be(1);
+        table.BrushCount.Should().Be(1);
+        table.GetBrush(brush).Kind.Should().Be(BrushKind.Solid);
+        table.GetPath(path).Verbs.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
     public void Glyph_runs_are_not_deduped()
     {
         var table = new RenderResourceTable();

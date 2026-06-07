@@ -2,20 +2,22 @@
 namespace Starling.Scene;
 
 /// <summary>
-/// The renderer-neutral command set. CSS paint, generated UI, charts, and video
-/// frames all lower into these. This is deliberately small: it is the contract
-/// every renderer backend must satisfy, not a mirror of CSS paint primitives.
+/// The path-first, renderer-neutral command set. Geometry is always a path, paint
+/// is always a brush. CSS paint, generated UI, charts, and video all lower into
+/// these. This is the contract every renderer backend (WebGPU now, Vello or
+/// Blend2D later) must satisfy.
 /// </summary>
 public enum RenderCommandKind
 {
-    FillRect,
-    FillRoundedRect,
-    DrawImage,
+    FillPath,
+    StrokePath,
     DrawGlyphRun,
+    DrawImage,
     PushClip,
     PopClip,
     PushTransform,
     PopTransform,
     PushLayer,
     PopLayer,
+    SetBlendMode,
 }

@@ -5,12 +5,14 @@ namespace Starling.Scene;
 /// The top of the v2 scene model. A surface graph is an ordered set of surface
 /// layers plus the target surface size and scale. The compositor consumes one
 /// graph per frame. This is the non-replaceable core: documents, generated UI,
-/// video, overlays, and external guests are all surface producers that feed the
-/// same graph, regardless of which renderer backend drew them.
+/// video, overlays, and external guests are all surface layers in the same graph,
+/// regardless of which renderer backend drew them. The graph assigns each layer a
+/// stable <see cref="LayerId"/>.
 /// </summary>
 public sealed class SurfaceGraph
 {
     private readonly List<SurfaceLayer> _layers = [];
+    private int _nextLayerId;
 
     public SurfaceGraph(PxSize surfaceSize, float scale)
     {
@@ -27,14 +29,15 @@ public sealed class SurfaceGraph
     /// <summary>Layers in bottom-to-top paint order.</summary>
     public IReadOnlyList<SurfaceLayer> Layers => _layers;
 
-    /// <summary>Creates a layer with an empty render scene, appends it on top, and returns it.</summary>
-    public SurfaceLayer AddLayer(SurfaceLayerKind kind)
+    /// <summary>Creates a layer backed by a fresh render scene, appends it on top, and returns it.</summary>
+    public SurfaceLayer AddRenderSceneLayer()
+        => AddLayer(new RenderSceneContent(new RenderScene()));
+
+    /// <summary>Creates a layer with the given content, appends it on top, and returns it.</summary>
+    public SurfaceLayer AddLayer(LayerContent content)
     {
-        var layer = new SurfaceLayer(kind, new RenderScene());
+        var layer = new SurfaceLayer(new LayerId(_nextLayerId++), content);
         _layers.Add(layer);
         return layer;
     }
-
-    /// <summary>Appends an existing layer on top.</summary>
-    public void AddLayer(SurfaceLayer layer) => _layers.Add(layer);
 }

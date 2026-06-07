@@ -2,6 +2,9 @@
 namespace Starling.Gpu;
 
 /// <summary>A finished, immutable list of GPU commands ready to submit to a queue.</summary>
-public interface IGpuCommandBuffer
+public sealed class GpuCommandBuffer
 {
+    internal GpuCommandBuffer(IGpuBackend backend, object native) => Native = native;
+
+    internal object Native { get; }
 }
