@@ -14,6 +14,10 @@
     <LangVersion>preview</LangVersion>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <IsPackable>false</IsPackable>
+    <!-- The UnionAttribute/IUnion polyfill in UnionSupport.cs conflicts with the
+         runtime copy once a .NET 11 preview ships it (CS0436, source wins). Suppress
+         that so the polyfill is safe whether or not the runtime provides the types. -->
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <!-- .NET 11 prunes Microsoft.Extensions.Logging.Abstractions into the shared

@@ -46,9 +46,11 @@ layer a stable `LayerId`. The compositor consumes one graph per frame.
   Framework.
 
 A video or guest layer has no commands, so forcing a render scene on every layer would
-be wrong. The union models content honestly. It is a sealed-record closed hierarchy: a
-C# 15 union type was attempted, but the .NET 11 preview.4 compiler rejected the
-record-style cases, so it stays records until the union syntax settles against the spec.
+be wrong. The union models content honestly. It is a C# 15 union type,
+`union LayerContent(RenderSceneContent, ExternalTextureContent, VideoContent, NativeGuestContent)`,
+with the four case types declared as records. Early .NET 11 previews do not ship the
+union support types in the runtime, so `UnionSupport.cs` declares `UnionAttribute` and
+`IUnion` as the language reference shows.
 
 Each layer also carries a `ContentHash`. The compositor pairs `LayerId` with
 `ContentHash` to reuse a resident texture and to compute damage, so an unchanged layer

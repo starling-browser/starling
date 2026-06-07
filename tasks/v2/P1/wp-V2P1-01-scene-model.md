@@ -80,4 +80,10 @@ native types, no ImageSharp. This replaces v1's `DisplayList`-as-contract center
   factory name clash (CS0102), and the union syntax — preview.4 rejected the record-style
   cases (CS9370 "union must specify at least one case type", CS9374 no single-parameter
   constructors). Renamed the brush property to `ImageHandle` and reverted `LayerContent`
-  to the sealed-record closed union. Union keyword adoption waits on the confirmed spec.
+  to the sealed-record closed union.
+- 2026-06-07T04:00Z — looked up the real C# 15 union syntax (Microsoft Learn + the
+  language spec) instead of guessing. Correct form: case types are declared separately
+  and listed in parens, `union LayerContent(RenderSceneContent, ExternalTextureContent,
+  VideoContent, NativeGuestContent)`. Early .NET 11 previews need `UnionAttribute` and
+  `IUnion` declared in the project, so added `UnionSupport.cs` and suppressed CS0436 so
+  it is safe whether or not the runtime ships those types. Applied the union.
