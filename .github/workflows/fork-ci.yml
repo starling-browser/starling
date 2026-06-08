@@ -76,7 +76,7 @@ jobs:
       - name: Test (golden-image)
         run: dotnet test --no-build -c Release --filter Category=GoldenImage
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
