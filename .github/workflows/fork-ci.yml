@@ -43,7 +43,7 @@ jobs:
     # not in scope — until a reviewer approves the run for this commit.
     environment: fork-ci
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # Build the exact reviewed commit, not a moving ref. pull_request_target
           # defaults to the base branch, so the PR head must be requested
