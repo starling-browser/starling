@@ -66,7 +66,7 @@ jobs:
           flags: unittests
           fail_ci_if_error: false
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results-${{ matrix.os }}
@@ -147,7 +147,7 @@ jobs:
       - name: Test (live network)
         run: dotnet test --no-build -c Release --filter Category=NetworkLive --logger "trx;LogFileName=network-test.trx"
       - name: Upload network test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: network-test-results
