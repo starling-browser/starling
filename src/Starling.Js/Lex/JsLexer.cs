@@ -1314,13 +1314,11 @@ public ref struct JsLexer
         => IsAsciiDigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
 
     private static bool IsWhitespace(char c)
-        => c == ' '
+        => CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.SpaceSeparator
         || c == '\t'
         || c == '\v'
         || c == '\f'
-        || c == '\u00A0'   // NBSP
-        || c == '\uFEFF'
-        || c == '\u3000';  // IDEOGRAPHIC SPACE
+        || c == '\uFEFF';
 
     private static bool IsLineTerminator(char c)
         => c == '\n'
