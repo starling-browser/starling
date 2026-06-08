@@ -16,6 +16,26 @@ public class JsLexerTests
     public void Pure_whitespace_skipped()
         => Kinds("   \t  \n  ").Should().Equal(JsTokenKind.EndOfFile);
 
+    [TestMethod]
+    public void Unicode_space_separator_whitespace_is_skipped()
+    {
+        const string spaceSeparators =
+            "\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006" +
+            "\u2007\u2008\u2009\u200A\u202F\u205F\u3000";
+
+        Kinds($"{spaceSeparators}foo{spaceSeparators}bar").Should().Equal(
+            JsTokenKind.Identifier,
+            JsTokenKind.Identifier,
+            JsTokenKind.EndOfFile);
+    }
+
+    [TestMethod]
+    public void Legacy_feff_whitespace_is_skipped()
+        => Kinds("\uFEFFfoo\uFEFFbar").Should().Equal(
+            JsTokenKind.Identifier,
+            JsTokenKind.Identifier,
+            JsTokenKind.EndOfFile);
+
     // ----- Identifier / keyword -------------------------------------------
 
     [TestMethod]

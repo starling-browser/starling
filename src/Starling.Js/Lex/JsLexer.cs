@@ -1318,9 +1318,8 @@ public ref struct JsLexer
         || c == '\t'
         || c == '\v'
         || c == '\f'
-        || c == '\u00A0'   // NBSP
         || c == '\uFEFF'
-        || c == '\u3000';  // IDEOGRAPHIC SPACE
+        || char.GetUnicodeCategory(c) == UnicodeCategory.SpaceSeparator;
 
     private static bool IsLineTerminator(char c)
         => c == '\n'
