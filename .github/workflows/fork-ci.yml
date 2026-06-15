@@ -56,7 +56,7 @@ jobs:
           # gate above must include eyeballing .gitmodules changes, same as
           # any other PR file that influences the build.
           submodules: recursive
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           # Match the SDK pinned in global.json (the .NET 11 preview).
           global-json-file: global.json

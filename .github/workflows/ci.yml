@@ -24,7 +24,7 @@ jobs:
         with:
           # lib/starling-regexp is a submodule; the build fails without it.
           submodules: recursive
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           # global.json pins the exact SDK (currently the .NET 11 preview).
           # Install from it so CI always matches the repo's pinned SDK.
@@ -85,7 +85,7 @@ jobs:
           # lib/starling-regexp is a submodule; dotnet format compiles, so the
           # build graph still needs the submodule sources present.
           submodules: recursive
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           # Match the SDK pinned in global.json (the .NET 11 preview).
           global-json-file: global.json
@@ -140,7 +140,7 @@ jobs:
         with:
           # lib/starling-regexp is a submodule; the build fails without it.
           submodules: recursive
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           # Match the SDK pinned in global.json (the .NET 11 preview).
           global-json-file: global.json
