@@ -39,7 +39,9 @@ public sealed class StickyPaintTests
         var engine = new LayoutEngine(new StyleEngine(), DefaultTextMeasurer.Instance) { ScrollState = store };
         var root = engine.LayoutDocument(document, new LayoutSize(200, 150));
         if (scrollY != 0)
+        {
             store.Write(document.GetElementById("sc")!, 0, scrollY);
+        }
 
         var dl = new DisplayListBuilder().Build(
             root, viewport: null, styleOverride: null, images: null,

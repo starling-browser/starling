@@ -56,10 +56,19 @@ public sealed class RelativeStickyDriftTests
 
     private static Box.Box? Find(Box.Box box, Element el)
     {
-        if (ReferenceEquals(box.Element, el)) return box;
+        if (ReferenceEquals(box.Element, el))
+        {
+            return box;
+        }
+
         foreach (var child in box.Children)
+        {
             if (Find(child, el) is { } hit)
+            {
                 return hit;
+            }
+        }
+
         return null;
     }
 

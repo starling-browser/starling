@@ -30,14 +30,21 @@ internal static class CookieBinding
             return;
         }
 
-        if (documentProto.HasOwnProperty("cookie")) return;
+        if (documentProto.HasOwnProperty("cookie"))
+        {
+            return;
+        }
 
         JintInterop.DefineAccessor(engine, documentProto, "cookie",
             (_, _) => JintInterop.Str(ctx.Cookies.BuildCookieHeader(ctx.BaseUrl)),
             (_, args) =>
             {
                 var raw = args.Length > 0 ? args[0].ToString() : "";
-                if (!string.IsNullOrEmpty(raw)) ctx.Cookies.StoreFromHeaders(ctx.BaseUrl, new[] { raw });
+                if (!string.IsNullOrEmpty(raw))
+                {
+                    ctx.Cookies.StoreFromHeaders(ctx.BaseUrl, new[] { raw });
+                }
+
                 return JsValue.Undefined;
             });
     }

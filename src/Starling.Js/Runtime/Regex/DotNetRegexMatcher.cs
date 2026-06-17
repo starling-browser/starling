@@ -50,7 +50,11 @@ public sealed partial class DotNetRegexMatcher : IRegexMatcher
     /// no substitution and matches JS semantics exactly.</summary>
     public string? TryReplaceLiteral(string input, string literalReplacement, bool global)
     {
-        if (_sticky) return null;
+        if (_sticky)
+        {
+            return null;
+        }
+
         return global
             ? _regex.Replace(input, literalReplacement)
             : _regex.Replace(input, literalReplacement, 1);
@@ -76,12 +80,25 @@ public sealed partial class DotNetRegexMatcher : IRegexMatcher
         var flags = pikeForm.Flags;
 
         if (!IsTranslatable(source, flags))
+        {
             return null;
+        }
 
         var options = RegexOptions.ECMAScript | RegexOptions.CultureInvariant;
-        if ((flags & RegexFlags.IgnoreCase) != 0) options |= RegexOptions.IgnoreCase;
-        if ((flags & RegexFlags.Multiline) != 0) options |= RegexOptions.Multiline;
-        if ((flags & RegexFlags.DotAll) != 0) options |= RegexOptions.Singleline;
+        if ((flags & RegexFlags.IgnoreCase) != 0)
+        {
+            options |= RegexOptions.IgnoreCase;
+        }
+
+        if ((flags & RegexFlags.Multiline) != 0)
+        {
+            options |= RegexOptions.Multiline;
+        }
+
+        if ((flags & RegexFlags.DotAll) != 0)
+        {
+            options |= RegexOptions.Singleline;
+        }
 
         NetRegex regex;
         try
@@ -119,12 +136,17 @@ public sealed partial class DotNetRegexMatcher : IRegexMatcher
         // Invert NamedCaptures (name → JS index) into JS index → name.
         var nameByIndex = new Dictionary<int, string>();
         foreach (var (name, idx) in pikeForm.NamedCaptures)
+        {
             nameByIndex[idx] = name;
+        }
+
         int unnamedSeq = 0; // .NET assigns unnamed groups numbers 1,2,... in order.
         for (int i = 1; i <= count; i++)
         {
             if (nameByIndex.TryGetValue(i, out var name))
+            {
                 key[i] = name;
+            }
             else
             {
                 unnamedSeq++;
@@ -146,7 +168,9 @@ public sealed partial class DotNetRegexMatcher : IRegexMatcher
     private static bool IsTranslatable(string source, RegexFlags flags)
     {
         if ((flags & (RegexFlags.Unicode | RegexFlags.UnicodeSets)) != 0)
+        {
             return false;
+        }
 
         bool ignoreCase = (flags & RegexFlags.IgnoreCase) != 0;
 
@@ -159,13 +183,17 @@ public sealed partial class DotNetRegexMatcher : IRegexMatcher
                 char n = source[i + 1];
                 // \p{...} / \P{...} Unicode property escapes — not in ECMAScript mode.
                 if (n == 'p' || n == 'P')
+                {
                     return false;
+                }
 
                 if (ignoreCase && (n == 'u' || n == 'x'))
                 {
                     int val = ReadHexEscapeValue(source, i + 1);
                     if (val > 0x7F)
+                    {
                         return false;
+                    }
                 }
                 // Skip the escaped char so a literal "\\" or "\p" inside text
                 // is not double-scanned.
@@ -174,7 +202,9 @@ public sealed partial class DotNetRegexMatcher : IRegexMatcher
             }
 
             if (ignoreCase && c > 0x7F)
+            {
                 return false;
+            }
         }
 
         return true;
@@ -190,17 +220,29 @@ public sealed partial class DotNetRegexMatcher : IRegexMatcher
         int p = escapeCharPos + 1;
         if (kind == 'x')
         {
-            if (p + 1 >= s.Length) return -1;
+            if (p + 1 >= s.Length)
+            {
+                return -1;
+            }
+
             return TryHex2(s, p);
         }
         // kind == 'u'
         if (p < s.Length && s[p] == '{')
         {
             int close = s.IndexOf('}', p + 1);
-            if (close < 0) return -1;
+            if (close < 0)
+            {
+                return -1;
+            }
+
             return TryHexN(s, p + 1, close);
         }
-        if (p + 3 >= s.Length) return -1;
+        if (p + 3 >= s.Length)
+        {
+            return -1;
+        }
+
         return TryHexN(s, p, p + 4);
     }
 
@@ -208,7 +250,11 @@ public sealed partial class DotNetRegexMatcher : IRegexMatcher
     {
         int hi = HexVal(s[p]);
         int lo = HexVal(s[p + 1]);
-        if (hi < 0 || lo < 0) return -1;
+        if (hi < 0 || lo < 0)
+        {
+            return -1;
+        }
+
         return (hi << 4) | lo;
     }
 
@@ -218,7 +264,11 @@ public sealed partial class DotNetRegexMatcher : IRegexMatcher
         for (int i = start; i < end; i++)
         {
             int h = HexVal(s[i]);
-            if (h < 0) return -1;
+            if (h < 0)
+            {
+                return -1;
+            }
+
             val = (val << 4) | h;
         }
         return val;
@@ -238,21 +288,39 @@ public sealed partial class DotNetRegexMatcher : IRegexMatcher
     public IRegexMatch? Exec(string input, int start)
     {
         // Guard the same way the intrinsic already does before calling us.
-        if (start < 0) start = 0;
-        if (start > input.Length) return null;
+        if (start < 0)
+        {
+            start = 0;
+        }
+
+        if (start > input.Length)
+        {
+            return null;
+        }
 
         // Non-sticky: Match(input, start) scans forward from start, matching the
         // Pike VM contract. Sticky: scan, then reject unless anchored at start.
         var m = _regex.Match(input, start);
-        if (!m.Success) return null;
-        if (_sticky && m.Index != start) return null;
+        if (!m.Success)
+        {
+            return null;
+        }
+
+        if (_sticky && m.Index != start)
+        {
+            return null;
+        }
 
         return new DotNetRegexMatch(m, input, _groupKey);
     }
 
     public bool ExecSpans(string input, int start, int[] spanBuffer, out int matchStart, out int matchEnd)
     {
-        if (start < 0) start = 0;
+        if (start < 0)
+        {
+            start = 0;
+        }
+
         if (start > input.Length)
         {
             matchStart = -1;
@@ -316,21 +384,32 @@ public sealed class DotNetRegexMatch : IRegexMatch
 
     public string? Group(int i)
     {
-        if (i == 0) return _match.Value;
+        if (i == 0)
+        {
+            return _match.Value;
+        }
+
         var g = ResolveGroup(i);
         return g is { Success: true } ? g.Value : null;
     }
 
     public (int Start, int End)? GroupSpan(int i)
     {
-        if (i == 0) return (_match.Index, _match.Index + _match.Length);
+        if (i == 0)
+        {
+            return (_match.Index, _match.Index + _match.Length);
+        }
+
         var g = ResolveGroup(i);
         return g is { Success: true } ? (g.Index, g.Index + g.Length) : null;
     }
 
     private Group? ResolveGroup(int jsIndex)
     {
-        if (jsIndex < 0 || jsIndex >= _groupKey.Length) return null;
+        if (jsIndex < 0 || jsIndex >= _groupKey.Length)
+        {
+            return null;
+        }
         // Group key is the .NET group name (named) or positional number (unnamed).
         // Match.Groups[string] resolves both names and numeric strings.
         return _match.Groups[_groupKey[jsIndex]];

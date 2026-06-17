@@ -27,7 +27,9 @@ internal static class Program
         // (The JS engine no longer needs seeding here — Starling is the default
         // for a blank STARLING_JS_ENGINE.)
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("STARLING_HTML_PARSER")))
+        {
             Environment.SetEnvironmentVariable("STARLING_HTML_PARSER", "starling");
+        }
 
         // If STARLING_TELEMETRY_DAEMON is set, point the OpenTelemetry Protocol
         // exporter at the standalone daemon before telemetry is wired.
@@ -39,14 +41,20 @@ internal static class Program
         // Sample this process's CPU/memory only when telemetry is being exported
         // or detailed local diagnostics are enabled.
         if (DiagnosticsMode.ProcessSampler || !string.IsNullOrWhiteSpace(otlp))
+        {
             s_resourceSampler = new ProcessResourceSampler(Services.GetRequiredService<ILogger<ProcessResourceSampler>>());
+        }
 
         var log = Services.GetRequiredService<ILoggerFactory>()
             .CreateLogger("Starling.Gui.Startup");
         if (!string.IsNullOrWhiteSpace(otlp))
+        {
             log.LogInformation("OTLP exporter live → {Endpoint}", otlp);
+        }
         else
+        {
             log.LogInformation("OTEL_EXPORTER_OTLP_ENDPOINT not set; telemetry exporter is a no-op.");
+        }
 
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }

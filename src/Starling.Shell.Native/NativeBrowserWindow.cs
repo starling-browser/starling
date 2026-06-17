@@ -263,16 +263,28 @@ internal sealed class NativeBrowserWindow : IDisposable
     private static int SidebarBookmarkIndexAt(double y)
     {
         var localY = y - SidebarWordmarkHeightCss - SidebarSectionHeightCss;
-        if (localY < 0) return -1;
+        if (localY < 0)
+        {
+            return -1;
+        }
+
         var stride = SidebarRowHeightCss + SidebarRowGapCss;
         var idx = (int)(localY / stride);
-        if (idx < 0 || idx >= Bookmarks.Length) return -1;
+        if (idx < 0 || idx >= Bookmarks.Length)
+        {
+            return -1;
+        }
+
         return localY - idx * stride < SidebarRowHeightCss ? idx : -1;
     }
 
     private static string HostKey(string? url)
     {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return "";
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return "";
+        }
+
         return uri.IsDefaultPort ? uri.Host : uri.Authority;
     }
 
@@ -280,7 +292,11 @@ internal sealed class NativeBrowserWindow : IDisposable
     {
         string[] colors = ["#e07a55", "#4a8a78", "#6e7fc6", "#d18a3d", "#9d6fb5", "#c25e7a", "#5a8a5a"];
         var hash = 0;
-        foreach (var ch in host) hash = unchecked(hash * 31 + ch);
+        foreach (var ch in host)
+        {
+            hash = unchecked(hash * 31 + ch);
+        }
+
         return colors[(int)((uint)hash % colors.Length)];
     }
 
@@ -316,14 +332,25 @@ internal sealed class NativeBrowserWindow : IDisposable
 
     private static (string Scheme, string Sep, string Host, string Path) UrlSegments(string url)
     {
-        if (string.IsNullOrWhiteSpace(url)) return ("", "", "", "");
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return ("", "", "", "");
+        }
+
         var schemeIdx = url.IndexOf("://", StringComparison.Ordinal);
-        if (schemeIdx < 0) return ("", "", url, "");
+        if (schemeIdx < 0)
+        {
+            return ("", "", url, "");
+        }
 
         var scheme = url[..schemeIdx];
         var rest = url[(schemeIdx + 3)..];
         var slashIdx = rest.IndexOfAny(['/', '?', '#']);
-        if (slashIdx < 0) return (scheme, "://", rest, "");
+        if (slashIdx < 0)
+        {
+            return (scheme, "://", rest, "");
+        }
+
         return (scheme, "://", rest[..slashIdx], rest[slashIdx..]);
     }
 
@@ -381,9 +408,11 @@ internal sealed class NativeBrowserWindow : IDisposable
 
         // Loading progress pill (mirrors the Avalonia URL-bar pill).
         if (loading)
+        {
             sb.Append($"<div style=\"display:flex;align-items:center;border-radius:999px;background:{t.AccentBg};" +
                       $"color:{t.Accent};font-family:{MonoFont};font-size:10.5px;padding:3px 10px;margin-right:6px;" +
                       "white-space:nowrap\">loading</div>");
+        }
 
         // Divider + find chip.
         sb.Append($"<div style=\"width:1px;height:22px;background:{t.Border};margin:0 12px\"></div>");
@@ -728,7 +757,11 @@ internal sealed class NativeBrowserWindow : IDisposable
         // Push the accessibility tree to the OS after a (re)layout or navigation.
         void PushA11y()
         {
-            if (a11y is null || page is null) return;
+            if (a11y is null || page is null)
+            {
+                return;
+            }
+
             var tree = AccessibilityTreeBuilder.Build(page.Root, page.Document);
             a11y.Update(tree, ChromeHeightCss, scrollY, logicalH);
         }
@@ -755,7 +788,10 @@ internal sealed class NativeBrowserWindow : IDisposable
 
             mouse.Scroll += (m, wheel) =>
             {
-                if (page is null) return;
+                if (page is null)
+                {
+                    return;
+                }
 
                 // Inner scroll first: when the pointer is over the page region,
                 // route the wheel through the shared ScrollController so the
@@ -807,7 +843,10 @@ internal sealed class NativeBrowserWindow : IDisposable
                     sidebarHover = newSidebarHover;
                 }
 
-                if (page is null) return;
+                if (page is null)
+                {
+                    return;
+                }
 
                 // Pointer is over chrome. Use default cursor and skip page hover.
                 if (pos.X < SidebarWidthCss || pos.Y < ChromeHeightCss || IsStatusBarPoint(pos.X, pos.Y))
@@ -834,7 +873,10 @@ internal sealed class NativeBrowserWindow : IDisposable
                 // Drive CSS :hover from the innermost element under the pointer.
                 Element? hoverEl = null;
                 for (var b = hit.Box; b is not null; b = b.Parent)
+                {
                     if (b.Element is { } e) { hoverEl = e; break; }
+                }
+
                 UpdateHover(hoverEl);
             };
 
@@ -853,7 +895,10 @@ internal sealed class NativeBrowserWindow : IDisposable
                     {
                         var idx = (int)((pos.Y - menuY) / MenuItemH);
                         CloseMenu();
-                        if (idx >= 0 && idx < n) menuItems[idx].Run();
+                        if (idx >= 0 && idx < n)
+                        {
+                            menuItems[idx].Run();
+                        }
                     }
                     else
                     {
@@ -865,12 +910,19 @@ internal sealed class NativeBrowserWindow : IDisposable
                 // Right-click opens the context menu.
                 if (button == MouseButton.Right)
                 {
-                    if (page is null) return;
+                    if (page is null)
+                    {
+                        return;
+                    }
+
                     OpenMenuAt(pos.X, pos.Y);
                     return;
                 }
 
-                if (button != MouseButton.Left) return;
+                if (button != MouseButton.Left)
+                {
+                    return;
+                }
 
                 // Sidebar bookmarks.
                 if (pos.X < SidebarWidthCss)
@@ -878,7 +930,10 @@ internal sealed class NativeBrowserWindow : IDisposable
                     if (pos.X >= SidebarRowXCss && pos.X <= SidebarRowXCss + SidebarRowWCss)
                     {
                         var idx = SidebarBookmarkIndexAt(pos.Y);
-                        if (idx >= 0) Navigate(Bookmarks[idx].Url);
+                        if (idx >= 0)
+                        {
+                            Navigate(Bookmarks[idx].Url);
+                        }
                     }
                     return;
                 }
@@ -937,7 +992,10 @@ internal sealed class NativeBrowserWindow : IDisposable
                     return;
                 }
 
-                if (page is null) return;
+                if (page is null)
+                {
+                    return;
+                }
 
                 // Click landed in the page — drop URL-bar focus.
                 if (urlBarFocused) { urlBarFocused = false; }
@@ -1013,8 +1071,15 @@ internal sealed class NativeBrowserWindow : IDisposable
 
             keyboard.KeyChar += (_, c) =>
             {
-                if (page is null) return;
-                if (CmdOrCtrl()) return; // a clipboard/shortcut chord, not text
+                if (page is null)
+                {
+                    return;
+                }
+
+                if (CmdOrCtrl())
+                {
+                    return; // a clipboard/shortcut chord, not text
+                }
 
                 // Find-in-page takes text first when open.
                 if (findActive)
@@ -1032,7 +1097,11 @@ internal sealed class NativeBrowserWindow : IDisposable
                     return;
                 }
 
-                if (focusedInput is null) return;
+                if (focusedInput is null)
+                {
+                    return;
+                }
+
                 var current = HtmlFormControls.Value(focusedInput);
                 HtmlFormControls.SetValue(focusedInput, current + c);
                 page.Scripting?.DispatchEvent(focusedInput,
@@ -1049,12 +1118,19 @@ internal sealed class NativeBrowserWindow : IDisposable
 
             keyboard.KeyDown += (_, key, _) =>
             {
-                if (page is null) return;
+                if (page is null)
+                {
+                    return;
+                }
 
                 // An open context menu swallows Escape (dismiss).
                 if (menuActive)
                 {
-                    if (key == Key.Escape) CloseMenu();
+                    if (key == Key.Escape)
+                    {
+                        CloseMenu();
+                    }
+
                     return;
                 }
 
@@ -1100,7 +1176,11 @@ internal sealed class NativeBrowserWindow : IDisposable
                         if (!string.IsNullOrEmpty(clip)) { findQuery += clip; findCursor = -1; RunFind(1); }
                         return;
                     }
-                    if (CmdOrCtrl()) return;
+                    if (CmdOrCtrl())
+                    {
+                        return;
+                    }
+
                     switch (key)
                     {
                         case Key.Backspace:
@@ -1141,12 +1221,18 @@ internal sealed class NativeBrowserWindow : IDisposable
                         if (key == Key.V)
                         {
                             var clip = NativeClipboard.Get(glfwHandle);
-                            if (!string.IsNullOrEmpty(clip)) urlBarText += clip;
+                            if (!string.IsNullOrEmpty(clip))
+                            {
+                                urlBarText += clip;
+                            }
                         }
                         else if (key is Key.C or Key.X)
                         {
                             NativeClipboard.Set(glfwHandle, urlBarText);
-                            if (key == Key.X) urlBarText = "";
+                            if (key == Key.X)
+                            {
+                                urlBarText = "";
+                            }
                         }
                         else if (key == Key.A)
                         {
@@ -1159,7 +1245,11 @@ internal sealed class NativeBrowserWindow : IDisposable
                     switch (key)
                     {
                         case Key.Backspace:
-                            if (urlBarText.Length > 0) urlBarText = urlBarText[..^1];
+                            if (urlBarText.Length > 0)
+                            {
+                                urlBarText = urlBarText[..^1];
+                            }
+
                             break;
                         case Key.Escape:
                             urlBarFocused = false;
@@ -1168,14 +1258,24 @@ internal sealed class NativeBrowserWindow : IDisposable
                         case Key.KeypadEnter:
                             var target = UrlBarInputNormalizer.Normalize(urlBarText);
                             urlBarFocused = false;
-                            if (target is not null) Navigate(target);
-                            else Console.Error.WriteLine($"browser: '{urlBarText}' is not a URL");
+                            if (target is not null)
+                            {
+                                Navigate(target);
+                            }
+                            else
+                            {
+                                Console.Error.WriteLine($"browser: '{urlBarText}' is not a URL");
+                            }
+
                             break;
                     }
                     return;
                 }
 
-                if (focusedInput is null) return;
+                if (focusedInput is null)
+                {
+                    return;
+                }
 
                 // Clipboard chords (phase 4): copy / cut / paste on the focused input.
                 if (CmdOrCtrl() && key is Key.C or Key.X or Key.V)
@@ -1237,9 +1337,11 @@ internal sealed class NativeBrowserWindow : IDisposable
         // IME preedit driver. Off by default, since the
         // commit-style path already works; this adds the inline composing display.
         if (Environment.GetEnvironmentVariable("STARLING_IME_PREEDIT") == "1")
+        {
             MacImeBridge.Install(
                 s => { preedit = s; },
                 () => { preedit = ""; });
+        }
 
         // ── Window events ─────────────────────────────────────────────────────
         window.FramebufferResize += sz =>
@@ -1264,7 +1366,10 @@ internal sealed class NativeBrowserWindow : IDisposable
                 ref wasmIslandStatusHint, ref wasmIslandLoadError, "WASM island");
             PumpIsland(wasmIslandSession, ref wasmIslandPage, ref wasmIslandLastLayoutVersion);
 
-            if (page is null) return;
+            if (page is null)
+            {
+                return;
+            }
 
             page.Document.DecayRecentMutations();
 
@@ -1301,7 +1406,9 @@ internal sealed class NativeBrowserWindow : IDisposable
                 session.PrepareAnimationFrame(page, clockMs);
                 animClockMs = clockMs;
                 if (hoverElement is not null)
+                {
                     hoverOverrides = BuildHoverOverrides(hoverElement, clockMs);
+                }
             }
         };
 
@@ -1310,7 +1417,10 @@ internal sealed class NativeBrowserWindow : IDisposable
             var frameStart = clock.ElapsedMilliseconds;
 
             var fb = window.FramebufferSize;
-            if (fb.X <= 0 || fb.Y <= 0) return;
+            if (fb.X <= 0 || fb.Y <= 0)
+            {
+                return;
+            }
 
             if (fb != lastFb)
             {
@@ -1437,12 +1547,23 @@ internal sealed class NativeBrowserWindow : IDisposable
                     BottomChromeHeightCss = StatusBarHeightCss,
                 }, target);
                 var okLoad = loadFrame.Presented;
-                if (okLoad) presented++; else failures++;
+                if (okLoad)
+                {
+                    presented++;
+                }
+                else
+                {
+                    failures++;
+                }
             }
             else
             {
                 // Screen-fixed overlay: a context menu wins over the devtools panel.
-                if (devtoolsActive && devtoolsOverlay is null) devtoolsOverlay = BuildDevtoolsOverlay();
+                if (devtoolsActive && devtoolsOverlay is null)
+                {
+                    devtoolsOverlay = BuildDevtoolsOverlay();
+                }
+
                 var screenOverlay = menuActive ? menuOverlay
                                   : devtoolsActive ? devtoolsOverlay
                                   : null;
@@ -1473,11 +1594,16 @@ internal sealed class NativeBrowserWindow : IDisposable
                 }, target);
                 var ok = frame.Presented;
 
-                if (ok) { presented++; } else failures++;
+                if (ok) { presented++; } else
+                {
+                    failures++;
+                }
             }
 
             if (_maxFrames > 0 && presented >= _maxFrames)
+            {
                 window.Close();
+            }
 
             // Pace to ~60 Hz AFTER presenting, so a cheap frame doesn't spin a CPU
             // core. The frame is already on screen, so this never starves the
@@ -1488,7 +1614,9 @@ internal sealed class NativeBrowserWindow : IDisposable
                 const long frameBudgetMs = 16;
                 var spent = clock.ElapsedMilliseconds - frameStart;
                 if (spent < frameBudgetMs)
+                {
                     System.Threading.Thread.Sleep((int)(frameBudgetMs - spent));
+                }
             }
         };
 
@@ -1497,7 +1625,11 @@ internal sealed class NativeBrowserWindow : IDisposable
         SaveActive();
         wasmIslandPage?.Dispose();
         wasmIslandSession?.Dispose();
-        foreach (var t in tabs) t.Dispose();
+        foreach (var t in tabs)
+        {
+            t.Dispose();
+        }
+
         Console.WriteLine(
             $"BROWSER OK: {presented} frames presented zero-copy ({failures} surface-reconfig frames)");
         return presented > 0 ? 0 : 1;
@@ -1505,7 +1637,11 @@ internal sealed class NativeBrowserWindow : IDisposable
         // ── Local helpers ────────────────────────────────────────────────────
         void RefreshLayout()
         {
-            if (page is null) return;
+            if (page is null)
+            {
+                return;
+            }
+
             var reOpts = NavOpts();
             var successor = session.RelayoutCurrent(page, reOpts);
             page.Dispose();
@@ -1565,7 +1701,11 @@ internal sealed class NativeBrowserWindow : IDisposable
             ref LaidOutPage? islandPage,
             ref int islandLastLayoutVersion)
         {
-            if (islandPage is null || islandSession is null) return;
+            if (islandPage is null || islandSession is null)
+            {
+                return;
+            }
+
             var successor = islandSession.RelayoutCurrent(islandPage, IslandOpts());
             islandPage.Dispose();
             islandPage = successor;
@@ -1595,7 +1735,10 @@ internal sealed class NativeBrowserWindow : IDisposable
             islandStatusHint = islandPage.Url ?? label;
             islandLoadError = false;
             if (islandPage.Viewport.Width != IslandOpts().Viewport.Width)
+            {
                 RefreshIslandLayout(islandSession, ref islandPage, ref islandLastLayoutVersion);
+            }
+
             Console.WriteLine($"browser: loaded {label}");
         }
 
@@ -1608,7 +1751,11 @@ internal sealed class NativeBrowserWindow : IDisposable
             ref bool islandLoadError,
             string label)
         {
-            if (pendingIslandNav is not { IsCompleted: true }) return;
+            if (pendingIslandNav is not { IsCompleted: true })
+            {
+                return;
+            }
+
             var task = pendingIslandNav;
             pendingIslandNav = null;
             try
@@ -1629,11 +1776,17 @@ internal sealed class NativeBrowserWindow : IDisposable
             ref LaidOutPage? islandPage,
             ref int islandLastLayoutVersion)
         {
-            if (islandPage is null) return;
+            if (islandPage is null)
+            {
+                return;
+            }
+
             islandPage.Document.DecayRecentMutations();
             islandPage.Scripting?.PumpFrame(clock.ElapsedMilliseconds);
             if (islandPage.Document.LayoutInvalidationVersion != islandLastLayoutVersion)
+            {
                 RefreshIslandLayout(islandSession, ref islandPage, ref islandLastLayoutVersion);
+            }
         }
 
         void DispatchIslandClick(double x, double y)
@@ -1648,9 +1801,17 @@ internal sealed class NativeBrowserWindow : IDisposable
             double x,
             double y)
         {
-            if (islandPage?.Scripting is null) return;
+            if (islandPage?.Scripting is null)
+            {
+                return;
+            }
+
             var hit = BoxHitTester.HitTest(islandPage.Root, x, y, 0, 0, scrollOffsets: null);
-            if (FindClickTarget(hit.Box) is not { } targetElement) return;
+            if (FindClickTarget(hit.Box) is not { } targetElement)
+            {
+                return;
+            }
+
             if (islandPage.Scripting.DispatchEvent(targetElement,
                 new MouseEvent("click", new EventInit(Bubbles: true, Cancelable: true))
                 {
@@ -1666,8 +1827,13 @@ internal sealed class NativeBrowserWindow : IDisposable
         static Element? FindClickTarget(Starling.Layout.Box.Box? box)
         {
             for (var b = box; b is not null; b = b.Parent)
+            {
                 if (b.Element is Element el)
+                {
                     return el;
+                }
+            }
+
             return null;
         }
 
@@ -1711,7 +1877,11 @@ internal sealed class NativeBrowserWindow : IDisposable
         // visible until the new one is ready, so a navigation never flashes blank.
         void PollNav()
         {
-            if (pendingNav is not { IsCompleted: true }) return;
+            if (pendingNav is not { IsCompleted: true })
+            {
+                return;
+            }
+
             var task = pendingNav;
             var tabIdx = pendingNavTab;
             pendingNav = null;
@@ -1748,21 +1918,33 @@ internal sealed class NativeBrowserWindow : IDisposable
 
         void GoBack()
         {
-            if (!session.History.CanGoBack) return;
+            if (!session.History.CanGoBack)
+            {
+                return;
+            }
+
             pendingNav = session.BackInteractiveAsync(NavOpts());
             pendingNavTab = activeIndex;
         }
 
         void GoForward()
         {
-            if (!session.History.CanGoForward) return;
+            if (!session.History.CanGoForward)
+            {
+                return;
+            }
+
             pendingNav = session.ForwardInteractiveAsync(NavOpts());
             pendingNavTab = activeIndex;
         }
 
         void Reload()
         {
-            if (session.History.Current is null) return;
+            if (session.History.Current is null)
+            {
+                return;
+            }
+
             pendingNav = session.ReloadInteractiveAsync(NavOpts());
             pendingNavTab = activeIndex;
         }
@@ -1772,7 +1954,11 @@ internal sealed class NativeBrowserWindow : IDisposable
         // Copy the live view state back into the active Tab record.
         void SaveActive()
         {
-            if (tabs.Count == 0) return;
+            if (tabs.Count == 0)
+            {
+                return;
+            }
+
             var t = tabs[activeIndex];
             t.Page = page;
             t.ScrollY = scrollY;
@@ -1812,7 +1998,11 @@ internal sealed class NativeBrowserWindow : IDisposable
 
         void SwitchTab(int i)
         {
-            if (i < 0 || i >= tabs.Count || i == activeIndex) return;
+            if (i < 0 || i >= tabs.Count || i == activeIndex)
+            {
+                return;
+            }
+
             SaveActive();
             activeIndex = i;
             LoadActive();
@@ -1840,18 +2030,32 @@ internal sealed class NativeBrowserWindow : IDisposable
 
         void CloseTab(int i)
         {
-            if (i < 0 || i >= tabs.Count) return;
+            if (i < 0 || i >= tabs.Count)
+            {
+                return;
+            }
+
             if (tabs.Count == 1) { window.Close(); return; } // closing the last tab closes the window
 
             var closingActive = i == activeIndex;
-            if (!closingActive) SaveActive(); // keep the still-active tab's live state
+            if (!closingActive)
+            {
+                SaveActive(); // keep the still-active tab's live state
+            }
 
             var t = tabs[i];
             tabs.RemoveAt(i);
             t.Dispose();
 
-            if (i < activeIndex) activeIndex--;
-            else if (activeIndex >= tabs.Count) activeIndex = tabs.Count - 1;
+            if (i < activeIndex)
+            {
+                activeIndex--;
+            }
+            else if (activeIndex >= tabs.Count)
+            {
+                activeIndex = tabs.Count - 1;
+            }
+
             LoadActive();
         }
 
@@ -1859,7 +2063,11 @@ internal sealed class NativeBrowserWindow : IDisposable
 
         void OpenFind()
         {
-            if (page is null) return;
+            if (page is null)
+            {
+                return;
+            }
+
             findActive = true;
             findQuery = "";
             findCursor = -1;
@@ -1900,7 +2108,12 @@ internal sealed class NativeBrowserWindow : IDisposable
 
             findMatchTotal = 0;
             foreach (var fr in frags)
-                if (fr.Text.Contains(findQuery, StringComparison.OrdinalIgnoreCase)) findMatchTotal++;
+            {
+                if (fr.Text.Contains(findQuery, StringComparison.OrdinalIgnoreCase))
+                {
+                    findMatchTotal++;
+                }
+            }
 
             if (n == 0 || findMatchTotal == 0) { findCursor = -1; return; }
 
@@ -1908,7 +2121,10 @@ internal sealed class NativeBrowserWindow : IDisposable
             for (var step = 0; step < n; step++)
             {
                 var idx = ((start + dir * step) % n + n) % n;
-                if (!frags[idx].Text.Contains(findQuery, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!frags[idx].Text.Contains(findQuery, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
 
                 findCursor = idx;
                 var f = frags[idx];
@@ -1926,8 +2142,15 @@ internal sealed class NativeBrowserWindow : IDisposable
         // glyph-accurate caret tracking is a refinement.
         BlockBox? BuildPreeditOverlay()
         {
-            if (page is null || focusedInput is null || preedit.Length == 0) return null;
-            if (FindAbs(page.Root, focusedInput, 0, 0) is not { } pos) return null;
+            if (page is null || focusedInput is null || preedit.Length == 0)
+            {
+                return null;
+            }
+
+            if (FindAbs(page.Root, focusedInput, 0, 0) is not { } pos)
+            {
+                return null;
+            }
 
             var html =
                 $"<body style=\"margin:0;padding:0;position:relative;" +
@@ -1957,8 +2180,11 @@ internal sealed class NativeBrowserWindow : IDisposable
                       "background:#2b2b2b;border:1px solid #555;border-radius:4px;" +
                       "font-family:sans-serif;font-size:13px;color:#e0e0e0;overflow:hidden\">");
             foreach (var it in menuItems)
+            {
                 sb.Append($"<div style=\"height:{MenuItemH}px;padding:0 12px;" +
                           $"display:flex;align-items:center\">{EscapeHtml(it.Label)}</div>");
+            }
+
             sb.Append("</div></body>");
             return new Starling.Layout.LayoutEngine(new StyleEngine(), DefaultTextMeasurer.Instance)
                 .LayoutDocument(HtmlParser.Parse(sb.ToString()), new LayoutSize(logicalW, logicalH));
@@ -1966,7 +2192,11 @@ internal sealed class NativeBrowserWindow : IDisposable
 
         void OpenMenuAt(double x, double y)
         {
-            if (page is null) return;
+            if (page is null)
+            {
+                return;
+            }
+
             menuItems.Clear();
 
             // Link under the pointer (page area only) adds link actions.
@@ -1987,8 +2217,16 @@ internal sealed class NativeBrowserWindow : IDisposable
                 }
             }
 
-            if (session.History.CanGoBack) menuItems.Add(("Back", GoBack));
-            if (session.History.CanGoForward) menuItems.Add(("Forward", GoForward));
+            if (session.History.CanGoBack)
+            {
+                menuItems.Add(("Back", GoBack));
+            }
+
+            if (session.History.CanGoForward)
+            {
+                menuItems.Add(("Forward", GoForward));
+            }
+
             menuItems.Add(("Reload", Reload));
 
             var n = menuItems.Count;
@@ -2032,21 +2270,40 @@ internal sealed class NativeBrowserWindow : IDisposable
             var rows = 0;
             void Walk(Element el, int depth)
             {
-                if (rows >= maxRows) return;
+                if (rows >= maxRows)
+                {
+                    return;
+                }
+
                 var tag = el.TagName.ToLowerInvariant();
                 var label = "<" + tag;
-                if (!string.IsNullOrEmpty(el.Id)) label += "#" + el.Id;
+                if (!string.IsNullOrEmpty(el.Id))
+                {
+                    label += "#" + el.Id;
+                }
+
                 var cls = el.GetAttribute("class");
                 if (!string.IsNullOrWhiteSpace(cls))
+                {
                     label += "." + string.Join('.', cls.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+                }
+
                 label += ">";
                 sb.Append($"<div style=\"padding:1px 10px 1px {10 + depth * 14}px;" +
                           $"white-space:nowrap;overflow:hidden\">{EscapeHtml(label)}</div>");
                 rows++;
                 for (var c = el.FirstChild; c is not null; c = c.NextSibling)
-                    if (c is Element ce) Walk(ce, depth + 1);
+                {
+                    if (c is Element ce)
+                    {
+                        Walk(ce, depth + 1);
+                    }
+                }
             }
-            if (page?.Document.DocumentElement is { } root) Walk(root, 0);
+            if (page?.Document.DocumentElement is { } root)
+            {
+                Walk(root, 0);
+            }
 
             sb.Append("</div></body>");
             return new Starling.Layout.LayoutEngine(new StyleEngine(), DefaultTextMeasurer.Instance)
@@ -2061,7 +2318,11 @@ internal sealed class NativeBrowserWindow : IDisposable
         // is hovered.
         Dictionary<Element, ComputedStyle>? BuildHoverOverrides(Element? hovered, long nowMs)
         {
-            if (hovered is null || page is null) return null;
+            if (hovered is null || page is null)
+            {
+                return null;
+            }
+
             var style = page.Style;
             var ctx = new SelectorMatchContext { HoveredElement = hovered };
             var result = new Dictionary<Element, ComputedStyle>();
@@ -2069,7 +2330,12 @@ internal sealed class NativeBrowserWindow : IDisposable
             Recurse(hovered);
             // Hovering an element also hovers its ancestors (`.ancestor:hover`).
             for (var n = hovered.ParentNode; n is not null; n = n.ParentNode)
-                if (n is Element p && Compose(p) is { } ps) result[p] = ps;
+            {
+                if (n is Element p && Compose(p) is { } ps)
+                {
+                    result[p] = ps;
+                }
+            }
 
             // Only elements whose :hover cascade actually changes a paint-relevant
             // property are overridden. Without this, hovering a big container (or the
@@ -2089,15 +2355,28 @@ internal sealed class NativeBrowserWindow : IDisposable
                 var hoverStatic = style.Compute(el, ctx);
                 // Prune the element when nothing the painter emits changes under
                 // :hover (SamePaint value-compares, so identical cascades match).
-                if (SamePaint(style.Compute(el), hoverStatic)) return null;
+                if (SamePaint(style.Compute(el), hoverStatic))
+                {
+                    return null;
+                }
+
                 return style.ComputeWithAnimations(el, nowMs, ctx);
             }
 
             void Recurse(Element el)
             {
-                if (Compose(el) is { } s) result[el] = s;
+                if (Compose(el) is { } s)
+                {
+                    result[el] = s;
+                }
+
                 for (var child = el.FirstChild; child is not null; child = child.NextSibling)
-                    if (child is Element c) Recurse(c);
+                {
+                    if (child is Element c)
+                    {
+                        Recurse(c);
+                    }
+                }
             }
 
             // True when a and b paint identically for the properties the painter
@@ -2105,19 +2384,54 @@ internal sealed class NativeBrowserWindow : IDisposable
             // be judged without re-rendering on CssValue identity churn.
             static bool SamePaint(ComputedStyle a, ComputedStyle b)
             {
-                if (a.GetColor(PropertyId.Color) != b.GetColor(PropertyId.Color)) return false;
-                if (a.GetColor(PropertyId.BackgroundColor) != b.GetColor(PropertyId.BackgroundColor)) return false;
-                if (a.GetColor(PropertyId.BorderTopColor) != b.GetColor(PropertyId.BorderTopColor)) return false;
-                if (a.GetColor(PropertyId.BorderRightColor) != b.GetColor(PropertyId.BorderRightColor)) return false;
-                if (a.GetColor(PropertyId.BorderBottomColor) != b.GetColor(PropertyId.BorderBottomColor)) return false;
-                if (a.GetColor(PropertyId.BorderLeftColor) != b.GetColor(PropertyId.BorderLeftColor)) return false;
+                if (a.GetColor(PropertyId.Color) != b.GetColor(PropertyId.Color))
+                {
+                    return false;
+                }
+
+                if (a.GetColor(PropertyId.BackgroundColor) != b.GetColor(PropertyId.BackgroundColor))
+                {
+                    return false;
+                }
+
+                if (a.GetColor(PropertyId.BorderTopColor) != b.GetColor(PropertyId.BorderTopColor))
+                {
+                    return false;
+                }
+
+                if (a.GetColor(PropertyId.BorderRightColor) != b.GetColor(PropertyId.BorderRightColor))
+                {
+                    return false;
+                }
+
+                if (a.GetColor(PropertyId.BorderBottomColor) != b.GetColor(PropertyId.BorderBottomColor))
+                {
+                    return false;
+                }
+
+                if (a.GetColor(PropertyId.BorderLeftColor) != b.GetColor(PropertyId.BorderLeftColor))
+                {
+                    return false;
+                }
                 // Value-compare: two independent cascade runs (with vs. without
                 // :hover) produce non-identical CssKeyword instances for the same
                 // keyword, so ReferenceEquals would report a spurious change and
                 // pull every element into the override set (the invisibility bug).
-                if (!Equals(a.Get(PropertyId.TextDecoration), b.Get(PropertyId.TextDecoration))) return false;
-                if (!Equals(a.Get(PropertyId.Transform), b.Get(PropertyId.Transform))) return false;
-                if (!Equals(a.Get(PropertyId.Opacity), b.Get(PropertyId.Opacity))) return false;
+                if (!Equals(a.Get(PropertyId.TextDecoration), b.Get(PropertyId.TextDecoration)))
+                {
+                    return false;
+                }
+
+                if (!Equals(a.Get(PropertyId.Transform), b.Get(PropertyId.Transform)))
+                {
+                    return false;
+                }
+
+                if (!Equals(a.Get(PropertyId.Opacity), b.Get(PropertyId.Opacity)))
+                {
+                    return false;
+                }
+
                 return true;
             }
         }
@@ -2127,7 +2441,11 @@ internal sealed class NativeBrowserWindow : IDisposable
         // their reverse transition registers.
         void UpdateHover(Element? newHover)
         {
-            if (page is null || ReferenceEquals(newHover, hoverElement)) return;
+            if (page is null || ReferenceEquals(newHover, hoverElement))
+            {
+                return;
+            }
+
             hoverElement = newHover;
 
             var nowMs = clock.ElapsedMilliseconds;
@@ -2144,7 +2462,11 @@ internal sealed class NativeBrowserWindow : IDisposable
                     : new SelectorMatchContext { HoveredElement = hoverElement };
                 foreach (var el in hoverScope)
                 {
-                    if (newScope is not null && newScope.Contains(el)) continue;
+                    if (newScope is not null && newScope.Contains(el))
+                    {
+                        continue;
+                    }
+
                     page.Style.ComputeWithAnimations(el, nowMs, newCtx);
                 }
             }
@@ -2158,12 +2480,25 @@ internal sealed class NativeBrowserWindow : IDisposable
         ComputedStyle? StyleOverride(Box box)
         {
             if (hoverOverrides is not null && ResolveOverride(box, hoverOverrides) is { } ov)
+            {
                 return ov;
-            if (page is null || box.Element is not { } el) return null;
+            }
+
+            if (page is null || box.Element is not { } el)
+            {
+                return null;
+            }
+
             foreach (var _ in page.Style.AnimationEngine.ActiveProperties(el))
+            {
                 return page.Style.ComputeWithAnimations(el, animClockMs);
+            }
+
             foreach (var _ in page.Style.TransitionEngine.ActiveProperties(el))
+            {
                 return page.Style.ComputeWithAnimations(el, animClockMs);
+            }
+
             return null;
         }
 
@@ -2172,10 +2507,18 @@ internal sealed class NativeBrowserWindow : IDisposable
         static ComputedStyle? ResolveOverride(Box box, Dictionary<Element, ComputedStyle> overrides)
         {
             if (box.Element is { } el && overrides.TryGetValue(el, out var direct))
+            {
                 return direct;
+            }
+
             for (var p = box.Parent; p is not null; p = p.Parent)
+            {
                 if (p.Element is { } pel && overrides.TryGetValue(pel, out var inherited))
+                {
                     return inherited;
+                }
+            }
+
             return null;
         }
     }
@@ -2220,18 +2563,44 @@ internal sealed class NativeBrowserWindow : IDisposable
     {
         var x = ox + box.Frame.X;
         var y = oy + box.Frame.Y;
-        if (ReferenceEquals(box.Element, el)) return (x, y);
+        if (ReferenceEquals(box.Element, el))
+        {
+            return (x, y);
+        }
+
         foreach (var child in box.Children)
-            if (FindAbs(child, el, x, y) is { } found) return found;
+        {
+            if (FindAbs(child, el, x, y) is { } found)
+            {
+                return found;
+            }
+        }
+
         return null;
     }
 
     private static bool IsAnimatingLayerRoot(LaidOutPage page, Starling.Layout.Box.Box box)
     {
-        if (box.Element is not { } el) return false;
-        if (page.Document.WasRecentlyMutated(el)) return true;
-        foreach (var _ in page.Style.AnimationEngine.ActiveProperties(el)) return true;
-        foreach (var _ in page.Style.TransitionEngine.ActiveProperties(el)) return true;
+        if (box.Element is not { } el)
+        {
+            return false;
+        }
+
+        if (page.Document.WasRecentlyMutated(el))
+        {
+            return true;
+        }
+
+        foreach (var _ in page.Style.AnimationEngine.ActiveProperties(el))
+        {
+            return true;
+        }
+
+        foreach (var _ in page.Style.TransitionEngine.ActiveProperties(el))
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -2249,7 +2618,10 @@ internal sealed class NativeBrowserWindow : IDisposable
         try
         {
             var exe = Environment.ProcessPath;
-            if (string.IsNullOrEmpty(exe)) return;
+            if (string.IsNullOrEmpty(exe))
+            {
+                return;
+            }
 
             var psi = new System.Diagnostics.ProcessStartInfo { FileName = exe, UseShellExecute = false };
 
@@ -2258,7 +2630,9 @@ internal sealed class NativeBrowserWindow : IDisposable
             var argv0 = Environment.GetCommandLineArgs() is { Length: > 0 } a ? a[0] : "";
             if (Path.GetFileNameWithoutExtension(exe).Equals("dotnet", StringComparison.OrdinalIgnoreCase)
                 && argv0.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            {
                 psi.ArgumentList.Add(argv0);
+            }
 
             psi.ArgumentList.Add("--browser");
             System.Diagnostics.Process.Start(psi);

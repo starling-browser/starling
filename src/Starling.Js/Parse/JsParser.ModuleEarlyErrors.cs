@@ -62,12 +62,19 @@ public ref partial struct JsParser
                             ImportNamedSpecifier named => named.Local,
                             _ => null,
                         };
-                        if (local is not null) AddLexical(lexical, local.Name, local.Start);
+                        if (local is not null)
+                        {
+                            AddLexical(lexical, local.Name, local.Start);
+                        }
                     }
                     break;
 
                 case VariableDeclaration vd when vd.Kind is "let" or "const":
-                    foreach (var n in BoundNamesOf(vd)) AddLexical(lexical, n.Name, n.Pos);
+                    foreach (var n in BoundNamesOf(vd))
+                    {
+                        AddLexical(lexical, n.Name, n.Pos);
+                    }
+
                     break;
                 case ClassDeclaration cd:
                     AddLexical(lexical, cd.Name.Name, cd.Name.Start);
@@ -85,7 +92,11 @@ public ref partial struct JsParser
                     switch (decl)
                     {
                         case VariableDeclaration evd when evd.Kind is "let" or "const":
-                            foreach (var n in BoundNamesOf(evd)) AddLexical(lexical, n.Name, n.Pos);
+                            foreach (var n in BoundNamesOf(evd))
+                            {
+                                AddLexical(lexical, n.Name, n.Pos);
+                            }
+
                             break;
                         case ClassDeclaration ecd:
                             AddLexical(lexical, ecd.Name.Name, ecd.Name.Start);
@@ -101,8 +112,11 @@ public ref partial struct JsParser
                     // §16.2.3.7 — every `export default` introduces a *default*
                     // binding; two of them is a duplicate lexical name.
                     if (sawDefault)
+                    {
                         throw new JsParseException(
                             "a module may only have one default export", edd.Start);
+                    }
+
                     sawDefault = true;
                     // A *named* default declaration (`export default function F` /
                     // `export default class F`) ALSO declares the binding `F` in
@@ -115,7 +129,10 @@ public ref partial struct JsParser
                         _ => null,
                     };
                     if (defaultName is not null)
+                    {
                         AddLexical(lexical, defaultName.Name, defaultName.Start);
+                    }
+
                     break;
             }
         }
@@ -135,9 +152,13 @@ public ref partial struct JsParser
         }
 
         foreach (var kv in lexical)
+        {
             if (varNames.Contains(kv.Key))
+            {
                 throw new JsParseException(
                     $"'{kv.Key}' is already declared as a var binding", kv.Value);
+            }
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -152,8 +173,10 @@ public ref partial struct JsParser
         void Add(string name, JsPosition pos)
         {
             if (!seen.Add(name))
+            {
                 throw new JsParseException(
                     $"duplicate export name '{name}'", pos);
+            }
         }
 
         foreach (var stmt in body)
@@ -166,12 +189,18 @@ public ref partial struct JsParser
 
                 case ExportLocalDeclaration { Declaration: var decl } eld:
                     foreach (var n in ExportedDeclarationNames(decl))
+                    {
                         Add(n, eld.Start);
+                    }
+
                     break;
 
                 case ExportNamedDeclaration named:
                     foreach (var spec in named.Specifiers)
+                    {
                         Add(ModuleNameOf(spec.Exported), spec.Exported.Start);
+                    }
+
                     break;
 
                 case ExportAllDeclaration { ExportedName: { } ns } all:
@@ -190,7 +219,11 @@ public ref partial struct JsParser
         switch (decl)
         {
             case VariableDeclaration vd:
-                foreach (var n in BoundNamesOf(vd)) names.Add(n.Name);
+                foreach (var n in BoundNamesOf(vd))
+                {
+                    names.Add(n.Name);
+                }
+
                 break;
             case FunctionDeclaration fd: names.Add(fd.Name.Name); break;
             case ClassDeclaration cd: names.Add(cd.Name.Name); break;
@@ -216,7 +249,11 @@ public ref partial struct JsParser
             switch (decl)
             {
                 case VariableDeclaration vd:
-                    foreach (var n in BoundNamesOf(vd)) declared.Add(n.Name);
+                    foreach (var n in BoundNamesOf(vd))
+                    {
+                        declared.Add(n.Name);
+                    }
+
                     break;
                 case FunctionDeclaration fd: declared.Add(fd.Name.Name); break;
                 case ClassDeclaration cd: declared.Add(cd.Name.Name); break;
@@ -237,7 +274,10 @@ public ref partial struct JsParser
                             ImportNamedSpecifier named => named.Local.Name,
                             _ => null,
                         };
-                        if (local is not null) declared.Add(local);
+                        if (local is not null)
+                        {
+                            declared.Add(local);
+                        }
                     }
                     break;
                 case VariableDeclaration:
@@ -255,15 +295,23 @@ public ref partial struct JsParser
         foreach (var stmt in body)
         {
             if (stmt is ExportLocalDeclaration { Declaration: Statement d })
+            {
                 CollectVarNames(d, declared);
+            }
             else
+            {
                 CollectVarNames(stmt, declared);
+            }
         }
 
         // Now validate each local (non-`from`) export specifier.
         foreach (var stmt in body)
         {
-            if (stmt is not ExportNamedDeclaration { Source: null } named) continue;
+            if (stmt is not ExportNamedDeclaration { Source: null } named)
+            {
+                continue;
+            }
+
             foreach (var spec in named.Specifiers)
             {
                 // §16.2.3.1 — without a `from` clause the local is an
@@ -271,13 +319,17 @@ public ref partial struct JsParser
                 // is only valid when re-exporting via `from`, so here it is an
                 // early SyntaxError.
                 if (spec.Local is StringLiteral strLocal)
+                {
                     throw new JsParseException(
                         $"a string module-export name '{strLocal.Value}' requires a 'from' clause",
                         strLocal.Start);
+                }
                 // An identifier local must resolve to a declared top-level binding.
                 if (spec.Local is Identifier id && !declared.Contains(id.Name))
+                {
                     throw new JsParseException(
                         $"export '{id.Name}' is not defined in module", id.Start);
+                }
             }
         }
     }
@@ -300,8 +352,11 @@ public ref partial struct JsParser
         // valid imported-binding name (the general strict check below does not
         // cover it because `await` is not a strict FutureReservedWord).
         if (token.TextEquals("await"))
+        {
             throw new JsParseException(
                 "'await' may not be used as a binding identifier in a module", token.Start);
+        }
+
         CheckBindingIdentifier(token.Lexeme, token.Start);
     }
 }

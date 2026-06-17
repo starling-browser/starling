@@ -45,26 +45,43 @@ public static class ScrollController
     public static bool TryScroll(ScrollStateStore store, LayoutBox? hitBox, double deltaX, double deltaY, bool precise)
     {
         ArgumentNullException.ThrowIfNull(store);
-        if (hitBox is null) return false;
+        if (hitBox is null)
+        {
+            return false;
+        }
 
         var dx = precise ? deltaX : deltaX * LinePixels;
         var dy = precise ? deltaY : deltaY * LinePixels;
-        if (dx == 0 && dy == 0) return false;
+        if (dx == 0 && dy == 0)
+        {
+            return false;
+        }
 
         // Latch each axis to its own deepest scroller with room in the delta's
         // direction. The axes can land on different containers (an inner
         // vertical feed inside an outer horizontal strip).
         var targetX = dx != 0 ? FindScroller(store, hitBox, dx, vertical: false) : null;
         var targetY = dy != 0 ? FindScroller(store, hitBox, dy, vertical: true) : null;
-        if (targetX is null && targetY is null) return false;
+        if (targetX is null && targetY is null)
+        {
+            return false;
+        }
 
         if (targetX is not null && ReferenceEquals(targetX, targetY))
         {
             Apply(store, targetX, dx, dy);
             return true;
         }
-        if (targetX is not null) Apply(store, targetX, dx, 0);
-        if (targetY is not null) Apply(store, targetY, 0, dy);
+        if (targetX is not null)
+        {
+            Apply(store, targetX, dx, 0);
+        }
+
+        if (targetY is not null)
+        {
+            Apply(store, targetY, 0, dy);
+        }
+
         return true;
     }
 
@@ -80,17 +97,30 @@ public static class ScrollController
     {
         for (var node = (LayoutBox?)hitBox; node is not null; node = node.Parent)
         {
-            if (node.Style is not { } style || node.Element is not { } el) continue;
+            if (node.Style is not { } style || node.Element is not { } el)
+            {
+                continue;
+            }
+
             var axisValue = style.Get(vertical ? PropertyId.OverflowY : PropertyId.OverflowX);
-            if (!IsScrollKeyword(axisValue)) continue;
-            if (!store.TryGet(el, out var state)) continue;
+            if (!IsScrollKeyword(axisValue))
+            {
+                continue;
+            }
+
+            if (!store.TryGet(el, out var state))
+            {
+                continue;
+            }
 
             var offset = vertical ? state.OffsetY : state.OffsetX;
             var max = vertical ? state.MaxOffsetY : state.MaxOffsetX;
             // Room in the delta's direction; a scroller pinned at the rail
             // lets the delta chain to an ancestor.
             if (delta > 0 ? offset < max : offset > 0)
+            {
                 return el;
+            }
         }
         return null;
     }

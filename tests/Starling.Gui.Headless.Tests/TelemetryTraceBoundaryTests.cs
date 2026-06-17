@@ -42,7 +42,10 @@ public class TelemetryTraceBoundaryTests
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
             ActivityStarted = a =>
             {
-                lock (spans) spans.Add(new SpanRecord(a.OperationName, a.Parent?.DisplayName));
+                lock (spans)
+                {
+                    spans.Add(new SpanRecord(a.OperationName, a.Parent?.DisplayName));
+                }
             },
         };
         ActivitySource.AddActivityListener(al);
@@ -56,14 +59,21 @@ public class TelemetryTraceBoundaryTests
         window.CaptureRenderedFrame();
 
         // Clear spans accumulated during ShowPage/initial render.
-        lock (spans) spans.Clear();
+        lock (spans)
+        {
+            spans.Clear();
+        }
 
         var leakedNavigate = new Activity("gui.navigate").Start();
         try
         {
             LiveTick.Invoke(panel, null);
             SpanRecord tick;
-            lock (spans) tick = spans.Should().ContainSingle(s => s.Name == "gui.live.tick").Subject;
+            lock (spans)
+            {
+                tick = spans.Should().ContainSingle(s => s.Name == "gui.live.tick").Subject;
+            }
+
             tick.ParentName.Should().BeNull("dispatcher-driven frames are independent after first paint");
             Activity.Current.Should().BeSameAs(leakedNavigate);
         }

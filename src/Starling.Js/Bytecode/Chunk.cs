@@ -153,16 +153,26 @@ public sealed class Chunk
     public (int Line, int Col)? PositionAt(int ip)
     {
         var positions = Positions;
-        if (positions.Count == 0) return null;
+        if (positions.Count == 0)
+        {
+            return null;
+        }
         // Binary search for the greatest Offset <= ip.
         int lo = 0, hi = positions.Count - 1, best = -1;
         while (lo <= hi)
         {
             var mid = (lo + hi) >> 1;
             if (positions[mid].Offset <= ip) { best = mid; lo = mid + 1; }
-            else hi = mid - 1;
+            else
+            {
+                hi = mid - 1;
+            }
         }
-        if (best < 0) return null;
+        if (best < 0)
+        {
+            return null;
+        }
+
         var e = positions[best];
         return (e.Line, e.Col);
     }
@@ -241,9 +251,13 @@ public sealed class ChunkBuilder
         _positions ??= [];
         var offset = _code.Count;
         if (_positions.Count > 0 && _positions[^1].Offset == offset)
+        {
             _positions[^1] = (offset, line, col);
+        }
         else
+        {
             _positions.Add((offset, line, col));
+        }
     }
 
     /// <summary>Record that <paramref name="slot"/> is captured by a nested
@@ -261,10 +275,18 @@ public sealed class ChunkBuilder
 
     public int AddConstant(object? value)
     {
-        if (value is string s && _stringPool.TryGetValue(s, out var idx)) return idx;
+        if (value is string s && _stringPool.TryGetValue(s, out var idx))
+        {
+            return idx;
+        }
+
         var pos = _constants.Count;
         _constants.Add(value);
-        if (value is string ss) _stringPool[ss] = pos;
+        if (value is string ss)
+        {
+            _stringPool[ss] = pos;
+        }
+
         return pos;
     }
 
@@ -277,7 +299,11 @@ public sealed class ChunkBuilder
 
     public void Emit(Opcode op)
     {
-        if (op == Opcode.PrologueEnd) HasPrologue = true;
+        if (op == Opcode.PrologueEnd)
+        {
+            HasPrologue = true;
+        }
+
         _code.Add((byte)op);
     }
 
@@ -290,7 +316,10 @@ public sealed class ChunkBuilder
     public void EmitU16(Opcode op, int arg)
     {
         if (arg is < 0 or > 0xFFFF)
+        {
             throw new ArgumentOutOfRangeException(nameof(arg), arg, "operand exceeds u16 range");
+        }
+
         _code.Add((byte)op);
         var b1 = (byte)(arg & 0xFF);
         var b2 = (byte)((arg >> 8) & 0xFF);
@@ -313,7 +342,10 @@ public sealed class ChunkBuilder
     {
         EmitU16(op, nameIdx);
         if (_cacheCount < 0xFFFF) { EmitU16Raw(_cacheCount); _cacheCount++; }
-        else EmitU16Raw(0xFFFF);
+        else
+        {
+            EmitU16Raw(0xFFFF);
+        }
     }
 
     /// <summary>Number of regex-literal sites; becomes the size of
@@ -329,8 +361,11 @@ public sealed class ChunkBuilder
     public int AllocateRegexCache()
     {
         if (_regexCacheCount > 0xFFFF)
+        {
             throw new InvalidOperationException(
                 "regex-literal site count exceeds the u16 limit (65535); function has too many regex literals");
+        }
+
         return _regexCacheCount++;
     }
 
@@ -347,8 +382,11 @@ public sealed class ChunkBuilder
     public void EmitSlot(Opcode op, int slot)
     {
         if (slot is < 0 or > 0xFFFF)
+        {
             throw new InvalidOperationException(
                 $"local slot {slot} exceeds the u16 limit (65535); function has too many locals");
+        }
+
         EmitU16(op, slot);
     }
 
@@ -364,8 +402,11 @@ public sealed class ChunkBuilder
     public void EmitUpvalue(Opcode op, int idx)
     {
         if (idx is < 0 or > 0xFFFF)
+        {
             throw new InvalidOperationException(
                 $"upvalue index {idx} exceeds the u16 limit (65535); function captures too many bindings");
+        }
+
         EmitU16(op, idx);
     }
 
@@ -408,7 +449,10 @@ public sealed class ChunkBuilder
     public void EmitU16Raw(int value)
     {
         if (value is < 0 or > 0xFFFF)
+        {
             throw new ArgumentOutOfRangeException(nameof(value));
+        }
+
         _code.Add((byte)(value & 0xFF));
         _code.Add((byte)((value >> 8) & 0xFF));
     }
@@ -431,7 +475,10 @@ public sealed class ChunkBuilder
     public void EmitU8Raw(int value)
     {
         if (value is < 0 or > 0xFF)
+        {
             throw new ArgumentOutOfRangeException(nameof(value));
+        }
+
         _code.Add((byte)value);
     }
 

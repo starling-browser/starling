@@ -40,7 +40,11 @@ internal static class IntrinsicSizes
     {
         ratio = 0;
         hasAuto = false;
-        if (style is null) return false;
+        if (style is null)
+        {
+            return false;
+        }
+
         switch (style.Get(PropertyId.AspectRatio))
         {
             case CssKeyword k:
@@ -69,7 +73,11 @@ internal static class IntrinsicSizes
                                 break;
                         }
                     }
-                    if (first is not { } w) return false;
+                    if (first is not { } w)
+                    {
+                        return false;
+                    }
+
                     return Validate(second is { } h ? w / h : w, ref ratio);
                 }
             default:
@@ -78,7 +86,11 @@ internal static class IntrinsicSizes
 
         static bool Validate(double candidate, ref double ratio)
         {
-            if (!(candidate > 0) || !double.IsFinite(candidate)) return false;
+            if (!(candidate > 0) || !double.IsFinite(candidate))
+            {
+                return false;
+            }
+
             ratio = candidate;
             return true;
         }
@@ -100,7 +112,10 @@ internal static class IntrinsicSizes
         {
             double itemMax = 0;
             foreach (var item in box.Children)
+            {
                 itemMax = Math.Max(itemMax, item.Frame.X + item.Frame.Width);
+            }
+
             return itemMax;
         }
 
@@ -130,7 +145,11 @@ internal static class IntrinsicSizes
                             // it must not widen the measured extent (a
                             // zero-width min-content probe would otherwise
                             // report longest-word + space).
-                            if (string.IsNullOrWhiteSpace(frag.Text)) continue;
+                            if (string.IsNullOrWhiteSpace(frag.Text))
+                            {
+                                continue;
+                            }
+
                             max = Math.Max(max, frag.X + frag.Width);
                         }
                         break;

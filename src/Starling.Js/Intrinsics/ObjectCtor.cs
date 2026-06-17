@@ -39,7 +39,10 @@ public static class ObjectCtor
             }
             var value = args.Length > 0 ? args[0] : JsValue.Undefined;
             // When `value` is undefined or null → fresh ordinary object.
-            if (value.IsNullish) return JsValue.Object(realm.NewOrdinaryObject());
+            if (value.IsNullish)
+            {
+                return JsValue.Object(realm.NewOrdinaryObject());
+            }
             // Otherwise per §7.1.18 ToObject (objects pass through unchanged).
             return JsValue.Object(AbstractOperations.ToObject(realm, value));
         }, isConstructor: true);
@@ -120,8 +123,15 @@ public static class ObjectCtor
     private static JsObject RequireObject(JsRealm realm, JsValue v)
     {
         if (v.IsNullish)
+        {
             throw new JsThrow(realm.NewTypeError("Cannot convert undefined or null to object"));
-        if (!v.IsObject) return AbstractOperations.ToObject(realm, v);
+        }
+
+        if (!v.IsObject)
+        {
+            return AbstractOperations.ToObject(realm, v);
+        }
+
         return v.AsObject;
     }
 
@@ -133,7 +143,11 @@ public static class ObjectCtor
     private static JsValue MakeArrayLike(JsRealm realm, IReadOnlyList<JsValue> items)
     {
         var arr = new JsArray(realm);
-        for (var i = 0; i < items.Count; i++) arr.Push(items[i]);
+        for (var i = 0; i < items.Count; i++)
+        {
+            arr.Push(items[i]);
+        }
+
         return JsValue.Object(arr);
     }
 
@@ -164,7 +178,10 @@ public static class ObjectCtor
     private static PropertyDescriptor ToPropertyDescriptor(JsRealm realm, JsValue input)
     {
         if (!input.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Property descriptor must be an object"));
+        }
+
         var obj = input.AsObject;
 
         var hasEnumerable = AbstractOperations.HasProperty(obj, "enumerable");
@@ -192,7 +209,10 @@ public static class ObjectCtor
             if (!g.IsUndefined)
             {
                 if (!AbstractOperations.IsCallable(g))
+                {
                     throw new JsThrow(realm.NewTypeError("Getter must be a function"));
+                }
+
                 getter = g.AsObject;
             }
         }
@@ -205,17 +225,24 @@ public static class ObjectCtor
             if (!s.IsUndefined)
             {
                 if (!AbstractOperations.IsCallable(s))
+                {
                     throw new JsThrow(realm.NewTypeError("Setter must be a function"));
+                }
+
                 setter = s.AsObject;
             }
         }
 
         if ((hasValue || hasWritable) && (hasGet || hasSet))
+        {
             throw new JsThrow(realm.NewTypeError(
                 "Invalid property descriptor. Cannot both specify accessors and a value or writable attribute"));
+        }
 
         if (hasGet || hasSet)
+        {
             return PropertyDescriptor.Accessor(getter, setter, enumerable, configurable);
+        }
 
         return PropertyDescriptor.Data(value, writable, enumerable, configurable);
     }
@@ -228,17 +255,32 @@ public static class ObjectCtor
     /// properties from each source to target.</summary>
     private static JsValue Assign(JsValue thisV, JsValue[] args)
     {
-        if (args.Length == 0) throw new JsThrow(JsValue.String("Object.assign requires a target"));
+        if (args.Length == 0)
+        {
+            throw new JsThrow(JsValue.String("Object.assign requires a target"));
+        }
+
         var target = args[0];
         if (!target.IsObject)
+        {
             throw new JsThrow(JsValue.String("Object.assign target must be an object"));
+        }
+
         var targetObj = target.AsObject;
 
         for (var i = 1; i < args.Length; i++)
         {
             var src = args[i];
-            if (src.IsNullish) continue;
-            if (!src.IsObject) continue;
+            if (src.IsNullish)
+            {
+                continue;
+            }
+
+            if (!src.IsObject)
+            {
+                continue;
+            }
+
             var srcObj = src.AsObject;
             foreach (var key in srcObj.EnumerableKeys())
             {
@@ -259,12 +301,24 @@ public static class ObjectCtor
     private static JsValue Create(JsRealm realm, JsValue[] args)
     {
         if (args.Length == 0)
+        {
             throw new JsThrow(realm.NewTypeError("Object.create: prototype must be Object or null"));
+        }
+
         var proto = args[0];
         JsObject? protoObj;
-        if (proto.IsNull) protoObj = null;
-        else if (proto.IsObject) protoObj = proto.AsObject;
-        else throw new JsThrow(realm.NewTypeError("Object.create: prototype must be Object or null"));
+        if (proto.IsNull)
+        {
+            protoObj = null;
+        }
+        else if (proto.IsObject)
+        {
+            protoObj = proto.AsObject;
+        }
+        else
+        {
+            throw new JsThrow(realm.NewTypeError("Object.create: prototype must be Object or null"));
+        }
 
         var obj = realm.NewObjectWithProto(protoObj);
         if (args.Length >= 2 && !args[1].IsUndefined)
@@ -278,11 +332,17 @@ public static class ObjectCtor
     private static JsValue DefineProperties(JsRealm realm, JsValue[] args)
     {
         if (args.Length == 0 || !args[0].IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Object.defineProperties called on non-object"));
+        }
+
         var target = args[0].AsObject;
         var props = args.Length > 1 ? args[1] : JsValue.Undefined;
         if (props.IsUndefined)
+        {
             throw new JsThrow(realm.NewTypeError("Object.defineProperties: descriptors must be an object"));
+        }
+
         ApplyDescriptors(realm, target, props);
         return args[0];
     }
@@ -290,14 +350,19 @@ public static class ObjectCtor
     private static void ApplyDescriptors(JsRealm realm, JsObject target, JsValue props)
     {
         if (!props.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Property descriptors must be an object"));
+        }
+
         var p = props.AsObject;
         foreach (var key in p.EnumerableKeys())
         {
             var descVal = p.Get(key);
             var desc = ToPropertyDescriptor(realm, descVal);
             if (!Starling.Js.Runtime.JsMappedArguments.DefineFromUser(target, JsPropertyKey.String(key), desc, descVal.AsObject))
+            {
                 throw new JsThrow(realm.NewTypeError($"Cannot define property '{key}'"));
+            }
         }
     }
 
@@ -305,16 +370,28 @@ public static class ObjectCtor
     private static JsValue DefineProperty(JsRealm realm, JsValue[] args)
     {
         if (args.Length == 0 || !args[0].IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Object.defineProperty called on non-object"));
+        }
+
         if (args.Length < 2)
+        {
             throw new JsThrow(realm.NewTypeError("Object.defineProperty requires a property key"));
+        }
+
         if (args.Length < 3)
+        {
             throw new JsThrow(realm.NewTypeError("Object.defineProperty requires a descriptor"));
+        }
+
         var target = args[0].AsObject;
         var key = AbstractOperations.ToPropertyKey(args[1]);
         var desc = ToPropertyDescriptor(realm, args[2]);
         if (!Starling.Js.Runtime.JsMappedArguments.DefineFromUser(target, key, desc, args[2].AsObject))
+        {
             throw new JsThrow(realm.NewTypeError($"Cannot redefine property '{key}'"));
+        }
+
         return args[0];
     }
 
@@ -324,7 +401,11 @@ public static class ObjectCtor
         var target = RequireObject(realm, args.Length > 0 ? args[0] : JsValue.Undefined);
         var key = AbstractOperations.ToPropertyKey(args.Length > 1 ? args[1] : JsValue.Undefined);
         var d = target.GetOwnPropertyDescriptor(key);
-        if (d is null) return JsValue.Undefined;
+        if (d is null)
+        {
+            return JsValue.Undefined;
+        }
+
         return FromPropertyDescriptor(realm, d.Value);
     }
 
@@ -336,7 +417,11 @@ public static class ObjectCtor
         foreach (var key in target.OwnPropertyKeys)
         {
             var d = target.GetOwnPropertyDescriptor(key);
-            if (d is null) continue;
+            if (d is null)
+            {
+                continue;
+            }
+
             bag.DefineOwnProperty(key,
                 PropertyDescriptor.Data(FromPropertyDescriptor(realm, d.Value), writable: true, enumerable: true, configurable: true));
         }
@@ -348,7 +433,11 @@ public static class ObjectCtor
     {
         var target = RequireObject(realm, args.Length > 0 ? args[0] : JsValue.Undefined);
         var names = new List<JsValue>();
-        foreach (var k in target.Keys) names.Add(JsValue.String(k));
+        foreach (var k in target.Keys)
+        {
+            names.Add(JsValue.String(k));
+        }
+
         return MakeArrayLike(realm, names);
     }
 
@@ -363,10 +452,20 @@ public static class ObjectCtor
         if (target is JsModuleNamespace)
         {
             foreach (var k in target.OwnPropertyKeys)
-                if (k.IsSymbol) symbols.Add(JsValue.Symbol(k.AsSymbol));
+            {
+                if (k.IsSymbol)
+                {
+                    symbols.Add(JsValue.Symbol(k.AsSymbol));
+                }
+            }
+
             return MakeArrayLike(realm, symbols);
         }
-        foreach (var k in target.SymbolKeys) symbols.Add(JsValue.Symbol(k));
+        foreach (var k in target.SymbolKeys)
+        {
+            symbols.Add(JsValue.Symbol(k));
+        }
+
         return MakeArrayLike(realm, symbols);
     }
 
@@ -383,19 +482,41 @@ public static class ObjectCtor
     private static JsValue SetPrototypeOf(JsRealm realm, JsValue[] args)
     {
         if (args.Length == 0 || args[0].IsNullish)
+        {
             throw new JsThrow(realm.NewTypeError("Object.setPrototypeOf called on null or undefined"));
+        }
+
         if (args.Length < 2)
+        {
             throw new JsThrow(realm.NewTypeError("Object.setPrototypeOf requires a prototype argument"));
+        }
+
         var proto = args[1];
         JsObject? protoObj;
-        if (proto.IsNull) protoObj = null;
-        else if (proto.IsObject) protoObj = proto.AsObject;
-        else throw new JsThrow(realm.NewTypeError("Object.setPrototypeOf: prototype must be Object or null"));
+        if (proto.IsNull)
+        {
+            protoObj = null;
+        }
+        else if (proto.IsObject)
+        {
+            protoObj = proto.AsObject;
+        }
+        else
+        {
+            throw new JsThrow(realm.NewTypeError("Object.setPrototypeOf: prototype must be Object or null"));
+        }
         // If target is a primitive, ToObject would box it (and the box is
         // discarded). Spec: SetPrototypeOf on a non-object is a no-op return.
-        if (!args[0].IsObject) return args[0];
+        if (!args[0].IsObject)
+        {
+            return args[0];
+        }
+
         if (!args[0].AsObject.SetPrototypeOf(protoObj))
+        {
             throw new JsThrow(realm.NewTypeError("Object.setPrototypeOf: cycle detected or non-extensible"));
+        }
+
         return args[0];
     }
 
@@ -404,7 +525,11 @@ public static class ObjectCtor
     {
         var target = RequireObject(realm, args.Length > 0 ? args[0] : JsValue.Undefined);
         var keys = new List<JsValue>();
-        foreach (var k in target.EnumerableKeys()) keys.Add(JsValue.String(k));
+        foreach (var k in target.EnumerableKeys())
+        {
+            keys.Add(JsValue.String(k));
+        }
+
         return MakeArrayLike(realm, keys);
     }
 
@@ -414,7 +539,10 @@ public static class ObjectCtor
         var target = RequireObject(realm, args.Length > 0 ? args[0] : JsValue.Undefined);
         var values = new List<JsValue>();
         foreach (var k in target.EnumerableKeys())
+        {
             values.Add(AbstractOperations.Get(vm: null, target, k));
+        }
+
         return MakeArrayLike(realm, values);
     }
 
@@ -437,19 +565,31 @@ public static class ObjectCtor
     private static JsValue Freeze(JsValue[] args)
     {
         var v = args.Length > 0 ? args[0] : JsValue.Undefined;
-        if (!v.IsObject) return v;
+        if (!v.IsObject)
+        {
+            return v;
+        }
+
         var obj = v.AsObject;
         // Snapshot keys to avoid mutation-during-enumeration.
         var keys = new List<JsPropertyKey>(obj.OwnPropertyKeys);
         foreach (var key in keys)
         {
             var d = obj.GetOwnPropertyDescriptor(key);
-            if (d is null) continue;
+            if (d is null)
+            {
+                continue;
+            }
+
             var desc = d.Value;
             if (desc.IsAccessor)
+            {
                 obj.DefineOwnProperty(key, PropertyDescriptor.Accessor(desc.Getter, desc.Setter, desc.Enumerable, configurable: false));
+            }
             else
+            {
                 obj.DefineOwnProperty(key, PropertyDescriptor.Data(desc.Value, writable: false, enumerable: desc.Enumerable, configurable: false));
+            }
         }
         obj.PreventExtensions();
         return v;
@@ -459,16 +599,35 @@ public static class ObjectCtor
     private static JsValue IsFrozen(JsValue[] args)
     {
         var v = args.Length > 0 ? args[0] : JsValue.Undefined;
-        if (!v.IsObject) return JsValue.True; // primitives are frozen by definition
+        if (!v.IsObject)
+        {
+            return JsValue.True; // primitives are frozen by definition
+        }
+
         var obj = v.AsObject;
-        if (obj.Extensible) return JsValue.False;
+        if (obj.Extensible)
+        {
+            return JsValue.False;
+        }
+
         foreach (var key in obj.OwnPropertyKeys)
         {
             var d = obj.GetOwnPropertyDescriptor(key);
-            if (d is null) continue;
+            if (d is null)
+            {
+                continue;
+            }
+
             var desc = d.Value;
-            if (desc.Configurable) return JsValue.False;
-            if (!desc.IsAccessor && desc.Writable) return JsValue.False;
+            if (desc.Configurable)
+            {
+                return JsValue.False;
+            }
+
+            if (!desc.IsAccessor && desc.Writable)
+            {
+                return JsValue.False;
+            }
         }
         return JsValue.True;
     }
@@ -478,18 +637,30 @@ public static class ObjectCtor
     private static JsValue Seal(JsValue[] args)
     {
         var v = args.Length > 0 ? args[0] : JsValue.Undefined;
-        if (!v.IsObject) return v;
+        if (!v.IsObject)
+        {
+            return v;
+        }
+
         var obj = v.AsObject;
         var keys = new List<JsPropertyKey>(obj.OwnPropertyKeys);
         foreach (var key in keys)
         {
             var d = obj.GetOwnPropertyDescriptor(key);
-            if (d is null) continue;
+            if (d is null)
+            {
+                continue;
+            }
+
             var desc = d.Value;
             if (desc.IsAccessor)
+            {
                 obj.DefineOwnProperty(key, PropertyDescriptor.Accessor(desc.Getter, desc.Setter, desc.Enumerable, configurable: false));
+            }
             else
+            {
                 obj.DefineOwnProperty(key, PropertyDescriptor.Data(desc.Value, writable: desc.Writable, enumerable: desc.Enumerable, configurable: false));
+            }
         }
         obj.PreventExtensions();
         return v;
@@ -499,14 +670,29 @@ public static class ObjectCtor
     private static JsValue IsSealed(JsValue[] args)
     {
         var v = args.Length > 0 ? args[0] : JsValue.Undefined;
-        if (!v.IsObject) return JsValue.True;
+        if (!v.IsObject)
+        {
+            return JsValue.True;
+        }
+
         var obj = v.AsObject;
-        if (obj.Extensible) return JsValue.False;
+        if (obj.Extensible)
+        {
+            return JsValue.False;
+        }
+
         foreach (var key in obj.OwnPropertyKeys)
         {
             var d = obj.GetOwnPropertyDescriptor(key);
-            if (d is null) continue;
-            if (d.Value.Configurable) return JsValue.False;
+            if (d is null)
+            {
+                continue;
+            }
+
+            if (d.Value.Configurable)
+            {
+                return JsValue.False;
+            }
         }
         return JsValue.True;
     }
@@ -515,7 +701,11 @@ public static class ObjectCtor
     private static JsValue PreventExtensions(JsValue[] args)
     {
         var v = args.Length > 0 ? args[0] : JsValue.Undefined;
-        if (!v.IsObject) return v;
+        if (!v.IsObject)
+        {
+            return v;
+        }
+
         v.AsObject.PreventExtensions();
         return v;
     }
@@ -524,7 +714,11 @@ public static class ObjectCtor
     private static JsValue IsExtensible(JsValue[] args)
     {
         var v = args.Length > 0 ? args[0] : JsValue.Undefined;
-        if (!v.IsObject) return JsValue.False;
+        if (!v.IsObject)
+        {
+            return JsValue.False;
+        }
+
         return JsValue.Boolean(v.AsObject.Extensible);
     }
 
@@ -545,7 +739,10 @@ public static class ObjectCtor
     {
         var srcV = args.Length > 0 ? args[0] : JsValue.Undefined;
         if (!srcV.IsObject && !srcV.IsString)
+        {
             throw new JsThrow(realm.NewTypeError("Object.fromEntries requires an iterable"));
+        }
+
         var result = realm.NewOrdinaryObject();
 
         if (ArrayCtor.HasIteratorMethod(realm, srcV))
@@ -554,7 +751,11 @@ public static class ObjectCtor
             while (true)
             {
                 var step = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-                if (step is null) break;
+                if (step is null)
+                {
+                    break;
+                }
+
                 var entryV = AbstractOperations.IteratorValue(realm.ActiveVm, step.Value);
                 AddEntry(realm, result, entryV);
             }
@@ -564,11 +765,17 @@ public static class ObjectCtor
         var src = srcV.AsObject;
         var lengthV = src.Get("length");
         if (!lengthV.IsNumber)
+        {
             throw new JsThrow(realm.NewTypeError("Object.fromEntries: source is not iterable or array-like"));
+        }
+
         var len = (int)lengthV.AsNumber;
         for (var i = 0; i < len; i++)
+        {
             AddEntry(realm, result,
                 src.Get(i.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+
         return JsValue.Object(result);
     }
 
@@ -578,7 +785,10 @@ public static class ObjectCtor
     private static void AddEntry(JsRealm realm, JsObject result, JsValue entryV)
     {
         if (!entryV.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Object.fromEntries: entry must be an object"));
+        }
+
         var entry = entryV.AsObject;
         var key = AbstractOperations.ToPropertyKey(entry.Get("0"));
         var val = entry.Get("1");
@@ -589,7 +799,11 @@ public static class ObjectCtor
     /// <summary>§20.1.2.13 Object.hasOwn(obj, key).</summary>
     private static JsValue HasOwn(JsValue[] args)
     {
-        if (args.Length == 0 || !args[0].IsObject) return JsValue.False;
+        if (args.Length == 0 || !args[0].IsObject)
+        {
+            return JsValue.False;
+        }
+
         var key = AbstractOperations.ToPropertyKey(args.Length > 1 ? args[1] : JsValue.Undefined);
         return JsValue.Boolean(args[0].AsObject.HasOwn(key));
     }
@@ -610,11 +824,18 @@ public static class ObjectCtor
     /// prototype chain looking for <c>this</c>.</summary>
     private static JsValue ProtoIsPrototypeOf(JsRealm realm, JsValue thisV, JsValue[] args)
     {
-        if (args.Length == 0 || !args[0].IsObject) return JsValue.False;
+        if (args.Length == 0 || !args[0].IsObject)
+        {
+            return JsValue.False;
+        }
+
         var self = RequireObject(realm, thisV);
         for (var p = args[0].AsObject.Prototype; p is not null; p = p.Prototype)
         {
-            if (ReferenceEquals(p, self)) return JsValue.True;
+            if (ReferenceEquals(p, self))
+            {
+                return JsValue.True;
+            }
         }
         return JsValue.False;
     }
@@ -634,8 +855,15 @@ public static class ObjectCtor
     /// string, it overrides the default tag.</summary>
     private static JsValue ProtoToString(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsUndefined) return JsValue.String("[object Undefined]");
-        if (thisV.IsNull) return JsValue.String("[object Null]");
+        if (thisV.IsUndefined)
+        {
+            return JsValue.String("[object Undefined]");
+        }
+
+        if (thisV.IsNull)
+        {
+            return JsValue.String("[object Null]");
+        }
 
         var o = AbstractOperations.ToObject(realm, thisV);
         var defaultTag = DefaultToStringTag(realm, o);
@@ -646,7 +874,10 @@ public static class ObjectCtor
         // Only string values override.
         var tag = defaultTag;
         var tagVal = AbstractOperations.Get(realm.ActiveVm, o, JsPropertyKey.Symbol(SymbolCtor.ToStringTag));
-        if (tagVal.Kind == JsValueKind.String) tag = tagVal.AsString;
+        if (tagVal.Kind == JsValueKind.String)
+        {
+            tag = tagVal.AsString;
+        }
 
         return JsValue.String("[object " + tag + "]");
     }
@@ -656,25 +887,57 @@ public static class ObjectCtor
     /// exotic (step 5) via <see cref="JsObject.IsArgumentsExotic"/>.</summary>
     private static string DefaultToStringTag(JsRealm realm, JsObject o)
     {
-        if (o is JsArray) return "Array";
+        if (o is JsArray)
+        {
+            return "Array";
+        }
         // §20.1.3.6 step 5 — [[ParameterMap]] ⇒ "Arguments". Must precede the
         // [[Call]] check (an arguments object isn't callable, but spec order).
-        if (o.IsArgumentsExotic) return "Arguments";
-        if (AbstractOperations.IsCallable(JsValue.Object(o))) return "Function";
+        if (o.IsArgumentsExotic)
+        {
+            return "Arguments";
+        }
+
+        if (AbstractOperations.IsCallable(JsValue.Object(o)))
+        {
+            return "Function";
+        }
         // Error: any object with ErrorPrototype somewhere in its chain.
         for (var p = o.Prototype; p is not null; p = p.Prototype)
         {
-            if (ReferenceEquals(p, realm.ErrorPrototype)) return "Error";
+            if (ReferenceEquals(p, realm.ErrorPrototype))
+            {
+                return "Error";
+            }
         }
         // Boxed primitives (String / Number / Boolean) — detect via prototype.
         for (var p = o.Prototype; p is not null; p = p.Prototype)
         {
-            if (ReferenceEquals(p, realm.StringPrototype)) return "String";
-            if (ReferenceEquals(p, realm.NumberPrototype)) return "Number";
-            if (ReferenceEquals(p, realm.BooleanPrototype)) return "Boolean";
+            if (ReferenceEquals(p, realm.StringPrototype))
+            {
+                return "String";
+            }
+
+            if (ReferenceEquals(p, realm.NumberPrototype))
+            {
+                return "Number";
+            }
+
+            if (ReferenceEquals(p, realm.BooleanPrototype))
+            {
+                return "Boolean";
+            }
         }
-        if (o is JsDate) return "Date";
-        if (o is JsRegExp) return "RegExp";
+        if (o is JsDate)
+        {
+            return "Date";
+        }
+
+        if (o is JsRegExp)
+        {
+            return "RegExp";
+        }
+
         return "Object";
     }
 
@@ -691,7 +954,9 @@ public static class ObjectCtor
         {
             var ts = thisV.AsObject.Get("toString");
             if (ts.IsObject && ts.AsObject is JsNativeFunction nat)
+            {
                 return nat.Body(thisV, Array.Empty<JsValue>());
+            }
         }
         return ProtoToString(realm, thisV);
     }

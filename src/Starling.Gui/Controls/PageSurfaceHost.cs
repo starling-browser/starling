@@ -404,7 +404,10 @@ internal static unsafe class MacMetal
 
     private static nint PassthroughViewClass()
     {
-        if (_passthroughClass != 0) return _passthroughClass;
+        if (_passthroughClass != 0)
+        {
+            return _passthroughClass;
+        }
 
         // A second run in the same process (rare) would find the class already
         // registered; reuse it rather than re-allocating (which returns nil).
@@ -416,7 +419,10 @@ internal static unsafe class MacMetal
         }
 
         var cls = objc_allocateClassPair(objc_getClass("NSView"), "StarlingPassthroughMetalView", 0);
-        if (cls == 0) return 0;
+        if (cls == 0)
+        {
+            return 0;
+        }
 
         delegate* unmanaged<nint, nint, CGPoint, nint> imp = &HitTestReturnNil;
         // "@@:{CGPoint=dd}" — returns id, args: self (id), _cmd (SEL), point (CGPoint of two doubles).
@@ -438,15 +444,28 @@ internal static unsafe class MacMetal
         try
         {
             var viewClass = PassthroughViewClass();
-            if (viewClass == 0) return 0;
+            if (viewClass == 0)
+            {
+                return 0;
+            }
 
             var view = MsgSend(MsgSend(viewClass, sel_registerName("alloc")), sel_registerName("init"));
-            if (view == 0) return 0;
+            if (view == 0)
+            {
+                return 0;
+            }
 
             var metalClass = objc_getClass("CAMetalLayer");
-            if (metalClass == 0) return view;
+            if (metalClass == 0)
+            {
+                return view;
+            }
+
             var layer = MsgSend(MsgSend(metalClass, sel_registerName("alloc")), sel_registerName("init"));
-            if (layer == 0) return view;
+            if (layer == 0)
+            {
+                return view;
+            }
 
             // The render session configures the swapchain
             // with RenderAttachment usage only, so the default framebufferOnly = YES
@@ -460,7 +479,9 @@ internal static unsafe class MacMetal
             MsgSendVoidPtr(view, sel_registerName("setLayer:"), layer);
             MsgSendVoidBool(view, sel_registerName("setWantsLayer:"), true);
             if (scale > 0)
+            {
                 MsgSendVoidDouble(layer, sel_registerName("setContentsScale:"), scale);
+            }
 
             metalLayer = layer;
             return view;
@@ -475,7 +496,11 @@ internal static unsafe class MacMetal
 
     public static void SetContentsScale(nint metalLayer, double scale)
     {
-        if (metalLayer == 0 || scale <= 0) return;
+        if (metalLayer == 0 || scale <= 0)
+        {
+            return;
+        }
+
         try
         {
             MsgSendVoidDouble(metalLayer, sel_registerName("setContentsScale:"), scale);
@@ -489,7 +514,11 @@ internal static unsafe class MacMetal
 
     public static void Release(nint obj)
     {
-        if (obj == 0) return;
+        if (obj == 0)
+        {
+            return;
+        }
+
         try
         {
             MsgSend(obj, sel_registerName("release"));

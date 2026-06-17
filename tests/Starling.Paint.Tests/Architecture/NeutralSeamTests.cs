@@ -35,28 +35,45 @@ public sealed class NeutralSeamTests
 
         foreach (var t in asm.GetTypes())
         {
-            if (!IsContractType(t)) continue;
+            if (!IsContractType(t))
+            {
+                continue;
+            }
 
             const BindingFlags F = BindingFlags.Public | BindingFlags.NonPublic
                 | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
             foreach (var c in t.GetConstructors(F))
+            {
                 foreach (var p in c.GetParameters())
+                {
                     Record(leaks, t, ".ctor", p.ParameterType);
+                }
+            }
 
             foreach (var m in t.GetMethods(F))
             {
-                if (m.IsSpecialName) continue; // property/event accessors covered below
+                if (m.IsSpecialName)
+                {
+                    continue; // property/event accessors covered below
+                }
+
                 Record(leaks, t, m.Name, m.ReturnType);
                 foreach (var p in m.GetParameters())
+                {
                     Record(leaks, t, m.Name, p.ParameterType);
+                }
             }
 
             foreach (var pr in t.GetProperties(F))
+            {
                 Record(leaks, t, pr.Name, pr.PropertyType);
+            }
 
             foreach (var fl in t.GetFields(F))
+            {
                 Record(leaks, t, fl.Name, fl.FieldType);
+            }
         }
 
         var unexpected = leaks.Except(KnownGpuLeaks).ToList();
@@ -73,8 +90,16 @@ public sealed class NeutralSeamTests
     /// </summary>
     private static bool IsContractType(Type t)
     {
-        if (t.Name.StartsWith("ImageSharp", StringComparison.Ordinal)) return false;
-        if (t.Name.StartsWith('<')) return false; // compiler-generated
+        if (t.Name.StartsWith("ImageSharp", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (t.Name.StartsWith('<'))
+        {
+            return false; // compiler-generated
+        }
+
         return t.Namespace == "Starling.Paint.DisplayList"
             || (t.Namespace == "Starling.Paint.Backend" && !t.IsNested
                 && (t.IsInterface
@@ -86,16 +111,27 @@ public sealed class NeutralSeamTests
     private static void Record(SortedSet<string> leaks, Type owner, string member, Type t)
     {
         foreach (var r in Flatten(t))
+        {
             if ((r.Namespace ?? "").StartsWith("SixLabors", StringComparison.Ordinal))
+            {
                 leaks.Add($"{owner.Name}.{member} => {r.Name}");
+            }
+        }
     }
 
     private static IEnumerable<Type> Flatten(Type t)
     {
-        if (t.HasElementType) { foreach (var e in Flatten(t.GetElementType()!)) yield return e; yield break; }
+        if (t.HasElementType) { foreach (var e in Flatten(t.GetElementType()!)) { yield return e; } yield break; }
         yield return t;
         if (t.IsGenericType)
+        {
             foreach (var a in t.GetGenericArguments())
-                foreach (var e in Flatten(a)) yield return e;
+            {
+                foreach (var e in Flatten(a))
+                {
+                    yield return e;
+                }
+            }
+        }
     }
 }

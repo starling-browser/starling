@@ -105,13 +105,19 @@ internal static class HpackStaticTable
         for (var i = 0; i < Entries.Length; i++)
         {
             if (!string.Equals(Entries[i].Name, name, StringComparison.Ordinal))
+            {
                 continue;
+            }
+
             if (string.Equals(Entries[i].Value, value, StringComparison.Ordinal))
             {
                 exact = true;
                 return i + 1;
             }
-            if (nameOnly == 0) nameOnly = i + 1;
+            if (nameOnly == 0)
+            {
+                nameOnly = i + 1;
+            }
         }
         exact = false;
         return nameOnly;

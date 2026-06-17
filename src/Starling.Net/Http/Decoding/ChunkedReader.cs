@@ -17,7 +17,10 @@ internal static class ChunkedReader
         InboundBuffer source, int maxBodyBytes, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(source);
-        if (maxBodyBytes < 0) throw new ArgumentOutOfRangeException(nameof(maxBodyBytes));
+        if (maxBodyBytes < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxBodyBytes));
+        }
 
         using var ms = new MemoryStream();
 
@@ -35,14 +38,19 @@ internal static class ChunkedReader
                 {
                     var trailer = await source.TakeLineAsync(MaxTrailerLineLength, ct).ConfigureAwait(false)
                         ?? throw new InvalidDataException("Unexpected EOF inside chunked trailers.");
-                    if (trailer.Length == 0) break;
+                    if (trailer.Length == 0)
+                    {
+                        break;
+                    }
                     // v1: trailers ignored.
                 }
                 break;
             }
 
             if (ms.Length + size > maxBodyBytes)
+            {
                 throw new InvalidDataException("Chunked body exceeded cap.");
+            }
 
             var chunk = await source.ReadExactAsync(size, ct).ConfigureAwait(false);
             ms.Write(chunk);
@@ -50,7 +58,9 @@ internal static class ChunkedReader
             var crlf = await source.TakeLineAsync(2, ct).ConfigureAwait(false)
                 ?? throw new InvalidDataException("Unexpected EOF after chunk data.");
             if (crlf.Length != 0)
+            {
                 throw new InvalidDataException("Expected CRLF terminator after chunk data.");
+            }
         }
 
         return ms.ToArray();
@@ -65,7 +75,9 @@ internal static class ChunkedReader
     {
         ArgumentNullException.ThrowIfNull(line);
         if (line.Length == 0)
+        {
             throw new InvalidDataException("Chunk-size line was empty.");
+        }
 
         var end = line.Length;
         for (var i = 0; i < line.Length; i++)
@@ -78,7 +90,9 @@ internal static class ChunkedReader
         }
 
         if (end == 0)
+        {
             throw new InvalidDataException("Chunk-size line had no hex digits.");
+        }
 
         var asAscii = Encoding.ASCII.GetString(line, 0, end);
         if (!int.TryParse(asAscii, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var size)

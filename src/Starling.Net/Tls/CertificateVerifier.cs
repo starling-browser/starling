@@ -16,27 +16,49 @@ public static class CertificateVerifier
         DateTimeOffset? validationTime = null,
         RevocationSet? revocations = null)
     {
-        if (certificate is null) throw new ArgumentNullException(nameof(certificate));
-        if (roots is null) throw new ArgumentNullException(nameof(roots));
-        if (string.IsNullOrWhiteSpace(hostname)) return false;
+        if (certificate is null)
+        {
+            throw new ArgumentNullException(nameof(certificate));
+        }
+
+        if (roots is null)
+        {
+            throw new ArgumentNullException(nameof(roots));
+        }
+
+        if (string.IsNullOrWhiteSpace(hostname))
+        {
+            return false;
+        }
 
         var chain = DecodeChain(certificate);
-        if (chain.Count == 0) return false;
+        if (chain.Count == 0)
+        {
+            return false;
+        }
 
         // PKIX path validation does not match the hostname, so that stays ours.
         // Everything else — path building to a trusted anchor, signatures,
         // validity windows, basic constraints, key usage, name constraints — is
         // delegated to BouncyCastle's RFC 5280 validator below.
-        if (!CertificateHostNameMatcher.Matches(chain[0], hostname)) return false;
+        if (!CertificateHostNameMatcher.Matches(chain[0], hostname))
+        {
+            return false;
+        }
 
         var path = BuildTrustedPath(chain, roots.Certificates, validationTime);
-        if (path is null) return false;
+        if (path is null)
+        {
+            return false;
+        }
 
         // Local CRLSet-style blocklist check over the validated path. Empty by
         // default, so this is a no-op until a revocation feed is loaded.
         var revocationSet = revocations ?? RevocationSet.Empty;
         if (!revocationSet.IsEmpty && PathContainsRevokedCert(path, revocationSet))
+        {
             return false;
+        }
 
         return true;
     }
@@ -54,7 +76,9 @@ public static class CertificateVerifier
     {
         var anchors = new HashSet<TrustAnchor>();
         foreach (var root in roots)
+        {
             anchors.Add(new TrustAnchor(root, null));
+        }
 
         var target = new X509CertStoreSelector { Certificate = chain[0] };
         var parameters = new PkixBuilderParameters(anchors, target)
@@ -86,7 +110,9 @@ public static class CertificateVerifier
         {
             var issuer = i + 1 < ordered.Count ? ordered[i + 1] : ordered[i];
             if (revocations.IsRevoked(ordered[i], issuer))
+            {
                 return true;
+            }
         }
 
         return false;
@@ -99,9 +125,17 @@ public static class CertificateVerifier
     /// </summary>
     public static CertificateSummary? Summarize(Certificate certificate)
     {
-        if (certificate is null) throw new ArgumentNullException(nameof(certificate));
+        if (certificate is null)
+        {
+            throw new ArgumentNullException(nameof(certificate));
+        }
+
         var chain = DecodeChain(certificate);
-        if (chain.Count == 0) return null;
+        if (chain.Count == 0)
+        {
+            return null;
+        }
+
         var leaf = chain[0];
         return new CertificateSummary(
             FriendlyName(leaf.SubjectDN),
@@ -117,7 +151,9 @@ public static class CertificateVerifier
         {
             var values = dn.GetValueList(oid);
             if (values.Count > 0 && values[0] is string s && !string.IsNullOrWhiteSpace(s))
+            {
                 return s;
+            }
         }
         return dn.ToString();
     }
@@ -135,20 +171,34 @@ public static class CertificateHostNameMatcher
 {
     public static bool Matches(X509Certificate certificate, string hostname)
     {
-        if (certificate is null) throw new ArgumentNullException(nameof(certificate));
-        if (string.IsNullOrWhiteSpace(hostname)) return false;
+        if (certificate is null)
+        {
+            throw new ArgumentNullException(nameof(certificate));
+        }
+
+        if (string.IsNullOrWhiteSpace(hostname))
+        {
+            return false;
+        }
 
         var normalizedHost = hostname.Trim().TrimEnd('.').ToLowerInvariant();
         var names = certificate.GetSubjectAlternativeNames();
         if (names is null || names.Count == 0)
+        {
             return false;
+        }
 
         foreach (var name in names)
         {
             if (name.Count < 2 || name[0] is not int { } type || type != GeneralName.DnsName)
+            {
                 continue;
+            }
+
             if (name[1] is string dnsName && MatchDnsName(dnsName, normalizedHost))
+            {
                 return true;
+            }
         }
 
         return false;
@@ -159,17 +209,26 @@ public static class CertificateHostNameMatcher
         var normalizedPattern = pattern.Trim().TrimEnd('.').ToLowerInvariant();
         var normalizedHost = hostname.Trim().TrimEnd('.').ToLowerInvariant();
         if (normalizedPattern.Length == 0 || normalizedHost.Length == 0)
+        {
             return false;
+        }
+
         if (!normalizedPattern.Contains('*', StringComparison.Ordinal))
+        {
             return normalizedPattern == normalizedHost;
+        }
 
         if (!normalizedPattern.StartsWith("*.", StringComparison.Ordinal)
             || normalizedPattern.IndexOf('*', 1) >= 0)
+        {
             return false;
+        }
 
         var suffix = normalizedPattern[1..];
         if (!normalizedHost.EndsWith(suffix, StringComparison.Ordinal))
+        {
             return false;
+        }
 
         var unmatched = normalizedHost[..^suffix.Length];
         return unmatched.Length > 0 && !unmatched.Contains('.', StringComparison.Ordinal);

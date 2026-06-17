@@ -66,7 +66,10 @@ internal static class WebAssemblyBinding
     {
         ArgumentNullException.ThrowIfNull(ctx);
         var engine = ctx.Engine;
-        if (engine.Global.HasOwnProperty("WebAssembly")) return;
+        if (engine.Global.HasOwnProperty("WebAssembly"))
+        {
+            return;
+        }
 
         var state = new WasmRealmState(SharedEngine);
         var errProtoBase = (ObjectInstance)engine.Intrinsics.Error.Get("prototype");
@@ -93,7 +96,11 @@ internal static class WebAssemblyBinding
         var memoryCtor = new NativeConstructor(engine, "Memory", 1, (args, _) =>
         {
             var descriptor = Arg(args, 0);
-            if (!descriptor.IsObject()) throw TypeErr(ctx, "WebAssembly.Memory requires a descriptor object");
+            if (!descriptor.IsObject())
+            {
+                throw TypeErr(ctx, "WebAssembly.Memory requires a descriptor object");
+            }
+
             var obj = descriptor.AsObject();
             var initial = ToNonNegativeInt(ctx, obj.Get("initial"), "initial");
             var maximum = obj.Get("maximum");
@@ -115,11 +122,18 @@ internal static class WebAssemblyBinding
         var tableCtor = new NativeConstructor(engine, "Table", 1, (args, _) =>
         {
             var descriptor = Arg(args, 0);
-            if (!descriptor.IsObject()) throw TypeErr(ctx, "WebAssembly.Table requires a descriptor object");
+            if (!descriptor.IsObject())
+            {
+                throw TypeErr(ctx, "WebAssembly.Table requires a descriptor object");
+            }
+
             var obj = descriptor.AsObject();
             var element = TypeConverter.ToString(obj.Get("element"));
             if (!StringComparer.Ordinal.Equals(element, "anyfunc") && !StringComparer.Ordinal.Equals(element, "funcref"))
+            {
                 throw TypeErr(ctx, "WebAssembly.Table descriptor 'element' must be 'funcref'");
+            }
+
             var initial = (uint)ToNonNegativeInt(ctx, obj.Get("initial"), "initial", "WebAssembly.Table descriptor");
             var maximum = obj.Get("maximum");
             var maximumElements = maximum.IsUndefined() ? uint.MaxValue : (uint)ToNonNegativeInt(ctx, maximum, "maximum", "WebAssembly.Table descriptor");
@@ -253,7 +267,10 @@ internal static class WebAssemblyBinding
         if (newTarget is ObjectInstance nt)
         {
             var proto = nt.Get("prototype");
-            if (proto is ObjectInstance p) return p;
+            if (proto is ObjectInstance p)
+            {
+                return p;
+            }
         }
         return defaultPrototype;
     }
@@ -261,12 +278,17 @@ internal static class WebAssemblyBinding
     private static void ApplyMessageAndCause(ObjectInstance instance, JsValue[] args)
     {
         if (args.Length > 0 && !args[0].IsUndefined())
+        {
             instance.FastSetProperty("message", new PropertyDescriptor(JintInterop.Str(TypeConverter.ToString(args[0])), writable: true, enumerable: false, configurable: true));
+        }
+
         if (args.Length > 1 && args[1].IsObject())
         {
             var options = args[1].AsObject();
             if (options.HasOwnProperty("cause"))
+            {
                 instance.FastSetProperty("cause", new PropertyDescriptor(options.Get("cause"), writable: true, enumerable: false, configurable: true));
+            }
         }
     }
 
@@ -341,11 +363,23 @@ internal static class WebAssemblyBinding
 
     private static JsValue ResolveImport(JintBackendContext ctx, JsValue importObject, Wasmtime.Import import, ObjectInstance linkErrorProto)
     {
-        if (!importObject.IsObject()) throw MissingImport(ctx, import, linkErrorProto);
+        if (!importObject.IsObject())
+        {
+            throw MissingImport(ctx, import, linkErrorProto);
+        }
+
         var moduleValue = importObject.AsObject().Get(import.ModuleName);
-        if (!moduleValue.IsObject()) throw MissingImport(ctx, import, linkErrorProto);
+        if (!moduleValue.IsObject())
+        {
+            throw MissingImport(ctx, import, linkErrorProto);
+        }
+
         var value = moduleValue.AsObject().Get(import.Name);
-        if (value.IsUndefined()) throw MissingImport(ctx, import, linkErrorProto);
+        if (value.IsUndefined())
+        {
+            throw MissingImport(ctx, import, linkErrorProto);
+        }
+
         return value;
     }
 
@@ -355,7 +389,9 @@ internal static class WebAssemblyBinding
     private static WasmFunction BuildHostFunction(JintBackendContext ctx, WasmRealmState state, WasmFunctionImport import, JsValue value, ObjectInstance linkErrorProto)
     {
         if (!value.IsCallable())
+        {
             throw new JavaScriptException(NewWasmError(ctx.Engine, linkErrorProto, $"WebAssembly import {import.ModuleName}.{import.Name} must be a function"));
+        }
 
         return WasmFunction.FromCallback(state.Store, (_, args, results) =>
         {
@@ -363,19 +399,31 @@ internal static class WebAssemblyBinding
             try
             {
                 var jsArgs = new JsValue[args.Length];
-                for (var i = 0; i < jsArgs.Length; i++) jsArgs[i] = FromWasmValue(ctx, args[i], import.Parameters[i]);
+                for (var i = 0; i < jsArgs.Length; i++)
+                {
+                    jsArgs[i] = FromWasmValue(ctx, args[i], import.Parameters[i]);
+                }
+
                 JsValue result;
                 try { result = value.Call(JsValue.Undefined, jsArgs); }
                 catch (JavaScriptException ex) { throw new WasmImportException($"WebAssembly import {import.ModuleName}.{import.Name} threw: {DescribeThrown(ex.Error)}", ex); }
 
                 if (results.Length == 1)
+                {
                     results[0] = ToWasmValue(ctx, result, import.Results[0]);
+                }
                 else if (results.Length > 1)
                 {
-                    if (!result.IsObject()) throw TypeErr(ctx, $"WebAssembly import {import.ModuleName}.{import.Name} must return an array");
+                    if (!result.IsObject())
+                    {
+                        throw TypeErr(ctx, $"WebAssembly import {import.ModuleName}.{import.Name} must return an array");
+                    }
+
                     var obj = result.AsObject();
                     for (var i = 0; i < results.Length; i++)
+                    {
                         results[i] = ToWasmValue(ctx, obj.Get(i.ToString(CultureInfo.InvariantCulture)), import.Results[i]);
+                    }
                 }
             }
             finally { state.SyncMemoryObjectsFromWasm(); }
@@ -385,10 +433,16 @@ internal static class WebAssemblyBinding
     private static WasmMemory RequireImportedMemory(JintBackendContext ctx, WasmMemoryImport import, JsValue value, ObjectInstance linkErrorProto)
     {
         if (value is not WasmMemoryObject memoryObject)
+        {
             throw new JavaScriptException(NewWasmError(ctx.Engine, linkErrorProto, $"WebAssembly import {import.ModuleName}.{import.Name} must be a memory"));
+        }
+
         var memory = memoryObject.Memory;
         if (memory.GetSize() < import.Minimum)
+        {
             throw new JavaScriptException(NewWasmError(ctx.Engine, linkErrorProto, $"WebAssembly import {import.ModuleName}.{import.Name} memory is smaller than required"));
+        }
+
         return memory;
     }
 
@@ -397,7 +451,10 @@ internal static class WebAssemblyBinding
         var engine = ctx.Engine;
         var exports = new JsObject(engine);
         foreach (var (name, function) in instance.GetFunctions())
+        {
             exports.FastSetProperty(name, new PropertyDescriptor(BuildExportedFunction(ctx, state, runtimeErrorProto, function, name), writable: true, enumerable: true, configurable: true));
+        }
+
         foreach (var (name, memory) in instance.GetMemories())
         {
             var memoryObject = new WasmMemoryObject(engine, memoryProto, memory);
@@ -405,7 +462,10 @@ internal static class WebAssemblyBinding
             exports.FastSetProperty(name, new PropertyDescriptor(memoryObject, writable: true, enumerable: true, configurable: true));
         }
         foreach (var (name, table) in instance.GetTables())
+        {
             exports.FastSetProperty(name, new PropertyDescriptor(new WasmTableObject(engine, tableProto, table, runtimeErrorProto, instance), writable: true, enumerable: true, configurable: true));
+        }
+
         return exports;
     }
 
@@ -430,7 +490,10 @@ internal static class WebAssemblyBinding
         if (t_onWasmExecutionStack)
         {
             if (NeedsFreshReentrantWasmStack(exportName))
+            {
                 return InvokeOnWasmExecutionStack(() => InvokeWasmFunctionCore(ctx, state, runtimeErrorProto, function, exportName, args));
+            }
+
             return InvokeWasmFunctionCore(ctx, state, runtimeErrorProto, function, exportName, args);
         }
         return InvokeOnWasmExecutionStack(() => InvokeWasmFunctionCore(ctx, state, runtimeErrorProto, function, exportName, args));
@@ -462,7 +525,10 @@ internal static class WebAssemblyBinding
     {
         var engine = ctx.Engine;
         var parameters = new WasmValueBox[function.Parameters.Count];
-        for (var i = 0; i < parameters.Length; i++) parameters[i] = ToWasmValue(ctx, Arg(args, i), function.Parameters[i]);
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            parameters[i] = ToWasmValue(ctx, Arg(args, i), function.Parameters[i]);
+        }
 
         object? result;
         try { result = function.Invoke(parameters); }
@@ -482,7 +548,10 @@ internal static class WebAssemblyBinding
         if (value.IsObject())
         {
             var message = value.AsObject().Get("message");
-            if (!message.IsUndefined()) return TypeConverter.ToString(message);
+            if (!message.IsUndefined())
+            {
+                return TypeConverter.ToString(message);
+            }
         }
         return TypeConverter.ToString(value);
     }
@@ -523,10 +592,25 @@ internal static class WebAssemblyBinding
 
     private static JsValue FromTableValue(JintBackendContext ctx, WasmRealmState state, WasmTableObject table, object? value)
     {
-        if (value is null) return JsValue.Null;
-        if (value is not WasmFunction function) throw TypeErr(ctx, "Unsupported WebAssembly.Table value");
-        if (function.IsNull) return JsValue.Null;
-        if (table.FunctionCache.TryGetValue(function, out var cached)) return cached;
+        if (value is null)
+        {
+            return JsValue.Null;
+        }
+
+        if (value is not WasmFunction function)
+        {
+            throw TypeErr(ctx, "Unsupported WebAssembly.Table value");
+        }
+
+        if (function.IsNull)
+        {
+            return JsValue.Null;
+        }
+
+        if (table.FunctionCache.TryGetValue(function, out var cached))
+        {
+            return cached;
+        }
 
         var exportName = table.Owner is null ? null : FindFunctionExportName(table.Owner, function);
         var fn = new ClrFunction(ctx.Engine, exportName ?? "wasm table function", (_, args) =>
@@ -540,16 +624,29 @@ internal static class WebAssemblyBinding
 
     private static WasmFunction ToTableValue(JintBackendContext ctx, JsValue value, bool defaultToNull)
     {
-        if (value.IsNull() || (defaultToNull && value.IsUndefined())) return WasmFunction.Null;
+        if (value.IsNull() || (defaultToNull && value.IsUndefined()))
+        {
+            return WasmFunction.Null;
+        }
+
         if (value is not ObjectInstance oi || !WasmFunctionReferences.TryGetValue(oi, out var reference))
+        {
             throw TypeErr(ctx, "WebAssembly.Table value must be a wasm function or null");
+        }
+
         return reference.Function;
     }
 
     private static string? FindFunctionExportName(WasmInstance instance, WasmFunction function)
     {
         foreach (var (name, exported) in instance.GetFunctions())
-            if (ReferenceEquals(exported, function)) return name;
+        {
+            if (ReferenceEquals(exported, function))
+            {
+                return name;
+            }
+        }
+
         return null;
     }
 
@@ -562,14 +659,22 @@ internal static class WebAssemblyBinding
             _ => throw TypeErr(ctx, "Unsupported WebAssembly multi-value result"),
         };
         var items = new List<JsValue>();
-        for (var i = 0; i < values.Length && i < types.Count; i++) items.Add(FromWasmObject(ctx, values[i], types[i]));
+        for (var i = 0; i < values.Length && i < types.Count; i++)
+        {
+            items.Add(FromWasmObject(ctx, values[i], types[i]));
+        }
+
         return new JsArray(ctx.Engine, items.ToArray());
     }
 
     private static object?[] TupleValues(ITuple tuple)
     {
         var values = new object?[tuple.Length];
-        for (var i = 0; i < values.Length; i++) values[i] = tuple[i];
+        for (var i = 0; i < values.Length; i++)
+        {
+            values[i] = tuple[i];
+        }
+
         return values;
     }
 
@@ -577,7 +682,10 @@ internal static class WebAssemblyBinding
     {
         var number = TypeConverter.ToNumber(value);
         if (double.IsNaN(number) || number < 0 || number > int.MaxValue)
+        {
             throw TypeErr(ctx, $"{owner} '{name}' must be a non-negative integer");
+        }
+
         return (int)number;
     }
 
@@ -585,7 +693,10 @@ internal static class WebAssemblyBinding
     {
         var number = TypeConverter.ToNumber(value);
         if (double.IsNaN(number) || number < 0 || number >= length || number > uint.MaxValue || Math.Truncate(number) != number)
+        {
             throw RangeErr(ctx, "WebAssembly.Table index out of bounds");
+        }
+
         return (uint)number;
     }
 
@@ -598,9 +709,17 @@ internal static class WebAssemblyBinding
         var bytesPromise = PromiseThen(ctx, resolved, new ClrFunction(engine, "", (_, a) =>
         {
             var response = Arg(a, 0);
-            if (!response.IsObject()) throw TypeErr(ctx, "WebAssembly streaming source must resolve to a Response");
+            if (!response.IsObject())
+            {
+                throw TypeErr(ctx, "WebAssembly streaming source must resolve to a Response");
+            }
+
             var arrayBuffer = response.AsObject().Get("arrayBuffer");
-            if (!arrayBuffer.IsCallable()) throw TypeErr(ctx, "WebAssembly streaming source has no arrayBuffer method");
+            if (!arrayBuffer.IsCallable())
+            {
+                throw TypeErr(ctx, "WebAssembly streaming source has no arrayBuffer method");
+            }
+
             return arrayBuffer.Call(response, System.Array.Empty<JsValue>());
         }, 1, PropertyFlag.Configurable));
         return PromiseThen(ctx, bytesPromise, new ClrFunction(engine, "", (_, a) => onBytes(BytesFromBufferSource(ctx, Arg(a, 0))), 1, PropertyFlag.Configurable));
@@ -615,9 +734,17 @@ internal static class WebAssemblyBinding
 
     private static JsValue PromiseThen(JintBackendContext ctx, JsValue promise, JsValue onFulfilled)
     {
-        if (!promise.IsObject()) throw TypeErr(ctx, "Expected Promise");
+        if (!promise.IsObject())
+        {
+            throw TypeErr(ctx, "Expected Promise");
+        }
+
         var then = promise.AsObject().Get("then");
-        if (!then.IsCallable()) throw TypeErr(ctx, "Expected thenable Promise");
+        if (!then.IsCallable())
+        {
+            throw TypeErr(ctx, "Expected thenable Promise");
+        }
+
         return then.Call(promise, new[] { onFulfilled });
     }
 
@@ -638,8 +765,16 @@ internal static class WebAssemblyBinding
     // BufferSource → bytes (ArrayBuffer or ArrayBuffer view).
     internal static byte[] BytesFromBufferSource(JintBackendContext ctx, JsValue v)
     {
-        if (v.IsUndefined() || v.IsNull()) return System.Array.Empty<byte>();
-        if (v.IsArrayBuffer() && v.AsArrayBuffer() is { } ab) return ab;
+        if (v.IsUndefined() || v.IsNull())
+        {
+            return System.Array.Empty<byte>();
+        }
+
+        if (v.IsArrayBuffer() && v.AsArrayBuffer() is { } ab)
+        {
+            return ab;
+        }
+
         if (v is ObjectInstance oi)
         {
             var bufVal = oi.Get("buffer");
@@ -647,7 +782,11 @@ internal static class WebAssemblyBinding
             {
                 var offset = oi.Get("byteOffset").IsNumber() ? (int)oi.Get("byteOffset").AsNumber() : 0;
                 var length = oi.Get("byteLength").IsNumber() ? (int)oi.Get("byteLength").AsNumber() : backing.Length;
-                if (offset == 0 && (length == 0 || length == backing.Length)) return backing;
+                if (offset == 0 && (length == 0 || length == backing.Length))
+                {
+                    return backing;
+                }
+
                 if (offset >= 0 && length >= 0 && offset + length <= backing.Length)
                 {
                     var slice = new byte[length];
@@ -668,8 +807,16 @@ internal sealed class WasmRealmState
     private readonly List<WasmMemoryObject> _memories = new();
     public WasmRealmState(WasmEngine engine) => Store = new WasmStore(engine);
     public WasmStore Store { get; }
-    public void RegisterMemory(WasmMemoryObject memory) { if (!_memories.Contains(memory)) _memories.Add(memory); }
-    public void SyncMemoryObjectsFromWasm() { foreach (var m in _memories) m.SyncFromWasm(); }
+    public void RegisterMemory(WasmMemoryObject memory) { if (!_memories.Contains(memory))
+        {
+            _memories.Add(memory);
+        }
+    }
+    public void SyncMemoryObjectsFromWasm() { foreach (var m in _memories)
+        {
+            m.SyncFromWasm();
+        }
+    }
 }
 
 internal sealed class WasmModuleObject : ObjectInstance

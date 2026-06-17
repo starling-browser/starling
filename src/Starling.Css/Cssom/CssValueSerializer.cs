@@ -30,7 +30,11 @@ public static class CssValueSerializer
                 case CssTokenType.Eof:
                     break;
                 case CssTokenType.Whitespace:
-                    if (any) pendingWhitespace = true;
+                    if (any)
+                    {
+                        pendingWhitespace = true;
+                    }
+
                     continue;
                 case CssTokenType.BadString:
                 case CssTokenType.BadUrl:
@@ -62,7 +66,10 @@ public static class CssValueSerializer
         }
 
         if (!any)
+        {
             return null;
+        }
+
         return sb.ToString();
     }
 
@@ -93,13 +100,19 @@ public static class CssValueSerializer
     /// trailing zeros, leading 0 for fractions, e.g. 1.0→"1", .1→"0.1").</summary>
     public static string SerializeNumber(double n)
     {
-        if (n == 0) return "0";
+        if (n == 0)
+        {
+            return "0";
+        }
         // "R" gives the shortest round-trippable form; for integers this is "5",
         // for fractions "0.1"/"-0.5" — which matches CSS number serialization.
         var s = n.ToString("R", CultureInfo.InvariantCulture);
         // Guard against exponent forms for typical CSS magnitudes.
         if (s.Contains('E') || s.Contains('e'))
+        {
             s = n.ToString("0.################", CultureInfo.InvariantCulture);
+        }
+
         return s;
     }
 }

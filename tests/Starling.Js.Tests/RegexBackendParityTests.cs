@@ -121,7 +121,11 @@ public class RegexBackendParityTests
             var sm = s.Exec(input, sPos);
             var dm = d.Exec(input, dPos);
             (sm is null).Should().Be(dm is null);
-            if (sm is null) break;
+            if (sm is null)
+            {
+                break;
+            }
+
             sm!.Start.Should().Be(dm!.Start);
             sm.End.Should().Be(dm.End);
             sStarts.Add(sm.Start);
@@ -153,7 +157,11 @@ public class RegexBackendParityTests
             var sm = s.Exec(input, sPos);
             var dm = d.Exec(input, dPos);
             (sm is null).Should().Be(dm is null);
-            if (sm is null) break;
+            if (sm is null)
+            {
+                break;
+            }
+
             sSpans.Add((sm!.Start, sm.End));
             dSpans.Add((dm!.Start, dm.End));
             sPos = sm.End == sm.Start ? sm.End + 1 : sm.End;
@@ -179,7 +187,10 @@ public class RegexBackendParityTests
 
         (am is null).Should().Be(em is null,
             $"/{pattern}/ ({flags}) on \"{input}\": match presence must agree");
-        if (em is null) return;
+        if (em is null)
+        {
+            return;
+        }
 
         am!.Start.Should().Be(em!.Start, $"/{pattern}/ start");
         am.End.Should().Be(em.End, $"/{pattern}/ end");
@@ -193,6 +204,8 @@ public class RegexBackendParityTests
 
         // Named groups resolve to the same text via their JS index.
         foreach (var (name, idx) in expected.NamedCaptures)
+        {
             am.Group(idx).Should().Be(em.Group(idx), $"/{pattern}/ named group '{name}'");
+        }
     }
 }

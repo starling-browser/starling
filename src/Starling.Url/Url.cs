@@ -47,15 +47,33 @@ public sealed record Url(
             {
                 sb.Append(Username);
                 if (Password is not null && Password.Length > 0)
+                {
                     sb.Append(':').Append(Password);
+                }
+
                 sb.Append('@');
             }
-            if (Host is not null) sb.Append(Host);
-            if (Port is int p) sb.Append(':').Append(p);
+            if (Host is not null)
+            {
+                sb.Append(Host);
+            }
+
+            if (Port is int p)
+            {
+                sb.Append(':').Append(p);
+            }
         }
         sb.Append(Path);
-        if (Query is not null) sb.Append('?').Append(Query);
-        if (Fragment is not null) sb.Append('#').Append(Fragment);
+        if (Query is not null)
+        {
+            sb.Append('?').Append(Query);
+        }
+
+        if (Fragment is not null)
+        {
+            sb.Append('#').Append(Fragment);
+        }
+
         return sb.ToString();
     }
 
@@ -66,14 +84,19 @@ public sealed record Url(
     public string ToFileSystemPath()
     {
         if (!IsFile)
+        {
             throw new InvalidOperationException($"URL is not a file:// URL: {this}");
+        }
 
         // WHATWG: file URLs may have an empty host (file:///foo) or "localhost".
         // For relative file paths supplied as `file://./foo.html` we treat the
         // path verbatim. This is loose vs spec, but keeps local file inputs useful.
         var path = Path;
         if (path.StartsWith("//", StringComparison.Ordinal))
+        {
             path = path[1..];
+        }
+
         return path;
     }
 }

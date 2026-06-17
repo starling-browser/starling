@@ -62,7 +62,10 @@ public sealed class JsProxy : JsObject
         var t = Target;
         var h = Handler;
         if (t is null || h is null)
+        {
             throw new JsThrow(_realm.NewTypeError($"Cannot perform '{op}' on a proxy that has been revoked"));
+        }
+
         return (t, h);
     }
 
@@ -70,9 +73,16 @@ public sealed class JsProxy : JsObject
     {
         var vm = _realm.ActiveVm;
         var trap = AbstractOperations.Get(vm, handler, name);
-        if (trap.IsNullish) return JsValue.Undefined;
+        if (trap.IsNullish)
+        {
+            return JsValue.Undefined;
+        }
+
         if (!AbstractOperations.IsCallable(trap))
+        {
             throw new JsThrow(_realm.NewTypeError($"Proxy handler.{name} must be callable"));
+        }
+
         return trap;
     }
 
@@ -83,19 +93,27 @@ public sealed class JsProxy : JsObject
     {
         var (target, handler) = RequireLive("getPrototypeOf");
         var trap = GetTrap(handler, "getPrototypeOf");
-        if (trap.IsUndefined) return target.GetPrototypeOf();
+        if (trap.IsUndefined)
+        {
+            return target.GetPrototypeOf();
+        }
+
         var handlerProto = AbstractOperations.Call(_realm.ActiveVm, trap,
             JsValue.Object(handler), new[] { JsValue.Object(target) });
         if (!handlerProto.IsObject && !handlerProto.IsNull)
+        {
             throw new JsThrow(_realm.NewTypeError("'getPrototypeOf' trap must return an Object or null"));
+        }
         // Invariant: if target is non-extensible, returned proto must equal target's actual proto.
         if (!target.Extensible)
         {
             var targetProto = target.GetPrototypeOf();
             var handlerProtoObj = handlerProto.IsNull ? null : handlerProto.AsObject;
             if (!ReferenceEquals(targetProto, handlerProtoObj))
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'getPrototypeOf' trap returned different value for a non-extensible target"));
+            }
         }
         return handlerProto.IsNull ? null : handlerProto.AsObject;
     }
@@ -107,19 +125,28 @@ public sealed class JsProxy : JsObject
     {
         var (target, handler) = RequireLive("setPrototypeOf");
         var trap = GetTrap(handler, "setPrototypeOf");
-        if (trap.IsUndefined) return target.SetPrototypeOf(proto);
+        if (trap.IsUndefined)
+        {
+            return target.SetPrototypeOf(proto);
+        }
+
         var protoArg = proto is null ? JsValue.Null : JsValue.Object(proto);
         var result = AbstractOperations.Call(_realm.ActiveVm, trap,
             JsValue.Object(handler), new[] { JsValue.Object(target), protoArg });
         var bool_ = JsValue.ToBoolean(result);
-        if (!bool_) return false;
+        if (!bool_)
+        {
+            return false;
+        }
         // Invariant: non-extensible target must keep its prototype.
         if (!target.Extensible)
         {
             var targetProto = target.GetPrototypeOf();
             if (!ReferenceEquals(targetProto, proto))
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'setPrototypeOf' trap returned true on non-extensible target with different prototype"));
+            }
         }
         return true;
     }
@@ -133,14 +160,21 @@ public sealed class JsProxy : JsObject
         {
             var (target, handler) = RequireLive("isExtensible");
             var trap = GetTrap(handler, "isExtensible");
-            if (trap.IsUndefined) return target.Extensible;
+            if (trap.IsUndefined)
+            {
+                return target.Extensible;
+            }
+
             var result = AbstractOperations.Call(_realm.ActiveVm, trap,
                 JsValue.Object(handler), new[] { JsValue.Object(target) });
             var b = JsValue.ToBoolean(result);
             // Invariant: result must match target's actual extensibility.
             if (b != target.Extensible)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'isExtensible' trap result must match target extensibility"));
+            }
+
             return b;
         }
     }
@@ -152,15 +186,25 @@ public sealed class JsProxy : JsObject
     {
         var (target, handler) = RequireLive("preventExtensions");
         var trap = GetTrap(handler, "preventExtensions");
-        if (trap.IsUndefined) return target.PreventExtensions();
+        if (trap.IsUndefined)
+        {
+            return target.PreventExtensions();
+        }
+
         var result = AbstractOperations.Call(_realm.ActiveVm, trap,
             JsValue.Object(handler), new[] { JsValue.Object(target) });
         var b = JsValue.ToBoolean(result);
-        if (!b) return false;
+        if (!b)
+        {
+            return false;
+        }
         // Invariant: if trap returns true, target must actually be non-extensible.
         if (target.Extensible)
+        {
             throw new JsThrow(_realm.NewTypeError(
                 "'preventExtensions' trap returned true but target is still extensible"));
+        }
+
         return true;
     }
 
@@ -177,24 +221,40 @@ public sealed class JsProxy : JsObject
     {
         var (target, handler) = RequireLive("getOwnPropertyDescriptor");
         var trap = GetTrap(handler, "getOwnPropertyDescriptor");
-        if (trap.IsUndefined) return target.GetOwnPropertyDescriptor(key);
+        if (trap.IsUndefined)
+        {
+            return target.GetOwnPropertyDescriptor(key);
+        }
+
         var keyArg = key.IsSymbol ? JsValue.Symbol(key.AsSymbol) : JsValue.String(key.AsString);
         var trapResult = AbstractOperations.Call(_realm.ActiveVm, trap,
             JsValue.Object(handler), new[] { JsValue.Object(target), keyArg });
         if (!trapResult.IsObject && !trapResult.IsUndefined)
+        {
             throw new JsThrow(_realm.NewTypeError(
                 "'getOwnPropertyDescriptor' trap must return Object or undefined"));
+        }
+
         var targetDesc = target.GetOwnPropertyDescriptor(key);
         if (trapResult.IsUndefined)
         {
-            if (targetDesc is null) return null;
+            if (targetDesc is null)
+            {
+                return null;
+            }
             // Invariant: cannot report a non-configurable target prop as absent.
             if (!targetDesc.Value.Configurable)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'getOwnPropertyDescriptor' trap reported non-configurable property as absent"));
+            }
+
             if (!target.Extensible)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'getOwnPropertyDescriptor' trap reported existing property as absent on non-extensible target"));
+            }
+
             return null;
         }
         // Build a host descriptor from the trap-returned JS object.
@@ -202,16 +262,24 @@ public sealed class JsProxy : JsObject
         var extensibleTarget = target.Extensible;
         var present = DescriptorFields.Complete(desc);
         if (!IsCompatiblePropertyDescriptor(extensibleTarget, desc, present, targetDesc))
+        {
             throw new JsThrow(_realm.NewTypeError(
                 "'getOwnPropertyDescriptor' trap returned an incompatible descriptor"));
+        }
+
         if (!desc.Configurable)
         {
             if (targetDesc is null)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'getOwnPropertyDescriptor' trap reported a non-configurable descriptor for a missing target property"));
+            }
+
             if (targetDesc.Value.Configurable)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'getOwnPropertyDescriptor' trap reported a configurable target property as non-configurable"));
+            }
         }
         return desc;
     }
@@ -237,12 +305,19 @@ public sealed class JsProxy : JsObject
     {
         var (target, handler) = RequireLive("defineProperty");
         var trap = GetTrap(handler, "defineProperty");
-        if (trap.IsUndefined) return target.DefineOwnPropertyPartial(key, desc, present);
+        if (trap.IsUndefined)
+        {
+            return target.DefineOwnPropertyPartial(key, desc, present);
+        }
+
         var keyArg = key.IsSymbol ? JsValue.Symbol(key.AsSymbol) : JsValue.String(key.AsString);
         var descArg = FromPropertyDescriptor(desc, present);
         var trapResult = AbstractOperations.Call(_realm.ActiveVm, trap,
             JsValue.Object(handler), new[] { JsValue.Object(target), keyArg, descArg });
-        if (!JsValue.ToBoolean(trapResult)) return false;
+        if (!JsValue.ToBoolean(trapResult))
+        {
+            return false;
+        }
         // Invariants per §10.5.6.
         var targetDesc = target.GetOwnPropertyDescriptor(key);
         var extensibleTarget = target.Extensible;
@@ -250,20 +325,31 @@ public sealed class JsProxy : JsObject
         if (targetDesc is null)
         {
             if (!extensibleTarget)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'defineProperty' trap added a property to a non-extensible target"));
+            }
+
             if (settingConfigurableFalse)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'defineProperty' trap added a non-configurable property not present on the target"));
+            }
         }
         else
         {
             if (!IsCompatiblePropertyDescriptor(extensibleTarget, desc, present, targetDesc.Value))
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'defineProperty' trap returned true for an incompatible property descriptor"));
+            }
+
             if (settingConfigurableFalse && targetDesc.Value.Configurable)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'defineProperty' trap reported a configurable target property as non-configurable"));
+            }
+
             if (!targetDesc.Value.IsAccessor && !targetDesc.Value.Configurable && targetDesc.Value.Writable
                 && !desc.IsAccessor && present.HasWritable && !desc.Writable)
             {
@@ -299,11 +385,16 @@ public sealed class JsProxy : JsObject
             if (targetDesc is { } td)
             {
                 if (!td.Configurable)
+                {
                     throw new JsThrow(_realm.NewTypeError(
                         "'has' trap returned false on non-configurable own property"));
+                }
+
                 if (!target.Extensible)
+                {
                     throw new JsThrow(_realm.NewTypeError(
                         "'has' trap returned false on own property of non-extensible target"));
+                }
             }
         }
         return b;
@@ -334,11 +425,16 @@ public sealed class JsProxy : JsObject
         {
             if (!td.IsAccessor && !td.Writable
                 && !AbstractOperations.SameValue(trapResult, td.Value))
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'get' trap returned a different value for non-writable non-configurable property"));
+            }
+
             if (td.IsAccessor && td.Getter is null && !trapResult.IsUndefined)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'get' trap returned non-undefined for accessor with undefined getter"));
+            }
         }
         return trapResult;
     }
@@ -365,18 +461,26 @@ public sealed class JsProxy : JsObject
         var keyArg = key.IsSymbol ? JsValue.Symbol(key.AsSymbol) : JsValue.String(key.AsString);
         var trapResult = AbstractOperations.Call(_realm.ActiveVm, trap,
             JsValue.Object(handler), new[] { JsValue.Object(target), keyArg, value, receiver });
-        if (!JsValue.ToBoolean(trapResult)) return false;
+        if (!JsValue.ToBoolean(trapResult))
+        {
+            return false;
+        }
         // Invariants per §10.5.9.
         var targetDesc = target.GetOwnPropertyDescriptor(key);
         if (targetDesc is { } td && !td.Configurable)
         {
             if (!td.IsAccessor && !td.Writable
                 && !AbstractOperations.SameValue(value, td.Value))
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'set' trap returned true for non-writable non-configurable property with different value"));
+            }
+
             if (td.IsAccessor && td.Setter is null)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'set' trap returned true for accessor with no setter"));
+            }
         }
         return true;
     }
@@ -398,17 +502,25 @@ public sealed class JsProxy : JsObject
         var keyArg = key.IsSymbol ? JsValue.Symbol(key.AsSymbol) : JsValue.String(key.AsString);
         var result = AbstractOperations.Call(_realm.ActiveVm, trap,
             JsValue.Object(handler), new[] { JsValue.Object(target), keyArg });
-        if (!JsValue.ToBoolean(result)) return false;
+        if (!JsValue.ToBoolean(result))
+        {
+            return false;
+        }
         // Invariant: cannot report deletion of non-configurable own property.
         var targetDesc = target.GetOwnPropertyDescriptor(key);
         if (targetDesc is { } td)
         {
             if (!td.Configurable)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'deleteProperty' trap deleted a non-configurable own property"));
+            }
+
             if (!target.Extensible)
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'deleteProperty' trap deleted an own property on a non-extensible target"));
+            }
         }
         return true;
     }
@@ -423,7 +535,12 @@ public sealed class JsProxy : JsObject
         get
         {
             foreach (var k in GetOwnPropertyKeys())
-                if (k.IsString) yield return k.AsString;
+            {
+                if (k.IsString)
+                {
+                    yield return k.AsString;
+                }
+            }
         }
     }
 
@@ -432,9 +549,16 @@ public sealed class JsProxy : JsObject
         // Match the spec: filter by GetOwnProperty + enumerable.
         foreach (var k in GetOwnPropertyKeys())
         {
-            if (!k.IsString) continue;
+            if (!k.IsString)
+            {
+                continue;
+            }
+
             var d = GetOwnPropertyDescriptor(k.AsString);
-            if (d is { } dv && dv.Enumerable) yield return k.AsString;
+            if (d is { } dv && dv.Enumerable)
+            {
+                yield return k.AsString;
+            }
         }
     }
 
@@ -442,11 +566,18 @@ public sealed class JsProxy : JsObject
     {
         var (target, handler) = RequireLive("ownKeys");
         var trap = GetTrap(handler, "ownKeys");
-        if (trap.IsUndefined) return new List<JsPropertyKey>(target.OwnPropertyKeys);
+        if (trap.IsUndefined)
+        {
+            return new List<JsPropertyKey>(target.OwnPropertyKeys);
+        }
+
         var result = AbstractOperations.Call(_realm.ActiveVm, trap,
             JsValue.Object(handler), new[] { JsValue.Object(target) });
         if (!result.IsObject)
+        {
             throw new JsThrow(_realm.NewTypeError("'ownKeys' trap must return an Object"));
+        }
+
         var arr = result.AsObject;
         // Build a list of property keys from the returned array-like.
         var lengthV = AbstractOperations.Get(_realm.ActiveVm, arr, "length");
@@ -461,13 +592,19 @@ public sealed class JsProxy : JsObject
             if (elem.IsSymbol)
             {
                 if (!seenSymbols.Add(elem.AsSymbol))
+                {
                     throw new JsThrow(_realm.NewTypeError("'ownKeys' trap returned duplicate keys"));
+                }
+
                 keys.Add(JsPropertyKey.Symbol(elem.AsSymbol));
             }
             else if (elem.Kind == JsValueKind.String)
             {
                 if (!seenStrings.Add(elem.AsString))
+                {
                     throw new JsThrow(_realm.NewTypeError("'ownKeys' trap returned duplicate keys"));
+                }
+
                 keys.Add(JsPropertyKey.String(elem.AsString));
             }
             else
@@ -483,14 +620,19 @@ public sealed class JsProxy : JsObject
         foreach (var tk in targetKeys)
         {
             var d = target.GetOwnPropertyDescriptor(tk);
-            if (d is { } dv && !dv.Configurable) nonConfigurableTargetKeys.Add(tk);
+            if (d is { } dv && !dv.Configurable)
+            {
+                nonConfigurableTargetKeys.Add(tk);
+            }
         }
         // Every non-configurable own key on target must appear in trap result.
         foreach (var k in nonConfigurableTargetKeys)
         {
             if (!ContainsKey(keys, k))
+            {
                 throw new JsThrow(_realm.NewTypeError(
                     "'ownKeys' trap result missing a non-configurable own property of the target"));
+            }
         }
         if (!extensible)
         {
@@ -498,14 +640,18 @@ public sealed class JsProxy : JsObject
             foreach (var k in targetKeys)
             {
                 if (!ContainsKey(keys, k))
+                {
                     throw new JsThrow(_realm.NewTypeError(
                         "'ownKeys' trap result missing an own property of a non-extensible target"));
+                }
             }
             foreach (var k in keys)
             {
                 if (!ContainsKey(targetKeys, k))
+                {
                     throw new JsThrow(_realm.NewTypeError(
                         "'ownKeys' trap result added a key absent from a non-extensible target"));
+                }
             }
         }
         return keys;
@@ -513,7 +659,14 @@ public sealed class JsProxy : JsObject
 
     private static bool ContainsKey(List<JsPropertyKey> list, JsPropertyKey key)
     {
-        foreach (var k in list) if (k.Equals(key)) return true;
+        foreach (var k in list)
+        {
+            if (k.Equals(key))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -529,46 +682,111 @@ public sealed class JsProxy : JsObject
         if (d.IsAccessor)
         {
             if (present.HasGet)
+            {
                 obj.Set("get", d.Getter is null ? JsValue.Undefined : JsValue.Object(d.Getter));
+            }
+
             if (present.HasSet)
+            {
                 obj.Set("set", d.Setter is null ? JsValue.Undefined : JsValue.Object(d.Setter));
+            }
         }
         else
         {
-            if (present.HasValue) obj.Set("value", d.Value);
-            if (present.HasWritable) obj.Set("writable", JsValue.Boolean(d.Writable));
+            if (present.HasValue)
+            {
+                obj.Set("value", d.Value);
+            }
+
+            if (present.HasWritable)
+            {
+                obj.Set("writable", JsValue.Boolean(d.Writable));
+            }
         }
-        if (present.HasEnumerable) obj.Set("enumerable", JsValue.Boolean(d.Enumerable));
-        if (present.HasConfigurable) obj.Set("configurable", JsValue.Boolean(d.Configurable));
+        if (present.HasEnumerable)
+        {
+            obj.Set("enumerable", JsValue.Boolean(d.Enumerable));
+        }
+
+        if (present.HasConfigurable)
+        {
+            obj.Set("configurable", JsValue.Boolean(d.Configurable));
+        }
+
         return JsValue.Object(obj);
     }
 
     private static bool IsCompatiblePropertyDescriptor(bool extensible, PropertyDescriptor desc,
         DescriptorFields present, PropertyDescriptor? current)
     {
-        if (current is null) return extensible;
+        if (current is null)
+        {
+            return extensible;
+        }
 
         var cur = current.Value;
-        if (cur.Configurable) return true;
-        if (present.HasConfigurable && desc.Configurable) return false;
-        if (present.HasEnumerable && desc.Enumerable != cur.Enumerable) return false;
-
-        var descHasAccessorFields = present.HasGet || present.HasSet;
-        var descHasDataFields = present.HasValue || present.HasWritable;
-        if (!descHasAccessorFields && !descHasDataFields) return true;
-
-        if (cur.IsAccessor)
+        if (cur.Configurable)
         {
-            if (descHasDataFields) return false;
-            if (present.HasGet && !ReferenceEquals(desc.Getter, cur.Getter)) return false;
-            if (present.HasSet && !ReferenceEquals(desc.Setter, cur.Setter)) return false;
             return true;
         }
 
-        if (descHasAccessorFields) return false;
-        if (cur.Writable) return true;
-        if (present.HasWritable && desc.Writable) return false;
-        if (present.HasValue && !AbstractOperations.SameValue(desc.Value, cur.Value)) return false;
+        if (present.HasConfigurable && desc.Configurable)
+        {
+            return false;
+        }
+
+        if (present.HasEnumerable && desc.Enumerable != cur.Enumerable)
+        {
+            return false;
+        }
+
+        var descHasAccessorFields = present.HasGet || present.HasSet;
+        var descHasDataFields = present.HasValue || present.HasWritable;
+        if (!descHasAccessorFields && !descHasDataFields)
+        {
+            return true;
+        }
+
+        if (cur.IsAccessor)
+        {
+            if (descHasDataFields)
+            {
+                return false;
+            }
+
+            if (present.HasGet && !ReferenceEquals(desc.Getter, cur.Getter))
+            {
+                return false;
+            }
+
+            if (present.HasSet && !ReferenceEquals(desc.Setter, cur.Setter))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        if (descHasAccessorFields)
+        {
+            return false;
+        }
+
+        if (cur.Writable)
+        {
+            return true;
+        }
+
+        if (present.HasWritable && desc.Writable)
+        {
+            return false;
+        }
+
+        if (present.HasValue && !AbstractOperations.SameValue(desc.Value, cur.Value))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -576,7 +794,10 @@ public sealed class JsProxy : JsObject
     private PropertyDescriptor ToPropertyDescriptor(JsValue input)
     {
         if (!input.IsObject)
+        {
             throw new JsThrow(_realm.NewTypeError("Property descriptor must be an object"));
+        }
+
         var obj = input.AsObject;
 
         var hasEnumerable = AbstractOperations.HasProperty(obj, "enumerable");
@@ -604,7 +825,10 @@ public sealed class JsProxy : JsObject
             if (!g.IsUndefined)
             {
                 if (!AbstractOperations.IsCallable(g))
+                {
                     throw new JsThrow(_realm.NewTypeError("Getter must be a function"));
+                }
+
                 getter = g.AsObject;
             }
         }
@@ -617,17 +841,24 @@ public sealed class JsProxy : JsObject
             if (!s.IsUndefined)
             {
                 if (!AbstractOperations.IsCallable(s))
+                {
                     throw new JsThrow(_realm.NewTypeError("Setter must be a function"));
+                }
+
                 setter = s.AsObject;
             }
         }
 
         if ((hasValue || hasWritable) && (hasGet || hasSet))
+        {
             throw new JsThrow(_realm.NewTypeError(
                 "Invalid property descriptor. Cannot both specify accessors and a value or writable attribute"));
+        }
 
         if (hasGet || hasSet)
+        {
             return PropertyDescriptor.Accessor(getter, setter, enumerable, configurable);
+        }
 
         return PropertyDescriptor.Data(value, writable, enumerable, configurable);
     }
@@ -639,14 +870,21 @@ public sealed class JsProxy : JsObject
     {
         var (target, handler) = RequireLive("apply");
         if (!TargetIsCallable)
+        {
             throw new JsThrow(_realm.NewTypeError("Proxy target is not callable"));
+        }
+
         var trap = GetTrap(handler, "apply");
         if (trap.IsUndefined)
         {
             return AbstractOperations.Call(_realm.ActiveVm, JsValue.Object(target), thisArg, args);
         }
         var argsArr = new JsArray(_realm);
-        foreach (var a in args) argsArr.Push(a);
+        foreach (var a in args)
+        {
+            argsArr.Push(a);
+        }
+
         return AbstractOperations.Call(_realm.ActiveVm, trap,
             JsValue.Object(handler),
             new[] { JsValue.Object(target), thisArg, JsValue.Object(argsArr) });
@@ -659,20 +897,30 @@ public sealed class JsProxy : JsObject
     {
         var (target, handler) = RequireLive("construct");
         if (!TargetIsConstructor)
+        {
             throw new JsThrow(_realm.NewTypeError("Proxy target is not a constructor"));
+        }
+
         var trap = GetTrap(handler, "construct");
         if (trap.IsUndefined)
         {
             return AbstractOperations.Construct(_realm.ActiveVm, JsValue.Object(target), args, newTarget);
         }
         var argsArr = new JsArray(_realm);
-        foreach (var a in args) argsArr.Push(a);
+        foreach (var a in args)
+        {
+            argsArr.Push(a);
+        }
+
         var result = AbstractOperations.Call(_realm.ActiveVm, trap,
             JsValue.Object(handler),
             new[] { JsValue.Object(target), JsValue.Object(argsArr), JsValue.Object(newTarget) });
         // Invariant: result must be an object.
         if (!result.IsObject)
+        {
             throw new JsThrow(_realm.NewTypeError("'construct' trap must return an object"));
+        }
+
         return result;
     }
 }

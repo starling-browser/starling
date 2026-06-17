@@ -25,7 +25,10 @@ public static class UrangeParser
         ArgumentNullException.ThrowIfNull(raw);
         // Strip comments then trim outer whitespace.
         var stripped = StripComments(raw).Trim();
-        if (stripped.Length == 0) return null;
+        if (stripped.Length == 0)
+        {
+            return null;
+        }
 
         // Support comma-separated lists (e.g. "U+0-FF, U+200-2FF").
         var parts = stripped.Split(',');
@@ -33,7 +36,11 @@ public static class UrangeParser
         for (var i = 0; i < parts.Length; i++)
         {
             var canon = ParseSingle(parts[i].Trim());
-            if (canon is null) return null;
+            if (canon is null)
+            {
+                return null;
+            }
+
             results[i] = canon;
         }
         return string.Join(", ", results);
@@ -63,7 +70,11 @@ public static class UrangeParser
         var i = 0;
 
         // Expect 'u' or 'U'
-        if (i >= s.Length || (s[i] != 'u' && s[i] != 'U')) return null;
+        if (i >= s.Length || (s[i] != 'u' && s[i] != 'U'))
+        {
+            return null;
+        }
+
         i++;
         // No whitespace allowed between 'u' and '+' for the token form
         // (the only whitespace allowed is inside comments which we stripped).
@@ -76,14 +87,24 @@ public static class UrangeParser
         // tokens, so "u + a" with real spaces is invalid, but the comment form
         // "u/**/+/**/a" collapses to "u+a" after stripping.
         // Therefore after comment-stripping, no whitespace between u and + is valid.
-        if (i < s.Length && s[i] == ' ') return null;
+        if (i < s.Length && s[i] == ' ')
+        {
+            return null;
+        }
 
         // Expect '+'
-        if (i >= s.Length || s[i] != '+') return null;
+        if (i >= s.Length || s[i] != '+')
+        {
+            return null;
+        }
+
         i++;
 
         // No whitespace after '+' either.
-        if (i < s.Length && s[i] == ' ') return null;
+        if (i < s.Length && s[i] == ' ')
+        {
+            return null;
+        }
 
         // Collect the start segment: hex digits followed by optional '?'
         var hexStart = i;
@@ -105,11 +126,18 @@ public static class UrangeParser
         if (i < s.Length && s[i] == '-')
         {
             // Range form: start segment must be pure hex (no wildcards).
-            if (wildcardCount > 0) return null;
+            if (wildcardCount > 0)
+            {
+                return null;
+            }
+
             i++;
 
             // No whitespace after '-'.
-            if (i < s.Length && s[i] == ' ') return null;
+            if (i < s.Length && s[i] == ' ')
+            {
+                return null;
+            }
 
             var hexEnd = i;
             var hexCount2 = 0;
@@ -120,16 +148,25 @@ public static class UrangeParser
             }
 
             // End segment must be pure hex, no wildcards.
-            if (i < s.Length && s[i] == '?') return null;
+            if (i < s.Length && s[i] == '?')
+            {
+                return null;
+            }
             // Must reach end of string.
-            if (i != s.Length) return null;
+            if (i != s.Length)
+            {
+                return null;
+            }
 
             return ValidateRange(s[hexStart..(hexStart + hexCount)],
                                   s[hexEnd..(hexEnd + hexCount2)]);
         }
 
         // Must reach end of string.
-        if (i != s.Length) return null;
+        if (i != s.Length)
+        {
+            return null;
+        }
 
         // Pure hex or hex+wildcards form.
         return ValidateStartOnly(s[hexStart..(hexStart + hexCount)], wildcardCount);
@@ -141,15 +178,34 @@ public static class UrangeParser
     private static string? ValidateStartOnly(string hexPart, int wildcardCount)
     {
         var total = hexPart.Length + wildcardCount;
-        if (total == 0) return null;        // nothing after '+'
-        if (total > 6) return null;         // too many characters
-        if (hexPart.Length > 0 && wildcardCount > 0 && hexPart.Length + wildcardCount > 6) return null;
+        if (total == 0)
+        {
+            return null;        // nothing after '+'
+        }
+
+        if (total > 6)
+        {
+            return null;         // too many characters
+        }
+
+        if (hexPart.Length > 0 && wildcardCount > 0 && hexPart.Length + wildcardCount > 6)
+        {
+            return null;
+        }
 
         if (wildcardCount == 0)
         {
             // Single code point.
-            if (!TryParseHex(hexPart, out var cp)) return null;
-            if (cp > MaxCodePoint) return null;
+            if (!TryParseHex(hexPart, out var cp))
+            {
+                return null;
+            }
+
+            if (cp > MaxCodePoint)
+            {
+                return null;
+            }
+
             return "U+" + cp.ToString("X");
         }
         else
@@ -158,9 +214,21 @@ public static class UrangeParser
             // Build start (replace ? with 0) and end (replace ? with F).
             var startHex = hexPart + new string('0', wildcardCount);
             var endHex = hexPart + new string('F', wildcardCount);
-            if (!TryParseHex(startHex, out var start)) return null;
-            if (!TryParseHex(endHex, out var end)) return null;
-            if (end > MaxCodePoint) return null;
+            if (!TryParseHex(startHex, out var start))
+            {
+                return null;
+            }
+
+            if (!TryParseHex(endHex, out var end))
+            {
+                return null;
+            }
+
+            if (end > MaxCodePoint)
+            {
+                return null;
+            }
+
             return "U+" + start.ToString("X") + "-" + end.ToString("X");
         }
     }
@@ -170,23 +238,59 @@ public static class UrangeParser
     /// </summary>
     private static string? ValidateRange(string startHex, string endHex)
     {
-        if (startHex.Length == 0 || startHex.Length > 6) return null;
-        if (endHex.Length == 0 || endHex.Length > 6) return null;
-        if (!TryParseHex(startHex, out var start)) return null;
-        if (!TryParseHex(endHex, out var end)) return null;
-        if (end > MaxCodePoint) return null;
-        if (start > end) return null;
-        if (start == end) return "U+" + start.ToString("X");
+        if (startHex.Length == 0 || startHex.Length > 6)
+        {
+            return null;
+        }
+
+        if (endHex.Length == 0 || endHex.Length > 6)
+        {
+            return null;
+        }
+
+        if (!TryParseHex(startHex, out var start))
+        {
+            return null;
+        }
+
+        if (!TryParseHex(endHex, out var end))
+        {
+            return null;
+        }
+
+        if (end > MaxCodePoint)
+        {
+            return null;
+        }
+
+        if (start > end)
+        {
+            return null;
+        }
+
+        if (start == end)
+        {
+            return "U+" + start.ToString("X");
+        }
+
         return "U+" + start.ToString("X") + "-" + end.ToString("X");
     }
 
     private static bool TryParseHex(string hex, out int value)
     {
         value = 0;
-        if (hex.Length == 0 || hex.Length > 6) return false;
+        if (hex.Length == 0 || hex.Length > 6)
+        {
+            return false;
+        }
+
         foreach (var c in hex)
         {
-            if (!IsHex(c)) return false;
+            if (!IsHex(c))
+            {
+                return false;
+            }
+
             value = (value << 4) | HexVal(c);
         }
         return true;
@@ -210,7 +314,11 @@ public static class UrangeParser
     /// </summary>
     private static string StripComments(string s)
     {
-        if (!s.Contains("/*")) return s;
+        if (!s.Contains("/*"))
+        {
+            return s;
+        }
+
         var sb = new System.Text.StringBuilder(s.Length);
         var i = 0;
         while (i < s.Length)
@@ -219,7 +327,10 @@ public static class UrangeParser
             {
                 i += 2;
                 while (i + 1 < s.Length && !(s[i] == '*' && s[i + 1] == '/'))
+                {
                     i++;
+                }
+
                 i += 2; // skip */
             }
             else

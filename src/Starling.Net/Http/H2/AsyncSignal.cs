@@ -24,7 +24,10 @@ internal sealed class AsyncSignal
 
     public Task WaitAsync()
     {
-        lock (_gate) return _tcs.Task;
+        lock (_gate)
+        {
+            return _tcs.Task;
+        }
     }
 
     /// <summary>Wake all current waiters and arm a fresh signal for future waits.</summary>

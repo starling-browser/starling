@@ -29,8 +29,11 @@ internal static class AnimationFrameBinding
         JintInterop.DefineMethod(engine, engine.Global, "requestAnimationFrame", (_, args) =>
         {
             if (args.Length == 0 || args[0] is not global::Jint.Native.Function.Function)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError,
                     "requestAnimationFrame argument is not callable");
+            }
+
             var handler = args[0];
             var id = loop.RequestAnimationFrame(timestamp => InvokeCallback(ctx, handler, timestamp));
             return JintInterop.Num(id);
@@ -38,7 +41,11 @@ internal static class AnimationFrameBinding
 
         JintInterop.DefineMethod(engine, engine.Global, "cancelAnimationFrame", (_, args) =>
         {
-            if (TryCoerceId(args, out var id)) loop.CancelAnimationFrame(id);
+            if (TryCoerceId(args, out var id))
+            {
+                loop.CancelAnimationFrame(id);
+            }
+
             return JsValue.Undefined;
         }, 1);
     }
@@ -46,10 +53,22 @@ internal static class AnimationFrameBinding
     private static bool TryCoerceId(JsValue[] args, out int id)
     {
         id = 0;
-        if (args.Length == 0) return false;
+        if (args.Length == 0)
+        {
+            return false;
+        }
+
         var n = TypeConverter.ToNumber(args[0]);
-        if (double.IsNaN(n) || double.IsInfinity(n)) return false;
-        if (n < int.MinValue || n > int.MaxValue) return false;
+        if (double.IsNaN(n) || double.IsInfinity(n))
+        {
+            return false;
+        }
+
+        if (n < int.MinValue || n > int.MaxValue)
+        {
+            return false;
+        }
+
         id = (int)n;
         return true;
     }

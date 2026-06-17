@@ -25,8 +25,16 @@ public sealed class JsStringObject : JsObject
     private bool TryIndex(string name, out int index)
     {
         index = 0;
-        if (!JsArray.IsArrayIndex(name, out var u)) return false;
-        if (u >= (uint)Text.Length) return false;
+        if (!JsArray.IsArrayIndex(name, out var u))
+        {
+            return false;
+        }
+
+        if (u >= (uint)Text.Length)
+        {
+            return false;
+        }
+
         index = (int)u;
         return true;
     }
@@ -43,22 +51,45 @@ public sealed class JsStringObject : JsObject
     {
         if (name.Length > 0 && name[0] >= '0' && name[0] <= '9'
             && TryIndex(name, out var idx))
+        {
             return JsValue.String(Text[idx].ToString());
-        if (name == "length") return JsValue.Number(Text.Length);
+        }
+
+        if (name == "length")
+        {
+            return JsValue.Number(Text.Length);
+        }
+
         return base.Get(name);
     }
 
     public override bool HasOwn(string name)
     {
-        if (name == "length") return true;
-        if (TryIndex(name, out _)) return true;
+        if (name == "length")
+        {
+            return true;
+        }
+
+        if (TryIndex(name, out _))
+        {
+            return true;
+        }
+
         return base.HasOwn(name);
     }
 
     public override PropertyDescriptor? GetOwnPropertyDescriptor(string name)
     {
-        if (TryIndex(name, out var idx)) return IndexDescriptor(Text[idx]);
-        if (name == "length") return LengthDescriptor();
+        if (TryIndex(name, out var idx))
+        {
+            return IndexDescriptor(Text[idx]);
+        }
+
+        if (name == "length")
+        {
+            return LengthDescriptor();
+        }
+
         return base.GetOwnPropertyDescriptor(name);
     }
 
@@ -66,8 +97,16 @@ public sealed class JsStringObject : JsObject
     {
         // §10.4.3.4 [[Set]]: indices and length are non-writable; assignment
         // silently fails (strict-mode throw is enforced at the caller).
-        if (name == "length") return;
-        if (TryIndex(name, out _)) return;
+        if (name == "length")
+        {
+            return;
+        }
+
+        if (TryIndex(name, out _))
+        {
+            return;
+        }
+
         base.Set(name, value);
     }
 
@@ -79,9 +118,15 @@ public sealed class JsStringObject : JsObject
         // rest — close enough to spec for the rare code that touches this and
         // avoids dragging the eager-allocation path back in.
         if (TryIndex(name, out var idx))
+        {
             return desc.Equals(IndexDescriptor(Text[idx]));
+        }
+
         if (name == "length")
+        {
             return desc.Equals(LengthDescriptor());
+        }
+
         return base.DefineOwnProperty(name, desc);
     }
 
@@ -90,12 +135,22 @@ public sealed class JsStringObject : JsObject
     public override IEnumerable<string> EnumerableKeys()
     {
         for (var i = 0; i < Text.Length; i++)
+        {
             yield return i.ToString(CultureInfo.InvariantCulture);
+        }
         // "length" is non-enumerable, skip it.
         foreach (var s in base.EnumerableKeys())
         {
-            if (s == "length") continue;
-            if (TryIndex(s, out _)) continue;
+            if (s == "length")
+            {
+                continue;
+            }
+
+            if (TryIndex(s, out _))
+            {
+                continue;
+            }
+
             yield return s;
         }
     }
@@ -105,9 +160,14 @@ public sealed class JsStringObject : JsObject
         get
         {
             foreach (var s in OrderedOwnStringKeys())
+            {
                 yield return JsPropertyKey.String(s);
+            }
+
             foreach (var sym in SymbolKeys)
+            {
                 yield return JsPropertyKey.Symbol(sym);
+            }
         }
     }
 
@@ -116,12 +176,23 @@ public sealed class JsStringObject : JsObject
         // §10.1.11.1: array-index keys ascending first, then "length" and any
         // other strings added via DefineOwnProperty in creation order.
         for (var i = 0; i < Text.Length; i++)
+        {
             yield return i.ToString(CultureInfo.InvariantCulture);
+        }
+
         yield return "length";
         foreach (var s in base.Keys)
         {
-            if (s == "length") continue;
-            if (TryIndex(s, out _)) continue;
+            if (s == "length")
+            {
+                continue;
+            }
+
+            if (TryIndex(s, out _))
+            {
+                continue;
+            }
+
             yield return s;
         }
     }

@@ -25,8 +25,15 @@ internal static class RangeBinding
         ArgumentNullException.ThrowIfNull(ctx);
         var engine = ctx.Engine;
         var docProto = ctx.Wrappers.DocumentPrototype;
-        if (docProto is null) return; // NodeBindings must run first.
-        if (engine.Global.HasOwnProperty("Range")) return; // idempotent
+        if (docProto is null)
+        {
+            return; // NodeBindings must run first.
+        }
+
+        if (engine.Global.HasOwnProperty("Range"))
+        {
+            return; // idempotent
+        }
 
         var proto = new JsObject(engine);
 
@@ -61,7 +68,10 @@ internal static class RangeBinding
             var r = Req(ctx, t, "compareBoundaryPoints");
             var how = (int)(ushort)Uint(a, 0);
             if (a.Length < 2 || Range(a[1]) is not { } other)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "compareBoundaryPoints: second argument must be a Range");
+            }
+
             return GuardR(ctx, () => JintInterop.Num(r.CompareBoundaryPoints(how, other)));
         });
         Method(engine, proto, "comparePoint", 2, (t, a) => { var r = Req(ctx, t, "comparePoint"); var n = Node(ctx, a, 0, "comparePoint"); var o = Int(a, 1); return GuardR(ctx, () => JintInterop.Num(r.ComparePoint(n, o))); });
@@ -85,7 +95,9 @@ internal static class RangeBinding
         // §4.6 constants on ctor + prototype
         var consts = new (string Name, int Val)[] { ("START_TO_START", 0), ("START_TO_END", 1), ("END_TO_END", 2), ("END_TO_START", 3) };
         foreach (var (n, v) in consts)
+        {
             proto.FastSetProperty(n, new PropertyDescriptor(JintInterop.Num(v), writable: false, enumerable: true, configurable: false));
+        }
 
         // Range constructor — new Range() builds a collapsed range on the document.
         var ctor = new NativeConstructor(engine, "Range", 0, (_, _) =>
@@ -96,7 +108,10 @@ internal static class RangeBinding
         ctor.DefineOwnProperty("prototype", new PropertyDescriptor(proto, writable: false, enumerable: false, configurable: false));
         proto.FastSetProperty("constructor", new PropertyDescriptor(ctor, writable: true, enumerable: false, configurable: true));
         foreach (var (n, v) in consts)
+        {
             ctor.FastSetProperty(n, new PropertyDescriptor(JintInterop.Num(v), writable: false, enumerable: true, configurable: false));
+        }
+
         JintInterop.DefineDataProp(engine.Global, "Range", ctor, writable: true, enumerable: false, configurable: true);
 
         // document.createRange()
@@ -117,11 +132,18 @@ internal static class RangeBinding
         var ctor = new NativeConstructor(engine, "StaticRange", 1, (args, _) =>
         {
             var init = args.Length > 0 && args[0].IsObject() ? args[0].AsObject() : null;
-            if (init is null) throw new JavaScriptException(engine.Intrinsics.TypeError, "StaticRange: argument must be an object");
+            if (init is null)
+            {
+                throw new JavaScriptException(engine.Intrinsics.TypeError, "StaticRange: argument must be an object");
+            }
+
             var sc = ctx.Wrappers.UnwrapNode(init.Get("startContainer"));
             var ec = ctx.Wrappers.UnwrapNode(init.Get("endContainer"));
             if (sc is null || ec is null)
+            {
                 throw DomExceptionBinding.Throw(ctx, "InvalidNodeTypeError", "StaticRange: startContainer and endContainer must be nodes");
+            }
+
             var so = (int)TypeConverter.ToNumber(init.Get("startOffset"));
             var eo = (int)TypeConverter.ToNumber(init.Get("endOffset"));
             var obj = new JsObject(engine) { Prototype = staticProto };
@@ -142,7 +164,11 @@ internal static class RangeBinding
     internal static JsValue Wrap(JintBackendContext ctx, DomRange range)
     {
         var cache = Caches.GetValue(ctx.Engine, _ => new ConditionalWeakTable<DomRange, JintRangeObject>());
-        if (cache.TryGetValue(range, out var existing)) return existing;
+        if (cache.TryGetValue(range, out var existing))
+        {
+            return existing;
+        }
+
         var proto = (ObjectInstance?)ctx.Engine.Global.Get("Range").AsObject().Get("prototype").AsObject();
         var wrapper = new JintRangeObject(ctx.Engine, proto, range);
         cache.Add(range, wrapper);
@@ -165,7 +191,11 @@ internal static class RangeBinding
 
     private static int Int(JsValue[] a, int i)
     {
-        if (i >= a.Length) return 0;
+        if (i >= a.Length)
+        {
+            return 0;
+        }
+
         var n = TypeConverter.ToNumber(a[i]);
         return double.IsNaN(n) || double.IsInfinity(n) ? 0 : (int)(uint)(long)n;
     }
@@ -193,6 +223,9 @@ internal sealed class JintRangeObject : ObjectInstance
     public JintRangeObject(global::Jint.Engine engine, ObjectInstance? proto, DomRange range) : base(engine)
     {
         HostRange = range;
-        if (proto is not null) Prototype = proto;
+        if (proto is not null)
+        {
+            Prototype = proto;
+        }
     }
 }

@@ -26,13 +26,19 @@ public static class AnimationEventDispatcher
     {
         ArgumentNullException.ThrowIfNull(animations);
         ArgumentNullException.ThrowIfNull(transitions);
-        if (!animations.HasPendingEvents && !transitions.HasPendingEvents) return 0;
+        if (!animations.HasPendingEvents && !transitions.HasPendingEvents)
+        {
+            return 0;
+        }
 
         var records = new List<AnimationEventRecord>();
         animations.DrainPendingEvents(records);
         transitions.DrainPendingEvents(records);
         for (var i = 0; i < records.Count; i++)
+        {
             Dispatch(records[i]);
+        }
+
         return records.Count;
     }
 

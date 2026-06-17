@@ -45,8 +45,16 @@ public sealed class JsFinalizationRegistry : JsObject
         for (var i = _entries.Count - 1; i >= 0; i--)
         {
             var e = _entries[i];
-            if (e.Token is null) continue;
-            if (!e.Token.TryGetTarget(out var t)) continue;
+            if (e.Token is null)
+            {
+                continue;
+            }
+
+            if (!e.Token.TryGetTarget(out var t))
+            {
+                continue;
+            }
+
             if (ReferenceEquals(t, token))
             {
                 _entries.RemoveAt(i);
@@ -64,13 +72,19 @@ public sealed class JsFinalizationRegistry : JsObject
     /// </summary>
     public void RunCleanupPass()
     {
-        if (_entries.Count == 0) return;
+        if (_entries.Count == 0)
+        {
+            return;
+        }
 
         var runtime = JsRuntimeHandle;
         for (var i = _entries.Count - 1; i >= 0; i--)
         {
             var e = _entries[i];
-            if (e.Target.TryGetTarget(out _)) continue;
+            if (e.Target.TryGetTarget(out _))
+            {
+                continue;
+            }
 
             // Target reclaimed — schedule callback(heldValue) on the
             // microtask queue, then drop the entry.

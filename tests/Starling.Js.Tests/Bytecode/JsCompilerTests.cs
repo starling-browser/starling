@@ -299,7 +299,10 @@ public class JsCompilerTests
     {
         foreach (var c in script.Constants)
         {
-            if (c is JsFunction fn) return Disassembler.Disassemble(fn.Body);
+            if (c is JsFunction fn)
+            {
+                return Disassembler.Disassemble(fn.Body);
+            }
         }
         throw new System.InvalidOperationException("script chunk has no embedded function template");
     }

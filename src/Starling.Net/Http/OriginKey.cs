@@ -15,9 +15,20 @@ public readonly record struct OriginKey(string Scheme, string Host, int Port)
 {
     public static OriginKey Create(string scheme, string host, int port)
     {
-        if (string.IsNullOrEmpty(scheme)) throw new ArgumentException("scheme must be non-empty.", nameof(scheme));
-        if (string.IsNullOrEmpty(host)) throw new ArgumentException("host must be non-empty.", nameof(host));
-        if (port is < 1 or > 65535) throw new ArgumentOutOfRangeException(nameof(port));
+        if (string.IsNullOrEmpty(scheme))
+        {
+            throw new ArgumentException("scheme must be non-empty.", nameof(scheme));
+        }
+
+        if (string.IsNullOrEmpty(host))
+        {
+            throw new ArgumentException("host must be non-empty.", nameof(host));
+        }
+
+        if (port is < 1 or > 65535)
+        {
+            throw new ArgumentOutOfRangeException(nameof(port));
+        }
 
         return new OriginKey(scheme.ToLowerInvariant(), host.ToLowerInvariant(), port);
     }

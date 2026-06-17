@@ -51,12 +51,16 @@ public static class UrlParser
     public static Result<Url, ParseError> Parse(string input, Url? baseUrl)
     {
         if (string.IsNullOrWhiteSpace(input))
+        {
             return Result<Url, ParseError>.Err(ParseError.Empty);
+        }
 
         // Strip leading/trailing C0 controls + space per §4.4 preamble.
         var trimmed = input.AsSpan().Trim();
         if (trimmed.Length == 0)
+        {
             return Result<Url, ParseError>.Err(ParseError.Empty);
+        }
 
         // Tab and newline removal per §4.4 (inputs may contain them when
         // sources like HTML attributes are concerned).
@@ -68,10 +72,20 @@ public static class UrlParser
 
     private static string StripTabsAndNewlines(string s)
     {
-        if (s.IndexOfAny(['\t', '\n', '\r']) < 0) return s;
+        if (s.IndexOfAny(['\t', '\n', '\r']) < 0)
+        {
+            return s;
+        }
+
         var sb = new StringBuilder(s.Length);
         foreach (var ch in s)
-            if (ch != '\t' && ch != '\n' && ch != '\r') sb.Append(ch);
+        {
+            if (ch != '\t' && ch != '\n' && ch != '\r')
+            {
+                sb.Append(ch);
+            }
+        }
+
         return sb.ToString();
     }
 
@@ -136,7 +150,11 @@ public static class UrlParser
             {
                 var c = _i < _input.Length ? _input[_i] : (char)0xFFFF; // EOF sentinel
                 var r = Step(c);
-                if (r is not null) return r.Value;
+                if (r is not null)
+                {
+                    return r.Value;
+                }
+
                 _i++;
             }
             return Finish();
@@ -236,7 +254,9 @@ public static class UrlParser
         private Result<Url, ParseError>? StepNoScheme(char c)
         {
             if (_base is null)
+            {
                 return Result<Url, ParseError>.Err(ParseError.MissingScheme);
+            }
             // Inherit from base.
             _scheme.Clear();
             _scheme.Append(_base.Scheme);
@@ -328,7 +348,11 @@ public static class UrlParser
             }
             // Anything else: pop last path segment, reprocess in Path.
             _query = null;
-            if (_pathSegments.Count > 0) _pathSegments.RemoveAt(_pathSegments.Count - 1);
+            if (_pathSegments.Count > 0)
+            {
+                _pathSegments.RemoveAt(_pathSegments.Count - 1);
+            }
+
             _state = State.Path;
             _i--;
             return null;
@@ -374,7 +398,11 @@ public static class UrlParser
 
         private Result<Url, ParseError>? StepSpecialAuthorityIgnoreSlashes(char c)
         {
-            if (c == '/' || c == '\\') return null; // skip
+            if (c == '/' || c == '\\')
+            {
+                return null; // skip
+            }
+
             _state = State.Authority;
             _i--;
             return null;
@@ -410,7 +438,10 @@ public static class UrlParser
             if (IsEof(c) || c == '/' || c == '?' || c == '#' || (_isSpecial && c == '\\'))
             {
                 if (_atSignSeen && _buffer.Length == 0)
+                {
                     return Result<Url, ParseError>.Err(ParseError.MalformedAuthority);
+                }
+
                 _i -= _buffer.Length + 1;
                 _buffer.Clear();
                 _state = State.Host;
@@ -426,10 +457,16 @@ public static class UrlParser
             if (c == ':' && !InsideBrackets())
             {
                 if (_buffer.Length == 0)
+                {
                     return Result<Url, ParseError>.Err(ParseError.MalformedAuthority);
+                }
+
                 var hostResult = HostParser.Parse(_buffer.ToString(), _isSpecial);
                 if (!hostResult.IsOk)
+                {
                     return MapHostError(hostResult.Err!.Value);
+                }
+
                 _host = hostResult.Host;
                 _buffer.Clear();
                 _state = State.Port;
@@ -438,10 +475,16 @@ public static class UrlParser
             if (IsEof(c) || c == '/' || c == '?' || c == '#' || (_isSpecial && c == '\\'))
             {
                 if (_isSpecial && _buffer.Length == 0)
+                {
                     return Result<Url, ParseError>.Err(ParseError.MalformedAuthority);
+                }
+
                 var hostResult = HostParser.Parse(_buffer.ToString(), _isSpecial);
                 if (!hostResult.IsOk)
+                {
                     return MapHostError(hostResult.Err!.Value);
+                }
+
                 _host = hostResult.Host;
                 _buffer.Clear();
                 _state = State.PathStart;
@@ -471,7 +514,10 @@ public static class UrlParser
                 if (_buffer.Length > 0)
                 {
                     if (!int.TryParse(_buffer.ToString(), out var port) || port < 0 || port > 0xFFFF)
+                    {
                         return Result<Url, ParseError>.Err(ParseError.InvalidPort);
+                    }
+
                     var defaultPort = SpecialSchemes.DefaultPort(_scheme.ToString());
                     _port = port == defaultPort ? null : port;
                     _buffer.Clear();
@@ -509,7 +555,11 @@ public static class UrlParser
                     _state = State.Fragment;
                     return null;
                 }
-                if (IsEof(c)) return null;
+                if (IsEof(c))
+                {
+                    return null;
+                }
+
                 _query = null;
                 _state = State.Path;
                 _i--;
@@ -552,7 +602,11 @@ public static class UrlParser
                 else
                 {
                     var hostResult = HostParser.Parse(_buffer.ToString(), isSpecial: true);
-                    if (!hostResult.IsOk) return MapHostError(hostResult.Err!.Value);
+                    if (!hostResult.IsOk)
+                    {
+                        return MapHostError(hostResult.Err!.Value);
+                    }
+
                     _host = hostResult.Host;
                 }
                 _buffer.Clear();
@@ -589,9 +643,17 @@ public static class UrlParser
                 _state = State.Fragment;
                 return null;
             }
-            if (IsEof(c)) return null;
+            if (IsEof(c))
+            {
+                return null;
+            }
+
             _state = State.Path;
-            if (c != '/') _i--;
+            if (c != '/')
+            {
+                _i--;
+            }
+
             return null;
         }
 
@@ -607,14 +669,22 @@ public static class UrlParser
 
                 if (IsDoubleDotSegment(seg))
                 {
-                    if (_pathSegments.Count > 0) _pathSegments.RemoveAt(_pathSegments.Count - 1);
+                    if (_pathSegments.Count > 0)
+                    {
+                        _pathSegments.RemoveAt(_pathSegments.Count - 1);
+                    }
+
                     if (c != '/' && !(_isSpecial && c == '\\'))
+                    {
                         _pathSegments.Add("");
+                    }
                 }
                 else if (IsSingleDotSegment(seg))
                 {
                     if (c != '/' && !(_isSpecial && c == '\\'))
+                    {
                         _pathSegments.Add("");
+                    }
                 }
                 else
                 {
@@ -654,7 +724,11 @@ public static class UrlParser
                 _state = State.Fragment;
                 return null;
             }
-            if (IsEof(c)) return null;
+            if (IsEof(c))
+            {
+                return null;
+            }
+
             var sb = new StringBuilder(_opaquePath ?? "");
             Percent.AppendEncoded(sb, c, Percent.Set.C0Control);
             _opaquePath = sb.ToString();
@@ -707,7 +781,10 @@ public static class UrlParser
                 _buffer.Clear();
                 if (IsDoubleDotSegment(seg))
                 {
-                    if (_pathSegments.Count > 0) _pathSegments.RemoveAt(_pathSegments.Count - 1);
+                    if (_pathSegments.Count > 0)
+                    {
+                        _pathSegments.RemoveAt(_pathSegments.Count - 1);
+                    }
                 }
                 else if (!IsSingleDotSegment(seg))
                 {
@@ -756,13 +833,21 @@ public static class UrlParser
 
         private static List<string> SplitPath(string path)
         {
-            if (string.IsNullOrEmpty(path)) return [];
+            if (string.IsNullOrEmpty(path))
+            {
+                return [];
+            }
+
             var parts = path.Split('/');
             // Leading '/' produces an empty first segment we drop.
             var list = new List<string>(parts.Length);
             for (var i = 0; i < parts.Length; i++)
             {
-                if (i == 0 && parts[i].Length == 0) continue;
+                if (i == 0 && parts[i].Length == 0)
+                {
+                    continue;
+                }
+
                 list.Add(parts[i]);
             }
             return list;

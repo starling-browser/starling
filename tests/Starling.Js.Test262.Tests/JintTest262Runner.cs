@@ -62,12 +62,19 @@ public sealed class JintTest262Runner
         // denominators match. (Unlike the Starling runner, Jint CAN run module
         // tests, so those are not blanket-skipped here.)
         foreach (var f in meta.Features)
+        {
             if (Test262Runner.OutOfScopeFeatures.Contains(f))
+            {
                 return new[] { new ScenarioResult(rel, ScenarioMode.NonStrict, Outcome.Skip, "out-of-scope:" + f) };
+            }
+        }
 
         var results = new List<ScenarioResult>();
         foreach (var mode in Modes(meta))
+        {
             results.Add(RunScenario(rel, source, meta, mode, path));
+        }
+
         return results;
     }
 
@@ -78,8 +85,15 @@ public sealed class JintTest262Runner
         // (non-strict slot). Modules are implicitly strict; async strict-mode is
         // covered by the non-strict run (the body opts in if it needs strict).
         if (meta.IsModule || meta.IsAsync) { yield return ScenarioMode.NonStrict; yield break; }
-        if (!meta.OnlyStrict) yield return ScenarioMode.NonStrict;
-        if (!meta.NoStrict) yield return ScenarioMode.Strict;
+        if (!meta.OnlyStrict)
+        {
+            yield return ScenarioMode.NonStrict;
+        }
+
+        if (!meta.NoStrict)
+        {
+            yield return ScenarioMode.Strict;
+        }
     }
 
     private ScenarioResult RunScenario(string rel, string source, Test262Metadata meta, ScenarioMode mode, string absPath)
@@ -96,7 +110,10 @@ public sealed class JintTest262Runner
 
         worker.Start();
         if (!worker.Join(_timeoutMs))
+        {
             return new ScenarioResult(rel, mode, Outcome.Timeout, "timeout");
+        }
+
         return new ScenarioResult(rel, mode, outcome, detail);
     }
 
@@ -126,9 +143,14 @@ public sealed class JintTest262Runner
             try
             {
                 if (meta.IsModule)
+                {
                     PrepareModuleParse(absPath, source);
+                }
                 else
+                {
                     engine.Execute(WithStrict(source, mode), absPath);
+                }
+
                 return (Outcome.Fail, "expected parse error, parsed OK");
             }
             catch (Exception ex) when (IsParseLevel(ex)) { return (Outcome.Pass, null); }
@@ -157,8 +179,15 @@ public sealed class JintTest262Runner
             {
                 RunHarness(engine, "assert.js");
                 RunHarness(engine, "sta.js");
-                if (meta.IsAsync) RunHarness(engine, "doneprintHandle.js");
-                foreach (var inc in meta.Includes) RunHarness(engine, inc);
+                if (meta.IsAsync)
+                {
+                    RunHarness(engine, "doneprintHandle.js");
+                }
+
+                foreach (var inc in meta.Includes)
+                {
+                    RunHarness(engine, inc);
+                }
             }
         }
         catch (JavaScriptException jex)
@@ -200,7 +229,10 @@ public sealed class JintTest262Runner
             // Unexpected parse failure on a runnable test — or a runtime-phase
             // negative test whose error Jint reports as a parse-time SyntaxError.
             if (meta.IsNegative && meta.NegativeType == "SyntaxError")
+            {
                 return (Outcome.Pass, null);
+            }
+
             return (Outcome.Fail, "parse:" + Truncate(ex.Message));
         }
         catch (Exception ex)
@@ -210,7 +242,9 @@ public sealed class JintTest262Runner
 
         // Reached end without throwing.
         if (meta.IsNegative)
+        {
             return (Outcome.Fail, $"expected {meta.NegativeType}, no throw");
+        }
 
         if (meta.IsAsync)
         {
@@ -250,7 +284,11 @@ public sealed class JintTest262Runner
     /// "TypeError"); null when the throw isn't an error-shaped object.</summary>
     private static string? ErrorName(JsValue value)
     {
-        if (value is not ObjectInstance o) return null;
+        if (value is not ObjectInstance o)
+        {
+            return null;
+        }
+
         var n = o.Get("name");
         return n.IsString() ? n.AsString() : null;
     }
@@ -312,8 +350,11 @@ public sealed class JintTest262Runner
         {
             var key = resolved.Key;
             if (!File.Exists(key))
+            {
                 throw new ModuleResolutionException(
                     "Module not found", resolved.ModuleRequest.Specifier, parent: key, filePath: key);
+            }
+
             var source = File.ReadAllText(key);
             return ModuleFactory.BuildSourceTextModule(engine, resolved, source, ModuleParsingOptions.Default);
         }

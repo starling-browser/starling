@@ -17,7 +17,11 @@ public sealed class FontResolver : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
     }
 
@@ -34,7 +38,9 @@ public sealed class FontResolver : IDisposable
         {
             yield return family;
             foreach (var sub in ExpandGeneric(family))
+            {
                 yield return sub;
+            }
         }
     }
 

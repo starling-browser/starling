@@ -380,7 +380,11 @@ public sealed class FetchTests
         while (!predicate() && sw.ElapsedMilliseconds < timeoutMs)
         {
             new JsVm(runtime).Run(drainChunk);
-            if (predicate()) return;
+            if (predicate())
+            {
+                return;
+            }
+
             await Task.Delay(20).ConfigureAwait(false);
         }
         new JsVm(runtime).Run(drainChunk);

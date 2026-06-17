@@ -110,11 +110,15 @@ public sealed class StarlingEngine
         Activity.Current?.SetTag("output.path", outputPath);
         var roz = new RozRuntime(options.Roz, _loggerFactory);
         if (roz.Checkpoint("start") is { } startErr)
+        {
             return Fail(startErr);
+        }
 
         var parsed = UrlParser.Parse(url);
         if (parsed.IsErr)
+        {
             return Fail($"URL parse failed: {parsed.Error}");
+        }
 
         var u = parsed.Value;
         // One HTTP client (one connection pool) for the whole page load: the
@@ -130,7 +134,10 @@ public sealed class StarlingEngine
             {
                 var path = u.ToFileSystemPath();
                 if (!File.Exists(path))
+                {
                     return Fail($"File not found: {path}");
+                }
+
                 using (StarlingTelemetry.Span("engine", "read_file"))
                 {
                     html = File.ReadAllText(path);
@@ -146,7 +153,10 @@ public sealed class StarlingEngine
                     fetched = await FetchHtmlAsync(u, http, ct).ConfigureAwait(false);
                 }
                 if (fetched.IsErr)
+                {
                     return Fail(fetched.Error.Message);
+                }
+
                 html = fetched.Value.Html;
                 // Resolve subsequent relative URLs (images, stylesheets, fonts)
                 // against the post-redirect host. Typing `https://google.com`
@@ -179,9 +189,14 @@ public sealed class StarlingEngine
             doc = Html.HtmlParser.Parse(html, scriptingEnabled: true);
         }
         if (roz.Checkpoint("post_parse_html") is { } parseErr)
+        {
             return Fail(parseErr);
+        }
+
         if (roz.CheckDomBudget(doc, "post_parse_html") is { } parseDomErr)
+        {
             return Fail(parseDomErr);
+        }
 
         using var images = new ImageFetcher(_loggerFactory, http);
         using var stylesheets = new StylesheetFetcher(_loggerFactory, http);
@@ -210,9 +225,11 @@ public sealed class StarlingEngine
         {
             await stylesheets.FetchAllAsync(doc, baseUrl: u, ct).ConfigureAwait(false);
             using (StarlingTelemetry.Span("engine", "fetch_fonts"))
+            {
                 await fontFaceFetcher
                     .FetchAllAsync(EnumerateAuthorSheets(doc, u, stylesheets), webFonts, ct)
                     .ConfigureAwait(false);
+            }
         }
 
         using (StarlingTelemetry.Span("engine", "fetch_resources"))
@@ -223,7 +240,9 @@ public sealed class StarlingEngine
             ).ConfigureAwait(false);
         }
         if (roz.Checkpoint("post_fetch_resources") is { } fetchErr)
+        {
             return Fail(fetchErr);
+        }
 
         // Run page JavaScript. Mutations to the DOM (text content, new
         // elements, <img src=…> writes) land on `doc` and feed into the
@@ -321,7 +340,11 @@ public sealed class StarlingEngine
                     var sb = new System.Text.StringBuilder();
                     foreach (var kv in top)
                     {
-                        if (sb.Length > 0) sb.Append(", ");
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(", ");
+                        }
+
                         sb.Append($"{kv.Key}={kv.Value}");
                     }
                     StarlingEngineLog.AttrMutations(_log, sb.ToString());
@@ -355,9 +378,14 @@ public sealed class StarlingEngine
             }
         }
         if (roz.Checkpoint("post_scripts") is { } scriptsErr)
+        {
             return Fail(scriptsErr);
+        }
+
         if (roz.CheckDomBudget(doc, "post_scripts") is { } scriptsDomErr)
+        {
             return Fail(scriptsDomErr);
+        }
 
         // Prefetch CSS-referenced background-image url()s now so the paint
         // pipeline can resolve them synchronously when emitting display items.
@@ -368,7 +396,9 @@ public sealed class StarlingEngine
                 .ConfigureAwait(false);
         }
         if (roz.Checkpoint("post_fetch_backgrounds") is { } bgErr)
+        {
             return Fail(bgErr);
+        }
 
         // Extract display text from the post-script DOM so JS-driven
         // mutations (innerText/textContent writes, appended children, fetch
@@ -420,7 +450,9 @@ public sealed class StarlingEngine
             Activity.Current?.SetTag("image.h", bitmap.Height);
         }
         if (roz.Checkpoint("post_render_document") is { } renderErr)
+        {
             return Fail(renderErr);
+        }
 
         try
         {
@@ -442,7 +474,9 @@ public sealed class StarlingEngine
                 return Fail($"Save failed: {ex.Message}");
             }
             if (roz.Checkpoint("post_save_png") is { } saveErr)
+            {
                 return Fail(saveErr);
+            }
 
             StarlingEngineLog.RenderComplete(_log, outputPath, bitmap.Width, bitmap.Height, displayText.Length);
 
@@ -505,7 +539,9 @@ public sealed class StarlingEngine
 
         var parsed = UrlParser.Parse(url);
         if (parsed.IsErr)
+        {
             return Result<LaidOutPage, RenderError>.Err(new RenderError($"URL parse failed: {parsed.Error}"));
+        }
 
         var u = parsed.Value;
 
@@ -530,7 +566,10 @@ public sealed class StarlingEngine
                 {
                     var path = u.ToFileSystemPath();
                     if (!File.Exists(path))
+                    {
                         return Result<LaidOutPage, RenderError>.Err(new RenderError($"File not found: {path}"));
+                    }
+
                     html = File.ReadAllText(path);
                 }
                 else if (u.IsHttp || u.IsHttps)
@@ -538,7 +577,10 @@ public sealed class StarlingEngine
                     Result<(string Html, StarlingUrl FinalUrl, Starling.Net.Http.ConnectionSecurity? Security), RenderError> fetched;
                     fetched = await FetchHtmlAsync(u, http, ct).ConfigureAwait(false);
                     if (fetched.IsErr)
+                    {
                         return Result<LaidOutPage, RenderError>.Err(fetched.Error);
+                    }
+
                     html = fetched.Value.Html;
                     security = fetched.Value.Security;
                     // Use the post-redirect URL as the base for relative resource
@@ -585,7 +627,11 @@ public sealed class StarlingEngine
             var scriptsDisposed = false;
             void DisposeScripts()
             {
-                if (scriptsDisposed) return;
+                if (scriptsDisposed)
+                {
+                    return;
+                }
+
                 scriptsDisposed = true;
                 scripts.Dispose();
             }
@@ -777,7 +823,9 @@ public sealed class StarlingEngine
 
                             // Deferred scripts settle here, after first paint.
                             using (StarlingTelemetry.Span("engine", "run_scripts.deferred"))
+                            {
                                 await RunDeferredScriptsAsync(session, deferAsync: true, runParserDeferred: true, ct).ConfigureAwait(false);
+                            }
 
                             // Keep the realm LIVE past load: instead of tearing the
                             // session down, hand it to the returned page as a
@@ -804,7 +852,9 @@ public sealed class StarlingEngine
                             if (doc.MutationVersion == versionAtPaint
                                 && images.LoadedCount == imagesAtPaint
                                 && stylesheets.LoadedCount == sheetsAtPaint)
+                            {
                                 return Result<LaidOutPage, RenderError>.Ok(HandOff(page1));
+                            }
 
                             // Deferred scripts mutated the DOM or late resources
                             // arrived: re-fetch what they injected and reflow into a
@@ -870,7 +920,9 @@ public sealed class StarlingEngine
             // Dispose only a client we minted here and didn't hand to the page.
             // A caller-supplied shared client is never disposed here.
             if (ownsHttp && !httpHandedToPage)
+            {
                 http.Dispose();
+            }
         }
     }
 
@@ -1016,7 +1068,11 @@ public sealed class StarlingEngine
     private void PrimeDeclarativeAnimations(LaidOutPage page)
     {
         var root = page.Root;
-        if (_primedTrees.TryGetValue(root, out _)) return;
+        if (_primedTrees.TryGetValue(root, out _))
+        {
+            return;
+        }
+
         _primedTrees.Add(root, this);
         PrimeBox(root, page.Style.AnimationEngine);
 
@@ -1025,9 +1081,15 @@ public sealed class StarlingEngine
             if (box.Element is { } el && box.Style is { } style)
             {
                 var decls = Css.Animations.AnimationCompositor.BuildDeclarations(style);
-                if (decls.Count > 0) engine.OnAnimationsCascaded(el, decls);
+                if (decls.Count > 0)
+                {
+                    engine.OnAnimationsCascaded(el, decls);
+                }
             }
-            foreach (var child in box.Children) PrimeBox(child, engine);
+            foreach (var child in box.Children)
+            {
+                PrimeBox(child, engine);
+            }
         }
     }
 
@@ -1306,7 +1368,10 @@ public sealed class StarlingEngine
                 _ => LogLevel.Information,
             };
             _jsConsoleLog.Log(logLevel, "[{Level}] {Message}", level, message);
-            if (level == ConsoleLevel.Error) session.ConsoleErrors++;
+            if (level == ConsoleLevel.Error)
+            {
+                session.ConsoleErrors++;
+            }
         };
 
         // Wire the runtime-injection hook: when JS appends a freshly created
@@ -1336,12 +1401,16 @@ public sealed class StarlingEngine
         // order (HTML §4.12.1).
         RunOrderedScripts(s, includeParserDeferred, ct);
         if (!deferAsync)
+        {
             RunAsyncScripts(s, ct);
+        }
 
         // Module scripts run after the classic scripts, deferred and in document
         // order, before DOMContentLoaded.
         if (includeParserDeferred)
+        {
             RunModuleScripts(s, ct);
+        }
 
         // Mark every parser-batch script "already started" so a deferred loader's
         // later `src` write never re-runs a script that already executed. The
@@ -1378,7 +1447,10 @@ public sealed class StarlingEngine
 
         var tParserDeferred = sw.ElapsedMilliseconds;
         if (deferAsync)
+        {
             RunAsyncScripts(s, ct);
+        }
+
         var tAsync = sw.ElapsedMilliseconds;
 
         // Pump in-flight async work AND src-triggered dynamic script fetches,
@@ -1426,10 +1498,14 @@ public sealed class StarlingEngine
         foreach (var script in s.Fetcher.Scripts)
         {
             if (script.Disposition == ScriptDisposition.None)
+            {
                 ExecuteScript(s, script, ct);
+            }
         }
         if (!includeDefer)
+        {
             return;
+        }
 
         RunDeferredClassicScripts(s, ct);
     }
@@ -1439,14 +1515,23 @@ public sealed class StarlingEngine
         foreach (var script in s.Fetcher.Scripts)
         {
             if (script.Disposition == ScriptDisposition.Defer)
+            {
                 ExecuteScript(s, script, ct);
+            }
         }
     }
 
     private static void MarkParserBatchScriptsStarted(ScriptSession s)
     {
-        foreach (var sc in s.Fetcher.Scripts) s.Session.MarkScriptStarted(sc.Element);
-        foreach (var sc in s.Fetcher.ModuleScripts) s.Session.MarkScriptStarted(sc.Element);
+        foreach (var sc in s.Fetcher.Scripts)
+        {
+            s.Session.MarkScriptStarted(sc.Element);
+        }
+
+        foreach (var sc in s.Fetcher.ModuleScripts)
+        {
+            s.Session.MarkScriptStarted(sc.Element);
+        }
     }
 
     /// <summary>Run the <c>async</c> classic scripts. Order is unspecified
@@ -1458,7 +1543,9 @@ public sealed class StarlingEngine
         foreach (var script in s.Fetcher.Scripts)
         {
             if (script.Disposition == ScriptDisposition.Async)
+            {
                 ExecuteScript(s, script, ct);
+            }
         }
     }
 
@@ -1469,7 +1556,10 @@ public sealed class StarlingEngine
     private void ExecuteScript(ScriptSession s, LoadedScript script, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        if (!s.Executed.Add(script.Element)) return;
+        if (!s.Executed.Add(script.Element))
+        {
+            return;
+        }
 
         var label = script.IsInline ? "<inline>" : (script.BaseUrl?.ToString() ?? "<unknown>");
         try
@@ -1503,7 +1593,10 @@ public sealed class StarlingEngine
     private void RunModuleScripts(ScriptSession s, CancellationToken ct)
     {
         var moduleScripts = s.Fetcher.ModuleScripts;
-        if (moduleScripts.Count == 0) return;
+        if (moduleScripts.Count == 0)
+        {
+            return;
+        }
 
         // Module scripts run deferred, after the classic scripts, in document
         // order, before DOMContentLoaded. The backend owns the module loader;
@@ -1513,7 +1606,10 @@ public sealed class StarlingEngine
         foreach (var script in moduleScripts)
         {
             ct.ThrowIfCancellationRequested();
-            if (!s.Executed.Add(script.Element)) continue;
+            if (!s.Executed.Add(script.Element))
+            {
+                continue;
+            }
 
             var label = script.IsInline ? "<inline module>" : (script.BaseUrl?.ToString() ?? "<unknown>");
             // Inline modules have no URL of their own; pass the document base so
@@ -1558,7 +1654,10 @@ public sealed class StarlingEngine
         // STARLING_PUMP_MAX_MS for content-heavy SPAs whose data XHRs need longer than the default.
         var MaxMs = 8000;
         if (int.TryParse(Environment.GetEnvironmentVariable("STARLING_PUMP_MAX_MS"), out var capOverride) && capOverride > 0)
+        {
             MaxMs = capOverride;
+        }
+
         const int IdleMs = 60;    // consecutive idle window before declaring done
 
         // A self-rescheduling requestAnimationFrame loop never reports idle, so
@@ -1576,7 +1675,9 @@ public sealed class StarlingEngine
         // fetches always pump to true quiescence, independent of this budget.
         var RafFrameBudget = 40;
         if (int.TryParse(Environment.GetEnvironmentVariable("STARLING_RAF_FRAME_BUDGET"), out var rafBudgetOverride) && rafBudgetOverride > 0)
+        {
             RafFrameBudget = rafBudgetOverride;
+        }
 
         var wall = System.Diagnostics.Stopwatch.StartNew();
         var idle = System.Diagnostics.Stopwatch.StartNew();
@@ -1598,7 +1699,9 @@ public sealed class StarlingEngine
                 return;
             }
             if (rafOnly)
+            {
                 rafFrames++;   // this PumpOnce advances one animation frame
+            }
 
             if (s.Session.PumpOnce())
             {
@@ -1645,19 +1748,35 @@ public sealed class StarlingEngine
             // HTML §4.12.2 — <noscript> content is inert when scripting is
             // enabled (always, in this engine); its fallback CSS must not
             // contribute fonts/backgrounds any more than it contributes rules.
-            if (HasNoscriptAncestor(styleElement)) continue;
+            if (HasNoscriptAncestor(styleElement))
+            {
+                continue;
+            }
+
             var source = styleElement.TextContent;
-            if (string.IsNullOrWhiteSpace(source)) continue;
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                continue;
+            }
+
             yield return (CssParser.ParseStyleSheet(source, StyleOrigin.Author), docUrl);
         }
         foreach (var entry in stylesheets.EnumerateLoaded())
+        {
             yield return (entry.Sheet, entry.BaseUrl);
+        }
     }
 
     private static bool HasNoscriptAncestor(Element element)
     {
         for (var p = element.ParentNode; p is not null; p = p.ParentNode)
-            if (p is Element { LocalName: "noscript" }) return true;
+        {
+            if (p is Element { LocalName: "noscript" })
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -1666,7 +1785,10 @@ public sealed class StarlingEngine
         foreach (var el in doc.GetElementsByTagName("title"))
         {
             var text = el.TextContent.Trim();
-            if (text.Length > 0) return text;
+            if (text.Length > 0)
+            {
+                return text;
+            }
         }
         return null;
     }
@@ -1675,7 +1797,9 @@ public sealed class StarlingEngine
     {
         var dir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
         if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
             Directory.CreateDirectory(dir);
+        }
     }
 
     private sealed class RozRuntime(RenderRozOptions options, ILoggerFactory loggerFactory)
@@ -1724,7 +1848,9 @@ public sealed class StarlingEngine
             var maxDepth = options.MaxDomDepth;
             var maxNodes = options.MaxDomNodes;
             if ((maxDepth is null || maxDepth <= 0) && (maxNodes is null || maxNodes <= 0))
+            {
                 return null;
+            }
 
             var visited = 0;
             var stack = new Stack<(Node Node, int Depth)>();
@@ -1750,7 +1876,9 @@ public sealed class StarlingEngine
                 }
 
                 for (var child = node.LastChild; child is not null; child = child.PreviousSibling)
+                {
                     stack.Push((child, depth + 1));
+                }
             }
 
             Activity.Current?.SetTag("roz.dom_nodes", visited);
@@ -1775,27 +1903,35 @@ public sealed class StarlingEngine
         {
             var response = await http.GetAsync(current, ct).ConfigureAwait(false);
             if (response.IsErr)
+            {
                 return Result<(string, StarlingUrl, Starling.Net.Http.ConnectionSecurity?), RenderError>.Err(new RenderError(
                     $"Network error fetching {current}: {response.Error}"));
+            }
 
             var resp = response.Value;
             if (IsRedirect(resp.StatusCode))
             {
                 if (redirects == MaxRedirects)
+                {
                     return Result<(string, StarlingUrl, Starling.Net.Http.ConnectionSecurity?), RenderError>.Err(new RenderError(
                         $"Too many redirects fetching {url}"));
+                }
 
                 var redirected = ResolveRedirect(current, resp);
                 if (redirected.IsErr)
+                {
                     return Result<(string, StarlingUrl, Starling.Net.Http.ConnectionSecurity?), RenderError>.Err(redirected.Error);
+                }
 
                 current = redirected.Value;
                 continue;
             }
 
             if (resp.StatusCode is < 200 or >= 400)
+            {
                 return Result<(string, StarlingUrl, Starling.Net.Http.ConnectionSecurity?), RenderError>.Err(new RenderError(
                     $"HTTP {resp.StatusCode} {resp.ReasonPhrase} from {current}"));
+            }
 
             var contentType = resp.Headers.GetFirst("Content-Type");
             var encoding = ResolveEncoding(contentType, resp.Body.Span);
@@ -1814,19 +1950,25 @@ public sealed class StarlingEngine
     {
         var location = response.Headers.GetFirst("Location");
         if (string.IsNullOrWhiteSpace(location))
+        {
             return Result<StarlingUrl, RenderError>.Err(new RenderError(
                 $"HTTP {response.StatusCode} redirect from {current} did not include a Location header"));
+        }
 
         var redirectUrl = ExpandRedirectLocation(location, current);
         var parsed = UrlParser.Parse(redirectUrl, current);
         if (parsed.IsErr)
+        {
             return Result<StarlingUrl, RenderError>.Err(new RenderError(
                 $"Redirect Location parse failed from {current}: {parsed.Error}"));
+        }
 
         var next = parsed.Value;
         if (!next.IsHttp && !next.IsHttps)
+        {
             return Result<StarlingUrl, RenderError>.Err(new RenderError(
                 $"Unsupported redirect scheme '{next.Scheme}' from {current}"));
+        }
 
         return Result<StarlingUrl, RenderError>.Ok(next);
     }
@@ -1836,10 +1978,14 @@ public sealed class StarlingEngine
         var trimmed = location.Trim();
         if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
             trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
             return trimmed;
+        }
 
         if (trimmed.StartsWith("//", StringComparison.Ordinal))
+        {
             return current.Scheme + ":" + trimmed;
+        }
 
         var authority = current.Host is null
             ? ""
@@ -1849,10 +1995,14 @@ public sealed class StarlingEngine
         var prefix = $"{current.Scheme}://{authority}";
 
         if (trimmed.StartsWith("/", StringComparison.Ordinal))
+        {
             return prefix + trimmed;
+        }
 
         if (trimmed.StartsWith("?", StringComparison.Ordinal))
+        {
             return prefix + current.Path + trimmed;
+        }
 
         if (trimmed.StartsWith("#", StringComparison.Ordinal))
         {
@@ -1874,22 +2024,34 @@ public sealed class StarlingEngine
     internal static Encoding ResolveEncoding(string? contentType, ReadOnlySpan<byte> body)
     {
         if (body.Length >= 3 && body[0] == 0xEF && body[1] == 0xBB && body[2] == 0xBF)
+        {
             return Encoding.UTF8;
+        }
+
         if (body.Length >= 2 && body[0] == 0xFF && body[1] == 0xFE)
+        {
             return Encoding.Unicode;
+        }
+
         if (body.Length >= 2 && body[0] == 0xFE && body[1] == 0xFF)
+        {
             return Encoding.BigEndianUnicode;
+        }
 
         if (contentType is { Length: > 0 })
         {
             var charset = ExtractCharset(contentType);
             if (charset is not null && TryResolveEncoding(charset) is { } httpEncoding)
+            {
                 return httpEncoding;
+            }
         }
 
         var metaCharset = SniffMetaCharset(body);
         if (metaCharset is not null && TryResolveEncoding(metaCharset) is { } metaEncoding)
+        {
             return metaEncoding;
+        }
 
         return Encoding.UTF8;
     }
@@ -1897,7 +2059,10 @@ public sealed class StarlingEngine
     private static string? SniffMetaCharset(ReadOnlySpan<byte> body)
     {
         var length = Math.Min(body.Length, 4096);
-        if (length == 0) return null;
+        if (length == 0)
+        {
+            return null;
+        }
 
         var prefix = Encoding.Latin1.GetString(body[..length]);
         var direct = Regex.Match(
@@ -1905,7 +2070,9 @@ public sealed class StarlingEngine
             @"<meta\s+[^>]*charset\s*=\s*[""']?\s*([A-Za-z0-9._:-]+)",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         if (direct.Success)
+        {
             return direct.Groups[1].Value;
+        }
 
         var pragma = Regex.Match(
             prefix,
@@ -1921,7 +2088,9 @@ public sealed class StarlingEngine
             var part = raw.Trim();
             const string prefix = "charset=";
             if (part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
                 return part[prefix.Length..].Trim().Trim('"', '\'');
+            }
         }
 
         return null;
@@ -1932,7 +2101,10 @@ public sealed class StarlingEngine
         // Strip surrounding quotes (we already split charset=... but the
         // header value may itself be quoted).
         var trimmed = name.Trim().Trim('"', '\'');
-        if (trimmed.Length == 0) return null;
+        if (trimmed.Length == 0)
+        {
+            return null;
+        }
 
         // WHATWG Encoding Standard "names and labels" lookup is the single
         // source of truth (src/Starling.Common/Encoding/WhatwgEncodingLabels.cs).
@@ -1941,7 +2113,10 @@ public sealed class StarlingEngine
         // 0x80..0x9F are mapped to their windows-1252 glyphs (e.g. 0x92 →
         // U+2019 right single quote) rather than C1 controls.
         var canonical = WhatwgEncodingLabels.TryGetCanonicalName(trimmed);
-        if (canonical is null) return null;
+        if (canonical is null)
+        {
+            return null;
+        }
 
         // Hot-path the .NET base class library singletons; fall back to GetEncoding(name) for
         // CodePages-backed encodings (registered in the static ctor).
@@ -1989,10 +2164,20 @@ public sealed class StarlingEngine
         }
 
         var isBlock = node is Element element && IsTextBoundaryElement(element.LocalName);
-        if (isBlock && buffer.Length > 0) buffer.Append(' ');
+        if (isBlock && buffer.Length > 0)
+        {
+            buffer.Append(' ');
+        }
+
         for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+        {
             AppendDisplayText(child, buffer);
-        if (isBlock && buffer.Length > 0) buffer.Append(' ');
+        }
+
+        if (isBlock && buffer.Length > 0)
+        {
+            buffer.Append(' ');
+        }
     }
 
     private static bool IsTextBoundaryElement(string localName) => localName.ToLowerInvariant() switch
@@ -2009,14 +2194,22 @@ public sealed class StarlingEngine
 
     private static string NormalizeDisplayText(string raw)
     {
-        if (raw.Length == 0) return string.Empty;
+        if (raw.Length == 0)
+        {
+            return string.Empty;
+        }
+
         var buf = new StringBuilder(raw.Length);
         var prevWs = false;
         foreach (var ch in raw)
         {
             if (char.IsWhiteSpace(ch))
             {
-                if (!prevWs && buf.Length > 0) buf.Append(' ');
+                if (!prevWs && buf.Length > 0)
+                {
+                    buf.Append(' ');
+                }
+
                 prevWs = true;
             }
             else

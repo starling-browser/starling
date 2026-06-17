@@ -24,20 +24,36 @@ public sealed class RegexMatch
     public string? Group(int i)
     {
         var span = Captures.Span;
-        if (i < 0 || i * 2 + 1 >= span.Length) return null;
+        if (i < 0 || i * 2 + 1 >= span.Length)
+        {
+            return null;
+        }
+
         var s = span[i * 2];
         var e = span[i * 2 + 1];
-        if (s < 0 || e < 0) return null;
+        if (s < 0 || e < 0)
+        {
+            return null;
+        }
+
         return Input.Substring(s, e - s);
     }
 
     public (int Start, int End)? GroupSpan(int i)
     {
         var span = Captures.Span;
-        if (i < 0 || i * 2 + 1 >= span.Length) return null;
+        if (i < 0 || i * 2 + 1 >= span.Length)
+        {
+            return null;
+        }
+
         var s = span[i * 2];
         var e = span[i * 2 + 1];
-        if (s < 0 || e < 0) return null;
+        if (s < 0 || e < 0)
+        {
+            return null;
+        }
+
         return (s, e);
     }
 }

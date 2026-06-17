@@ -335,17 +335,35 @@ public sealed class LayoutSessionTests
 
     private static IEnumerable<string> AllText(Box.Box box)
     {
-        if (box is Box.TextBox { Text: { Length: > 0 } t }) yield return t;
+        if (box is Box.TextBox { Text: { Length: > 0 } t })
+        {
+            yield return t;
+        }
+
         foreach (var child in box.Children)
+        {
             foreach (var nested in AllText(child))
+            {
                 yield return nested;
+            }
+        }
     }
 
     private static Box.Box? FindById(Box.Box box, string id)
     {
-        if (box.Element?.Id == id) return box;
+        if (box.Element?.Id == id)
+        {
+            return box;
+        }
+
         foreach (var child in box.Children)
-            if (FindById(child, id) is { } found) return found;
+        {
+            if (FindById(child, id) is { } found)
+            {
+                return found;
+            }
+        }
+
         return null;
     }
 
@@ -357,7 +375,11 @@ public sealed class LayoutSessionTests
         public MetricRecorder()
         {
             _l.InstrumentPublished = (inst, lst) =>
-            { if (inst.Meter.Name == StarlingTelemetry.SourceName) lst.EnableMeasurementEvents(inst); };
+            { if (inst.Meter.Name == StarlingTelemetry.SourceName)
+                {
+                    lst.EnableMeasurementEvents(inst);
+                }
+            };
             _l.SetMeasurementEventCallback<double>((inst, m, t, s) => Add(inst.Name, m));
             _l.SetMeasurementEventCallback<long>((inst, m, t, s) => Add(inst.Name, m));
             _l.Start();

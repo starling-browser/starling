@@ -80,11 +80,16 @@ public sealed class InlineShapeOptimizationTests
             ShapeCalls++;
             var key = (text, fontSize, spec);
             if (_cache.TryGetValue(key, out var cached))
+            {
                 return cached;
+            }
 
             var glyphs = new ShapedGlyph[text.Length];
             for (var i = 0; i < glyphs.Length; i++)
+            {
                 glyphs[i] = new ShapedGlyph((uint)text[i], i, 0);
+            }
+
             var shaped = new GlyphShapedRun(glyphs, text.Length);
             _cache[key] = shaped;
             return shaped;

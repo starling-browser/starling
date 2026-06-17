@@ -103,7 +103,11 @@ public class InputStreamTests
         while (true)
         {
             var c = s.Read();
-            if (c == -1) return result;
+            if (c == -1)
+            {
+                return result;
+            }
+
             result.Add(c);
         }
     }

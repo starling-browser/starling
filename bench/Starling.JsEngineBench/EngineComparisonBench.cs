@@ -109,7 +109,11 @@ public class EngineComparisonBench
     private void Skip(string label, Exception ex)
     {
         var msg = ex.Message.ReplaceLineEndings(" ");
-        if (msg.Length > 120) msg = msg[..120];
+        if (msg.Length > 120)
+        {
+            msg = msg[..120];
+        }
+
         Console.WriteLine($"[skip] {label} / {FileName}: {ex.GetType().Name}: {msg}");
     }
 

@@ -33,7 +33,11 @@ internal sealed class MacAccessibilityBridge
     /// <summary>Builds a bridge for the window, or null if not macOS / no content view.</summary>
     public static MacAccessibilityBridge? TryCreate(nint nsWindow, ILogger<MacAccessibilityBridge>? log = null)
     {
-        if (!OperatingSystem.IsMacOS() || nsWindow == 0) return null;
+        if (!OperatingSystem.IsMacOS() || nsWindow == 0)
+        {
+            return null;
+        }
+
         try
         {
             var view = ObjC.Send(nsWindow, ObjC.Sel("contentView"));
@@ -56,10 +60,15 @@ internal sealed class MacAccessibilityBridge
         try
         {
             var array = ObjC.Send(ObjC.GetClass("NSMutableArray"), ObjC.Sel("array"));
-            if (array == 0) return;
+            if (array == 0)
+            {
+                return;
+            }
 
             foreach (var node in Flatten(tree))
+            {
                 AddElement(array, node, chromeHeightCss, scrollY, windowHeightCss);
+            }
 
             ObjC.SendVoid(_contentView, ObjC.Sel("setAccessibilityChildren:"), array);
         }
@@ -74,16 +83,24 @@ internal sealed class MacAccessibilityBridge
         double chromeHeightCss, double scrollY, double windowHeightCss)
     {
         var element = ObjC.New("NSAccessibilityElement");
-        if (element == 0) return;
+        if (element == 0)
+        {
+            return;
+        }
 
         ObjC.SendVoid(element, ObjC.Sel("setAccessibilityRole:"), ObjC.NSString(AxRole(node.Role)));
 
         var label = node.Name;
         if ((node.Role is AccessibilityRole.TextField or AccessibilityRole.ComboBox)
             && !string.IsNullOrEmpty(node.Value))
+        {
             label = string.IsNullOrEmpty(label) ? node.Value! : $"{label}: {node.Value}";
+        }
+
         if (!string.IsNullOrEmpty(label))
+        {
             ObjC.SendVoid(element, ObjC.Sel("setAccessibilityLabel:"), ObjC.NSString(label));
+        }
 
         // Document top-left CSS px -> the window's content space (AppKit bottom-left
         // origin, points; CSS px == points at the logical level), then to screen via
@@ -109,7 +126,9 @@ internal sealed class MacAccessibilityBridge
         {
             yield return child;
             foreach (var d in Flatten(child))
+            {
                 yield return d;
+            }
         }
     }
 

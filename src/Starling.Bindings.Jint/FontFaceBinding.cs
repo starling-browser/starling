@@ -35,20 +35,30 @@ internal static class FontFaceBinding
         InstallFontFaceConstructor(ctx);
 
         if (ctx.Wrappers.DocumentPrototype is { } docProto)
+        {
             JintInterop.DefineAccessor(engine, docProto, "fonts", (t, _) =>
             {
                 var doc = ctx.Wrappers.UnwrapDocument(t) ?? ctx.Document;
                 return BuildFontFaceSet(ctx, GetOrBuildSet(doc));
             });
+        }
     }
 
     private static FontFaceSet GetOrBuildSet(Document doc)
     {
-        if (SetPerDocument.TryGetValue(doc, out var existing)) return existing;
+        if (SetPerDocument.TryGetValue(doc, out var existing))
+        {
+            return existing;
+        }
+
         var set = new FontFaceSet();
         foreach (var el in doc.DescendantElements())
         {
-            if (!el.LocalName.Equals("style", StringComparison.OrdinalIgnoreCase)) continue;
+            if (!el.LocalName.Equals("style", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             var sheet = CssParser.ParseStyleSheet(el.TextContent ?? string.Empty, StyleOrigin.Author);
             foreach (var rule in FontFaceParser.ParseAll(sheet))
             {
@@ -75,7 +85,11 @@ internal static class FontFaceBinding
 
         JintInterop.DefineMethod(engine, obj, "add", (_, a) =>
         {
-            if (a.Length > 0 && a[0].IsObject() && ModelByJs.TryGetValue(a[0].AsObject(), out var face)) set.Add(face);
+            if (a.Length > 0 && a[0].IsObject() && ModelByJs.TryGetValue(a[0].AsObject(), out var face))
+            {
+                set.Add(face);
+            }
+
             return obj;
         }, 1);
         JintInterop.DefineMethod(engine, obj, "delete", (_, a) =>
@@ -85,7 +99,11 @@ internal static class FontFaceBinding
         JintInterop.DefineMethod(engine, obj, "clear", (_, _) => { set.Clear(); return JsValue.Undefined; }, 0);
         JintInterop.DefineMethod(engine, obj, "check", (_, a) =>
         {
-            if (a.Length == 0) return JsBoolean.False;
+            if (a.Length == 0)
+            {
+                return JsBoolean.False;
+            }
+
             var font = TypeConverter.ToString(a[0]);
             var text = a.Length > 1 && !a[1].IsNull() && !a[1].IsUndefined() ? TypeConverter.ToString(a[1]) : null;
             return JintInterop.Bool(set.Check(font, text));
@@ -99,13 +117,19 @@ internal static class FontFaceBinding
             {
                 face.Load();
                 if (stripped.Contains(face.Family, StringComparison.OrdinalIgnoreCase))
+                {
                     matched.Add(BuildFontFace(ctx, face));
+                }
             }
             return ResolvedPromise(engine, new JsArray(engine, matched.ToArray()));
         }, 1);
         JintInterop.DefineMethod(engine, obj, "forEach", (_, a) =>
         {
-            if (a.Length == 0 || !a[0].IsCallable()) return JsValue.Undefined;
+            if (a.Length == 0 || !a[0].IsCallable())
+            {
+                return JsValue.Undefined;
+            }
+
             foreach (var face in set.Faces)
             {
                 var js = BuildFontFace(ctx, face);
@@ -114,7 +138,9 @@ internal static class FontFaceBinding
             return JsValue.Undefined;
         }, 1);
         foreach (var m in new[] { "addEventListener", "removeEventListener" })
+        {
             JintInterop.DefineMethod(engine, obj, m, (_, _) => JsValue.Undefined, 2);
+        }
 
         return obj;
     }
@@ -124,7 +150,11 @@ internal static class FontFaceBinding
         var engine = ctx.Engine;
         var ctor = new NativeConstructor(engine, "FontFace", 2, (a, _) =>
         {
-            if (a.Length < 2) throw new JavaScriptException(engine.Intrinsics.TypeError, "FontFace requires family and source arguments");
+            if (a.Length < 2)
+            {
+                throw new JavaScriptException(engine.Intrinsics.TypeError, "FontFace requires family and source arguments");
+            }
+
             var family = TypeConverter.ToString(a[0]);
             var source = TypeConverter.ToString(a[1]);
             var desc = a.Length > 2 && a[2].IsObject() ? a[2].AsObject() : null;
@@ -142,7 +172,11 @@ internal static class FontFaceBinding
 
     private static JsObject BuildFontFace(JintBackendContext ctx, FontFaceModel face)
     {
-        if (JsByModel.TryGetValue(face, out var existing)) return existing;
+        if (JsByModel.TryGetValue(face, out var existing))
+        {
+            return existing;
+        }
+
         var engine = ctx.Engine;
         var o = new JsObject(engine);
         JintInterop.DefineAccessor(engine, o, "family", (_, _) => JintInterop.Str(face.Family));
@@ -176,7 +210,11 @@ internal static class FontFaceBinding
 
     private static string DescOr(ObjectInstance? desc, string name, string fallback)
     {
-        if (desc is null) return fallback;
+        if (desc is null)
+        {
+            return fallback;
+        }
+
         var v = desc.Get(name);
         return v.IsNull() || v.IsUndefined() ? fallback : TypeConverter.ToString(v);
     }

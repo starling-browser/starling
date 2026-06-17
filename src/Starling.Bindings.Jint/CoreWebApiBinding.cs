@@ -20,30 +20,48 @@ internal static class CoreWebApiBinding
         var engine = ctx.Engine;
 
         if (!engine.Global.HasOwnProperty("btoa"))
+        {
             JintInterop.DefineMethod(engine, engine.Global, "btoa", (_, a) =>
             {
                 var s = a.Length > 0 ? TypeConverter.ToString(a[0]) : "";
                 var bytes = new byte[s.Length];
                 for (var i = 0; i < s.Length; i++)
                 {
-                    if (s[i] > 0xFF) throw DomExceptionBinding.Throw(ctx, "InvalidCharacterError", "String contains an invalid character");
+                    if (s[i] > 0xFF)
+                    {
+                        throw DomExceptionBinding.Throw(ctx, "InvalidCharacterError", "String contains an invalid character");
+                    }
+
                     bytes[i] = (byte)s[i];
                 }
                 return JintInterop.Str(Convert.ToBase64String(bytes));
             }, 1);
+        }
 
         if (!engine.Global.HasOwnProperty("atob"))
+        {
             JintInterop.DefineMethod(engine, engine.Global, "atob", (_, a) =>
             {
                 var s = RemoveAsciiWhitespace(a.Length > 0 ? TypeConverter.ToString(a[0]) : "");
-                if (s.Length % 4 == 1) throw DomExceptionBinding.Throw(ctx, "InvalidCharacterError", "The string to be decoded is not correctly encoded");
-                if (s.Length % 4 != 0) s = s.PadRight(s.Length + (4 - s.Length % 4), '=');
+                if (s.Length % 4 == 1)
+                {
+                    throw DomExceptionBinding.Throw(ctx, "InvalidCharacterError", "The string to be decoded is not correctly encoded");
+                }
+
+                if (s.Length % 4 != 0)
+                {
+                    s = s.PadRight(s.Length + (4 - s.Length % 4), '=');
+                }
+
                 try
                 {
                     var bytes = Convert.FromBase64String(s);
                     return JintInterop.Str(string.Create(bytes.Length, bytes, static (span, st) =>
                     {
-                        for (var i = 0; i < st.Length; i++) span[i] = (char)st[i];
+                        for (var i = 0; i < st.Length; i++)
+                        {
+                            span[i] = (char)st[i];
+                        }
                     }));
                 }
                 catch (FormatException)
@@ -51,13 +69,16 @@ internal static class CoreWebApiBinding
                     throw DomExceptionBinding.Throw(ctx, "InvalidCharacterError", "The string to be decoded is not correctly encoded");
                 }
             }, 1);
+        }
 
         if (!engine.Global.HasOwnProperty("structuredClone"))
+        {
             JintInterop.DefineMethod(engine, engine.Global, "structuredClone", (_, a) =>
             {
                 var seen = new Dictionary<ObjectInstance, JsValue>(ReferenceEqualityComparer.Instance);
                 return CloneValue(ctx, a.Length > 0 ? a[0] : JsValue.Undefined, seen);
             }, 1);
+        }
     }
 
     private static JsValue CloneValue(JintBackendContext ctx, JsValue value, Dictionary<ObjectInstance, JsValue> seen)
@@ -65,33 +86,53 @@ internal static class CoreWebApiBinding
         var engine = ctx.Engine;
         if (value is not ObjectInstance obj)
         {
-            if (value is JsSymbol) throw DomExceptionBinding.Throw(ctx, "DataCloneError", "Symbol values cannot be cloned");
+            if (value is JsSymbol)
+            {
+                throw DomExceptionBinding.Throw(ctx, "DataCloneError", "Symbol values cannot be cloned");
+            }
+
             return value;
         }
-        if (seen.TryGetValue(obj, out var existing)) return existing;
+        if (seen.TryGetValue(obj, out var existing))
+        {
+            return existing;
+        }
 
         if (value.IsArrayBuffer() && value.AsArrayBuffer() is { } ab)
+        {
             return engine.Intrinsics.ArrayBuffer.Construct((byte[])ab.Clone());
+        }
 
         if (value is JsTypedArray ta)
+        {
             return CloneTypedArray(ctx, ta);
+        }
 
         if (value.IsCallable())
+        {
             throw DomExceptionBinding.Throw(ctx, "DataCloneError", "Function objects cannot be cloned");
+        }
 
         if (value is JsArray arr)
         {
             var c = new JsArray(engine, (uint)arr.Length);
             seen[obj] = c;
-            for (uint i = 0; i < arr.Length; i++) c[(int)i] = CloneValue(ctx, arr[(int)i], seen);
+            for (uint i = 0; i < arr.Length; i++)
+            {
+                c[(int)i] = CloneValue(ctx, arr[(int)i], seen);
+            }
+
             return c;
         }
 
         var clone = new JsObject(engine);
         seen[obj] = clone;
         foreach (var key in EnumerableStringKeys(obj))
+        {
             clone.FastSetProperty(key, new global::Jint.Runtime.Descriptors.PropertyDescriptor(
                 CloneValue(ctx, obj.Get(key), seen), writable: true, enumerable: true, configurable: true));
+        }
+
         return clone;
     }
 
@@ -107,7 +148,11 @@ internal static class CoreWebApiBinding
 
     private static byte[] ExtractBytes(JsValue v)
     {
-        if (v.IsArrayBuffer() && v.AsArrayBuffer() is { } ab) return (byte[])ab.Clone();
+        if (v.IsArrayBuffer() && v.AsArrayBuffer() is { } ab)
+        {
+            return (byte[])ab.Clone();
+        }
+
         if (v is ObjectInstance oi)
         {
             var bufVal = oi.Get("buffer");
@@ -132,7 +177,10 @@ internal static class CoreWebApiBinding
         if (ctor is ObjectInstance oi)
         {
             var name = oi.Get("name");
-            if (name.IsString()) return name.ToString();
+            if (name.IsString())
+            {
+                return name.ToString();
+            }
         }
         return "Uint8Array";
     }
@@ -141,10 +189,16 @@ internal static class CoreWebApiBinding
     {
         foreach (var key in o.GetOwnPropertyKeys(Types.String))
         {
-            if (!key.IsString()) continue;
+            if (!key.IsString())
+            {
+                continue;
+            }
+
             var d = o.GetOwnProperty(key);
             if (d != global::Jint.Runtime.Descriptors.PropertyDescriptor.Undefined && d.Enumerable)
+            {
                 yield return key.AsString();
+            }
         }
     }
 
@@ -152,7 +206,13 @@ internal static class CoreWebApiBinding
     {
         var sb = new StringBuilder(value.Length);
         foreach (var ch in value)
-            if (ch is not (' ' or '\t' or '\n' or '\r' or '\f')) sb.Append(ch);
+        {
+            if (ch is not (' ' or '\t' or '\n' or '\r' or '\f'))
+            {
+                sb.Append(ch);
+            }
+        }
+
         return sb.ToString();
     }
 }

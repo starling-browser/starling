@@ -52,7 +52,11 @@ public class H1ResponseBench
         var head = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {payloadBytes}\r\nConnection: keep-alive\r\n\r\n";
         var bytes = new byte[Encoding.ASCII.GetByteCount(head) + payloadBytes];
         var off = Encoding.ASCII.GetBytes(head, bytes);
-        for (var i = 0; i < payloadBytes; i++) bytes[off + i] = (byte)('a' + (i % 26));
+        for (var i = 0; i < payloadBytes; i++)
+        {
+            bytes[off + i] = (byte)('a' + (i % 26));
+        }
+
         return bytes;
     }
 
@@ -64,7 +68,11 @@ public class H1ResponseBench
         {
             sb.Append(perChunk.ToString("X", System.Globalization.CultureInfo.InvariantCulture));
             sb.Append("\r\n");
-            for (var i = 0; i < perChunk; i++) sb.Append((char)('a' + (i % 26)));
+            for (var i = 0; i < perChunk; i++)
+            {
+                sb.Append((char)('a' + (i % 26)));
+            }
+
             sb.Append("\r\n");
         }
         sb.Append("0\r\n\r\n");

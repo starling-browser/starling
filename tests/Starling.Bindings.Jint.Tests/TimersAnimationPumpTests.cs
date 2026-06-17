@@ -69,7 +69,11 @@ public sealed class TimersAnimationPumpTests
 
         ctx.Loop.PendingTimerCount.Should().Be(0);
         // Advance well past the would-be delay; nothing should fire.
-        for (var i = 0; i < 5; i++) ctx.Loop.AdvanceBy(50);
+        for (var i = 0; i < 5; i++)
+        {
+            ctx.Loop.AdvanceBy(50);
+        }
+
         ctx.Engine.Evaluate("fired").AsBoolean().Should().BeFalse();
     }
 
@@ -89,7 +93,9 @@ public sealed class TimersAnimationPumpTests
 
         // Drive the loop until the interval cancels itself (or a safety bound).
         for (var i = 0; i < 50 && ctx.Loop.PendingTimerCount > 0; i++)
+        {
             ctx.Loop.AdvanceBy(10);
+        }
 
         ctx.Engine.Evaluate("count").AsNumber().Should().Be(3);
         ctx.Loop.PendingTimerCount.Should().Be(0, "clearInterval must stop the reschedule chain");
@@ -243,12 +249,24 @@ public sealed class TimersAnimationPumpTests
         for (var i = 0; i < 100; i++)
         {
             ctx.Engine.Advanced.ProcessTasks();
-            if (ctx.DrainPosted()) ctx.Engine.Advanced.ProcessTasks();
-            if (done()) return;
-            if (ctx.Loop.PendingTimerCount > 0 || ctx.Loop.PendingAnimationFrameCount > 0)
-                ctx.Loop.AdvanceBy(10);
-            else if (!ctx.HasPosted)
+            if (ctx.DrainPosted())
+            {
+                ctx.Engine.Advanced.ProcessTasks();
+            }
+
+            if (done())
+            {
                 return;
+            }
+
+            if (ctx.Loop.PendingTimerCount > 0 || ctx.Loop.PendingAnimationFrameCount > 0)
+            {
+                ctx.Loop.AdvanceBy(10);
+            }
+            else if (!ctx.HasPosted)
+            {
+                return;
+            }
         }
     }
 
@@ -260,8 +278,15 @@ public sealed class TimersAnimationPumpTests
         for (var i = 0; i < 200; i++)
         {
             var notIdle = session.PumpOnce();
-            if (done()) return i;
-            if (!notIdle) Thread.Sleep(1);
+            if (done())
+            {
+                return i;
+            }
+
+            if (!notIdle)
+            {
+                Thread.Sleep(1);
+            }
         }
         return 200;
     }

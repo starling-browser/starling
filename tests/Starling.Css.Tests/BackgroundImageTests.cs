@@ -52,9 +52,13 @@ public sealed class BackgroundImageTests
         // Either a bare length (-60px → CssLength) or a list that begins
         // with one. Both are acceptable; the painter must consume both.
         if (value is CssValueList list)
+        {
             list.Values[0].Should().Be(new CssLength(-60, CssLengthUnit.Px));
+        }
         else
+        {
             value.Should().Be(new CssLength(-60, CssLengthUnit.Px));
+        }
     }
 
     [TestMethod]

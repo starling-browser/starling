@@ -56,7 +56,9 @@ internal sealed class InlineLayout
         // padding+border the moment its value and placeholder are both gone.
         // Every other empty container stays zero-height (an empty <div> is 0).
         if (runs.Count == 0)
+        {
             return ReservesEmptyTextLine(container.Element) ? lineHeight : 0;
+        }
 
         double cursorX = 0, cursorY = 0;
         double currentLineHeight = lineHeight;
@@ -69,7 +71,10 @@ internal sealed class InlineLayout
         // inline-axis width. We apply it as the initial pen-X.
         var indent = ResolveTextIndent(container.Style, fontSize, availableWidth);
         if (indent != 0)
+        {
             cursorX = indent;
+        }
+
         var firstLine = true;
 
         foreach (var run in runs)
@@ -117,7 +122,10 @@ internal sealed class InlineLayout
         }
 
         if (!measure)
+        {
             AlignLines(container.Style, availableWidth, fragments, placedImages, placedAtomics);
+        }
+
         return contentHeight;
     }
 
@@ -159,7 +167,10 @@ internal sealed class InlineLayout
         // measuring/shaping so the produced glyphs and advances match the
         // transformed string the painter will draw.
         var text = TextTransformer.Apply(run.Text, TextTransformer.Resolve(effectiveStyle));
-        if (text.Length == 0) return;
+        if (text.Length == 0)
+        {
+            return;
+        }
 
         // Segment the run into "lines" on forced breaks (preserved newlines),
         // then lay each segment out as a sequence of break-separated tokens.
@@ -217,7 +228,10 @@ internal sealed class InlineLayout
         ref bool firstLine,
         double indent)
     {
-        if (token.Text.Length == 0) return;
+        if (token.Text.Length == 0)
+        {
+            return;
+        }
 
         var lineOrigin = firstLine ? indent : 0;
         var atLineStart = cursorX <= lineOrigin + 0.0001;
@@ -227,12 +241,18 @@ internal sealed class InlineLayout
             // In collapsing modes (white-space: normal/nowrap/pre-line) a
             // collapsed space that would lead a line contributes nothing
             // visible, so drop it (CSS Text 3 §4.1.1 trimming).
-            if (!ws.PreserveSpaces && atLineStart) return;
+            if (!ws.PreserveSpaces && atLineStart)
+            {
+                return;
+            }
 
             var spaceWidth = token.Advance;
             // word-spacing adds to the advance of each space (CSS Text 3 §8.1).
             // Tabs do not receive word-spacing.
-            if (!token.IsTab) spaceWidth += wordSpacing * token.SpaceCount;
+            if (!token.IsTab)
+            {
+                spaceWidth += wordSpacing * token.SpaceCount;
+            }
 
             AddFragment(owner, fragments,
                 new TextFragment(token.Text, cursorX, cursorY, spaceWidth, currentLineHeight, baseline, token.Shaped));
@@ -305,11 +325,17 @@ internal sealed class InlineLayout
                 var ch = word[start + count].ToString();
                 var chW = _measurer.MeasureWidth(ch, fontSize, spec) + letterSpacing;
                 if (count > 0 && cursorX + sliceWidth + chW > availableWidth)
+                {
                     break;
+                }
+
                 sliceWidth += chW;
                 count++;
             }
-            if (count == 0) count = 1; // always make progress
+            if (count == 0)
+            {
+                count = 1; // always make progress
+            }
 
             var slice = word.Substring(start, count);
             var shaped = ShapeWord(slice, fontSize, spec);
@@ -368,7 +394,10 @@ internal sealed class InlineLayout
         double fontSize,
         FontSpec spec)
     {
-        if (segment.Length == 0) yield break;
+        if (segment.Length == 0)
+        {
+            yield break;
+        }
 
         // Shape the whole segment once; slice words from it when 1:1.
         var whole = _measurer.Shape(segment, fontSize, spec);
@@ -392,7 +421,11 @@ internal sealed class InlineLayout
                 // of spaces becomes a single space; in preserving modes the run
                 // is kept verbatim.
                 var start = i;
-                while (i < segment.Length && (segment[i] == ' ' || segment[i] == '\t')) i++;
+                while (i < segment.Length && (segment[i] == ' ' || segment[i] == '\t'))
+                {
+                    i++;
+                }
+
                 if (ws.PreserveSpaces)
                 {
                     var spaces = segment[start..i];
@@ -411,7 +444,11 @@ internal sealed class InlineLayout
 
             // Word: maximal run of non-space characters.
             var wordStart = i;
-            while (i < segment.Length && segment[i] != ' ' && segment[i] != '\t') i++;
+            while (i < segment.Length && segment[i] != ' ' && segment[i] != '\t')
+            {
+                i++;
+            }
+
             var word = segment[wordStart..i];
             var wordShaped = canSlice ? whole.Slice(wordStart, i) : _measurer.Shape(word, fontSize, spec);
             yield return new Token(word, wordShaped, wordShaped.Advance, IsSpace: false, IsTab: false, SpaceCount: 0, LetterCount: CountLetters(word));
@@ -437,7 +474,11 @@ internal sealed class InlineLayout
     /// </summary>
     private double ResolveSpacing(ComputedStyle? style, PropertyId id, double fontSize)
     {
-        if (style is null) return 0;
+        if (style is null)
+        {
+            return 0;
+        }
+
         return style.Get(id) switch
         {
             CssKeyword { Name: "normal" } => 0,
@@ -454,7 +495,11 @@ internal sealed class InlineLayout
     /// </summary>
     private double ResolveTextIndent(ComputedStyle? style, double fontSize, double availableWidth)
     {
-        if (style is null) return 0;
+        if (style is null)
+        {
+            return 0;
+        }
+
         return style.Get(PropertyId.TextIndent) switch
         {
             CssLength len => ToPxRelative(len, fontSize),
@@ -471,8 +516,16 @@ internal sealed class InlineLayout
     private double ResolveTabSize(ComputedStyle? style, double fontSize, FontSpec spec)
     {
         var spaceWidth = _measurer.MeasureWidth(" ", fontSize, spec);
-        if (spaceWidth <= 0) spaceWidth = fontSize * 0.28;
-        if (style is null) return 8 * spaceWidth;
+        if (spaceWidth <= 0)
+        {
+            spaceWidth = fontSize * 0.28;
+        }
+
+        if (style is null)
+        {
+            return 8 * spaceWidth;
+        }
+
         return style.Get(PropertyId.TabSize) switch
         {
             CssNumber n => n.Value * spaceWidth,
@@ -506,11 +559,21 @@ internal sealed class InlineLayout
     /// </summary>
     private static BreakMode ResolveBreakMode(ComputedStyle? style)
     {
-        if (style is null) return BreakMode.None;
+        if (style is null)
+        {
+            return BreakMode.None;
+        }
+
         if (style.Get(PropertyId.OverflowWrap) is CssKeyword { Name: "anywhere" or "break-word" })
+        {
             return BreakMode.Anywhere;
+        }
+
         if (style.Get(PropertyId.WordBreak) is CssKeyword { Name: "break-all" })
+        {
             return BreakMode.Anywhere;
+        }
+
         return BreakMode.None;
     }
 
@@ -527,7 +590,10 @@ internal sealed class InlineLayout
 
         public static WhiteSpaceMode Resolve(ComputedStyle? style)
         {
-            if (style is null) return new WhiteSpaceMode(CollapseSpaces: true, PreserveNewlines: false, Wrap: true);
+            if (style is null)
+            {
+                return new WhiteSpaceMode(CollapseSpaces: true, PreserveNewlines: false, Wrap: true);
+            }
 
             // Legacy shorthand keyword first — it is what authors and the UA
             // sheet (e.g. `pre { white-space: pre }`) overwhelmingly set.
@@ -576,7 +642,11 @@ internal sealed class InlineLayout
 
         public static string Apply(string text, Kind kind)
         {
-            if (kind == Kind.None || text.Length == 0) return text;
+            if (kind == Kind.None || text.Length == 0)
+            {
+                return text;
+            }
+
             switch (kind)
             {
                 case Kind.Uppercase:
@@ -595,7 +665,10 @@ internal sealed class InlineLayout
                         else
                         {
                             if (atWordStart && char.IsLetter(chars[i]))
+                            {
                                 chars[i] = char.ToUpperInvariant(chars[i]);
+                            }
+
                             atWordStart = false;
                         }
                     }
@@ -674,7 +747,10 @@ internal sealed class InlineLayout
                 // relative to each item, not the flex container.)
                 double maxContent = 0;
                 foreach (var item in box.Children)
+                {
                     maxContent = Math.Max(maxContent, item.Frame.X + item.Frame.Width);
+                }
+
                 var available = Math.Max(0, availableWidth - cursorX);
                 subWidth = Math.Min(maxContent, available);
             }
@@ -765,10 +841,16 @@ internal sealed class InlineLayout
         // CSS width: prefer an explicit value if the cascade gave us one.
         // Percentages resolve against the enclosing block's content width.
         var explicitWidth = ResolveLength(box.Style, PropertyId.Width, availableWidth);
-        if (explicitWidth is { } w) contentWidth = w;
+        if (explicitWidth is { } w)
+        {
+            contentWidth = w;
+        }
 
         var explicitHeight = ResolveLength(box.Style, PropertyId.Height, lineHeight);
-        if (explicitHeight is { } h) contentHeight = h;
+        if (explicitHeight is { } h)
+        {
+            contentHeight = h;
+        }
 
         var outerWidth = contentWidth + box.Padding.Horizontal + box.Border.Horizontal;
         var outerHeight = contentHeight + box.Padding.Vertical + box.Border.Vertical;
@@ -813,7 +895,11 @@ internal sealed class InlineLayout
             {
                 tb.Fragments.Clear();
                 var text = NormalizeWhitespace(tb.Text);
-                if (text.Length == 0) continue;
+                if (text.Length == 0)
+                {
+                    continue;
+                }
+
                 var fragWidth = _measurer.MeasureWidth(text, fontSize, spec);
                 tb.Fragments.Add(new TextFragment(text, width, 0, fragWidth, fontSize, baseline));
                 width += fragWidth;
@@ -831,9 +917,16 @@ internal sealed class InlineLayout
         if (cols > 0)
         {
             var charWidth = _measurer.MeasureWidth("0", fontSize, spec);
-            if (charWidth <= 0) charWidth = fontSize * 0.5;
+            if (charWidth <= 0)
+            {
+                charWidth = fontSize * 0.5;
+            }
+
             var minWidth = cols * charWidth;
-            if (minWidth > width) width = minWidth;
+            if (minWidth > width)
+            {
+                width = minWidth;
+            }
         }
 
         return width;
@@ -855,17 +948,30 @@ internal sealed class InlineLayout
     /// </summary>
     private static bool ReservesEmptyTextLine(Element? element)
     {
-        if (element is null) return false;
+        if (element is null)
+        {
+            return false;
+        }
+
         if (string.Equals(element.LocalName, "textarea", StringComparison.OrdinalIgnoreCase))
+        {
             return true;
+        }
+
         return ResolveInputSizeCols(element) > 0;
     }
 
     private static int ResolveInputSizeCols(Element? element)
     {
-        if (element is null) return 0;
-        if (!string.Equals(element.LocalName, "input", StringComparison.OrdinalIgnoreCase))
+        if (element is null)
+        {
             return 0;
+        }
+
+        if (!string.Equals(element.LocalName, "input", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
 
         var sizeAttr = element.GetAttribute("size");
         if (!string.IsNullOrEmpty(sizeAttr) &&
@@ -909,7 +1015,11 @@ internal sealed class InlineLayout
 
     private double? ResolveLength(ComputedStyle? style, PropertyId property, double percentageBasis)
     {
-        if (style is null) return null;
+        if (style is null)
+        {
+            return null;
+        }
+
         return style.Get(property) switch
         {
             CssLength len => Block.BlockLayout.ToPx(len, _viewport),
@@ -921,8 +1031,16 @@ internal sealed class InlineLayout
 
     private double ResolveBorderWidth(ComputedStyle? style, PropertyId widthId, PropertyId styleId)
     {
-        if (style is null) return 0;
-        if (style.Get(styleId) is CssKeyword k && k.Name == "none") return 0;
+        if (style is null)
+        {
+            return 0;
+        }
+
+        if (style.Get(styleId) is CssKeyword k && k.Name == "none")
+        {
+            return 0;
+        }
+
         return style.Get(widthId) is CssLength len ? Block.BlockLayout.ToPx(len, _viewport) : 0;
     }
 
@@ -1035,14 +1153,25 @@ internal sealed class InlineLayout
         // from the other axis (auto), keep aspect ratio while clamping; when
         // it was authored explicitly, clamp only that axis.
         var maxW = Block.BlockLayout.ResolveLength(style, PropertyId.MaxWidth, availableWidth, _viewport);
-        if (style?.Get(PropertyId.MaxWidth) is CssKeyword mwk && mwk.Name == "none") maxW = null;
+        if (style?.Get(PropertyId.MaxWidth) is CssKeyword mwk && mwk.Name == "none")
+        {
+            maxW = null;
+        }
+
         var minW = Block.BlockLayout.ResolveLength(style, PropertyId.MinWidth, availableWidth, _viewport) ?? 0;
 
         var maxH = Block.BlockLayout.ResolveLength(style, PropertyId.MaxHeight, 0, _viewport);
-        if (style?.Get(PropertyId.MaxHeight) is CssKeyword mhk && mhk.Name == "none") maxH = null;
+        if (style?.Get(PropertyId.MaxHeight) is CssKeyword mhk && mhk.Name == "none")
+        {
+            maxH = null;
+        }
         // Height percentages on min/max-height resolve against an unknown
         // containing-block height; ignore them in inline context.
-        if (style?.Get(PropertyId.MaxHeight) is CssPercentage) maxH = null;
+        if (style?.Get(PropertyId.MaxHeight) is CssPercentage)
+        {
+            maxH = null;
+        }
+
         var minHRaw = style?.Get(PropertyId.MinHeight) is CssPercentage
             ? (double?)null
             : Block.BlockLayout.ResolveLength(style, PropertyId.MinHeight, 0, _viewport);
@@ -1052,25 +1181,37 @@ internal sealed class InlineLayout
         {
             var scale = maxW.Value / w;
             w = maxW.Value;
-            if (!specH.HasValue) h *= scale;
+            if (!specH.HasValue)
+            {
+                h *= scale;
+            }
         }
         if (w < minW)
         {
             var scale = w > 0 ? minW / w : 1;
             w = minW;
-            if (!specH.HasValue) h *= scale;
+            if (!specH.HasValue)
+            {
+                h *= scale;
+            }
         }
         if (maxH.HasValue && h > maxH.Value)
         {
             var scale = maxH.Value / h;
             h = maxH.Value;
-            if (!specW.HasValue) w *= scale;
+            if (!specW.HasValue)
+            {
+                w *= scale;
+            }
         }
         if (h < minH)
         {
             var scale = h > 0 ? minH / h : 1;
             h = minH;
-            if (!specW.HasValue) w *= scale;
+            if (!specW.HasValue)
+            {
+                w *= scale;
+            }
         }
 
         return (w, h);
@@ -1094,7 +1235,9 @@ internal sealed class InlineLayout
             : "start";
         if (align is not ("center" or "right" or "end") ||
             (fragments.Count == 0 && placedImages.Count == 0 && placedAtomics.Count == 0))
+        {
             return;
+        }
 
         // Group fragments, images, and atomic inline-blocks by their Y so
         // per-line alignment shifts apply uniformly to everything on the line.
@@ -1103,7 +1246,11 @@ internal sealed class InlineLayout
         {
             var frag = item.Owner.Fragments[item.Index];
             var key = frag.Y;
-            if (!lines.TryGetValue(key, out var line)) line = ([], [], [], 0);
+            if (!lines.TryGetValue(key, out var line))
+            {
+                line = ([], [], [], 0);
+            }
+
             line.Texts.Add(item);
             line.RightEdge = Math.Max(line.RightEdge, frag.X + frag.Width);
             lines[key] = line;
@@ -1111,7 +1258,11 @@ internal sealed class InlineLayout
         foreach (var image in placedImages)
         {
             var key = image.Frame.Y;
-            if (!lines.TryGetValue(key, out var line)) line = ([], [], [], 0);
+            if (!lines.TryGetValue(key, out var line))
+            {
+                line = ([], [], [], 0);
+            }
+
             line.Images.Add(image);
             line.RightEdge = Math.Max(line.RightEdge, image.Frame.X + image.Frame.Width);
             lines[key] = line;
@@ -1119,7 +1270,11 @@ internal sealed class InlineLayout
         foreach (var atomic in placedAtomics)
         {
             var key = atomic.Frame.Y;
-            if (!lines.TryGetValue(key, out var line)) line = ([], [], [], 0);
+            if (!lines.TryGetValue(key, out var line))
+            {
+                line = ([], [], [], 0);
+            }
+
             line.Atomics.Add(atomic);
             line.RightEdge = Math.Max(line.RightEdge, atomic.Frame.X + atomic.Frame.Width);
             lines[key] = line;
@@ -1130,7 +1285,10 @@ internal sealed class InlineLayout
             var offset = align == "center"
                 ? Math.Max(0, (availableWidth - line.RightEdge) / 2d)
                 : Math.Max(0, availableWidth - line.RightEdge);
-            if (offset == 0) continue;
+            if (offset == 0)
+            {
+                continue;
+            }
 
             foreach (var item in line.Texts)
             {
@@ -1181,7 +1339,10 @@ internal sealed class InlineLayout
     {
         var clampLines = ResolveLineClamp(blockStyle);
         var ellipsisActive = clampLines == 0 && ResolveEllipsisActive(blockStyle);
-        if (clampLines == 0 && !ellipsisActive) return contentHeight;
+        if (clampLines == 0 && !ellipsisActive)
+        {
+            return contentHeight;
+        }
 
         // Distinct line tops, ascending. Every fragment on a line carries the
         // exact cursorY it was placed at, so exact-equality grouping is sound
@@ -1190,7 +1351,10 @@ internal sealed class InlineLayout
         foreach (var (owner, index) in fragments)
         {
             var y = owner.Fragments[index].Y;
-            if (!lineTops.Contains(y)) lineTops.Add(y);
+            if (!lineTops.Contains(y))
+            {
+                lineTops.Add(y);
+            }
         }
         lineTops.Sort();
 
@@ -1207,19 +1371,25 @@ internal sealed class InlineLayout
             foreach (var fragRef in fragments)
             {
                 if (fragRef.Owner.Fragments[fragRef.Index].Y >= clampCut)
+                {
                     dropped.Add(fragRef);
+                }
             }
             // Replaced / atomic inline boxes on clamped-away lines: zero the
             // frame so paint and overflow geometry exclude them.
             foreach (var image in placedImages)
             {
                 if (image.Frame.Y >= clampCut - 0.0001)
+                {
                     image.Frame = new Rect(image.Frame.X, clampCut, 0, 0);
+                }
             }
             foreach (var atomic in placedAtomics)
             {
                 if (atomic.Frame.Y >= clampCut - 0.0001)
+                {
                     atomic.Frame = new Rect(atomic.Frame.X, clampCut, 0, 0);
+                }
             }
             contentHeight = clampCut;
         }
@@ -1229,27 +1399,48 @@ internal sealed class InlineLayout
         // and report the ellipsis advance as the text's minimum width. The
         // clamp's height capping above IS real content height, so measure
         // passes keep it; only the fragment surgery is paint-affecting.
-        if (measure) return contentHeight;
+        if (measure)
+        {
+            return contentHeight;
+        }
 
         const double overflowTolerance = 0.05;
         for (var i = 0; i < lineTops.Count; i++)
         {
             var top = lineTops[i];
-            if (top >= clampCut) continue; // line dropped by the clamp
+            if (top >= clampCut)
+            {
+                continue; // line dropped by the clamp
+            }
+
             var force = top.Equals(forcedLineTop); // the clamp's last visible line
             if (!force)
             {
-                if (!ellipsisActive) continue;
+                if (!ellipsisActive)
+                {
+                    continue;
+                }
                 // Ellipsize only lines that actually overflow the content box.
                 double rightmost = 0;
                 foreach (var (owner, index) in fragments)
                 {
-                    if (dropped.Contains((owner, index))) continue;
+                    if (dropped.Contains((owner, index)))
+                    {
+                        continue;
+                    }
+
                     var frag = owner.Fragments[index];
-                    if (frag.Y != top) continue;
+                    if (frag.Y != top)
+                    {
+                        continue;
+                    }
+
                     rightmost = Math.Max(rightmost, frag.X + frag.Width);
                 }
-                if (rightmost <= availableWidth + overflowTolerance) continue;
+                if (rightmost <= availableWidth + overflowTolerance)
+                {
+                    continue;
+                }
             }
             EllipsizeLine(blockStyle, top, availableWidth, fragments, dropped);
         }
@@ -1277,10 +1468,21 @@ internal sealed class InlineLayout
         var line = new List<(TextBox Owner, int Index)>();
         foreach (var fragRef in fragments)
         {
-            if (dropped.Contains(fragRef)) continue;
-            if (fragRef.Owner.Fragments[fragRef.Index].Y.Equals(lineTop)) line.Add(fragRef);
+            if (dropped.Contains(fragRef))
+            {
+                continue;
+            }
+
+            if (fragRef.Owner.Fragments[fragRef.Index].Y.Equals(lineTop))
+            {
+                line.Add(fragRef);
+            }
         }
-        if (line.Count == 0) return;
+        if (line.Count == 0)
+        {
+            return;
+        }
+
         line.Sort(static (a, b) =>
             a.Owner.Fragments[a.Index].X.CompareTo(b.Owner.Fragments[b.Index].X));
 
@@ -1325,7 +1527,11 @@ internal sealed class InlineLayout
                 while (keptChars < frag.Text.Length)
                 {
                     var w = _measurer.MeasureWidth(frag.Text[keptChars].ToString(), runFontSize, runSpec);
-                    if (acc + w > room + tolerance) break;
+                    if (acc + w > room + tolerance)
+                    {
+                        break;
+                    }
+
                     acc += w;
                     keptChars++;
                 }
@@ -1347,9 +1553,16 @@ internal sealed class InlineLayout
                     attachAt = i;
                 }
             }
-            if (keptChars == 0) dropped.Add(line[i]);
+            if (keptChars == 0)
+            {
+                dropped.Add(line[i]);
+            }
 
-            for (var j = i + 1; j < line.Count; j++) dropped.Add(line[j]);
+            for (var j = i + 1; j < line.Count; j++)
+            {
+                dropped.Add(line[j]);
+            }
+
             break;
         }
 
@@ -1357,10 +1570,18 @@ internal sealed class InlineLayout
         while (attachAt >= 0)
         {
             var (owner, index) = line[attachAt];
-            if (!IsWhitespaceText(owner.Fragments[index].Text)) break;
+            if (!IsWhitespaceText(owner.Fragments[index].Text))
+            {
+                break;
+            }
+
             dropped.Add(line[attachAt]);
             attachAt--;
-            while (attachAt >= 0 && dropped.Contains(line[attachAt])) attachAt--;
+            while (attachAt >= 0 && dropped.Contains(line[attachAt]))
+            {
+                attachAt--;
+            }
+
             if (attachAt >= 0)
             {
                 var prev = line[attachAt].Owner.Fragments[line[attachAt].Index];
@@ -1386,7 +1607,10 @@ internal sealed class InlineLayout
     {
         foreach (var c in text)
         {
-            if (c is not (' ' or '\t')) return false;
+            if (c is not (' ' or '\t'))
+            {
+                return false;
+            }
         }
         return text.Length > 0;
     }
@@ -1400,14 +1624,20 @@ internal sealed class InlineLayout
         List<(TextBox Owner, int Index)> fragments,
         HashSet<(TextBox Owner, int Index)> dropped)
     {
-        if (dropped.Count == 0) return;
+        if (dropped.Count == 0)
+        {
+            return;
+        }
 
         // Distinct owners in first-appearance order.
         var owners = new List<TextBox>();
         var seen = new HashSet<TextBox>();
         foreach (var (owner, _) in fragments)
         {
-            if (seen.Add(owner)) owners.Add(owner);
+            if (seen.Add(owner))
+            {
+                owners.Add(owner);
+            }
         }
 
         // Per-owner descending-index removal keeps earlier indices stable.
@@ -1425,14 +1655,18 @@ internal sealed class InlineLayout
         {
             indices.Sort();
             for (var i = indices.Count - 1; i >= 0; i--)
+            {
                 owner.Fragments.RemoveAt(indices[i]);
+            }
         }
 
         fragments.Clear();
         foreach (var owner in owners)
         {
             for (var i = 0; i < owner.Fragments.Count; i++)
+            {
                 fragments.Add((owner, i));
+            }
         }
     }
 
@@ -1445,10 +1679,16 @@ internal sealed class InlineLayout
     private static bool ResolveEllipsisActive(ComputedStyle style)
     {
         if (style.Get(PropertyId.TextOverflow) is not CssKeyword { Name: "ellipsis" })
+        {
             return false;
+        }
+
         if (style.Get(PropertyId.OverflowX) is not CssKeyword overflowX
             || overflowX.Name == "visible")
+        {
             return false;
+        }
+
         return !WhiteSpaceMode.Resolve(style).Wrap;
     }
 
@@ -1460,11 +1700,20 @@ internal sealed class InlineLayout
     private static int ResolveLineClamp(ComputedStyle style)
     {
         if (style.Get(PropertyId.LineClamp) is not CssNumber clamp || clamp.Value < 1)
+        {
             return 0;
+        }
+
         if (style.Get(PropertyId.Display) is not CssKeyword { Name: "-webkit-box" })
+        {
             return 0;
+        }
+
         if (style.Get(PropertyId.BoxOrient) is not CssKeyword { Name: "vertical" })
+        {
             return 0;
+        }
+
         return (int)clamp.Value;
     }
 
@@ -1521,7 +1770,11 @@ internal sealed class InlineLayout
 
     private static bool IsAtomicInline(InlineBox box)
     {
-        if (box.Style is null) return false;
+        if (box.Style is null)
+        {
+            return false;
+        }
+
         return box.Style.Get(PropertyId.Display) is CssKeyword k
             && (k.Name.Equals("inline-block", StringComparison.OrdinalIgnoreCase)
                 || k.Name.Equals("inline-flex", StringComparison.OrdinalIgnoreCase)
@@ -1538,7 +1791,9 @@ internal sealed class InlineLayout
         foreach (var child in box.Children)
         {
             if (child.Kind is BoxKind.BlockContainer or BoxKind.AnonymousBlock)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -1570,7 +1825,11 @@ internal sealed class InlineLayout
                 case InlineBox ib:
                     // A wrapper inline (e.g. <span>) recurses; treat its
                     // subtree as part of this inline-block's IFC.
-                    if (HasNonTextInlineChild(ib)) return true;
+                    if (HasNonTextInlineChild(ib))
+                    {
+                        return true;
+                    }
+
                     break;
             }
         }
@@ -1598,7 +1857,10 @@ internal sealed class InlineLayout
             {
                 case TextBox tb:
                     foreach (var frag in tb.Fragments)
+                    {
                         max = Math.Max(max, frag.X + frag.Width);
+                    }
+
                     return;
                 case ImageBox img:
                     max = Math.Max(max, img.Frame.X + img.Frame.Width);
@@ -1607,20 +1869,31 @@ internal sealed class InlineLayout
                     max = Math.Max(max, ib.Frame.X + ib.Frame.Width);
                     return;
             }
-            foreach (var child in node.Children) Walk(child);
+            foreach (var child in node.Children)
+            {
+                Walk(child);
+            }
         }
     }
 
     private static string NormalizeWhitespace(string text)
     {
-        if (text.Length == 0) return text;
+        if (text.Length == 0)
+        {
+            return text;
+        }
+
         var sb = new System.Text.StringBuilder(text.Length);
         var prevSpace = false;
         foreach (var c in text)
         {
             if (c is ' ' or '\t' or '\n' or '\r' or '\f')
             {
-                if (!prevSpace) sb.Append(' ');
+                if (!prevSpace)
+                {
+                    sb.Append(' ');
+                }
+
                 prevSpace = true;
             }
             else
@@ -1640,17 +1913,28 @@ internal sealed class InlineLayout
         {
             if (text[i] == ' ')
             {
-                if (i > start) yield return text[start..i];
+                if (i > start)
+                {
+                    yield return text[start..i];
+                }
+
                 yield return " ";
                 start = i + 1;
             }
         }
-        if (start < text.Length) yield return text[start..];
+        if (start < text.Length)
+        {
+            yield return text[start..];
+        }
     }
 
     private double ResolveFontSize(ComputedStyle? style)
     {
-        if (style is null) return 16;
+        if (style is null)
+        {
+            return 16;
+        }
+
         return style.Get(PropertyId.FontSize) switch
         {
             CssLength len => Block.BlockLayout.ToPx(len, _viewport),
@@ -1661,7 +1945,11 @@ internal sealed class InlineLayout
 
     private double ResolveLineHeight(ComputedStyle? style, double fontSize, FontSpec spec)
     {
-        if (style is null) return _measurer.NormalLineHeight(fontSize, spec);
+        if (style is null)
+        {
+            return _measurer.NormalLineHeight(fontSize, spec);
+        }
+
         return style.Get(PropertyId.LineHeight) switch
         {
             CssNumber n => n.Value * fontSize,

@@ -122,7 +122,11 @@ public sealed class EngineModuleScriptTests
 
         public ValueTask DisposeAsync()
         {
-            try { if (Directory.Exists(_dir)) Directory.Delete(_dir, recursive: true); }
+            try { if (Directory.Exists(_dir))
+                {
+                    Directory.Delete(_dir, recursive: true);
+                }
+            }
             catch { /* best-effort */ }
             return ValueTask.CompletedTask;
         }

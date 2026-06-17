@@ -114,7 +114,11 @@ public sealed class JintDomWrapper
     /// <see cref="JsValue.Null"/> for a null target.</summary>
     public JsValue Wrap(EventTarget? target)
     {
-        if (target is null) return JsValue.Null;
+        if (target is null)
+        {
+            return JsValue.Null;
+        }
+
         return GetOrCreate(target);
     }
 
@@ -125,11 +129,17 @@ public sealed class JintDomWrapper
     public ObjectInstance GetOrCreate(EventTarget backing)
     {
         ArgumentNullException.ThrowIfNull(backing);
-        if (_wrappers.TryGetValue(backing, out var existing)) return existing;
+        if (_wrappers.TryGetValue(backing, out var existing))
+        {
+            return existing;
+        }
 
         var wrapper = new JsObject(_ctx.Engine);
         var proto = SelectPrototype(backing);
-        if (proto is not null) wrapper.Prototype = proto;
+        if (proto is not null)
+        {
+            wrapper.Prototype = proto;
+        }
 
         _wrappers.Add(backing, wrapper);
         _backing.Add(wrapper, backing);
@@ -146,8 +156,16 @@ public sealed class JintDomWrapper
     {
         ArgumentNullException.ThrowIfNull(backing);
         ArgumentNullException.ThrowIfNull(wrapper);
-        if (_wrappers.TryGetValue(backing, out _)) return;
-        if (_backing.TryGetValue(wrapper, out _)) return;
+        if (_wrappers.TryGetValue(backing, out _))
+        {
+            return;
+        }
+
+        if (_backing.TryGetValue(wrapper, out _))
+        {
+            return;
+        }
+
         _wrappers.Add(backing, wrapper);
         _backing.Add(wrapper, backing);
     }
@@ -157,7 +175,10 @@ public sealed class JintDomWrapper
     public object? Unwrap(JsValue value)
     {
         if (value is ObjectInstance oi && _backing.TryGetValue(oi, out var backing))
+        {
             return backing;
+        }
+
         return null;
     }
 

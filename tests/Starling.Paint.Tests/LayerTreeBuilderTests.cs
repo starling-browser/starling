@@ -99,16 +99,26 @@ public sealed class LayerTreeBuilderTests
     private static uint? Color(CompositorLayer layer)
     {
         foreach (var item in layer.Items.Items)
+        {
             if (item is FillRect f)
+            {
                 return ((uint)f.Color.R << 16) | ((uint)f.Color.G << 8) | f.Color.B;
+            }
+        }
+
         return null;
     }
 
     private static bool RootSliceHasColor(CompositorLayer root, uint rgb)
     {
         foreach (var item in root.Items.Items)
+        {
             if (item is FillRect f && ((((uint)f.Color.R << 16) | ((uint)f.Color.G << 8) | f.Color.B) == rgb))
+            {
                 return true;
+            }
+        }
+
         return false;
     }
 }

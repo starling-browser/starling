@@ -31,7 +31,10 @@ public sealed class SvgPathParserTests
         path.Should().NotBeNull();
         var pts = new List<PointF>();
         foreach (var seg in path!.Flatten())
+        {
             pts.AddRange(seg.Points.ToArray());
+        }
+
         return pts;
     }
 

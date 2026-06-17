@@ -40,15 +40,25 @@ internal static unsafe class MacImeBridge
     /// </summary>
     public static bool Install(Action<string> onPreedit, Action onUnmark, ILoggerFactory? loggerFactory = null)
     {
-        if (_installed || !OperatingSystem.IsMacOS()) return false;
+        if (_installed || !OperatingSystem.IsMacOS())
+        {
+            return false;
+        }
+
         _log = (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger(typeof(MacImeBridge));
         try
         {
             var cls = ObjC.GetClass("GLFWContentView");
-            if (cls == 0) return false;
+            if (cls == 0)
+            {
+                return false;
+            }
 
             var setMarked = ObjC.ClassGetInstanceMethod(cls, ObjC.Sel("setMarkedText:selectedRange:replacementRange:"));
-            if (setMarked == 0) return false;
+            if (setMarked == 0)
+            {
+                return false;
+            }
 
             _onPreedit = onPreedit;
             _onUnmark = onUnmark;
@@ -82,8 +92,10 @@ internal static unsafe class MacImeBridge
         catch (Exception ex) { /* never let a managed fault unwind into AppKit */ MacImeBridgeLog.SetMarkedThunkFailed(_log, ex); }
 
         if (_origSetMarked != 0)
+        {
             ((delegate* unmanaged[Cdecl]<nint, nint, nint, NSRange, NSRange, void>)_origSetMarked)(
                 self, cmd, str, selected, replacement);
+        }
     }
 
     // void unmarkText
@@ -94,7 +106,9 @@ internal static unsafe class MacImeBridge
         catch (Exception ex) { /* never let a managed fault unwind into AppKit */ MacImeBridgeLog.UnmarkThunkFailed(_log, ex); }
 
         if (_origUnmark != 0)
+        {
             ((delegate* unmanaged[Cdecl]<nint, nint, void>)_origUnmark)(self, cmd);
+        }
     }
 }
 

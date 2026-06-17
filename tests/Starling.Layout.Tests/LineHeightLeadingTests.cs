@@ -76,9 +76,19 @@ public sealed class LineHeightLeadingTests
 
     private static TextBox? FindText(Box.Box box)
     {
-        if (box is TextBox { Fragments.Count: > 0 } tb) return tb;
+        if (box is TextBox { Fragments.Count: > 0 } tb)
+        {
+            return tb;
+        }
+
         foreach (var c in box.Children)
-            if (FindText(c) is { } hit) return hit;
+        {
+            if (FindText(c) is { } hit)
+            {
+                return hit;
+            }
+        }
+
         return null;
     }
 }

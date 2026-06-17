@@ -39,8 +39,13 @@ internal static class SvgRaster
     {
         var px = img.Pixels.Span;
         for (int i = 3; i < px.Length; i += 4)
+        {
             if (px[i] != 0)
+            {
                 return true;
+            }
+        }
+
         return false;
     }
 
@@ -49,9 +54,16 @@ internal static class SvgRaster
     {
         int n = 0;
         for (int y = 0; y < img.Height; y++)
+        {
             for (int x = 0; x < img.Width; x++)
+            {
                 if (pred(At(img, x, y)))
+                {
                     n++;
+                }
+            }
+        }
+
         return n;
     }
 
@@ -60,8 +72,13 @@ internal static class SvgRaster
     {
         int n = 0;
         for (int x = 0; x < img.Width; x++)
+        {
             if (At(img, x, y).A > 40)
+            {
                 n++;
+            }
+        }
+
         return n;
     }
 

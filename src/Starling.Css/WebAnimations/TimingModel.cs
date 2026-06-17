@@ -54,11 +54,17 @@ public static class TimingModel
 
         AnimationPhase phase;
         if (localTime < beforeActiveBoundary)
+        {
             phase = AnimationPhase.Before;
+        }
         else if (!double.IsPositiveInfinity(activeDuration) && localTime >= afterActiveBoundary)
+        {
             phase = AnimationPhase.After;
+        }
         else
+        {
             phase = AnimationPhase.Active;
+        }
 
         // §4.5 — determine whether the fill mode yields output when out of the active interval.
         bool hasOutput = phase == AnimationPhase.Active
@@ -68,7 +74,9 @@ public static class TimingModel
                 && (timing.Fill == FillMode.Forwards || timing.Fill == FillMode.Both));
 
         if (!hasOutput)
+        {
             return new ComputedTiming(phase, null, null);
+        }
 
         // §4.7 — simple iteration progress.
         // https://www.w3.org/TR/web-animations-1/#calculating-the-simple-iteration-progress
@@ -149,7 +157,11 @@ public static class TimingModel
     private static bool IsAtEndOfLastIteration(
         double overallProgress, double iterationStart, double iterations)
     {
-        if (iterations <= 0) return false;
+        if (iterations <= 0)
+        {
+            return false;
+        }
+
         var endBoundary = iterationStart + iterations;
         // overallProgress == endBoundary and the fractional part is zero
         // (or exactly lands on an integer), meaning we are exactly at the end.

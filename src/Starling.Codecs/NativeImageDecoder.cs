@@ -37,18 +37,24 @@ public static class NativeImageDecoder
     public static DecodedImage Decode(ReadOnlySpan<byte> bytes)
     {
         if (bytes.IsEmpty)
+        {
             throw new ImageDecodeException("Cannot decode an empty image buffer.");
+        }
 
         var format = ImageFormatSniffer.Detect(bytes);
         if (format == ImageFormat.Svg)
+        {
             throw new ImageDecodeException(
                 "SVG is a vector format and cannot be decoded by the OS-native raster " +
                 "codecs. Route it to the managed SVG rasterizer (Starling.Paint); the " +
                 "engine does this automatically via ImageFormatSniffer.LooksLikeSvg.");
+        }
 
         if (format == ImageFormat.Unknown)
+        {
             throw new ImageDecodeException(
                 "Unrecognised image format: no PNG/JPEG/WebP/GIF/BMP signature in the leading bytes.");
+        }
 
         IImageDecoder backend = SelectBackend();
         // The macOS backend clamps natively (it decodes straight into a
@@ -66,7 +72,10 @@ public static class NativeImageDecoder
     {
         var longest = Math.Max(width, height);
         if (longest <= MaxDecodeDimension)
+        {
             return (width, height);
+        }
+
         var scale = (double)MaxDecodeDimension / longest;
         return (
             Math.Max(1, (int)Math.Round(width * scale)),
@@ -85,7 +94,9 @@ public static class NativeImageDecoder
     {
         var (targetW, targetH) = ClampDecodeTarget(decoded.Width, decoded.Height);
         if (targetW == decoded.Width && targetH == decoded.Height)
+        {
             return decoded;
+        }
 
         var src = decoded;
         try
@@ -158,9 +169,14 @@ public static class NativeImageDecoder
     internal static (int Width, int Height, int ByteLength) ValidateDecodedDimensions(long width, long height)
     {
         if (width <= 0 || height <= 0)
+        {
             throw new ImageDecodeException($"Decoded image has invalid dimensions {width}x{height}.");
+        }
+
         if (width > int.MaxValue || height > int.MaxValue)
+        {
             throw new ImageDecodeException($"Decoded image dimensions {width}x{height} exceed supported integer range.");
+        }
 
         long bytes;
         try
@@ -173,9 +189,11 @@ public static class NativeImageDecoder
         }
 
         if (bytes > MaxDecodedImageBytes)
+        {
             throw new ImageDecodeException(
                 $"Decoded image dimensions {width}x{height} require {bytes} bytes, " +
                 $"exceeding the safety cap of {MaxDecodedImageBytes} bytes.");
+        }
 
         return ((int)width, (int)height, (int)bytes);
     }
@@ -197,11 +215,19 @@ public static class NativeImageDecoder
     internal static IImageDecoder SelectBackend()
     {
         if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst())
+        {
             return new ImageIODecoder();
+        }
+
         if (OperatingSystem.IsWindows())
+        {
             return new WicDecoder();
+        }
+
         if (OperatingSystem.IsLinux())
+        {
             return new LinuxImageDecoder();
+        }
 
         throw new ImageDecodeException(
             $"No native image decoder backend for this platform ({Environment.OSVersion.Platform}).");

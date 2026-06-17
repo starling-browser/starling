@@ -47,7 +47,10 @@ public static class FunctionCtor
             if (fn.IsObject)
             {
                 var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, funcProto);
-                if (!ReferenceEquals(instProto, funcProto)) fn.AsObject.SetPrototypeOf(instProto);
+                if (!ReferenceEquals(instProto, funcProto))
+                {
+                    fn.AsObject.SetPrototypeOf(instProto);
+                }
             }
             return fn;
         }, isConstructor: true);
@@ -108,7 +111,10 @@ public static class FunctionCtor
     private static JsValue ProtoCall(JsRealm realm, JsValue thisV, JsValue[] args)
     {
         if (!AbstractOperations.IsCallable(thisV))
+        {
             throw new JsThrow(realm.NewTypeError("Function.prototype.call called on non-callable"));
+        }
+
         var thisArg = args.Length > 0 ? args[0] : JsValue.Undefined;
         var rest = args.Length > 1 ? args[1..] : Array.Empty<JsValue>();
         return AbstractOperations.Call(realm.ActiveVm, thisV, thisArg, rest);
@@ -118,7 +124,10 @@ public static class FunctionCtor
     private static JsValue ProtoApply(JsRealm realm, JsValue thisV, JsValue[] args)
     {
         if (!AbstractOperations.IsCallable(thisV))
+        {
             throw new JsThrow(realm.NewTypeError("Function.prototype.apply called on non-callable"));
+        }
+
         var thisArg = args.Length > 0 ? args[0] : JsValue.Undefined;
         var argsArrayV = args.Length > 1 ? args[1] : JsValue.Undefined;
 
@@ -132,10 +141,16 @@ public static class FunctionCtor
             var obj = argsArrayV.AsObject;
             var lenV = obj.Get("length");
             var len = (int)JsValue.ToNumber(lenV);
-            if (len < 0) len = 0;
+            if (len < 0)
+            {
+                len = 0;
+            }
+
             callArgs = new JsValue[len];
             for (var i = 0; i < len; i++)
+            {
                 callArgs[i] = obj.Get(i.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
         }
         else
         {
@@ -152,7 +167,10 @@ public static class FunctionCtor
     private static JsValue ProtoBind(JsRealm realm, JsValue thisV, JsValue[] args)
     {
         if (!thisV.IsObject || !AbstractOperations.IsCallable(thisV))
+        {
             throw new JsThrow(realm.NewTypeError("Function.prototype.bind called on non-callable"));
+        }
+
         var target = thisV.AsObject;
         var boundThis = args.Length > 0 ? args[0] : JsValue.Undefined;
         var boundArgs = args.Length > 1 ? args[1..] : Array.Empty<JsValue>();
@@ -174,7 +192,11 @@ public static class FunctionCtor
     /// <summary>Spec 20.2.3.5 — Function.prototype.toString.</summary>
     private static JsValue ProtoToString(JsValue thisV, JsValue[] args)
     {
-        if (!thisV.IsObject) return JsValue.String("function () { [native code] }");
+        if (!thisV.IsObject)
+        {
+            return JsValue.String("function () { [native code] }");
+        }
+
         return thisV.AsObject switch
         {
             JsNativeFunction nat => JsValue.String($"function {nat.Name}() {{ [native code] }}"),

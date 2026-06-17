@@ -210,12 +210,20 @@ public sealed class LaidOutPage : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         // A page whose resources were handed to a relayout successor must not
         // release them — they are still in use by that successor. (The live JS
         // context rides along under the same transfer flag.)
-        if (_resourcesTransferred) return;
+        if (_resourcesTransferred)
+        {
+            return;
+        }
+
         _scripting?.Dispose();
         _images.Dispose();
         _stylesheets.Dispose();

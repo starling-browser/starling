@@ -101,7 +101,10 @@ static string LocateRepoRoot()
 {
     var dir = AppContext.BaseDirectory;
     while (!string.IsNullOrEmpty(dir) && !File.Exists(Path.Combine(dir, "Starling.slnx")))
+    {
         dir = Path.GetDirectoryName(dir);
+    }
+
     return string.IsNullOrEmpty(dir)
         ? throw new InvalidOperationException("Could not locate Starling.slnx from " + AppContext.BaseDirectory)
         : dir;
@@ -142,14 +145,24 @@ static string? SelectFlag(string[] args, string label, params (string Flag, stri
     string? selected = null;
     string? selectedFlag = null;
     foreach (var arg in args)
+    {
         foreach (var (flag, value) in mappings)
         {
-            if (arg != flag) continue;
+            if (arg != flag)
+            {
+                continue;
+            }
+
             if (selected is not null && selected != value)
+            {
                 throw new InvalidOperationException(
                     $"Conflicting {label} flags: {selectedFlag} and {flag}. Pass only one.");
+            }
+
             (selected, selectedFlag) = (value, flag);
         }
+    }
+
     return selected;
 }
 

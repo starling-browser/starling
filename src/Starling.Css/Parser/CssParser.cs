@@ -57,7 +57,9 @@ public sealed class CssParser
         {
             SkipWhitespaceAndSemicolons();
             if (Current.Type == CssTokenType.Eof || Current.Type == CssTokenType.RightBrace)
+            {
                 break;
+            }
 
             if (allowNesting && Current.Type == CssTokenType.AtKeyword)
             {
@@ -96,13 +98,24 @@ public sealed class CssParser
         {
             var t = _tokens[i].Type;
             if (t == CssTokenType.LeftParen || t == CssTokenType.LeftSquare)
+            {
                 depth++;
+            }
             else if (t == CssTokenType.RightParen || t == CssTokenType.RightSquare)
+            {
                 depth = Math.Max(0, depth - 1);
+            }
             else if (depth == 0)
             {
-                if (t == CssTokenType.LeftBrace) return true;
-                if (t == CssTokenType.Semicolon || t == CssTokenType.RightBrace || t == CssTokenType.Eof) return false;
+                if (t == CssTokenType.LeftBrace)
+                {
+                    return true;
+                }
+
+                if (t == CssTokenType.Semicolon || t == CssTokenType.RightBrace || t == CssTokenType.Eof)
+                {
+                    return false;
+                }
             }
         }
         return false;
@@ -115,7 +128,10 @@ public sealed class CssParser
         {
             SkipWhitespaceAndSemicolons();
             if (Current.Type == CssTokenType.Eof || (!topLevel && Current.Type == CssTokenType.RightBrace))
+            {
                 break;
+            }
+
             if (topLevel && Current.Type is CssTokenType.Cdo or CssTokenType.Cdc)
             {
                 _position++;
@@ -129,7 +145,10 @@ public sealed class CssParser
                 // layer may honor a leading @charset, but it never appears in the
                 // CSSOM rule list — drop it here so cssRules excludes it.
                 if (!atRule.Name.Equals("charset", StringComparison.OrdinalIgnoreCase))
+                {
                     rules.Add(atRule);
+                }
+
                 continue;
             }
 
@@ -154,7 +173,9 @@ public sealed class CssParser
         }
 
         if (Current.Type != CssTokenType.LeftBrace)
+        {
             return new AtRule(name, prelude, [], []);
+        }
 
         _position++;
         // @font-face (CSS Fonts 3 §4), @counter-style (CSS Counter Styles 3
@@ -182,7 +203,10 @@ public sealed class CssParser
             var (decls, nested) = ParseDeclarationsAndNested(allowNesting: true);
             var combined = new List<CssRule>();
             if (decls.Count > 0)
+            {
                 combined.Add(SyntheticAmpersandRule(decls));
+            }
+
             combined.AddRange(nested);
             ConsumeIf(CssTokenType.RightBrace);
             return new AtRule(name, prelude, combined, []);
@@ -214,7 +238,9 @@ public sealed class CssParser
             CssTokenType.LeftBrace,
             CssTokenType.Eof);
         if (Current.Type != CssTokenType.LeftBrace)
+        {
             return new StyleRule(prelude, [], null);
+        }
 
         _position++;
         var (declarations, nested) = ParseDeclarationsAndNested(allowNesting: true);
@@ -238,10 +264,16 @@ public sealed class CssParser
             CssTokenType.Semicolon,
             CssTokenType.RightBrace);
         if (isCustomProperty)
+        {
             TrimEdgeWhitespace(values);
+        }
+
         var important = RemoveTrailingImportant(values);
         if (isCustomProperty)
+        {
             TrimEdgeWhitespace(values);
+        }
+
         ConsumeIf(CssTokenType.Semicolon);
         _declarationCount++;
         return new CssDeclaration(name, values, important);
@@ -250,7 +282,9 @@ public sealed class CssParser
     private void SkipWhitespace()
     {
         while (Current.Type == CssTokenType.Whitespace)
+        {
             _position++;
+        }
     }
 
     private List<CssComponentValue> ConsumeComponentValuesUntil(
@@ -275,9 +309,14 @@ public sealed class CssParser
     private CssComponentValue ConsumeComponentValue()
     {
         if (Current.Type is CssTokenType.LeftBrace or CssTokenType.LeftParen or CssTokenType.LeftSquare)
+        {
             return ConsumeSimpleBlock();
+        }
+
         if (Current.Type == CssTokenType.Function)
+        {
             return ConsumeFunction();
+        }
 
         return new CssTokenValue(Consume());
     }
@@ -308,20 +347,27 @@ public sealed class CssParser
     private void SkipWhitespaceAndSemicolons()
     {
         while (Current.Type is CssTokenType.Whitespace or CssTokenType.Semicolon)
+        {
             _position++;
+        }
     }
 
     private void ConsumeUntil(params CssTokenType[] terminators)
     {
         while (!IsEnd && !terminators.Contains(Current.Type))
+        {
             _position++;
+        }
+
         ConsumeIf(CssTokenType.Semicolon);
     }
 
     private bool ConsumeIf(CssTokenType type)
     {
         if (Current.Type != type)
+        {
             return false;
+        }
 
         _position++;
         return true;
@@ -333,7 +379,10 @@ public sealed class CssParser
     {
         var index = _position + offset;
         while (index < _tokens.Count && _tokens[index].Type == CssTokenType.Whitespace)
+        {
             index++;
+        }
+
         return index < _tokens.Count ? _tokens[index] : new CssToken(CssTokenType.Eof);
     }
 
@@ -369,8 +418,13 @@ public sealed class CssParser
     private static void TrimEdgeWhitespace(List<CssComponentValue> values)
     {
         while (values.Count > 0 && values[^1] is CssTokenValue { Token.Type: CssTokenType.Whitespace })
+        {
             values.RemoveAt(values.Count - 1);
+        }
+
         while (values.Count > 0 && values[0] is CssTokenValue { Token.Type: CssTokenType.Whitespace })
+        {
             values.RemoveAt(0);
+        }
     }
 }

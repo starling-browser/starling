@@ -23,13 +23,23 @@ public sealed class RenderedBitmap : IDisposable
     public RenderedBitmap(int width, int height, byte[] rgba)
     {
         ArgumentNullException.ThrowIfNull(rgba);
-        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
-        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+        if (width <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(width));
+        }
+
+        if (height <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(height));
+        }
+
         var expected = checked(width * height * 4);
         if (rgba.Length != expected)
+        {
             throw new ArgumentException(
                 $"RGBA8888 buffer length {rgba.Length} != width*height*4 ({expected}).",
                 nameof(rgba));
+        }
 
         Width = width;
         Height = height;
@@ -51,8 +61,16 @@ public sealed class RenderedBitmap : IDisposable
     /// <summary>Returns the straight-alpha RGBA components of pixel (<paramref name="x"/>, <paramref name="y"/>).</summary>
     public (byte R, byte G, byte B, byte A) GetPixel(int x, int y)
     {
-        if ((uint)x >= (uint)Width) throw new ArgumentOutOfRangeException(nameof(x));
-        if ((uint)y >= (uint)Height) throw new ArgumentOutOfRangeException(nameof(y));
+        if ((uint)x >= (uint)Width)
+        {
+            throw new ArgumentOutOfRangeException(nameof(x));
+        }
+
+        if ((uint)y >= (uint)Height)
+        {
+            throw new ArgumentOutOfRangeException(nameof(y));
+        }
+
         var i = ((y * Width) + x) * 4;
         return (Rgba[i], Rgba[i + 1], Rgba[i + 2], Rgba[i + 3]);
     }

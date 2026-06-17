@@ -37,7 +37,9 @@ public sealed class DomTokenList : IReadOnlyList<string>
         ValidateToken(token);
         var tokens = Tokens;
         if (IndexOfOrdinal(tokens, token) >= 0)
+        {
             return;
+        }
 
         var updated = new List<string>(tokens.Count + 1);
         updated.AddRange(tokens);
@@ -51,13 +53,17 @@ public sealed class DomTokenList : IReadOnlyList<string>
         var tokens = Tokens;
         var idx = IndexOfOrdinal(tokens, token);
         if (idx < 0)
+        {
             return false;
+        }
 
         var updated = new List<string>(tokens.Count - 1);
         for (var i = 0; i < tokens.Count; i++)
         {
             if (i != idx)
+            {
                 updated.Add(tokens[i]);
+            }
         }
 
         Write(updated);
@@ -74,7 +80,9 @@ public sealed class DomTokenList : IReadOnlyList<string>
         var tokens = Tokens; // already an ordered set (deduplicated)
         var idx = IndexOfOrdinal(tokens, oldToken);
         if (idx < 0)
+        {
             return false;
+        }
 
         // Re-dedupe in case newToken was already present elsewhere.
         var updated = new List<string>(tokens.Count);
@@ -82,7 +90,9 @@ public sealed class DomTokenList : IReadOnlyList<string>
         {
             var t = i == idx ? newToken : tokens[i];
             if (IndexOfOrdinal(updated, t) < 0)
+            {
                 updated.Add(t);
+            }
         }
 
         Write(updated);
@@ -103,14 +113,18 @@ public sealed class DomTokenList : IReadOnlyList<string>
         {
             var raw = _getValue();
             if (_cachedTokens is not null && string.Equals(raw, _cachedRaw, StringComparison.Ordinal))
+            {
                 return _cachedTokens;
+            }
 
             var split = raw.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             var tokens = new List<string>(split.Length);
             foreach (var t in split)
             {
                 if (IndexOfOrdinal(tokens, t) < 0)
+                {
                     tokens.Add(t);
+                }
             }
 
             _cachedRaw = raw;
@@ -137,7 +151,9 @@ public sealed class DomTokenList : IReadOnlyList<string>
         for (var i = 0; i < tokens.Count; i++)
         {
             if (string.Equals(tokens[i], token, StringComparison.Ordinal))
+            {
                 return i;
+            }
         }
 
         return -1;
@@ -149,7 +165,9 @@ public sealed class DomTokenList : IReadOnlyList<string>
         foreach (var c in token)
         {
             if (char.IsWhiteSpace(c))
+            {
                 throw new ArgumentException("A DOM token cannot contain whitespace.", nameof(token));
+            }
         }
     }
 }

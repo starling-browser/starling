@@ -92,7 +92,11 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
     /// </summary>
     public bool TryResolveInlineSvg(Element svg, Starling.Css.Values.CssColor currentColor, out ResolvedImage image)
     {
-        if (_byElement.TryGetValue(svg, out image)) return true;
+        if (_byElement.TryGetValue(svg, out image))
+        {
+            return true;
+        }
+
         try
         {
             var doc = InlineSvgSerializer.Serialize(svg);
@@ -163,7 +167,10 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
             var (selectedUrl, correctedW, correctedH) = Srcset.Select(
                 srcset, sizes, src, viewportWidthCssPx, fontSizeCssPx);
 
-            if (string.IsNullOrWhiteSpace(selectedUrl)) continue;
+            if (string.IsNullOrWhiteSpace(selectedUrl))
+            {
+                continue;
+            }
 
             var absolute = ResolveAbsolute(selectedUrl, baseUrl);
             if (absolute is null)
@@ -175,7 +182,10 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
             pending.Add((img, correctedW, correctedH, FetchAndDecodeAsync(absolute, ct)));
         }
 
-        if (pending.Count == 0) return;
+        if (pending.Count == 0)
+        {
+            return;
+        }
 
         // Task.WhenAll observes every task so a cancellation can't leave an
         // unobserved faulted task behind, matching the old sequential loop.
@@ -184,7 +194,10 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
         foreach (var (img, correctedW, correctedH, task) in pending)
         {
             var decoded = task.Result; // completed; null = fetch/decode failed
-            if (decoded is null) continue;
+            if (decoded is null)
+            {
+                continue;
+            }
 
             // density-corrected intrinsic: if sizes gave us a CSS-px width,
             // scale height proportionally to preserve the source aspect
@@ -228,7 +241,9 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
             var perSheet = new HashSet<string>(StringComparer.Ordinal);
             CollectBackgroundUrls(sheet, perSheet);
             foreach (var raw in perSheet)
+            {
                 rawByBase.TryAdd(raw, sheetBase ?? documentBaseUrl);
+            }
         }
 
         // Two-pass like FetchAllAsync: kick off every background fetch+decode in
@@ -239,21 +254,35 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
         foreach (var (raw, baseUrl) in rawByBase)
         {
             ct.ThrowIfCancellationRequested();
-            if (_byUrl.ContainsKey(raw)) continue;
+            if (_byUrl.ContainsKey(raw))
+            {
+                continue;
+            }
 
             var absolute = ResolveAbsolute(raw, baseUrl);
-            if (absolute is null) continue;
+            if (absolute is null)
+            {
+                continue;
+            }
+
             pending.Add((raw, FetchAndDecodeAsync(absolute, ct)));
         }
 
-        if (pending.Count == 0) return;
+        if (pending.Count == 0)
+        {
+            return;
+        }
 
         await Task.WhenAll(pending.Select(static p => p.Task)).ConfigureAwait(false);
 
         foreach (var (raw, task) in pending)
         {
             var decoded = task.Result;
-            if (decoded is null) continue;
+            if (decoded is null)
+            {
+                continue;
+            }
+
             _byUrl[raw] = decoded;
         }
     }
@@ -261,7 +290,9 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
     private static void CollectBackgroundUrls(Starling.Css.Parser.StyleSheet sheet, HashSet<string> urls)
     {
         foreach (var rule in sheet.Rules)
+        {
             CollectFromRule(rule, urls);
+        }
     }
 
     private static void CollectFromRule(Starling.Css.Parser.CssRule rule, HashSet<string> urls)
@@ -269,16 +300,23 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
         if (rule is Starling.Css.Parser.StyleRule sr)
         {
             foreach (var decl in sr.Declarations)
+            {
                 CollectFromDeclaration(decl, urls);
+            }
         }
         else if (rule is Starling.Css.Parser.AtRule at)
         {
             // Walk inner rules (e.g. @media wraps StyleRule children) and any
             // declarations carried directly on the at-rule (rare, but harmless).
             foreach (var inner in at.Rules)
+            {
                 CollectFromRule(inner, urls);
+            }
+
             foreach (var decl in at.Declarations)
+            {
                 CollectFromDeclaration(decl, urls);
+            }
         }
     }
 
@@ -289,10 +327,18 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
         // Custom properties are included because a mask-image: var(--x) reads its
         // url() from the --x declaration, not from the mask-image declaration
         // itself, so the raw url() only appears on the custom property.
-        if (!WantsImagePrefetch(decl.Name)) return;
+        if (!WantsImagePrefetch(decl.Name))
+        {
+            return;
+        }
+
         foreach (var v in Starling.Css.Values.CssValueParser.ParseList(decl.Value))
+        {
             if (v is Starling.Css.Values.CssUrl u && !string.IsNullOrEmpty(u.Value))
+            {
                 urls.Add(u.Value);
+            }
+        }
     }
 
     private static bool WantsImagePrefetch(string name)
@@ -303,7 +349,10 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
     private async Task<DecodedImage?> FetchAndDecodeAsync(StarlingUrl url, CancellationToken ct)
     {
         var key = url.ToString();
-        if (_byUrl.TryGetValue(key, out var cached)) return cached;
+        if (_byUrl.TryGetValue(key, out var cached))
+        {
+            return cached;
+        }
 
         using var _ = StarlingTelemetry.Span("engine", "fetch_image");
         Activity.Current?.SetTag("url", key);
@@ -407,13 +456,23 @@ internal sealed class ImageFetcher : IImageResolver, IDisposable
     public void Dispose()
     {
         foreach (var decoded in _byUrl.Values)
+        {
             decoded.Dispose();
+        }
+
         _byUrl.Clear();
         foreach (var decoded in _inlineSvg)
+        {
             decoded.Dispose();
+        }
+
         _inlineSvg.Clear();
         _byElement.Clear();
-        if (_ownsHttp) _sharedHttp?.Dispose();
+        if (_ownsHttp)
+        {
+            _sharedHttp?.Dispose();
+        }
+
         _sharedHttp = null;
     }
 }

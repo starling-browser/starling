@@ -148,7 +148,10 @@ internal sealed class ScriptFetcher : IDisposable
                 continue;
             }
 
-            if (!IsClassicJavascript(script)) continue;
+            if (!IsClassicJavascript(script))
+            {
+                continue;
+            }
 
             var disposition = ClassifyDisposition(script);
             var isBlocking = disposition == ScriptDisposition.None;
@@ -165,7 +168,10 @@ internal sealed class ScriptFetcher : IDisposable
             pending.Add((script, IsModule: false, LoadAsync(script, baseUrl, ct)));
         }
 
-        if (pending.Count == 0) return;
+        if (pending.Count == 0)
+        {
+            return;
+        }
 
         // Await all fetches before bucketing. Task.WhenAll observes every task,
         // so a cancellation can't leave an unobserved faulted task behind; it
@@ -176,9 +182,19 @@ internal sealed class ScriptFetcher : IDisposable
         {
             _loadedElements.Add(element);
             var loaded = task.Result; // completed; null = not runnable / fetch failed
-            if (loaded is null) continue;
-            if (isModule) _moduleScripts.Add(loaded);
-            else _scripts.Add(loaded);
+            if (loaded is null)
+            {
+                continue;
+            }
+
+            if (isModule)
+            {
+                _moduleScripts.Add(loaded);
+            }
+            else
+            {
+                _scripts.Add(loaded);
+            }
         }
     }
 
@@ -192,14 +208,20 @@ internal sealed class ScriptFetcher : IDisposable
     public async Task<LoadedScript?> LoadAsync(Element script, StarlingUrl? baseUrl, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(script);
-        if (!IsClassicJavascript(script)) return null;
+        if (!IsClassicJavascript(script))
+        {
+            return null;
+        }
 
         var disposition = ClassifyDisposition(script);
         var src = script.GetAttribute("src");
         if (string.IsNullOrWhiteSpace(src))
         {
             var inline = script.TextContent;
-            if (string.IsNullOrWhiteSpace(inline)) return null;
+            if (string.IsNullOrWhiteSpace(inline))
+            {
+                return null;
+            }
             // Inline scripts have no fetch, so async/defer never delay them.
             return new LoadedScript(script, inline, baseUrl, IsInline: true, ScriptDisposition.None);
         }
@@ -212,7 +234,10 @@ internal sealed class ScriptFetcher : IDisposable
         }
 
         var source = await FetchAsync(absolute, ct).ConfigureAwait(false);
-        if (source is null) return null;
+        if (source is null)
+        {
+            return null;
+        }
 
         ScriptFetcherLog.ExternalScriptLoaded(_log, disposition.ToString(), source.Length);
 
@@ -246,8 +271,16 @@ internal sealed class ScriptFetcher : IDisposable
     /// which is handled by <see cref="LoadAsync"/>.</summary>
     private static ScriptDisposition ClassifyDisposition(Element script)
     {
-        if (script.HasAttribute("async")) return ScriptDisposition.Async;
-        if (script.HasAttribute("defer")) return ScriptDisposition.Defer;
+        if (script.HasAttribute("async"))
+        {
+            return ScriptDisposition.Async;
+        }
+
+        if (script.HasAttribute("defer"))
+        {
+            return ScriptDisposition.Defer;
+        }
+
         return ScriptDisposition.None;
     }
 
@@ -271,7 +304,11 @@ internal sealed class ScriptFetcher : IDisposable
         if (string.IsNullOrWhiteSpace(src))
         {
             var inline = script.TextContent;
-            if (string.IsNullOrWhiteSpace(inline)) return null;
+            if (string.IsNullOrWhiteSpace(inline))
+            {
+                return null;
+            }
+
             return new LoadedScript(script, inline, baseUrl, IsInline: true, ScriptDisposition.Defer);
         }
 
@@ -286,7 +323,11 @@ internal sealed class ScriptFetcher : IDisposable
         // still record the URL (not the body) so the loader treats it as the
         // entry module and resolves its imports relative to it.
         var source = await FetchAsync(absolute, ct).ConfigureAwait(false);
-        if (source is null) return null;
+        if (source is null)
+        {
+            return null;
+        }
+
         return new LoadedScript(script, source, absolute, IsInline: false, ScriptDisposition.Defer);
     }
 
@@ -304,11 +345,19 @@ internal sealed class ScriptFetcher : IDisposable
     private static bool IsClassicJavascript(Element script)
     {
         var type = script.GetAttribute("type");
-        if (string.IsNullOrWhiteSpace(type)) return true;
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            return true;
+        }
+
         var trimmed = type.Trim();
         // Strip MIME parameters (e.g. "text/javascript; charset=utf-8").
         var semi = trimmed.IndexOf(';');
-        if (semi >= 0) trimmed = trimmed[..semi].Trim();
+        if (semi >= 0)
+        {
+            trimmed = trimmed[..semi].Trim();
+        }
+
         return trimmed.Equals("text/javascript", StringComparison.OrdinalIgnoreCase)
             || trimmed.Equals("application/javascript", StringComparison.OrdinalIgnoreCase)
             || trimmed.Equals("application/ecmascript", StringComparison.OrdinalIgnoreCase)
@@ -326,7 +375,10 @@ internal sealed class ScriptFetcher : IDisposable
     private async Task<string?> FetchAsync(StarlingUrl url, CancellationToken ct)
     {
         var key = url.ToString();
-        if (_byUrl.TryGetValue(key, out var cached)) return cached;
+        if (_byUrl.TryGetValue(key, out var cached))
+        {
+            return cached;
+        }
 
         using var _ = StarlingTelemetry.Span("engine", "fetch_script");
         Activity.Current?.SetTag("url", key);
@@ -407,17 +459,27 @@ internal sealed class ScriptFetcher : IDisposable
     private static string Decode(string? contentType, byte[] bytes)
     {
         if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+        {
             return Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+        }
+
         if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE)
+        {
             return Encoding.Unicode.GetString(bytes, 2, bytes.Length - 2);
+        }
+
         if (bytes.Length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF)
+        {
             return Encoding.BigEndianUnicode.GetString(bytes, 2, bytes.Length - 2);
+        }
 
         if (contentType is { Length: > 0 })
         {
             var charset = ExtractCharset(contentType);
             if (charset is not null && TryResolveEncoding(charset) is { } encoding)
+            {
                 return encoding.GetString(bytes);
+            }
         }
         return Encoding.UTF8.GetString(bytes);
     }
@@ -429,7 +491,9 @@ internal sealed class ScriptFetcher : IDisposable
             var part = raw.Trim();
             const string prefix = "charset=";
             if (part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
                 return part[prefix.Length..].Trim().Trim('"', '\'');
+            }
         }
         return null;
     }
@@ -437,7 +501,11 @@ internal sealed class ScriptFetcher : IDisposable
     private static Encoding? TryResolveEncoding(string name)
     {
         var canonical = WhatwgEncodingLabels.TryGetCanonicalName(name);
-        if (canonical is null) return null;
+        if (canonical is null)
+        {
+            return null;
+        }
+
         return canonical switch
         {
             "UTF-8" => Encoding.UTF8,
@@ -467,7 +535,11 @@ internal sealed class ScriptFetcher : IDisposable
         _scripts.Clear();
         _moduleScripts.Clear();
         _loadedElements.Clear();
-        if (_ownsHttp) _sharedHttp?.Dispose();
+        if (_ownsHttp)
+        {
+            _sharedHttp?.Dispose();
+        }
+
         _sharedHttp = null;
     }
 }

@@ -94,25 +94,49 @@ public sealed class OverrideSet
         var requiredSurface = new HashSet<string>(file.RequiredSurface ?? [], StringComparer.Ordinal);
         var reasons = new Dictionary<string, string>(StringComparer.Ordinal);
         if (file.SkipReason is not null)
+        {
             foreach (var kv in file.SkipReason)
+            {
                 reasons[kv.Key] = kv.Value;
+            }
+        }
+
         var attrOverrides = new Dictionary<string, AttributeOverride>(StringComparer.Ordinal);
         if (file.Override is not null)
+        {
             foreach (var kv in file.Override)
+            {
                 if (kv.Value.Getter is { } getter)
+                {
                     attrOverrides[kv.Key] = new AttributeOverride(getter, kv.Value.Setter);
+                }
+            }
+        }
+
         var adds = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         if (file.Add is not null)
+        {
             foreach (var kv in file.Add)
+            {
                 adds[kv.Key] = kv.Value;
+            }
+        }
+
         var dispatch = new Dictionary<string, DispatchSpec>(StringComparer.Ordinal);
         if (file.Dispatch is not null)
+        {
             foreach (var kv in file.Dispatch)
+            {
                 if (kv.Value.Impl is { } impl)
+                {
                     dispatch[kv.Key] = new DispatchSpec(
                         impl, kv.Value.Params ?? [], kv.Value.Trailing ?? [],
                         kv.Value.Raises ?? false, kv.Value.Returns ?? "void",
                         kv.Value.Static ?? false, kv.Value.PassRealm ?? false);
+                }
+            }
+        }
+
         return new OverrideSet(skip, requiredSurface, reasons, attrOverrides, adds, dispatch);
     }
 

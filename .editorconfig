@@ -10,6 +10,7 @@ trim_trailing_whitespace = true
 
 # Strong style — fail the build, don't lint forever
 dotnet_diagnostic.IDE0005.severity = error       # remove unused usings
+dotnet_diagnostic.IDE0011.severity = error       # always use braces
 dotnet_diagnostic.CA1825.severity  = error       # avoid zero-length array allocations
 dotnet_diagnostic.CA1859.severity  = error       # concrete types where possible
 dotnet_diagnostic.CA1869.severity  = error       # cache JsonSerializerOptions
@@ -22,6 +23,7 @@ dotnet_diagnostic.IDE0073.severity = none
 csharp_style_namespace_declarations = file_scoped:error
 csharp_style_prefer_primary_constructors = true:suggestion
 csharp_prefer_static_anonymous_function = true:warning
+csharp_prefer_braces = true:error          # always use braces (drives IDE0011)
 
 [*.{xml,csproj,props,targets}]
 indent_size = 2

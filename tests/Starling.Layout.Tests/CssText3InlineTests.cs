@@ -27,8 +27,15 @@ public sealed class CssText3InlineTests
 
         void Recurse(Box.Box b)
         {
-            if (b is TextBox tb) result.AddRange(tb.Fragments);
-            foreach (var c in b.Children) Recurse(c);
+            if (b is TextBox tb)
+            {
+                result.AddRange(tb.Fragments);
+            }
+
+            foreach (var c in b.Children)
+            {
+                Recurse(c);
+            }
         }
     }
 

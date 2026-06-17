@@ -28,8 +28,15 @@ public sealed class TextOverflowEllipsisTests
 
         void Recurse(Box.Box b)
         {
-            if (b is TextBox tb) result.AddRange(tb.Fragments);
-            foreach (var c in b.Children) Recurse(c);
+            if (b is TextBox tb)
+            {
+                result.AddRange(tb.Fragments);
+            }
+
+            foreach (var c in b.Children)
+            {
+                Recurse(c);
+            }
         }
     }
 
@@ -39,10 +46,16 @@ public sealed class TextOverflowEllipsisTests
     private static Box.Box FindElement(Box.Box root, string localName)
     {
         if (root.Element is { } e && string.Equals(e.LocalName, localName, StringComparison.OrdinalIgnoreCase))
+        {
             return root;
+        }
+
         foreach (var child in root.Children)
         {
-            if (FindElement(child, localName) is { } found) return found;
+            if (FindElement(child, localName) is { } found)
+            {
+                return found;
+            }
         }
         return null!;
     }
@@ -69,8 +82,10 @@ public sealed class TextOverflowEllipsisTests
         // Every kept fragment ends at or before the ellipsis start; nothing
         // overflows the content edge.
         foreach (var f in frags)
+        {
             (f.X + f.Width).Should().BeLessThanOrEqualTo(width + 0.06,
                 $"fragment '{f.Text}' must not overflow the content box");
+        }
 
         LineCount(frags).Should().Be(1, "nowrap keeps everything on one line");
     }
@@ -156,7 +171,9 @@ public sealed class TextOverflowEllipsisTests
             .OrderBy(f => f.X)
             .LastOrDefault();
         if (lastBefore.Text is { Length: > 0 })
+        {
             lastBefore.Text.Trim().Should().NotBeEmpty("the ellipsis hugs text, not trailing spaces");
+        }
     }
 
     // ---- -webkit-line-clamp -------------------------------------------------

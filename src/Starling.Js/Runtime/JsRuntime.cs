@@ -151,14 +151,21 @@ public sealed class JsRuntime
     /// value's <c>stack</c> when one exists, else its string form.</summary>
     private void ReportUnhandledRejections()
     {
-        if (_pendingUnhandledRejections.Count == 0) return;
+        if (_pendingUnhandledRejections.Count == 0)
+        {
+            return;
+        }
         // Swap-out before reporting: the sink may run JS-adjacent code; new
         // rejections recorded while reporting belong to the next flush.
         var batch = _pendingUnhandledRejections.ToArray();
         _pendingUnhandledRejections.Clear();
         foreach (var promise in batch)
         {
-            if (promise.State != PromiseState.Rejected || promise.IsHandled) continue;
+            if (promise.State != PromiseState.Rejected || promise.IsHandled)
+            {
+                continue;
+            }
+
             Realm.ConsoleSink(ConsoleLevel.Error,
                 $"Uncaught (in promise) {DescribeRejectionReason(promise.Result)}");
         }
@@ -199,7 +206,10 @@ public sealed class JsRuntime
         {
             var obj = reason.AsObject;
             if (obj.Get("stack") is { IsString: true } stack)
+            {
                 return stack.AsString;
+            }
+
             var name = obj.Get("name");
             var message = obj.Get("message");
             if (name.IsString || message.IsString)
@@ -219,7 +229,11 @@ public sealed class JsRuntime
     private void RunFinalizationCleanupPass()
     {
         var registries = Realm.FinalizationRegistries;
-        if (registries.Count == 0) return;
+        if (registries.Count == 0)
+        {
+            return;
+        }
+
         for (var i = registries.Count - 1; i >= 0; i--)
         {
             if (!registries[i].TryGetTarget(out var fr))

@@ -40,7 +40,11 @@ public class HtmlBench
         tk.Feed(source);
         tk.EndOfInput();
         var count = 0;
-        while (tk.ReadToken() is not null) count++;
+        while (tk.ReadToken() is not null)
+        {
+            count++;
+        }
+
         return count;
     }
 }

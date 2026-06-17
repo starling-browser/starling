@@ -53,8 +53,10 @@ public sealed class CoverageGateTests
         var present = perInterface.Select(i => i.Interface).ToHashSet(StringComparer.Ordinal);
 
         foreach (string iface in BindingsEmitter.CoreDomInterfaces)
+        {
             present.Should().Contain(iface,
                 $"{iface} is a target interface but produced no coverage — it has no CLR type or no prototype slot");
+        }
     }
 
     [TestMethod]
@@ -65,15 +67,20 @@ public sealed class CoverageGateTests
         var targets = BindingsEmitter.CoreDomInterfaces.ToHashSet(StringComparer.Ordinal);
 
         foreach (string gated in gates.MinPercent.Keys)
+        {
             targets.Should().Contain(gated,
                 $"coverage-gates.json has a gate for {gated}, which is not a target interface");
+        }
     }
 
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx")))
+        {
             dir = dir.Parent;
+        }
+
         return dir?.FullName ?? throw new InvalidOperationException("repo root not found");
     }
 }

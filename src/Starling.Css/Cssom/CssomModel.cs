@@ -37,8 +37,13 @@ public sealed class CssomDeclarationBlock
         name = name.Trim();
         var key = name.StartsWith("--", StringComparison.Ordinal) ? name : name.ToLowerInvariant();
         foreach (var e in _entries)
+        {
             if (e.Name == key)
+            {
                 return e.Value;
+            }
+        }
+
         return string.Empty;
     }
 
@@ -47,8 +52,13 @@ public sealed class CssomDeclarationBlock
         name = name.Trim();
         var key = name.StartsWith("--", StringComparison.Ordinal) ? name : name.ToLowerInvariant();
         foreach (var e in _entries)
+        {
             if (e.Name == key)
+            {
                 return e.Important ? "important" : string.Empty;
+            }
+        }
+
         return string.Empty;
     }
 
@@ -78,14 +88,20 @@ public sealed class CssomDeclarationBlock
             // CSS Syntax §4.3.10 <urange> — special canonicalization.
             var canonical = UrangeParser.Canonicalize(value);
             if (canonical is null)
+            {
                 return; // invalid urange — leave property unchanged
+            }
+
             stored = canonical;
         }
         else
         {
             var canonical = CssValueSerializer.Canonicalize(value);
             if (canonical is null)
+            {
                 return; // invalid value — do nothing (spec step)
+            }
+
             stored = canonical;
         }
         SetRaw(key, stored, important);
@@ -128,9 +144,17 @@ public sealed class CssomDeclarationBlock
             var sb = new StringBuilder();
             foreach (var e in _entries)
             {
-                if (sb.Length > 0) sb.Append(' ');
+                if (sb.Length > 0)
+                {
+                    sb.Append(' ');
+                }
+
                 sb.Append(e.Name).Append(": ").Append(e.Value);
-                if (e.Important) sb.Append(" !important");
+                if (e.Important)
+                {
+                    sb.Append(" !important");
+                }
+
                 sb.Append(';');
             }
             return sb.ToString();
@@ -140,7 +164,9 @@ public sealed class CssomDeclarationBlock
             _entries.Clear();
             var decls = new CssParser(value ?? string.Empty).ParseDeclarationList();
             foreach (var d in decls)
+            {
                 SetRaw(d.Name.ToLowerInvariant(), SerializeComponentValues(d.Value), d.Important);
+            }
         }
     }
 
@@ -170,7 +196,10 @@ public sealed class CssomDeclarationBlock
                 continue;
             }
             if (sb.Length > 0 && sb[^1] != ' ')
+            {
                 sb.Append(' ');
+            }
+
             sb.Append(ComponentValueText(v));
         }
         return sb.ToString();
@@ -239,7 +268,10 @@ public sealed class CssomStyleRule
     {
         var parsed = TryParseSelectorList(value);
         if (parsed is null || parsed.Selectors.Count == 0)
+        {
             return false;
+        }
+
         SelectorTextRaw = SelectorSerializer.Serialize(parsed);
         return true;
     }
@@ -250,12 +282,23 @@ public sealed class CssomStyleRule
         {
             var sheet = CssParser.ParseStyleSheet($"{source} {{ }}");
             var rule = sheet.Rules.OfType<StyleRule>().FirstOrDefault();
-            if (rule is null) return null;
+            if (rule is null)
+            {
+                return null;
+            }
+
             var list = SelectorParser.ParseSelectorList(rule.Prelude);
-            if (list.Selectors.Count == 0) return null;
+            if (list.Selectors.Count == 0)
+            {
+                return null;
+            }
             // Reject selectors that failed to fully parse (e.g. an invalid An+B
             // microsyntax inside :nth-child()).
-            if (!SelectorListIsValid(list)) return null;
+            if (!SelectorListIsValid(list))
+            {
+                return null;
+            }
+
             return list;
         }
         catch
@@ -271,14 +314,24 @@ public sealed class CssomStyleRule
     {
         foreach (var complex in list.Selectors)
         {
-            if (complex.Parts.Count == 0) return false;
+            if (complex.Parts.Count == 0)
+            {
+                return false;
+            }
+
             foreach (var part in complex.Parts)
             {
-                if (part.Compound.SimpleSelectors.Count == 0) return false;
+                if (part.Compound.SimpleSelectors.Count == 0)
+                {
+                    return false;
+                }
+
                 foreach (var simple in part.Compound.SimpleSelectors)
                 {
                     if (simple is PseudoClassSelector { Argument: NthArgument { IsValid: false } })
+                    {
                         return false;
+                    }
                 }
             }
         }

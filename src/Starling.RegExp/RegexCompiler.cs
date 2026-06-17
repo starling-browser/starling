@@ -84,7 +84,11 @@ public sealed class RegexCompiler
                 }, 0, 0);
                 return;
             case SequenceNode seq:
-                foreach (var i in seq.Items) Walk(i);
+                foreach (var i in seq.Items)
+                {
+                    Walk(i);
+                }
+
                 return;
             case AlternationNode alt:
                 WalkAlternation(alt);
@@ -111,7 +115,10 @@ public sealed class RegexCompiler
                 return;
             case NamedBackrefNode nbref:
                 if (!_namedCaptures.TryGetValue(nbref.Name, out var ni))
+                {
                     throw new RegexSyntaxException($"Invalid named backreference: {nbref.Name}");
+                }
+
                 Emit(RegexOp.Backref, ni, 0);
                 return;
             case LookaroundNode la:
@@ -158,7 +165,11 @@ public sealed class RegexCompiler
     private void WalkQuantifier(QuantifierNode q)
     {
         // Compile minimum repetitions in series.
-        for (var i = 0; i < q.Min; i++) Walk(q.Child);
+        for (var i = 0; i < q.Min; i++)
+        {
+            Walk(q.Child);
+        }
+
         if (q.Max == -1)
         {
             // {min,} — kleene star tail.
@@ -170,8 +181,14 @@ public sealed class RegexCompiler
             Walk(q.Child);
             Emit(RegexOp.Jmp, loopStart, 0);
             var end = Here;
-            if (q.Greedy) Patch(loopStart, RegexOp.Split, bodyStart, end);
-            else Patch(loopStart, RegexOp.Split, end, bodyStart);
+            if (q.Greedy)
+            {
+                Patch(loopStart, RegexOp.Split, bodyStart, end);
+            }
+            else
+            {
+                Patch(loopStart, RegexOp.Split, end, bodyStart);
+            }
         }
         else
         {
@@ -188,8 +205,14 @@ public sealed class RegexCompiler
             var end = Here;
             for (var i = 0; i < remaining; i++)
             {
-                if (q.Greedy) Patch(splitPcs[i], RegexOp.Split, bodyStarts[i], end);
-                else Patch(splitPcs[i], RegexOp.Split, end, bodyStarts[i]);
+                if (q.Greedy)
+                {
+                    Patch(splitPcs[i], RegexOp.Split, bodyStarts[i], end);
+                }
+                else
+                {
+                    Patch(splitPcs[i], RegexOp.Split, end, bodyStarts[i]);
+                }
             }
         }
     }

@@ -19,9 +19,15 @@ public abstract class EventTarget
         // Per spec, identical (type, callback, capture) triples are deduplicated.
         foreach (var entry in _listeners)
         {
-            if (entry.Removed) continue;
+            if (entry.Removed)
+            {
+                continue;
+            }
+
             if (entry.Type == type && entry.Capture == options.Capture && entry.Listener == listener)
+            {
                 return;
+            }
         }
 
         _listeners.Add(new ListenerEntry(type, listener, options));
@@ -31,12 +37,19 @@ public abstract class EventTarget
     {
         ArgumentException.ThrowIfNullOrEmpty(type);
         ArgumentNullException.ThrowIfNull(listener);
-        if (_listeners is null) return false;
+        if (_listeners is null)
+        {
+            return false;
+        }
 
         for (var i = 0; i < _listeners.Count; i++)
         {
             var entry = _listeners[i];
-            if (entry.Removed) continue;
+            if (entry.Removed)
+            {
+                continue;
+            }
+
             if (entry.Type == type && entry.Capture == options.Capture && entry.Listener == listener)
             {
                 entry.Removed = true;
@@ -50,7 +63,9 @@ public abstract class EventTarget
     {
         ArgumentNullException.ThrowIfNull(@event);
         if (@event.DispatchFlag)
+        {
             throw new InvalidOperationException("Event is already being dispatched.");
+        }
 
         return EventDispatcher.Dispatch(this, @event);
     }
@@ -60,7 +75,11 @@ public abstract class EventTarget
 
     internal void CompactListeners()
     {
-        if (_listeners is null) return;
+        if (_listeners is null)
+        {
+            return;
+        }
+
         _listeners.RemoveAll(e => e.Removed);
     }
 }

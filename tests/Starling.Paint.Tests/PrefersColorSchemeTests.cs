@@ -47,7 +47,10 @@ public sealed class PrefersColorSchemeTests
     private static Starling.Dom.Element Body(Starling.Dom.Document doc)
     {
         foreach (var b in doc.GetElementsByTagName("body"))
+        {
             return b;
+        }
+
         throw new InvalidOperationException("no <body>");
     }
 }

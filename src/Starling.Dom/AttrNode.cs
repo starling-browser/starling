@@ -87,7 +87,11 @@ public sealed class AttrNode : Node
         set
         {
             var newValue = value ?? "";
-            if (_value == newValue) return;
+            if (_value == newValue)
+            {
+                return;
+            }
+
             var oldValue = _value;
             _value = newValue;
             // Propagate to the element's attribute storage so getAttribute()

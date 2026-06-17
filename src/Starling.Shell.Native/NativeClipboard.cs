@@ -18,7 +18,11 @@ internal static unsafe class NativeClipboard
     /// <summary>Reads the clipboard text, or null when empty/unavailable.</summary>
     public static string? Get(nint glfwWindow)
     {
-        if (glfwWindow == 0) return null;
+        if (glfwWindow == 0)
+        {
+            return null;
+        }
+
         try
         {
             var s = _glfw.GetClipboardString((WindowHandle*)glfwWindow);
@@ -34,7 +38,11 @@ internal static unsafe class NativeClipboard
     /// <summary>Writes text to the clipboard. No-op when unavailable.</summary>
     public static void Set(nint glfwWindow, string text)
     {
-        if (glfwWindow == 0) return;
+        if (glfwWindow == 0)
+        {
+            return;
+        }
+
         try
         {
             _glfw.SetClipboardString((WindowHandle*)glfwWindow, text);

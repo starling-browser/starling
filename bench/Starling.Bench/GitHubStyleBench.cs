@@ -38,8 +38,10 @@ public class GitHubStyleBench
         LoadInlineSheets(_doc);
 
         if (_cssTexts.Count == 0)
+        {
             throw new InvalidOperationException(
                 "GitHub local snapshot has no CSS. Re-run tools/snapshot-vendor/vendor-github-home.sh.");
+        }
     }
 
     [Benchmark]
@@ -47,7 +49,10 @@ public class GitHubStyleBench
     {
         var rules = 0;
         foreach (var css in _cssTexts)
+        {
             rules += CssParser.ParseStyleSheet(css).Rules.Count;
+        }
+
         return rules;
     }
 
@@ -109,15 +114,21 @@ public class GitHubStyleBench
         foreach (var link in Elements(doc))
         {
             if (!IsStylesheetLink(link))
+            {
                 continue;
+            }
 
             var href = link.GetAttribute("href");
             if (string.IsNullOrWhiteSpace(href))
+            {
                 continue;
+            }
 
             var path = SnapshotPathFromHref(href);
             if (path is null || !File.Exists(path) || _externalSheets.ContainsKey(href))
+            {
                 continue;
+            }
 
             var css = File.ReadAllText(path);
             _cssTexts.Add(css);
@@ -130,11 +141,15 @@ public class GitHubStyleBench
         foreach (var element in Elements(doc))
         {
             if (!string.Equals(element.LocalName, "style", StringComparison.Ordinal))
+            {
                 continue;
+            }
 
             var source = element.TextContent;
             if (string.IsNullOrWhiteSpace(source))
+            {
                 continue;
+            }
 
             _cssTexts.Add(source);
             _inlineSheets[element] = CssParser.ParseStyleSheet(source);
@@ -162,18 +177,26 @@ public class GitHubStyleBench
             {
                 var source = element.TextContent;
                 if (string.IsNullOrWhiteSpace(source))
+                {
                     continue;
+                }
 
                 if (useCachedInlineSheets && _inlineSheets.TryGetValue(element, out var cached))
+                {
                     style.AddStyleSheet(cached);
+                }
                 else
+                {
                     style.AddStyleSheet(CssParser.ParseStyleSheet(source));
+                }
             }
             else if (IsStylesheetLink(element))
             {
                 var href = element.GetAttribute("href");
                 if (href is not null && _externalSheets.TryGetValue(href, out var sheet))
+                {
                     style.AddStyleSheet(sheet);
+                }
             }
         }
     }
@@ -181,15 +204,23 @@ public class GitHubStyleBench
     private static bool IsStylesheetLink(Element element)
     {
         if (!string.Equals(element.LocalName, "link", StringComparison.Ordinal))
+        {
             return false;
+        }
 
         var rel = element.GetAttribute("rel");
         if (rel is null)
+        {
             return false;
+        }
 
         foreach (var token in rel.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+        {
             if (string.Equals(token, "stylesheet", StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
+            }
+        }
 
         return false;
     }
@@ -198,11 +229,15 @@ public class GitHubStyleBench
     {
         var end = href.IndexOfAny(['?', '#']);
         if (end >= 0)
+        {
             href = href[..end];
+        }
 
         href = href.TrimStart('/');
         if (!href.StartsWith("assets/", StringComparison.Ordinal))
+        {
             return null;
+        }
 
         return Path.Combine(Fixtures.GitHubSnapshotRoot, href.Replace('/', Path.DirectorySeparatorChar));
     }
@@ -210,10 +245,16 @@ public class GitHubStyleBench
     private static IEnumerable<Element> Elements(Node root)
     {
         if (root is Element element)
+        {
             yield return element;
+        }
 
         foreach (var child in root.ChildNodes)
+        {
             foreach (var nested in Elements(child))
+            {
                 yield return nested;
+            }
+        }
     }
 }

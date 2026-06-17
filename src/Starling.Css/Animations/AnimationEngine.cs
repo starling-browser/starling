@@ -61,11 +61,27 @@ public sealed class AnimationEngine
         get
         {
             foreach (var list in _active.Values)
+            {
                 foreach (var inst in list)
-                    if (inst.IsInFlight) return true;
+                {
+                    if (inst.IsInFlight)
+                    {
+                        return true;
+                    }
+                }
+            }
+
             foreach (var list in _scriptActive.Values)
+            {
                 foreach (var s in list)
-                    if (s.Instance.IsInFlight) return true;
+                {
+                    if (s.Instance.IsInFlight)
+                    {
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
     }
@@ -76,7 +92,11 @@ public sealed class AnimationEngine
         get
         {
             var n = 0;
-            foreach (var list in _active.Values) n += list.Count;
+            foreach (var list in _active.Values)
+            {
+                n += list.Count;
+            }
+
             return n;
         }
     }
@@ -95,8 +115,15 @@ public sealed class AnimationEngine
     /// tables, matching what <see cref="ActiveProperties"/> reports.</summary>
     public void CollectActiveElements(ISet<Element> into)
     {
-        foreach (var el in _active.Keys) into.Add(el);
-        foreach (var el in _scriptActive.Keys) into.Add(el);
+        foreach (var el in _active.Keys)
+        {
+            into.Add(el);
+        }
+
+        foreach (var el in _scriptActive.Keys)
+        {
+            into.Add(el);
+        }
     }
 
     /// <summary>
@@ -144,7 +171,10 @@ public sealed class AnimationEngine
         var inst = new AnimationInstance(element, decl, _nowMs);
         inst.SetStart(startMs);
         if (!_scriptActive.TryGetValue(element, out var list))
+        {
             _scriptActive[element] = list = new List<ScriptAnimation>();
+        }
+
         list.Add(new ScriptAnimation(inst, rule));
         return inst;
     }
@@ -156,7 +186,11 @@ public sealed class AnimationEngine
         {
             if (list.RemoveAll(s => ReferenceEquals(s.Instance, instance)) > 0)
             {
-                if (list.Count == 0) _scriptActive.Remove(el);
+                if (list.Count == 0)
+                {
+                    _scriptActive.Remove(el);
+                }
+
                 return;
             }
         }
@@ -192,8 +226,15 @@ public sealed class AnimationEngine
         var rebuilt = new List<AnimationInstance>(declarations.Count);
         foreach (var d in declarations)
         {
-            if (string.IsNullOrEmpty(d.Name) || d.Name == "none") continue;
-            if (!seen.Add(d.Name)) continue; // duplicates use the first occurrence
+            if (string.IsNullOrEmpty(d.Name) || d.Name == "none")
+            {
+                continue;
+            }
+
+            if (!seen.Add(d.Name))
+            {
+                continue; // duplicates use the first occurrence
+            }
 
             var existing = list.FirstOrDefault(a => a.Name == d.Name);
             if (existing is not null)
@@ -206,8 +247,14 @@ public sealed class AnimationEngine
                 rebuilt.Add(new AnimationInstance(element, d, _nowMs));
             }
         }
-        if (rebuilt.Count == 0) _active.Remove(element);
-        else _active[element] = rebuilt;
+        if (rebuilt.Count == 0)
+        {
+            _active.Remove(element);
+        }
+        else
+        {
+            _active[element] = rebuilt;
+        }
     }
 
     /// <summary>Returns the current sampled value for <paramref name="property"/>, or null if no animation affects it.</summary>
@@ -219,18 +266,34 @@ public sealed class AnimationEngine
         // implementation-defined ordering where explicit animations win.
         CssValue? winning = null;
         if (_active.TryGetValue(element, out var list))
+        {
             foreach (var inst in list)
             {
-                if (!_keyframes.TryGetValue(inst.Name, out var rule)) continue;
+                if (!_keyframes.TryGetValue(inst.Name, out var rule))
+                {
+                    continue;
+                }
+
                 var sample = inst.Sample(property, rule, _nowMs);
-                if (sample is not null) winning = sample;
+                if (sample is not null)
+                {
+                    winning = sample;
+                }
             }
+        }
+
         if (_scriptActive.TryGetValue(element, out var slist))
+        {
             foreach (var s in slist)
             {
                 var sample = s.Instance.Sample(property, s.Rule, _nowMs);
-                if (sample is not null) winning = sample;
+                if (sample is not null)
+                {
+                    winning = sample;
+                }
             }
+        }
+
         return winning;
     }
 
@@ -244,20 +307,43 @@ public sealed class AnimationEngine
     {
         var seen = new HashSet<PropertyId>();
         if (_active.TryGetValue(element, out var list))
+        {
             foreach (var inst in list)
             {
-                if (!_keyframes.TryGetValue(inst.Name, out var rule)) continue;
+                if (!_keyframes.TryGetValue(inst.Name, out var rule))
+                {
+                    continue;
+                }
+
                 foreach (var frame in rule.Frames)
+                {
                     foreach (var decl in frame.Declarations)
+                    {
                         if (PropertyRegistry.TryGetPropertyId(decl.Property, out var id) && seen.Add(id))
+                        {
                             yield return id;
+                        }
+                    }
+                }
             }
+        }
+
         if (_scriptActive.TryGetValue(element, out var slist))
+        {
             foreach (var s in slist)
+            {
                 foreach (var frame in s.Rule.Frames)
+                {
                     foreach (var decl in frame.Declarations)
+                    {
                         if (PropertyRegistry.TryGetPropertyId(decl.Property, out var id) && seen.Add(id))
+                        {
                             yield return id;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -275,7 +361,10 @@ public sealed class AnimationEngine
         foreach (var id in ActiveProperties(element))
         {
             any = true;
-            if (PropertyRegistry.AffectsLayout(id)) return true;
+            if (PropertyRegistry.AffectsLayout(id))
+            {
+                return true;
+            }
         }
         return !any;
     }
@@ -284,22 +373,42 @@ public sealed class AnimationEngine
     /// completed (entered a non-replaying terminal state) during this tick.</summary>
     public int Tick(double nowMs)
     {
-        if (nowMs < _nowMs) nowMs = _nowMs; // clamp on time-going-backwards
+        if (nowMs < _nowMs)
+        {
+            nowMs = _nowMs; // clamp on time-going-backwards
+        }
+
         _nowMs = nowMs;
         var completed = 0;
         foreach (var list in _active.Values)
+        {
             foreach (var inst in list)
             {
-                if (inst.NoteTick(nowMs)) completed++;
+                if (inst.NoteTick(nowMs))
+                {
+                    completed++;
+                }
                 // Lifecycle DOM events fire only for animations that actually
                 // run — an animation-name without a registered @keyframes rule
                 // creates no animation (CSS Animations 1 §3).
                 if (_keyframes.ContainsKey(inst.Name))
+                {
                     inst.CollectLifecycleEvents(nowMs, _pendingEvents);
+                }
             }
+        }
+
         foreach (var list in _scriptActive.Values)
+        {
             foreach (var s in list)
-                if (s.Instance.NoteTick(nowMs)) completed++;
+            {
+                if (s.Instance.NoteTick(nowMs))
+                {
+                    completed++;
+                }
+            }
+        }
+
         return completed;
     }
 
@@ -313,7 +422,11 @@ public sealed class AnimationEngine
     public void DrainPendingEvents(List<AnimationEventRecord> into)
     {
         ArgumentNullException.ThrowIfNull(into);
-        if (_pendingEvents.Count == 0) return;
+        if (_pendingEvents.Count == 0)
+        {
+            return;
+        }
+
         into.AddRange(_pendingEvents);
         _pendingEvents.Clear();
     }
@@ -431,11 +544,31 @@ public sealed class AnimationInstance
     public bool NoteTick(double nowMs)
     {
         _nowSeenMs = nowMs;
-        if (_canceled || _scriptPaused) return false;
-        if (_completed) return false;
-        if (_decl.PlayState == AnimationPlayState.Paused) return false;
-        if (_pausedAtElapsedMs >= 0 || _playbackRate <= 0) return false; // frozen head (pause / rate 0)
-        if (double.IsInfinity(_decl.IterationCount) || _decl.IterationCount <= 0) return false;
+        if (_canceled || _scriptPaused)
+        {
+            return false;
+        }
+
+        if (_completed)
+        {
+            return false;
+        }
+
+        if (_decl.PlayState == AnimationPlayState.Paused)
+        {
+            return false;
+        }
+
+        if (_pausedAtElapsedMs >= 0 || _playbackRate <= 0)
+        {
+            return false; // frozen head (pause / rate 0)
+        }
+
+        if (double.IsInfinity(_decl.IterationCount) || _decl.IterationCount <= 0)
+        {
+            return false;
+        }
+
         var total = _decl.DelayMs + _decl.DurationMs * _decl.IterationCount;
         if ((nowMs - _startMs) * _playbackRate >= total)
         {
@@ -465,13 +598,22 @@ public sealed class AnimationInstance
     /// </summary>
     internal void CollectLifecycleEvents(double nowMs, List<AnimationEventRecord> sink)
     {
-        if (_canceled || _scriptPaused || _decl.PlayState == AnimationPlayState.Paused) return;
+        if (_canceled || _scriptPaused || _decl.PlayState == AnimationPlayState.Paused)
+        {
+            return;
+        }
         // An iteration count of 0 (or negative) never reaches a terminal state
         // in NoteTick; keep event behavior consistent and stay silent too.
-        if (_decl.IterationCount <= 0) return;
+        if (_decl.IterationCount <= 0)
+        {
+            return;
+        }
 
         var elapsed = nowMs - _startMs - _decl.DelayMs;
-        if (elapsed < 0) return; // still inside the delay phase — nothing fires
+        if (elapsed < 0)
+        {
+            return; // still inside the delay phase — nothing fires
+        }
 
         var duration = Math.Max(0, _decl.DurationMs);
         var iterations = _decl.IterationCount;
@@ -501,7 +643,10 @@ public sealed class AnimationInstance
             // boundaries, report only the latest (CSS Animations 2 sampling).
             var boundaries = Math.Floor(elapsed / duration);
             if (!double.IsInfinity(iterations))
+            {
                 boundaries = Math.Min(boundaries, Math.Ceiling(iterations) - 1);
+            }
+
             if (_eventIterationsFired < boundaries)
             {
                 _eventIterationsFired = boundaries;
@@ -555,8 +700,15 @@ public sealed class AnimationInstance
     public void ScriptSetCurrentTime(double ms)
     {
         if (_playbackRate > 0)
+        {
             _startMs = _nowSeenMs - (_decl.DelayMs + ms) / _playbackRate;
-        if (_pausedAtElapsedMs >= 0 || _playbackRate <= 0) _pausedAtElapsedMs = ms;
+        }
+
+        if (_pausedAtElapsedMs >= 0 || _playbackRate <= 0)
+        {
+            _pausedAtElapsedMs = ms;
+        }
+
         _completed = false;
         _canceled = false;
     }
@@ -564,7 +716,11 @@ public sealed class AnimationInstance
     /// <summary>Animation.pause() — freeze the playback head.</summary>
     public void ScriptPause()
     {
-        if (_scriptPaused) return;
+        if (_scriptPaused)
+        {
+            return;
+        }
+
         _pausedAtElapsedMs = CurrentActiveElapsedMs();
         _scriptPaused = true;
     }
@@ -594,8 +750,16 @@ public sealed class AnimationInstance
     /// calling here.</summary>
     public void ScriptSetPlaybackRate(double rate)
     {
-        if (double.IsNaN(rate) || rate < 0) rate = 0;
-        if (rate == _playbackRate) return;
+        if (double.IsNaN(rate) || rate < 0)
+        {
+            rate = 0;
+        }
+
+        if (rate == _playbackRate)
+        {
+            return;
+        }
+
         var elapsed = CurrentActiveElapsedMs();
         _playbackRate = rate;
         if (_scriptPaused || rate <= 0)
@@ -621,7 +785,11 @@ public sealed class AnimationInstance
     /// <summary>Animation.cancel() — remove all effects (Sample returns null).</summary>
     public void ScriptCancel()
     {
-        if (_canceled) return;
+        if (_canceled)
+        {
+            return;
+        }
+
         _canceled = true;
         _onScriptCanceled?.Invoke();
     }
@@ -642,7 +810,10 @@ public sealed class AnimationInstance
         }
         var wasCompleted = _completed;
         _completed = true;
-        if (!wasCompleted) _onScriptFinished?.Invoke();
+        if (!wasCompleted)
+        {
+            _onScriptFinished?.Invoke();
+        }
     }
 
     /// <summary>
@@ -655,7 +826,10 @@ public sealed class AnimationInstance
     public CssValue? Sample(PropertyId property, KeyframesRule rule, double nowMs)
     {
         _nowSeenMs = nowMs;
-        if (_canceled) return null;
+        if (_canceled)
+        {
+            return null;
+        }
 
         // Compute "iteration progress" p ∈ [0, 1] for this clock value,
         // honouring delay, playback rate, iteration count, direction, and fill
@@ -690,16 +864,24 @@ public sealed class AnimationInstance
         {
             // Backfill: at progress=0 only if backwards/both fill mode is set.
             if (_decl.FillMode is AnimationFillMode.Backwards or AnimationFillMode.Both)
+            {
                 progress = StartProgress();
+            }
             else
+            {
                 return null;
+            }
         }
         else if (afterActive)
         {
             if (_decl.FillMode is AnimationFillMode.Forwards or AnimationFillMode.Both)
+            {
                 progress = EndProgress();
+            }
             else
+            {
                 return null;
+            }
         }
         else
         {
@@ -727,7 +909,11 @@ public sealed class AnimationInstance
     {
         // When the final iteration of an `alternate` animation runs in
         // reverse, the "end progress" is 0; otherwise 1.
-        if (double.IsInfinity(_decl.IterationCount)) return 1;
+        if (double.IsInfinity(_decl.IterationCount))
+        {
+            return 1;
+        }
+
         var lastIterIndex = (int)Math.Floor(Math.Max(0, _decl.IterationCount - 1));
         var endsReversed = _decl.Direction switch
         {
@@ -761,7 +947,11 @@ public sealed class AnimationInstance
         foreach (var frame in rule.Frames)
         {
             var decl = FindDecl(frame.Declarations, propertyName);
-            if (decl is null) continue;
+            if (decl is null)
+            {
+                continue;
+            }
+
             if (frame.Offset <= progress)
             {
                 before = decl;
@@ -770,12 +960,20 @@ public sealed class AnimationInstance
             }
             if (frame.Offset >= progress) { after = decl; afterOffset = frame.Offset; break; }
         }
-        if (before is null && after is null) return null;
+        if (before is null && after is null)
+        {
+            return null;
+        }
+
         if (before is null) { before = after; beforeOffset = afterOffset; }
         if (after is null) { after = before; afterOffset = beforeOffset; }
 
         var span = afterOffset - beforeOffset;
-        if (span <= 1e-9) return before!.Value;
+        if (span <= 1e-9)
+        {
+            return before!.Value;
+        }
+
         var segmentP = (progress - beforeOffset) / span;
 
         // §7.1: per-keyframe timing function on the *before* keyframe wins;
@@ -789,8 +987,13 @@ public sealed class AnimationInstance
     private static KeyframeDeclaration? FindDecl(IReadOnlyList<KeyframeDeclaration> decls, string property)
     {
         for (var i = 0; i < decls.Count; i++)
+        {
             if (string.Equals(decls[i].Property, property, StringComparison.OrdinalIgnoreCase))
+            {
                 return decls[i];
+            }
+        }
+
         return null;
     }
 
@@ -802,7 +1005,11 @@ public sealed class AnimationInstance
         for (var i = 0; i < s.Length; i++)
         {
             var c = s[i];
-            if (i > 0 && char.IsUpper(c)) sb.Append('-');
+            if (i > 0 && char.IsUpper(c))
+            {
+                sb.Append('-');
+            }
+
             sb.Append(char.ToLowerInvariant(c));
         }
         return sb.ToString();

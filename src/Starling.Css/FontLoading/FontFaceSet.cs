@@ -57,7 +57,9 @@ public sealed class FontFaceSet
     {
         ArgumentNullException.ThrowIfNull(face);
         if (!_faces.Contains(face))
+        {
             _faces.Add(face);
+        }
     }
 
     /// <summary>
@@ -134,10 +136,14 @@ public sealed class FontFaceSet
         foreach (var face in _faces)
         {
             if (face.Status != FontFaceLoadStatus.Loaded)
+            {
                 continue;
+            }
 
             if (stripped.Contains(face.Family, StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
+            }
         }
 
         return false;

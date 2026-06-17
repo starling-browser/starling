@@ -21,7 +21,13 @@ internal static class QuerySelectorEngine
         var list = Parse(selector, realm);
         var ctx = ContextFor(root);
         foreach (var e in root.DescendantElements())
-            if (SelectorMatcher.Matches(list, e, ctx)) return e;
+        {
+            if (SelectorMatcher.Matches(list, e, ctx))
+            {
+                return e;
+            }
+        }
+
         return null;
     }
 
@@ -31,7 +37,12 @@ internal static class QuerySelectorEngine
         var list = Parse(selector, realm);
         var ctx = ContextFor(root);
         foreach (var e in root.DescendantElements())
-            if (SelectorMatcher.Matches(list, e, ctx)) yield return e;
+        {
+            if (SelectorMatcher.Matches(list, e, ctx))
+            {
+                yield return e;
+            }
+        }
     }
 
     /// <summary>Whether <paramref name="element"/> itself matches <paramref name="selector"/> (<c>Element.matches</c>).</summary>
@@ -47,7 +58,13 @@ internal static class QuerySelectorEngine
         var list = Parse(selector, realm);
         var ctx = ContextFor(element);
         for (Node? n = element; n is not null; n = n.ParentNode)
-            if (n is Element e && SelectorMatcher.Matches(list, e, ctx)) return e;
+        {
+            if (n is Element e && SelectorMatcher.Matches(list, e, ctx))
+            {
+                return e;
+            }
+        }
+
         return null;
     }
 
@@ -62,7 +79,9 @@ internal static class QuerySelectorEngine
         // DOMException (name SyntaxError, code 12) for an invalid selector, not
         // an ECMAScript SyntaxError, so assert_throws_dom("SyntaxError") matches.
         if (string.IsNullOrEmpty(raw))
+        {
             throw DomExceptionBinding.Throw(realm, "SyntaxError", "The selector is empty.");
+        }
 
         SelectorList list;
         try
@@ -75,7 +94,10 @@ internal static class QuerySelectorEngine
         }
 
         if (list.Selectors.Count == 0)
+        {
             throw DomExceptionBinding.Throw(realm, "SyntaxError", $"'{raw}' is not a valid selector.");
+        }
+
         return list;
     }
 }

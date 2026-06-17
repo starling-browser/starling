@@ -24,7 +24,10 @@ public static class LinkResolver
         if (!string.IsNullOrEmpty(baseUrl))
         {
             var baseParsed = UrlParser.Parse(baseUrl);
-            if (baseParsed.IsOk) parsedBase = baseParsed.Value;
+            if (baseParsed.IsOk)
+            {
+                parsedBase = baseParsed.Value;
+            }
         }
 
         var parsed = parsedBase is null

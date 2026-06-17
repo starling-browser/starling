@@ -128,7 +128,9 @@ public sealed class UrlBar : Border
         Address.PropertyChanged += (_, e) =>
         {
             if (e.Property == TextBox.TextProperty && !Address.IsFocused)
+            {
                 SetDisplayUrl(Address.Text ?? string.Empty);
+            }
         };
 
         // The display panel must always be hit-test visible (even when the
@@ -143,7 +145,11 @@ public sealed class UrlBar : Border
         // caret instead of re-selecting the entire URL.
         ChromeKit.AttachClick(_display, () =>
         {
-            if (Address.IsFocused) return;
+            if (Address.IsFocused)
+            {
+                return;
+            }
+
             ShowEditor();
         });
 
@@ -191,8 +197,8 @@ public sealed class UrlBar : Border
         };
 
         ChromeKit.AttachHover(this,
-            () => { if (!Address.IsFocused) BorderBrush = new SolidColorBrush(t.Strong); },
-            () => { if (!Address.IsFocused) BorderBrush = new SolidColorBrush(t.Hair); });
+            () => { if (!Address.IsFocused) { BorderBrush = new SolidColorBrush(t.Strong); } },
+            () => { if (!Address.IsFocused) { BorderBrush = new SolidColorBrush(t.Hair); } });
     }
 
     /// <summary>The host the parent should attach the focus ring on, so the
@@ -207,21 +213,32 @@ public sealed class UrlBar : Border
         // we can hand focus away — that, in turn, fires LostFocus and the
         // existing handler collapses the editor back to the display segments.
         if (TopLevel.GetTopLevel(this) is { } top)
+        {
             top.AddHandler(InputElement.PointerPressedEvent, OnTopLevelPointerPressed,
                 RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
+        }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
         if (TopLevel.GetTopLevel(this) is { } top)
+        {
             top.RemoveHandler(InputElement.PointerPressedEvent, OnTopLevelPointerPressed);
+        }
     }
 
     private void OnTopLevelPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (!Address.IsFocused) return;
-        if (e.Source is Visual v && IsDescendantOf(v, this)) return;
+        if (!Address.IsFocused)
+        {
+            return;
+        }
+
+        if (e.Source is Visual v && IsDescendantOf(v, this))
+        {
+            return;
+        }
         // Outside click — move keyboard focus to the top level so the
         // TextBox's LostFocus fires and the editor collapses.
         TopLevel.GetTopLevel(this)?.Focus();
@@ -231,7 +248,11 @@ public sealed class UrlBar : Border
     {
         while (v is not null)
         {
-            if (ReferenceEquals(v, root)) return true;
+            if (ReferenceEquals(v, root))
+            {
+                return true;
+            }
+
             v = v.GetVisualParent();
         }
         return false;
@@ -318,7 +339,10 @@ public sealed class UrlBar : Border
         Address.IsVisible = true;
         // Hide the display row siblings so the editor takes the full width.
         if (_display.Children.Count > 0 && _display.Children[0] is StackPanel sp)
+        {
             sp.IsVisible = false;
+        }
+
         Address.Focus();
         Address.SelectAll();
     }
@@ -327,7 +351,9 @@ public sealed class UrlBar : Border
     {
         Address.IsVisible = false;
         if (_display.Children.Count > 0 && _display.Children[0] is StackPanel sp)
+        {
             sp.IsVisible = true;
+        }
     }
 
     private string ReconstructFullUrl()
@@ -335,7 +361,11 @@ public sealed class UrlBar : Border
         var scheme = _schemeText.Text ?? "";
         var host = _hostText.Text ?? "";
         var path = _pathText.Text ?? "";
-        if (string.IsNullOrEmpty(scheme) && string.IsNullOrEmpty(host)) return Address.Text ?? "";
+        if (string.IsNullOrEmpty(scheme) && string.IsNullOrEmpty(host))
+        {
+            return Address.Text ?? "";
+        }
+
         return $"{scheme}://{host}{path}";
     }
 
@@ -400,7 +430,11 @@ public sealed class UrlBar : Border
         _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
         _progressTimer.Tick += (_, _) =>
         {
-            if (_progressMs is null) return;
+            if (_progressMs is null)
+            {
+                return;
+            }
+
             var ms = (int)(DateTime.UtcNow - _progressStarted).TotalMilliseconds;
             _progressMs.Text = ms < 1000 ? $"{ms} ms" : $"{ms / 1000.0:0.0} s";
         };
@@ -419,7 +453,11 @@ public sealed class UrlBar : Border
     /// <summary>Builds the pill once and parks it in column 2 of the grid.</summary>
     private void EnsurePill()
     {
-        if (_progressPill is not null) return;
+        if (_progressPill is not null)
+        {
+            return;
+        }
+
         var t = _tm.Tokens;
 
         _progressSpinner = new Ellipse
@@ -474,8 +512,8 @@ public sealed class UrlBar : Border
         // Hover brightens the muted resting state back to accent. During
         // active navigation the pill is already accent, so hover is a no-op.
         ChromeKit.AttachHover(_progressPill,
-            () => { if (_progressTimer is null) ApplyPillColors(active: true); },
-            () => { if (_progressTimer is null) ApplyPillColors(active: false); });
+            () => { if (_progressTimer is null) { ApplyPillColors(active: true); } },
+            () => { if (_progressTimer is null) { ApplyPillColors(active: false); } });
 
         _grid.Children.Add(_progressPill);
         Grid.SetColumn(_progressPill, 2);
@@ -483,14 +521,22 @@ public sealed class UrlBar : Border
 
     private void SetPillActive(bool active)
     {
-        if (_progressPill is null || _progressSpinner is null) return;
+        if (_progressPill is null || _progressSpinner is null)
+        {
+            return;
+        }
+
         _progressSpinner.IsVisible = active;
         ApplyPillColors(active);
     }
 
     private void ApplyPillColors(bool active)
     {
-        if (_progressPill is null || _progressMs is null) return;
+        if (_progressPill is null || _progressMs is null)
+        {
+            return;
+        }
+
         var t = _tm.Tokens;
         if (active)
         {
@@ -529,7 +575,9 @@ public sealed class UrlBar : Border
         global::Avalonia.Automation.AutomationProperties.SetName(_lockCell, name);
 
         if (_securityPopup is { IsOpen: true })
+        {
             _securityPopup.Child = BuildSecurityCard();
+        }
     }
 
     private void ToggleSecurityPopover()

@@ -81,9 +81,17 @@ internal static class ObserverRecords
 
     private static JsArray BuildNodeArray(JsRealm realm, IReadOnlyList<Node>? nodes)
     {
-        if (nodes is null || nodes.Count == 0) return new JsArray(realm);
+        if (nodes is null || nodes.Count == 0)
+        {
+            return new JsArray(realm);
+        }
+
         var items = new List<JsValue>(nodes.Count);
-        foreach (var n in nodes) items.Add(JsValue.Object(DomWrappers.Wrap(realm, n)));
+        foreach (var n in nodes)
+        {
+            items.Add(JsValue.Object(DomWrappers.Wrap(realm, n)));
+        }
+
         return new JsArray(realm, items);
     }
 

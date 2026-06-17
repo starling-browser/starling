@@ -55,7 +55,9 @@ public static class CssCalcResolver
         var strategy = f.Name.StartsWith("round-") ? f.Name["round-".Length..] : "nearest";
 
         if (!args.All(IsLiteralOrFolded))
+        {
             return f with { Arguments = args };
+        }
 
         return name switch
         {
@@ -73,14 +75,22 @@ public static class CssCalcResolver
 
     private static CalcNode DoMod(double a, double b, UnitKind unit, NumericType type, bool isMod)
     {
-        if (b == 0) return Literal(double.NaN, unit, type);
+        if (b == 0)
+        {
+            return Literal(double.NaN, unit, type);
+        }
+
         var v = isMod ? a - Math.Floor(a / b) * b : a - Math.Truncate(a / b) * b;
         return Literal(v, unit, type);
     }
 
     private static CalcNode DoRound(double a, double b, string strategy, UnitKind unit, NumericType type)
     {
-        if (b == 0) return Literal(double.NaN, unit, type);
+        if (b == 0)
+        {
+            return Literal(double.NaN, unit, type);
+        }
+
         var q = a / b;
         var rounded = strategy switch
         {
@@ -108,9 +118,14 @@ public static class CssCalcResolver
         if (op is CalcOperator.Multiply or CalcOperator.Divide)
         {
             if (right is CalcNumber n2)
+            {
                 return Scale(left, op == CalcOperator.Multiply ? n2.Value : (n2.Value == 0 ? double.NaN : 1.0 / n2.Value));
+            }
+
             if (left is CalcNumber n1 && op == CalcOperator.Multiply)
+            {
                 return Scale(right, n1.Value);
+            }
         }
         if (op is CalcOperator.Add or CalcOperator.Subtract && left is CalcLength lL && right is CalcLength rL)
         {
@@ -234,6 +249,7 @@ public static class CssCalcResolver
     private static UnitKind PreferredUnit(IReadOnlyList<CalcNode> args)
     {
         foreach (var a in args)
+        {
             switch (a)
             {
                 case CalcLength: return UnitKind.LengthPx;
@@ -243,6 +259,8 @@ public static class CssCalcResolver
                 case CalcResolution: return UnitKind.ResDppx;
                 case CalcPercentage: return UnitKind.Percentage;
             }
+        }
+
         return UnitKind.Number;
     }
 

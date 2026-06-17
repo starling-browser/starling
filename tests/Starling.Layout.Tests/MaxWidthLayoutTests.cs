@@ -107,11 +107,18 @@ public sealed class MaxWidthLayoutTests
 
     private static Box.Box? FindBox(Box.Box root, string localName)
     {
-        if (root.Element?.LocalName == localName) return root;
+        if (root.Element?.LocalName == localName)
+        {
+            return root;
+        }
+
         foreach (var child in root.Children)
         {
             var hit = FindBox(child, localName);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }

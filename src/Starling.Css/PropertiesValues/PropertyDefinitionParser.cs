@@ -22,7 +22,9 @@ public static class PropertyDefinitionParser
         foreach (var rule in sheet.Rules)
         {
             if (rule is AtRule { Name: "property" } atRule && TryParse(atRule, out var registered))
+            {
                 yield return registered!;
+            }
         }
     }
 
@@ -31,11 +33,15 @@ public static class PropertyDefinitionParser
         ArgumentNullException.ThrowIfNull(rule);
         registered = null;
         if (!string.Equals(rule.Name, "property", StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
 
         var name = ExtractName(rule.Prelude);
         if (name is null)
+        {
             return false;
+        }
 
         string? syntax = null;
         bool? inherits = null;
@@ -59,12 +65,16 @@ public static class PropertyDefinitionParser
 
         // syntax and inherits are required descriptors.
         if (syntax is null || inherits is null)
+        {
             return false;
+        }
 
         var isUniversal = syntax.Trim() == "*";
         // initial-value is required for any non-universal syntax.
         if (!isUniversal && string.IsNullOrEmpty(initialValue))
+        {
             return false;
+        }
 
         registered = new RegisteredProperty(name, syntax, inherits.Value, initialValue);
         return true;
@@ -75,10 +85,16 @@ public static class PropertyDefinitionParser
         foreach (var component in prelude)
         {
             if (component is CssTokenValue { Token.Type: CssTokenType.Whitespace })
+            {
                 continue;
+            }
+
             if (component is CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var ident } }
                 && ident.StartsWith("--", StringComparison.Ordinal))
+            {
                 return ident;
+            }
+
             return null;
         }
         return null;
@@ -87,19 +103,34 @@ public static class PropertyDefinitionParser
     private static string? ExtractString(IReadOnlyList<CssComponentValue> value)
     {
         foreach (var v in value)
+        {
             if (v is CssTokenValue { Token: { Type: CssTokenType.String, Value: var s } })
+            {
                 return s;
+            }
+        }
+
         return null;
     }
 
     private static bool? ExtractBool(IReadOnlyList<CssComponentValue> value)
     {
         foreach (var v in value)
+        {
             if (v is CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var ident } })
             {
-                if (ident.Equals("true", StringComparison.OrdinalIgnoreCase)) return true;
-                if (ident.Equals("false", StringComparison.OrdinalIgnoreCase)) return false;
+                if (ident.Equals("true", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (ident.Equals("false", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
             }
+        }
+
         return null;
     }
 
@@ -107,7 +138,10 @@ public static class PropertyDefinitionParser
     {
         var sb = new StringBuilder();
         foreach (var v in value)
+        {
             sb.Append(ComponentText(v));
+        }
+
         return sb.ToString().Trim();
     }
 

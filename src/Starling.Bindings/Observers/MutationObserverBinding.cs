@@ -62,8 +62,14 @@ public static class MutationObserverBinding
             // Prune dead refs and bail if this state is already registered.
             for (var i = list.Count - 1; i >= 0; i--)
             {
-                if (!list[i].TryGetTarget(out var existing)) list.RemoveAt(i);
-                else if (ReferenceEquals(existing, state)) return;
+                if (!list[i].TryGetTarget(out var existing))
+                {
+                    list.RemoveAt(i);
+                }
+                else if (ReferenceEquals(existing, state))
+                {
+                    return;
+                }
             }
             list.Add(new WeakReference<MutationObserverState>(state));
         }
@@ -74,18 +80,29 @@ public static class MutationObserverBinding
     /// (live) observers are registered.</summary>
     private static List<MutationObserverState>? LiveStates(Document doc)
     {
-        if (!DocStates.TryGetValue(doc, out var list)) return null;
+        if (!DocStates.TryGetValue(doc, out var list))
+        {
+            return null;
+        }
+
         List<MutationObserverState>? live = null;
         lock (list)
         {
             var write = 0;
             for (var read = 0; read < list.Count; read++)
             {
-                if (!list[read].TryGetTarget(out var s)) continue; // dead — drop
+                if (!list[read].TryGetTarget(out var s))
+                {
+                    continue; // dead — drop
+                }
+
                 list[write++] = list[read];                        // compact, preserving order
                 (live ??= new List<MutationObserverState>()).Add(s);
             }
-            if (write < list.Count) list.RemoveRange(write, list.Count - write);
+            if (write < list.Count)
+            {
+                list.RemoveRange(write, list.Count - write);
+            }
         }
         return live;
     }
@@ -93,19 +110,34 @@ public static class MutationObserverBinding
     private static void OnAttributeChanged(Document doc, Element el, string attrName, string? oldValue)
     {
         if (LiveStates(doc) is { } states)
-            foreach (var s in states) s.MaybeQueueAttribute(el, attrName, oldValue);
+        {
+            foreach (var s in states)
+            {
+                s.MaybeQueueAttribute(el, attrName, oldValue);
+            }
+        }
     }
 
     private static void OnChildListChanged(Document doc, Node target, IReadOnlyList<Node>? added, IReadOnlyList<Node>? removed, Node? prev, Node? next)
     {
         if (LiveStates(doc) is { } states)
-            foreach (var s in states) s.MaybeQueueChildList(target, added, removed, prev, next);
+        {
+            foreach (var s in states)
+            {
+                s.MaybeQueueChildList(target, added, removed, prev, next);
+            }
+        }
     }
 
     private static void OnCharacterDataChanged(Document doc, Node target, string oldValue)
     {
         if (LiveStates(doc) is { } states)
-            foreach (var s in states) s.MaybeQueueCharacterData(target, oldValue);
+        {
+            foreach (var s in states)
+            {
+                s.MaybeQueueCharacterData(target, oldValue);
+            }
+        }
     }
 
     public static void Install(JsRuntime runtime, Document document)
@@ -118,7 +150,10 @@ public static class MutationObserverBinding
         document.AttributeMutated = (el, attr, old) => OnAttributeChanged(document, el, attr, old);
         document.ChildListMutated = (t, a, r, p, n) => OnChildListChanged(document, t, a, r, p, n);
         document.CharacterDataMutated = (t, old) => OnCharacterDataChanged(document, t, old);
-        if (realm.MutationObserverConstructor is not null) return; // idempotent
+        if (realm.MutationObserverConstructor is not null)
+        {
+            return; // idempotent
+        }
 
         var proto = new JsObject(realm.ObjectPrototype);
         realm.MutationObserverPrototype = proto;
@@ -131,15 +166,24 @@ public static class MutationObserverBinding
             var state = ResolveState(thisV)
                 ?? throw new JsThrow(realm.NewTypeError("Illegal invocation: observe called on non-MutationObserver"));
             if (args.Length == 0 || !args[0].IsObject)
+            {
                 throw new JsThrow(realm.NewTypeError("MutationObserver.observe: target must be a Node"));
+            }
+
             var target = DomWrappers.UnwrapNode(args[0]);
             if (target is null)
+            {
                 throw new JsThrow(realm.NewTypeError("MutationObserver.observe: target must be a Node"));
+            }
 
             var opts = ParseOptions(realm, args.Length > 1 ? args[1] : JsValue.Undefined);
             state.AddOrReplaceObservation(target, opts);
             var doc = target as Document ?? target.OwnerDocument;
-            if (doc is not null) RegisterState(doc, state);
+            if (doc is not null)
+            {
+                RegisterState(doc, state);
+            }
+
             return JsValue.Undefined;
         }, length: 2);
 
@@ -153,14 +197,21 @@ public static class MutationObserverBinding
         EventTargetBinding.DefineMethod(realm, proto, "takeRecords", (thisV, _) =>
         {
             var state = ResolveState(thisV);
-            if (state is null) return JsValue.Object(new JsArray(realm));
+            if (state is null)
+            {
+                return JsValue.Object(new JsArray(realm));
+            }
+
             return JsValue.Object(state.DrainRecords(realm));
         }, length: 0);
 
         var ctor = new JsNativeFunction(realm, "MutationObserver", 1, (thisV, args) =>
         {
             if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
                 throw new JsThrow(realm.NewTypeError("MutationObserver requires a callback function"));
+            }
+
             var inst = new JsObject(proto);
             States.Add(inst, new MutationObserverState(runtime, inst, args[0]));
             return JsValue.Object(inst);
@@ -182,7 +233,10 @@ public static class MutationObserverBinding
     private static MutationObserverInit ParseOptions(JsRealm realm, JsValue raw)
     {
         if (!raw.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("MutationObserver.observe: options must be an object"));
+        }
+
         var o = raw.AsObject;
         var childList = JsValue.ToBoolean(o.Get("childList"));
         var attributes = JsValue.ToBoolean(o.Get("attributes"));
@@ -196,10 +250,15 @@ public static class MutationObserverBinding
         if (!afRaw.IsUndefined && !afRaw.IsNull)
         {
             if (!afRaw.IsObject || afRaw.AsObject is not JsArray arr)
+            {
                 throw new JsThrow(realm.NewTypeError("MutationObserver.observe: attributeFilter must be a sequence of strings"));
+            }
+
             attributeFilter = new List<string>(arr.Length);
             for (var i = 0; i < arr.Length; i++)
+            {
                 attributeFilter.Add(JsValue.ToStringValue(arr[i]));
+            }
         }
 
         if (!childList && !attributes && !characterData)
@@ -270,9 +329,21 @@ internal sealed class MutationObserverState
     {
         foreach (var (target, opts) in _observations)
         {
-            if (!opts.Attributes) continue;
-            if (!Matches(target, el, opts.Subtree)) continue;
-            if (opts.AttributeFilter is { } f && !f.Contains(attrName)) continue;
+            if (!opts.Attributes)
+            {
+                continue;
+            }
+
+            if (!Matches(target, el, opts.Subtree))
+            {
+                continue;
+            }
+
+            if (opts.AttributeFilter is { } f && !f.Contains(attrName))
+            {
+                continue;
+            }
+
             var realm = _runtime.Realm;
             EnqueueRecord(BuildAttributeRecord(realm, el, attrName,
                 opts.AttributeOldValue ? oldValue : null));
@@ -287,8 +358,16 @@ internal sealed class MutationObserverState
     {
         foreach (var (obsTarget, opts) in _observations)
         {
-            if (!opts.ChildList) continue;
-            if (!Matches(obsTarget, target, opts.Subtree)) continue;
+            if (!opts.ChildList)
+            {
+                continue;
+            }
+
+            if (!Matches(obsTarget, target, opts.Subtree))
+            {
+                continue;
+            }
+
             EnqueueRecord(BuildChildListRecord(_runtime.Realm, target, added, removed, prev, next));
             return;
         }
@@ -298,10 +377,17 @@ internal sealed class MutationObserverState
     {
         JsValue NodeList(IReadOnlyList<Node>? ns)
         {
-            if (ns is null || ns.Count == 0) return JsValue.Object(new JsArray(realm));
+            if (ns is null || ns.Count == 0)
+            {
+                return JsValue.Object(new JsArray(realm));
+            }
+
             var items = new JsValue[ns.Count];
             for (var i = 0; i < ns.Count; i++)
+            {
                 items[i] = JsValue.Object(DomWrappers.Wrap(realm, ns[i]));
+            }
+
             return JsValue.Object(new JsArray(realm, items));
         }
         JsValue OrNull(Node? n) => n is null ? JsValue.Null : JsValue.Object(DomWrappers.Wrap(realm, n));
@@ -326,8 +412,16 @@ internal sealed class MutationObserverState
     {
         foreach (var (obsTarget, opts) in _observations)
         {
-            if (!opts.CharacterData) continue;
-            if (!Matches(obsTarget, target, opts.Subtree)) continue;
+            if (!opts.CharacterData)
+            {
+                continue;
+            }
+
+            if (!Matches(obsTarget, target, opts.Subtree))
+            {
+                continue;
+            }
+
             var realm = _runtime.Realm;
             var r = new JsObject(realm.MutationRecordPrototype ?? realm.ObjectPrototype);
             void P(string k, JsValue v) => r.DefineOwnProperty(k,
@@ -348,10 +442,24 @@ internal sealed class MutationObserverState
 
     private static bool Matches(Node target, Node el, bool subtree)
     {
-        if (ReferenceEquals(target, el)) return true;
-        if (!subtree) return false;
+        if (ReferenceEquals(target, el))
+        {
+            return true;
+        }
+
+        if (!subtree)
+        {
+            return false;
+        }
+
         for (var p = el.ParentNode; p is not null; p = p.ParentNode)
-            if (ReferenceEquals(p, target)) return true;
+        {
+            if (ReferenceEquals(p, target))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -374,9 +482,17 @@ internal sealed class MutationObserverState
 
     public JsArray DrainRecords(JsRealm realm)
     {
-        if (_pending.Count == 0) return new JsArray(realm);
+        if (_pending.Count == 0)
+        {
+            return new JsArray(realm);
+        }
+
         var items = new List<JsValue>(_pending.Count);
-        foreach (var r in _pending) items.Add(JsValue.Object(r));
+        foreach (var r in _pending)
+        {
+            items.Add(JsValue.Object(r));
+        }
+
         _pending.Clear();
         return new JsArray(realm, items);
     }
@@ -386,7 +502,11 @@ internal sealed class MutationObserverState
     internal void EnqueueRecord(JsObject record)
     {
         _pending.Add(record);
-        if (_microtaskQueued) return;
+        if (_microtaskQueued)
+        {
+            return;
+        }
+
         _microtaskQueued = true;
         _runtime.Realm.Microtasks.Enqueue(() =>
         {
@@ -397,7 +517,11 @@ internal sealed class MutationObserverState
 
     private void DeliverRecords()
     {
-        if (_pending.Count == 0) return;
+        if (_pending.Count == 0)
+        {
+            return;
+        }
+
         var realm = _runtime.Realm;
         var records = DrainRecords(realm);
         _runtime.WithActiveVm(() =>

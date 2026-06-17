@@ -30,7 +30,9 @@ internal sealed class NeutralStubPaintBackend : IGpuTexturePaintBackend
         foreach (var item in list.Items)
         {
             if (item is FillRect fill)
+            {
                 FillSolid(rgba, w, h, fill.Bounds, viewport, scale, fill.Color);
+            }
         }
 
         return new RenderedBitmap(w, h, rgba);

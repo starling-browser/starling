@@ -65,7 +65,10 @@ internal static class XhrBinding
             new ClrFunction(engine, InitHook, (_, a) =>
             {
                 if (a.Length > 0 && a[0] is ObjectInstance self)
+                {
                     AttachState(self, new XhrState());
+                }
+
                 return JsValue.Undefined;
             }, 1),
             writable: false, enumerable: false, configurable: true);
@@ -78,7 +81,9 @@ internal static class XhrBinding
         var proto = ctor.Get("prototype").AsObject();
 
         if (ctx.Wrappers.EventTargetPrototype is { } etp)
+        {
             proto.Prototype = etp;
+        }
 
         InstallStateConstants(proto);
         InstallStateConstants(ctor);
@@ -182,9 +187,16 @@ internal static class XhrBinding
     private static JsObject MakeUpload(JintBackendContext ctx)
     {
         var upload = new JsObject(ctx.Engine);
-        if (ctx.Wrappers.EventTargetPrototype is { } etp) upload.Prototype = etp;
+        if (ctx.Wrappers.EventTargetPrototype is { } etp)
+        {
+            upload.Prototype = etp;
+        }
+
         foreach (var ev in new[] { "onloadstart", "onprogress", "onload", "onerror", "onabort", "ontimeout", "onloadend" })
+        {
             JintInterop.DefineDataProp(upload, ev, JsValue.Null, writable: true, enumerable: true, configurable: true);
+        }
+
         return upload;
     }
 
@@ -198,12 +210,17 @@ internal static class XhrBinding
         {
             var x = State(engine, t);
             if (args.Length < 2)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "XHR.open requires (method, url)");
+            }
+
             var method = args[0].ToString().ToUpperInvariant();
             var url = args[1].ToString();
             // async defaults to true; synchronous XHR is unsupported.
             if (args.Length > 2 && !args[2].IsUndefined() && !TypeConverter.ToBoolean(args[2]))
+            {
                 throw new JavaScriptException(engine.Intrinsics.Error, "Synchronous XMLHttpRequest is not supported");
+            }
 
             x.Reset();
             x.Method = method;
@@ -217,7 +234,10 @@ internal static class XhrBinding
         {
             var x = State(engine, t);
             if (x.ReadyState != 1)
+            {
                 throw new JavaScriptException(engine.Intrinsics.Error, "setRequestHeader: state must be OPENED");
+            }
+
             var name = args.Length > 0 ? args[0].ToString() : "";
             var value = args.Length > 1 ? args[1].ToString() : "";
             x.RequestHeaders.Add((name, value));
@@ -228,7 +248,10 @@ internal static class XhrBinding
         {
             var x = State(engine, t);
             if (x.ReadyState != 1)
+            {
                 throw new JavaScriptException(engine.Intrinsics.Error, "XHR.send: state must be OPENED");
+            }
+
             var body = args.Length > 0 ? BodyToBytes(args[0]) : Array.Empty<byte>();
             SendImpl(ctx, t, x, body);
             return JsValue.Undefined;
@@ -256,7 +279,10 @@ internal static class XhrBinding
             var x = State(engine, t);
             var sb = new StringBuilder();
             foreach (var (k, v) in x.ResponseHeaders)
+            {
                 sb.Append(k).Append(": ").Append(v).Append("\r\n");
+            }
+
             return JintInterop.Str(sb.ToString());
         }, length: 0);
 
@@ -265,8 +291,13 @@ internal static class XhrBinding
             var x = State(engine, t);
             var name = args.Length > 0 ? args[0].ToString() : "";
             foreach (var (k, v) in x.ResponseHeaders)
+            {
                 if (string.Equals(k, name, StringComparison.OrdinalIgnoreCase))
+                {
                     return JintInterop.Str(v);
+                }
+            }
+
             return JsValue.Null;
         }, length: 1);
 
@@ -285,7 +316,10 @@ internal static class XhrBinding
             {
                 var type = args[0].ToString();
                 if (!x.Listeners.TryGetValue(type, out var list))
+                {
                     x.Listeners[type] = list = new List<Function>();
+                }
+
                 list.Add(fn);
             }
             return JsValue.Undefined;
@@ -296,7 +330,10 @@ internal static class XhrBinding
             var x = State(engine, t);
             if (args.Length >= 2 && args[0].IsString() && args[1] is Function fn
                 && x.Listeners.TryGetValue(args[0].ToString(), out var list))
+            {
                 list.RemoveAll(f => ReferenceEquals(f, fn));
+            }
+
             return JsValue.Undefined;
         }, length: 2);
 
@@ -306,7 +343,10 @@ internal static class XhrBinding
             if (args.Length > 0 && args[0] is ObjectInstance evt)
             {
                 var type = evt.Get("type");
-                if (type.IsString()) DispatchToListeners(ctx, t, x, type.ToString(), evt);
+                if (type.IsString())
+                {
+                    DispatchToListeners(ctx, t, x, type.ToString(), evt);
+                }
             }
             return JintInterop.Bool(true);
         }, length: 1);
@@ -344,8 +384,11 @@ internal static class XhrBinding
         var headers = new HttpHeaders();
         var sendLog = ctx.LoggerFactory.CreateLogger(typeof(XhrBinding));
         foreach (var (k, v) in x.RequestHeaders)
+        {
             try { headers.Add(k, v); }
             catch (Exception ex) { /* skip invalid header names */ XhrBindingLog.InvalidHeaderSkipped(sendLog, k, ex.Message); }
+        }
+
         var wire = new HttpRequest(x.Method, requestUrl, headers, body);
 
         var token = x.Cts.Token;
@@ -363,7 +406,11 @@ internal static class XhrBinding
                 {
                     var resp = result.Value;
                     var hdrs = new List<(string, string)>();
-                    foreach (var kv in resp.Headers) hdrs.Add((kv.Key, kv.Value));
+                    foreach (var kv in resp.Headers)
+                    {
+                        hdrs.Add((kv.Key, kv.Value));
+                    }
+
                     outcome = XhrOutcome.Success(
                         resp.StatusCode, resp.ReasonPhrase ?? "", hdrs, resp.Body.ToArray());
                 }
@@ -380,7 +427,11 @@ internal static class XhrBinding
 
     private static void Complete(JintBackendContext ctx, JsValue thisVal, XhrState x, XhrOutcome outcome)
     {
-        if (x.Aborted) return;
+        if (x.Aborted)
+        {
+            return;
+        }
+
         if (!outcome.Ok)
         {
             FailNow(ctx, thisVal, x);
@@ -403,7 +454,11 @@ internal static class XhrBinding
 
     private static void FailNow(JintBackendContext ctx, JsValue thisVal, XhrState x)
     {
-        if (x.Aborted) return;
+        if (x.Aborted)
+        {
+            return;
+        }
+
         x.ReadyState = 4;
         x.Status = 0;
         FireReadyStateChange(ctx, thisVal, x);
@@ -427,24 +482,40 @@ internal static class XhrBinding
 
     private static void InvokeHandler(JintBackendContext ctx, JsValue thisVal, string slot, string type)
     {
-        if (thisVal is not ObjectInstance self) return;
+        if (thisVal is not ObjectInstance self)
+        {
+            return;
+        }
+
         if (self.Get(slot) is Function fn)
+        {
             SafeCall(ctx, fn, self, MakeEvent(ctx, thisVal, type));
+        }
     }
 
     private static void DispatchToListeners(JintBackendContext ctx, JsValue thisVal, XhrState x, string type, JsValue evt)
     {
-        if (!x.Listeners.TryGetValue(type, out var list) || list.Count == 0) return;
+        if (!x.Listeners.TryGetValue(type, out var list) || list.Count == 0)
+        {
+            return;
+        }
+
         var self = thisVal as ObjectInstance;
         // Copy so a listener removing itself doesn't disturb iteration.
         foreach (var fn in list.ToArray())
+        {
             SafeCall(ctx, fn, (JsValue?)self ?? JsValue.Undefined, evt);
+        }
     }
 
     private static JsObject MakeEvent(JintBackendContext ctx, JsValue target, string type)
     {
         var ev = new JsObject(ctx.Engine);
-        if (ctx.Wrappers.EventPrototype is { } ep) ev.Prototype = ep;
+        if (ctx.Wrappers.EventPrototype is { } ep)
+        {
+            ev.Prototype = ep;
+        }
+
         JintInterop.DefineDataProp(ev, "type", JintInterop.Str(type), writable: false, enumerable: true, configurable: false);
         JintInterop.DefineDataProp(ev, "target", target, writable: false, enumerable: true, configurable: false);
         JintInterop.DefineDataProp(ev, "currentTarget", target, writable: false, enumerable: true, configurable: false);
@@ -465,9 +536,20 @@ internal static class XhrBinding
 
     private static byte[] BodyToBytes(JsValue body)
     {
-        if (body.IsNull() || body.IsUndefined()) return Array.Empty<byte>();
-        if (body.IsArrayBuffer() && body.AsArrayBuffer() is { } ab) return (byte[])ab.Clone();
-        if (body is JsTypedArray) return ExtractTypedArrayBytes(body);
+        if (body.IsNull() || body.IsUndefined())
+        {
+            return Array.Empty<byte>();
+        }
+
+        if (body.IsArrayBuffer() && body.AsArrayBuffer() is { } ab)
+        {
+            return (byte[])ab.Clone();
+        }
+
+        if (body is JsTypedArray)
+        {
+            return ExtractTypedArrayBytes(body);
+        }
         // Strings (incl. URLSearchParams/FormData stringification) and everything
         // else go through UTF-8 of the JS string form.
         return Encoding.UTF8.GetBytes(body.ToString());
@@ -481,7 +563,10 @@ internal static class XhrBinding
         if (typed is ObjectInstance oi)
         {
             var buf = oi.Get("buffer");
-            if (buf.IsArrayBuffer() && buf.AsArrayBuffer() is { } ab) return (byte[])ab.Clone();
+            if (buf.IsArrayBuffer() && buf.AsArrayBuffer() is { } ab)
+            {
+                return (byte[])ab.Clone();
+            }
         }
         return Encoding.UTF8.GetBytes(typed.ToString());
     }
@@ -490,7 +575,10 @@ internal static class XhrBinding
     {
         // Absolute first.
         var abs = StarlingUrlParser.Parse(input);
-        if (abs.IsOk) return abs.Value.ToString();
+        if (abs.IsOk)
+        {
+            return abs.Value.ToString();
+        }
         // Resolve relative against the document base URL.
         var rel = StarlingUrlParser.Parse(input, baseUrl);
         return rel.IsOk ? rel.Value.ToString() : input;
@@ -500,8 +588,16 @@ internal static class XhrBinding
     {
         try
         {
-            if (engine.Global.Get("JSON") is not ObjectInstance jo) return JsValue.Null;
-            if (jo.Get("parse") is not Function fn) return JsValue.Null;
+            if (engine.Global.Get("JSON") is not ObjectInstance jo)
+            {
+                return JsValue.Null;
+            }
+
+            if (jo.Get("parse") is not Function fn)
+            {
+                return JsValue.Null;
+            }
+
             return engine.Invoke(fn, jo, new JsValue[] { new JsString(text) });
         }
         catch (Exception)
@@ -518,7 +614,11 @@ internal static class XhrBinding
 
     private static XhrState State(global::Jint.Engine engine, JsValue thisVal)
     {
-        if (thisVal is ObjectInstance oi && States.TryGetValue(oi, out var s)) return s;
+        if (thisVal is ObjectInstance oi && States.TryGetValue(oi, out var s))
+        {
+            return s;
+        }
+
         throw new JavaScriptException(engine.Intrinsics.TypeError, "'this' is not an XMLHttpRequest");
     }
 }

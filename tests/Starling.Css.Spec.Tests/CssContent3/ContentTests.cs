@@ -29,8 +29,13 @@ public sealed class ContentTests
         var doc = new Document();
         var p = doc.CreateElement("p");
         if (attrs is not null)
+        {
             foreach (var (name, value) in attrs)
+            {
                 p.SetAttribute(name, value);
+            }
+        }
+
         p.AppendChild(doc.CreateTextNode("x"));
         doc.AppendChild(p);
         var engine = new StyleEngine();

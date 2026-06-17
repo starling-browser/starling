@@ -234,12 +234,18 @@ public sealed partial class JsCompiler
         // relative to the active script/module, not the running function's own
         // (path-less) chunk name. The top-level entry-points overwrite this
         // with the real script/module URL before emission.
-        if (parent is not null) _b.SourcePath = parent._b.SourcePath;
+        if (parent is not null)
+        {
+            _b.SourcePath = parent._b.SourcePath;
+        }
         // wp:M3-72 — a nested function inside direct-eval'd code can still
         // reference the original caller's bindings (they are captured as
         // upvalues through the eval top-level chunk where they resolve to the
         // caller scope), so inherit the caller-scope name set down the chain.
-        if (parent is not null) _callerScopeNames = parent._callerScopeNames;
+        if (parent is not null)
+        {
+            _callerScopeNames = parent._callerScopeNames;
+        }
     }
 
     /// <summary>§14.11 / §10.2.1 — configure this (child) compiler to inherit the
@@ -252,7 +258,11 @@ public sealed partial class JsCompiler
     /// captured snapshot.</summary>
     private void ConfigureWithCapture(int enclosingWithDepth, bool bodyIsStrict)
     {
-        if (enclosingWithDepth <= 0 || bodyIsStrict) return;
+        if (enclosingWithDepth <= 0 || bodyIsStrict)
+        {
+            return;
+        }
+
         _withDepth = enclosingWithDepth;
         _capturedWithBase = enclosingWithDepth;
         _b.CapturesWith = true;
@@ -275,8 +285,16 @@ public sealed partial class JsCompiler
     /// (depth above the captured base), never by an inherited/captured one.</summary>
     private bool ShouldRouteWith(string name)
     {
-        if (_withDepth <= 0) return false;
-        if (TryResolveLocal(name, out _)) return _withDepth > _capturedWithBase;
+        if (_withDepth <= 0)
+        {
+            return false;
+        }
+
+        if (TryResolveLocal(name, out _))
+        {
+            return _withDepth > _capturedWithBase;
+        }
+
         return true;
     }
 
@@ -299,7 +317,9 @@ public sealed partial class JsCompiler
         for (var i = _scopes.Count - 1; i >= 0; i--)
         {
             if (_scopes[i].ContainsKey(name))
+            {
                 return _lexicalScopes[i].Contains(name);
+            }
         }
         return false;
     }
@@ -322,7 +342,9 @@ public sealed partial class JsCompiler
         for (var i = _scopes.Count - 1; i >= 0; i--)
         {
             if (_scopes[i].ContainsKey(name))
+            {
                 return _constScopes[i].Contains(name);
+            }
         }
         return false;
     }
@@ -347,24 +369,50 @@ public sealed partial class JsCompiler
     private bool IsConstLocalSlot(int slot)
     {
         for (var i = _scopes.Count - 1; i >= 0; i--)
+        {
             foreach (var binding in _scopes[i])
-                if (binding.Value == slot) return _constScopes[i].Contains(binding.Key);
+            {
+                if (binding.Value == slot)
+                {
+                    return _constScopes[i].Contains(binding.Key);
+                }
+            }
+        }
+
         return false;
     }
 
     private bool IsLexicalLocalSlot(int slot)
     {
         for (var i = _scopes.Count - 1; i >= 0; i--)
+        {
             foreach (var binding in _scopes[i])
-                if (binding.Value == slot) return _lexicalScopes[i].Contains(binding.Key);
+            {
+                if (binding.Value == slot)
+                {
+                    return _lexicalScopes[i].Contains(binding.Key);
+                }
+            }
+        }
+
         return false;
     }
 
     private string? ModuleBindingNameForUpvalue(int upIdx)
     {
-        if (_moduleBindingUpvalues is null) return null;
+        if (_moduleBindingUpvalues is null)
+        {
+            return null;
+        }
+
         foreach (var binding in _moduleBindingUpvalues)
-            if (binding.Value == upIdx) return binding.Key;
+        {
+            if (binding.Value == upIdx)
+            {
+                return binding.Key;
+            }
+        }
+
         return null;
     }
 
@@ -374,8 +422,15 @@ public sealed partial class JsCompiler
     private bool IsLexicalUpvalue(int upIdx)
     {
         if (ModuleBindingNameForUpvalue(upIdx) is { } moduleName)
+        {
             return _moduleLexicalBindings is not null && _moduleLexicalBindings.Contains(moduleName);
-        if (upIdx < 0 || upIdx >= _upvalues.Count || _parent is null) return false;
+        }
+
+        if (upIdx < 0 || upIdx >= _upvalues.Count || _parent is null)
+        {
+            return false;
+        }
+
         var upvalue = _upvalues[upIdx];
         return upvalue.IsLocalCapture
             ? _parent.IsLexicalLocalSlot(upvalue.Index)
@@ -389,8 +444,15 @@ public sealed partial class JsCompiler
     private bool IsImmutableUpvalue(int upIdx)
     {
         if (ModuleBindingNameForUpvalue(upIdx) is { } moduleName)
+        {
             return _moduleImmutableBindings is not null && _moduleImmutableBindings.Contains(moduleName);
-        if (upIdx < 0 || upIdx >= _upvalues.Count || _parent is null) return false;
+        }
+
+        if (upIdx < 0 || upIdx >= _upvalues.Count || _parent is null)
+        {
+            return false;
+        }
+
         var upvalue = _upvalues[upIdx];
         return upvalue.IsLocalCapture
             ? _parent.IsConstLocalSlot(upvalue.Index)
@@ -475,7 +537,10 @@ public sealed partial class JsCompiler
         // eval'd code can resolve `this.#m` against the enclosing class's private
         // names. Seed the private-name scope from the caller's chunk.
         if (privateNameScope is { Count: > 0 })
+        {
             c._privateScopes.Push(new Dictionary<string, string>(privateNameScope, StringComparer.Ordinal));
+        }
+
         c._capturedNames = CaptureAnalysis.Compute(Array.Empty<Expression>(), program.Body);
         c.EmitProgram(program, keepLastExpression: true);
         return c._b.Build(name);
@@ -502,7 +567,9 @@ public sealed partial class JsCompiler
         // §10.2.1.1 — a nested arrow that reads `this` captures this function's
         // `this` binding. Seed the synthetic name so the prologue boxes it.
         if (CaptureAnalysis.ReferencesThisInNestedArrow(parameters, body))
+        {
             _capturedNames.Add(LexicalThisName);
+        }
     }
 
     private void EmitProgram(Program p, bool keepLastExpression)
@@ -534,7 +601,11 @@ public sealed partial class JsCompiler
         {
             foreach (var vn in Parse.JsParser.EvalVarDeclaredNames(p))
             {
-                if (_callerScopeNames is { } cs && cs.Contains(vn)) continue;
+                if (_callerScopeNames is { } cs && cs.Contains(vn))
+                {
+                    continue;
+                }
+
                 _b.EmitU16(Opcode.DeclareEvalVar, _b.AddConstant(vn));
             }
         }
@@ -543,7 +614,9 @@ public sealed partial class JsCompiler
         // parent's local cell instead of falling through to LoadGlobal/StoreGlobal.
         PreallocateCapturedVarBindings(p.Body);
         if (_directEvalLocalLexicals)
+        {
             HoistLexicalDeclarations(p.Body);
+        }
         // Hoist FunctionDeclarations: compile bodies, allocate locals,
         // emit StoreLocal in declaration order so they're callable before
         // their textual position (matches §10.2.11 / §13.2.1 var hoisting
@@ -564,7 +637,10 @@ public sealed partial class JsCompiler
         // wp:M3-79 — leave the accumulated completion value on the stack for the
         // VM's Halt to return as the eval / Program completion value.
         if (_completionSlot is int finalSlot)
+        {
             _b.EmitSlot(Opcode.LoadLocal, finalSlot);
+        }
+
         _b.Emit(Opcode.Halt);
     }
 
@@ -586,7 +662,11 @@ public sealed partial class JsCompiler
         var hoisted = new List<(FunctionDeclaration Fd, int? Slot)>();
         foreach (var s in body)
         {
-            if (s is not FunctionDeclaration fd) continue;
+            if (s is not FunctionDeclaration fd)
+            {
+                continue;
+            }
+
             int? slot = null;
             if (!isScriptTop)
             {
@@ -598,8 +678,16 @@ public sealed partial class JsCompiler
                 {
                     var fresh = _b.ReserveLocal();
                     _scopes[^1][fd.Name.Name] = fresh;
-                    if (IsNameCaptured(fd.Name.Name)) _b.MarkCaptured(fresh);
-                    if (_b.IsCaptured(fresh)) _b.EmitSlot(Opcode.InitCellLocal, fresh);
+                    if (IsNameCaptured(fd.Name.Name))
+                    {
+                        _b.MarkCaptured(fresh);
+                    }
+
+                    if (_b.IsCaptured(fresh))
+                    {
+                        _b.EmitSlot(Opcode.InitCellLocal, fresh);
+                    }
+
                     slot = fresh;
                 }
             }
@@ -664,25 +752,41 @@ public sealed partial class JsCompiler
     private void EmitEvalInjectedStore(string name)
     {
         if (_callerScopeNames is { } cs && cs.Contains(name))
+        {
             _b.EmitU16(Opcode.StoreEvalScope, _b.AddConstant(name));
+        }
         else
+        {
             _b.EmitU16(Opcode.StoreEvalVar, _b.AddConstant(name));
+        }
     }
 
     /// <summary>Emit the correct store opcode for a local slot, accounting for
     /// whether the slot was promoted to a cell.</summary>
     private void EmitStoreLocalSlot(int slot)
     {
-        if (_b.IsCaptured(slot)) _b.EmitSlot(Opcode.StoreCellLocal, slot);
-        else _b.EmitSlot(Opcode.StoreLocal, slot);
+        if (_b.IsCaptured(slot))
+        {
+            _b.EmitSlot(Opcode.StoreCellLocal, slot);
+        }
+        else
+        {
+            _b.EmitSlot(Opcode.StoreLocal, slot);
+        }
     }
 
     /// <summary>Emit the correct load opcode for a local slot, accounting for
     /// whether the slot was promoted to a cell.</summary>
     private void EmitLoadLocalSlot(int slot)
     {
-        if (_b.IsCaptured(slot)) _b.EmitSlot(Opcode.LoadCellLocal, slot);
-        else _b.EmitSlot(Opcode.LoadLocal, slot);
+        if (_b.IsCaptured(slot))
+        {
+            _b.EmitSlot(Opcode.LoadCellLocal, slot);
+        }
+        else
+        {
+            _b.EmitSlot(Opcode.LoadLocal, slot);
+        }
     }
 
     /// <summary>wp:M3-79 — true when this compile is tracking statement completion
@@ -695,7 +799,11 @@ public sealed partial class JsCompiler
     /// and a zero-iteration loop yields undefined. No-op when not tracking.</summary>
     private void EmitCompletionReset()
     {
-        if (_completionSlot is not int slot) return;
+        if (_completionSlot is not int slot)
+        {
+            return;
+        }
+
         _b.Emit(Opcode.LoadUndefined);
         _b.EmitSlot(Opcode.StoreLocal, slot);
     }
@@ -705,7 +813,11 @@ public sealed partial class JsCompiler
     /// No-op (and leaves the value where it is) when not tracking.</summary>
     private void EmitCompletionStore()
     {
-        if (_completionSlot is not int slot) return;
+        if (_completionSlot is not int slot)
+        {
+            return;
+        }
+
         _b.EmitSlot(Opcode.StoreLocal, slot);
     }
 
@@ -736,7 +848,9 @@ public sealed partial class JsCompiler
         }
 
         if (upvalues.Count > 65535)
+        {
             throw new NotSupportedException("more than 65535 captured variables not supported");
+        }
 
         // Push the captured cell, not its value, so the new closure aliases the
         // same shared cell that the owning function reads and writes. Parent
@@ -769,8 +883,16 @@ public sealed partial class JsCompiler
         var n = 0;
         foreach (var p in ps)
         {
-            if (p is SpreadElement) break;
-            if (p is AssignmentExpression or AssignmentPattern) break;
+            if (p is SpreadElement)
+            {
+                break;
+            }
+
+            if (p is AssignmentExpression or AssignmentPattern)
+            {
+                break;
+            }
+
             n++;
         }
         return n;
@@ -797,7 +919,9 @@ public sealed partial class JsCompiler
     {
         EmitExpression(rhs);
         if (IsAnonymousFunctionDefinition(rhs))
+        {
             _b.EmitU16(Opcode.SetFunctionName, _b.AddConstant(name));
+        }
     }
 
     /// <summary>Compile a function body. Parameters get the first N local
@@ -833,7 +957,10 @@ public sealed partial class JsCompiler
         // boundary so the runtime can hand off here before the body runs lazily.
         EmitPrologueEndIfSuspendable(fd.Async, fd.Generator);
         _currentIsAsyncGenerator = fd.Async && fd.Generator;
-        foreach (var inner in fd.Body.Body) EmitStatement(inner);
+        foreach (var inner in fd.Body.Body)
+        {
+            EmitStatement(inner);
+        }
         // Implicit `return undefined` if the body didn't return.
         _b.Emit(Opcode.ReturnUndefined);
     }
@@ -847,7 +974,10 @@ public sealed partial class JsCompiler
     /// functions get no marker (their bodies already run synchronously).</summary>
     private void EmitPrologueEndIfSuspendable(bool isAsync, bool isGenerator)
     {
-        if (isAsync || isGenerator) _b.Emit(Opcode.PrologueEnd);
+        if (isAsync || isGenerator)
+        {
+            _b.Emit(Opcode.PrologueEnd);
+        }
     }
 
     /// <summary>Walk this function's body and pre-allocate local slots for
@@ -864,25 +994,45 @@ public sealed partial class JsCompiler
     /// </remarks>
     private void PreallocateCapturedVarBindings(IReadOnlyList<Statement> body)
     {
-        foreach (var s in body) PreallocateCapturedInStatement(s);
+        foreach (var s in body)
+        {
+            PreallocateCapturedInStatement(s);
+        }
     }
 
     private void HoistVarDeclarations(IReadOnlyList<Statement> body)
     {
-        foreach (var s in body) HoistVarDeclarationsInStatement(s);
+        foreach (var s in body)
+        {
+            HoistVarDeclarationsInStatement(s);
+        }
     }
 
     private void HoistVarDeclarationsInStatement(Statement? s)
     {
-        if (s is null) return;
+        if (s is null)
+        {
+            return;
+        }
+
         switch (s)
         {
             case VariableDeclaration vd:
                 if (vd.Kind == "var")
-                    foreach (var d in vd.Declarations) HoistVarPattern(d.Id);
+                {
+                    foreach (var d in vd.Declarations)
+                    {
+                        HoistVarPattern(d.Id);
+                    }
+                }
+
                 return;
             case BlockStatement b:
-                foreach (var inner in b.Body) HoistVarDeclarationsInStatement(inner);
+                foreach (var inner in b.Body)
+                {
+                    HoistVarDeclarationsInStatement(inner);
+                }
+
                 return;
             case IfStatement i:
                 HoistVarDeclarationsInStatement(i.Consequent);
@@ -892,28 +1042,62 @@ public sealed partial class JsCompiler
             case DoWhileStatement dw: HoistVarDeclarationsInStatement(dw.Body); return;
             case ForStatement f:
                 if (f.Init is VariableDeclaration fvd && fvd.Kind == "var")
-                    foreach (var d in fvd.Declarations) HoistVarPattern(d.Id);
+                {
+                    foreach (var d in fvd.Declarations)
+                    {
+                        HoistVarPattern(d.Id);
+                    }
+                }
+
                 HoistVarDeclarationsInStatement(f.Body);
                 return;
             case ForInStatement fi:
                 if (fi.Left is VariableDeclaration fivd && fivd.Kind == "var")
-                    foreach (var d in fivd.Declarations) HoistVarPattern(d.Id);
+                {
+                    foreach (var d in fivd.Declarations)
+                    {
+                        HoistVarPattern(d.Id);
+                    }
+                }
+
                 HoistVarDeclarationsInStatement(fi.Body);
                 return;
             case ForOfStatement fo:
                 if (fo.Left is VariableDeclaration fovd && fovd.Kind == "var")
-                    foreach (var d in fovd.Declarations) HoistVarPattern(d.Id);
+                {
+                    foreach (var d in fovd.Declarations)
+                    {
+                        HoistVarPattern(d.Id);
+                    }
+                }
+
                 HoistVarDeclarationsInStatement(fo.Body);
                 return;
             case SwitchStatement sw:
                 foreach (var c in sw.Cases)
-                    foreach (var inner in c.Consequent) HoistVarDeclarationsInStatement(inner);
+                {
+                    foreach (var inner in c.Consequent)
+                    {
+                        HoistVarDeclarationsInStatement(inner);
+                    }
+                }
+
                 return;
             case TryStatement tr:
                 HoistVarDeclarationsInStatement(tr.Block);
                 if (tr.Handler is not null)
-                    foreach (var inner in tr.Handler.Body.Body) HoistVarDeclarationsInStatement(inner);
-                if (tr.Finalizer is not null) HoistVarDeclarationsInStatement(tr.Finalizer);
+                {
+                    foreach (var inner in tr.Handler.Body.Body)
+                    {
+                        HoistVarDeclarationsInStatement(inner);
+                    }
+                }
+
+                if (tr.Finalizer is not null)
+                {
+                    HoistVarDeclarationsInStatement(tr.Finalizer);
+                }
+
                 return;
             case LabeledStatement ls: HoistVarDeclarationsInStatement(ls.Body); return;
             case WithStatement ws: HoistVarDeclarationsInStatement(ws.Body); return;
@@ -925,11 +1109,19 @@ public sealed partial class JsCompiler
 
     private void HoistVarPattern(Expression? pattern)
     {
-        if (pattern is null) return;
+        if (pattern is null)
+        {
+            return;
+        }
+
         switch (pattern)
         {
             case Identifier id:
-                if (_scopes[0].ContainsKey(id.Name)) return;
+                if (_scopes[0].ContainsKey(id.Name))
+                {
+                    return;
+                }
+
                 var slot = _b.ReserveLocal();
                 _scopes[0][id.Name] = slot;
                 if (IsNameCaptured(id.Name))
@@ -955,21 +1147,39 @@ public sealed partial class JsCompiler
                 }
                 return;
             case ObjectPattern obj:
-                foreach (var prop in obj.Properties) HoistVarPattern(prop.Target);
-                if (obj.Rest is not null) HoistVarPattern(obj.Rest.Argument);
+                foreach (var prop in obj.Properties)
+                {
+                    HoistVarPattern(prop.Target);
+                }
+
+                if (obj.Rest is not null)
+                {
+                    HoistVarPattern(obj.Rest.Argument);
+                }
+
                 return;
             case ArrayExpression arr:
                 foreach (var el in arr.Elements)
                 {
-                    if (el is null) continue;
+                    if (el is null)
+                    {
+                        continue;
+                    }
+
                     HoistVarPattern(el is SpreadElement sp ? sp.Argument : el);
                 }
                 return;
             case ObjectExpression obj:
                 foreach (var prop in obj.Properties)
                 {
-                    if (prop.Value is SpreadElement sp) HoistVarPattern(sp.Argument);
-                    else HoistVarPattern(prop.Value);
+                    if (prop.Value is SpreadElement sp)
+                    {
+                        HoistVarPattern(sp.Argument);
+                    }
+                    else
+                    {
+                        HoistVarPattern(prop.Value);
+                    }
                 }
                 return;
             case SpreadElement spread: HoistVarPattern(spread.Argument); return;
@@ -979,7 +1189,11 @@ public sealed partial class JsCompiler
 
     private void PreallocateCapturedInStatement(Statement? s, bool inBlock = false)
     {
-        if (s is null) return;
+        if (s is null)
+        {
+            return;
+        }
+
         switch (s)
         {
             case VariableDeclaration vd:
@@ -995,14 +1209,22 @@ public sealed partial class JsCompiler
                     // same-named function-scoped binding's cell (function decl / var)
                     // hoisted into this function frame. `var` stays function-scoped
                     // and must still be preallocated here even inside a block.
-                    if (lexical && inBlock) return;
-                    foreach (var d in vd.Declarations) PreallocateCapturedInPattern(d.Id, lexical);
+                    if (lexical && inBlock)
+                    {
+                        return;
+                    }
+
+                    foreach (var d in vd.Declarations)
+                    {
+                        PreallocateCapturedInPattern(d.Id, lexical);
+                    }
+
                     return;
                 }
             // ClassDeclaration: block-scoped class TDZ is deferred; the class
             // name still binds on the global object (EmitClassDeclaration), so
             // it is not preallocated as a captured lexical cell here.
-            case BlockStatement b: foreach (var x in b.Body) PreallocateCapturedInStatement(x, inBlock: true); return;
+            case BlockStatement b: foreach (var x in b.Body) { PreallocateCapturedInStatement(x, inBlock: true); } return;
             case IfStatement i:
                 PreallocateCapturedInStatement(i.Consequent);
                 PreallocateCapturedInStatement(i.Alternate);
@@ -1020,28 +1242,62 @@ public sealed partial class JsCompiler
             // that should have resolved outward.
             case ForStatement f:
                 if (f.Init is VariableDeclaration { Kind: "var" } fvd)
-                    foreach (var d in fvd.Declarations) PreallocateCapturedInPattern(d.Id, lexical: false);
+                {
+                    foreach (var d in fvd.Declarations)
+                    {
+                        PreallocateCapturedInPattern(d.Id, lexical: false);
+                    }
+                }
+
                 PreallocateCapturedInStatement(f.Body);
                 return;
             case ForInStatement fi:
                 if (fi.Left is VariableDeclaration { Kind: "var" } vdi)
-                    foreach (var d in vdi.Declarations) PreallocateCapturedInPattern(d.Id, lexical: false);
+                {
+                    foreach (var d in vdi.Declarations)
+                    {
+                        PreallocateCapturedInPattern(d.Id, lexical: false);
+                    }
+                }
+
                 PreallocateCapturedInStatement(fi.Body);
                 return;
             case ForOfStatement fo:
                 if (fo.Left is VariableDeclaration { Kind: "var" } vdo)
-                    foreach (var d in vdo.Declarations) PreallocateCapturedInPattern(d.Id, lexical: false);
+                {
+                    foreach (var d in vdo.Declarations)
+                    {
+                        PreallocateCapturedInPattern(d.Id, lexical: false);
+                    }
+                }
+
                 PreallocateCapturedInStatement(fo.Body);
                 return;
             case SwitchStatement sw:
                 foreach (var c in sw.Cases)
-                    foreach (var s2 in c.Consequent) PreallocateCapturedInStatement(s2);
+                {
+                    foreach (var s2 in c.Consequent)
+                    {
+                        PreallocateCapturedInStatement(s2);
+                    }
+                }
+
                 return;
             case TryStatement tr:
                 PreallocateCapturedInStatement(tr.Block);
                 if (tr.Handler is not null)
-                    foreach (var s2 in tr.Handler.Body.Body) PreallocateCapturedInStatement(s2);
-                if (tr.Finalizer is not null) PreallocateCapturedInStatement(tr.Finalizer);
+                {
+                    foreach (var s2 in tr.Handler.Body.Body)
+                    {
+                        PreallocateCapturedInStatement(s2);
+                    }
+                }
+
+                if (tr.Finalizer is not null)
+                {
+                    PreallocateCapturedInStatement(tr.Finalizer);
+                }
+
                 return;
             case LabeledStatement ls: PreallocateCapturedInStatement(ls.Body); return;
             case WithStatement ws: PreallocateCapturedInStatement(ws.Body); return;
@@ -1050,7 +1306,11 @@ public sealed partial class JsCompiler
 
     private void PreallocateCapturedInPattern(Expression? pattern, bool lexical = false)
     {
-        if (pattern is null) return;
+        if (pattern is null)
+        {
+            return;
+        }
+
         switch (pattern)
         {
             case Identifier id:
@@ -1083,21 +1343,39 @@ public sealed partial class JsCompiler
                 }
                 return;
             case ObjectPattern obj:
-                foreach (var prop in obj.Properties) PreallocateCapturedInPattern(prop.Target, lexical);
-                if (obj.Rest is not null) PreallocateCapturedInPattern(obj.Rest.Argument, lexical);
+                foreach (var prop in obj.Properties)
+                {
+                    PreallocateCapturedInPattern(prop.Target, lexical);
+                }
+
+                if (obj.Rest is not null)
+                {
+                    PreallocateCapturedInPattern(obj.Rest.Argument, lexical);
+                }
+
                 return;
             case ArrayExpression arr:
                 foreach (var el in arr.Elements)
                 {
-                    if (el is null) continue;
+                    if (el is null)
+                    {
+                        continue;
+                    }
+
                     PreallocateCapturedInPattern(el is SpreadElement sp ? sp.Argument : el, lexical);
                 }
                 return;
             case ObjectExpression obj:
                 foreach (var prop in obj.Properties)
                 {
-                    if (prop.Value is SpreadElement sp) PreallocateCapturedInPattern(sp.Argument, lexical);
-                    else PreallocateCapturedInPattern(prop.Value, lexical);
+                    if (prop.Value is SpreadElement sp)
+                    {
+                        PreallocateCapturedInPattern(sp.Argument, lexical);
+                    }
+                    else
+                    {
+                        PreallocateCapturedInPattern(prop.Value, lexical);
+                    }
                 }
                 return;
             case SpreadElement spread: PreallocateCapturedInPattern(spread.Argument, lexical); return;
@@ -1124,7 +1402,11 @@ public sealed partial class JsCompiler
             switch (s)
             {
                 case VariableDeclaration vd when vd.Kind is "let" or "const":
-                    foreach (var d in vd.Declarations) HoistLexicalPattern(d.Id);
+                    foreach (var d in vd.Declarations)
+                    {
+                        HoistLexicalPattern(d.Id);
+                    }
+
                     break;
                 case ClassDeclaration cd when !IsGlobalLexicalScope:
                     HoistLexicalName(cd.Name.Name);
@@ -1161,19 +1443,34 @@ public sealed partial class JsCompiler
                 }
                 return;
             case ObjectPattern obj:
-                foreach (var prop in obj.Properties) MarkConstNames(prop.Target);
-                if (obj.Rest is not null) MarkConstNames(obj.Rest.Argument);
+                foreach (var prop in obj.Properties)
+                {
+                    MarkConstNames(prop.Target);
+                }
+
+                if (obj.Rest is not null)
+                {
+                    MarkConstNames(obj.Rest.Argument);
+                }
+
                 return;
             case ArrayExpression arr:
                 foreach (var el in arr.Elements)
                 {
-                    if (el is null) continue;
+                    if (el is null)
+                    {
+                        continue;
+                    }
+
                     MarkConstNames(el is SpreadElement sp ? sp.Argument : el);
                 }
                 return;
             case ObjectExpression obj:
                 foreach (var prop in obj.Properties)
+                {
                     MarkConstNames(prop.Value is SpreadElement sp ? sp.Argument : prop.Value);
+                }
+
                 return;
             case SpreadElement spread: MarkConstNames(spread.Argument); return;
             case RestElement rest: MarkConstNames(rest.Argument); return;
@@ -1198,19 +1495,34 @@ public sealed partial class JsCompiler
                 }
                 return;
             case ObjectPattern obj:
-                foreach (var prop in obj.Properties) HoistLexicalPattern(prop.Target);
-                if (obj.Rest is not null) HoistLexicalPattern(obj.Rest.Argument);
+                foreach (var prop in obj.Properties)
+                {
+                    HoistLexicalPattern(prop.Target);
+                }
+
+                if (obj.Rest is not null)
+                {
+                    HoistLexicalPattern(obj.Rest.Argument);
+                }
+
                 return;
             case ArrayExpression arr:
                 foreach (var el in arr.Elements)
                 {
-                    if (el is null) continue;
+                    if (el is null)
+                    {
+                        continue;
+                    }
+
                     HoistLexicalPattern(el is SpreadElement sp ? sp.Argument : el);
                 }
                 return;
             case ObjectExpression obj:
                 foreach (var prop in obj.Properties)
+                {
                     HoistLexicalPattern(prop.Value is SpreadElement sp ? sp.Argument : prop.Value);
+                }
+
                 return;
             case SpreadElement spread: HoistLexicalPattern(spread.Argument); return;
             case RestElement rest: HoistLexicalPattern(rest.Argument); return;
@@ -1225,11 +1537,17 @@ public sealed partial class JsCompiler
     {
         // Global-lexical TDZ is deferred — a top-level script let/const binds on
         // the global object, so don't reserve a local slot for it here.
-        if (IsGlobalLexicalScope) return;
+        if (IsGlobalLexicalScope)
+        {
+            return;
+        }
         // Already instantiated in THIS frame: either a function top-level captured
         // lexical the pre-pass placed here (reuse its cell), or a redeclaration the
         // parser let through — keep the first slot.
-        if (_scopes[^1].ContainsKey(name)) return;
+        if (_scopes[^1].ContainsKey(name))
+        {
+            return;
+        }
         // A captured lexical not yet in this frame is a BLOCK-scoped binding (the
         // pre-pass defers block lexicals and only seeds the function's top-level
         // ones). Reserve its OWN captured cell in this block's frame so it does
@@ -1267,8 +1585,15 @@ public sealed partial class JsCompiler
                 // wp:M3-79 — an ExpressionStatement's completion is its expression
                 // value (§14.5). When tracking completion, store it into the
                 // register (consuming it) rather than discarding it.
-                if (TrackCompletion) EmitCompletionStore();
-                else _b.Emit(Opcode.Pop);
+                if (TrackCompletion)
+                {
+                    EmitCompletionStore();
+                }
+                else
+                {
+                    _b.Emit(Opcode.Pop);
+                }
+
                 return;
             case BlockStatement bs:
                 PushScope();
@@ -1279,7 +1604,11 @@ public sealed partial class JsCompiler
                 // walking the body so the textual position emits nothing and
                 // same-block references resolve through the block scope.
                 HoistFunctionDeclarations(bs.Body);
-                foreach (var inner in bs.Body) EmitStatement(inner);
+                foreach (var inner in bs.Body)
+                {
+                    EmitStatement(inner);
+                }
+
                 PopScope();
                 return;
             case VariableDeclaration vd:
@@ -1330,7 +1659,10 @@ public sealed partial class JsCompiler
                 EmitBreakOrContinue(cs.Start, isBreak: false, label: cs.Label);
                 return;
             case ReturnStatement r:
-                if (r.Argument is null) _b.Emit(Opcode.ReturnUndefined);
+                if (r.Argument is null)
+                {
+                    _b.Emit(Opcode.ReturnUndefined);
+                }
                 else
                 {
                     EmitExpression(r.Argument);
@@ -1466,7 +1798,11 @@ public sealed partial class JsCompiler
             // `const`/`let` at the top of the catch resolves to a slot instead
             // of throwing "missing declared lexical".
             HoistLexicalDeclarations(handler.Body.Body);
-            foreach (var inner in handler.Body.Body) EmitStatement(inner);
+            foreach (var inner in handler.Body.Body)
+            {
+                EmitStatement(inner);
+            }
+
             PopScope();
             _b.Emit(Opcode.LeaveTry);
         }
@@ -1500,7 +1836,10 @@ public sealed partial class JsCompiler
             _b.Emit(Opcode.EndFinally);
         }
 
-        if (jumpPastHandler >= 0) _b.PatchJump(jumpPastHandler);
+        if (jumpPastHandler >= 0)
+        {
+            _b.PatchJump(jumpPastHandler);
+        }
     }
 
     /// <summary>§14.11 — lower a <c>with</c> statement. Evaluate the object,
@@ -1588,7 +1927,11 @@ public sealed partial class JsCompiler
                 var frame = new LoopFrame { TryDepthAtEntry = _tryDepth, ContinueTryDepth = _tryDepth, IsSwitch = true, Label = ls.Label };
                 _loops.Push(frame);
                 EmitStatement(ls.Body);
-                foreach (var p in frame.BreakPatches) _b.PatchJump(p);
+                foreach (var p in frame.BreakPatches)
+                {
+                    _b.PatchJump(p);
+                }
+
                 _loops.Pop();
                 return;
         }
@@ -1690,14 +2033,20 @@ public sealed partial class JsCompiler
 
             // Patch the comparison jump for this clause (if it has a Test).
             if (bodyPatchPositions[i] >= 0)
+            {
                 _b.PatchJump(bodyPatchPositions[i]);
+            }
 
             // Patch the default-jump when we reach the default clause.
             if (i == defaultIdx)
+            {
                 _b.PatchJump(jDefault);
+            }
 
             foreach (var stmt in sw.Cases[i].Consequent)
+            {
                 EmitStatement(stmt);
+            }
 
             _ = bodyStart; // suppress unused-variable warning
         }
@@ -1706,10 +2055,17 @@ public sealed partial class JsCompiler
         // or there is no default), it must point past all bodies — which is
         // exactly where we are now. But if defaultIdx >= 0, jDefault was already
         // patched above in the loop. If defaultIdx < 0, we need to patch it now.
-        if (defaultIdx < 0) _b.PatchJump(jDefault);
+        if (defaultIdx < 0)
+        {
+            _b.PatchJump(jDefault);
+        }
 
         // Patch all break jumps to the current position (switch end).
-        foreach (var p in frame.BreakPatches) _b.PatchJump(p);
+        foreach (var p in frame.BreakPatches)
+        {
+            _b.PatchJump(p);
+        }
+
         _loops.Pop();
         PopScope();
     }
@@ -1733,7 +2089,13 @@ public sealed partial class JsCompiler
         // (with _inLexicalDeclInit), which never consult IsConstLocal, so this
         // marking does not block the one legal write.
         if (vd.Kind == "const" && lexical)
-            foreach (var d in vd.Declarations) MarkConstNames(d.Id);
+        {
+            foreach (var d in vd.Declarations)
+            {
+                MarkConstNames(d.Id);
+            }
+        }
+
         foreach (var d in vd.Declarations)
         {
             if (lexical)
@@ -1763,10 +2125,22 @@ public sealed partial class JsCompiler
                             // wp:M3-73 — inject a top-level `var` initializer into
                             // the caller's var-environment (let/const keep their
                             // own script-top/global lexical binding).
-                            if (_evalInjectVars && functionScoped) EmitEvalInjectedStore(id.Name);
-                            else if (IsScriptTop && !_directEvalLocalVars) _b.EmitU16(Opcode.StoreGlobal, _b.AddConstant(id.Name));
-                            else if (TryResolveLocal(id.Name, out var s)) EmitStoreLocalSlot(s);
-                            else _b.EmitU16(Opcode.StoreGlobal, _b.AddConstant(id.Name));
+                            if (_evalInjectVars && functionScoped)
+                            {
+                                EmitEvalInjectedStore(id.Name);
+                            }
+                            else if (IsScriptTop && !_directEvalLocalVars)
+                            {
+                                _b.EmitU16(Opcode.StoreGlobal, _b.AddConstant(id.Name));
+                            }
+                            else if (TryResolveLocal(id.Name, out var s))
+                            {
+                                EmitStoreLocalSlot(s);
+                            }
+                            else
+                            {
+                                _b.EmitU16(Opcode.StoreGlobal, _b.AddConstant(id.Name));
+                            }
                         });
                     }
                     // wp:M3-73 — a non-strict direct eval whose caller is a
@@ -1788,7 +2162,10 @@ public sealed partial class JsCompiler
                     else
                     {
                         if (!TryResolveLocal(id.Name, out var slot))
+                        {
                             throw new InvalidOperationException($"missing declared local '{id.Name}'");
+                        }
+
                         EmitStoreLocalSlot(slot);
                     }
                 }
@@ -1814,10 +2191,20 @@ public sealed partial class JsCompiler
     {
         if (d.Id is Identifier id)
         {
-            if (d.Init is not null) EmitNamedEvaluation(d.Init, id.Name);
-            else _b.Emit(Opcode.LoadUndefined);
+            if (d.Init is not null)
+            {
+                EmitNamedEvaluation(d.Init, id.Name);
+            }
+            else
+            {
+                _b.Emit(Opcode.LoadUndefined);
+            }
+
             if (!TryResolveLocal(id.Name, out var slot))
+            {
                 throw new InvalidOperationException($"missing declared lexical '{id.Name}'");
+            }
+
             EmitStoreLocalSlot(slot); // unchecked — this is the initializer
             return;
         }
@@ -1825,8 +2212,15 @@ public sealed partial class JsCompiler
         // each leaf. Leaf stores happen inside a declaration initializer, so
         // they must be unchecked even though the leaf names are lexical.
         var srcSlot = _b.ReserveLocal();
-        if (d.Init is not null) EmitExpression(d.Init);
-        else _b.Emit(Opcode.LoadUndefined);
+        if (d.Init is not null)
+        {
+            EmitExpression(d.Init);
+        }
+        else
+        {
+            _b.Emit(Opcode.LoadUndefined);
+        }
+
         _b.EmitSlot(Opcode.StoreLocal, srcSlot);
         var prev = _inLexicalDeclInit;
         _inLexicalDeclInit = true;
@@ -1852,12 +2246,20 @@ public sealed partial class JsCompiler
         var jzWhile = _b.EmitJump(Opcode.JumpIfFalse);
         EmitStatement(w.Body);
         // continue → loopStart.
-        foreach (var p in loop.ContinuePatches) PatchBackwardJump(p, loopStart);
+        foreach (var p in loop.ContinuePatches)
+        {
+            PatchBackwardJump(p, loopStart);
+        }
+
         var jBack = _b.EmitJump(Opcode.Jump);
         PatchBackwardJump(jBack, loopStart);
         _b.PatchJump(jzWhile);
         // break-target lands here.
-        foreach (var p in loop.BreakPatches) _b.PatchJump(p);
+        foreach (var p in loop.BreakPatches)
+        {
+            _b.PatchJump(p);
+        }
+
         _loops.Pop();
     }
 
@@ -1874,12 +2276,20 @@ public sealed partial class JsCompiler
         EmitStatement(dw.Body);
         // continue → test.
         var testPos = _b.Position;
-        foreach (var p in loop.ContinuePatches) PatchBackwardJump(p, testPos);
+        foreach (var p in loop.ContinuePatches)
+        {
+            PatchBackwardJump(p, testPos);
+        }
+
         EmitExpression(dw.Test);
         var jBack = _b.EmitJump(Opcode.JumpIfTrue);
         PatchBackwardJump(jBack, loopStart);
         // break-target.
-        foreach (var p in loop.BreakPatches) _b.PatchJump(p);
+        foreach (var p in loop.BreakPatches)
+        {
+            _b.PatchJump(p);
+        }
+
         _loops.Pop();
     }
 
@@ -1935,7 +2345,9 @@ public sealed partial class JsCompiler
         if (perIterSlots is not null)
         {
             foreach (var slot in perIterSlots)
+            {
                 _b.EmitSlot(Opcode.RefreshLetBinding, slot);
+            }
         }
 
         // wp:M3-79 — §14.7.4.4 ForBodyEvaluation step 1 "Let V = undefined" — after
@@ -1959,7 +2371,10 @@ public sealed partial class JsCompiler
         // `continue` from inside the body still gets per-iteration semantics
         // for the next round).
         var updatePos = _b.Position;
-        foreach (var p in loop.ContinuePatches) PatchBackwardJump(p, updatePos);
+        foreach (var p in loop.ContinuePatches)
+        {
+            PatchBackwardJump(p, updatePos);
+        }
         // §14.7.4.4 step 3c — refresh after body, before update. The current
         // iteration's mutations land in this iteration's cell (captured by
         // any closures formed in the body); a fresh cell is allocated for
@@ -1968,7 +2383,9 @@ public sealed partial class JsCompiler
         if (perIterSlots is not null)
         {
             foreach (var slot in perIterSlots)
+            {
                 _b.EmitSlot(Opcode.RefreshLetBinding, slot);
+            }
         }
         if (f.Update is not null)
         {
@@ -1977,9 +2394,16 @@ public sealed partial class JsCompiler
         }
         var jBack = _b.EmitJump(Opcode.Jump);
         PatchBackwardJump(jBack, loopStart);
-        if (jExit >= 0) _b.PatchJump(jExit);
+        if (jExit >= 0)
+        {
+            _b.PatchJump(jExit);
+        }
         // break-target.
-        foreach (var p in loop.BreakPatches) _b.PatchJump(p);
+        foreach (var p in loop.BreakPatches)
+        {
+            _b.PatchJump(p);
+        }
+
         _loops.Pop();
         PopScope();
     }
@@ -2044,7 +2468,11 @@ public sealed partial class JsCompiler
         var slots = new List<int>(vd.Declarations.Count);
         foreach (var d in vd.Declarations)
         {
-            if (d.Id is not Identifier id) continue;
+            if (d.Id is not Identifier id)
+            {
+                continue;
+            }
+
             var slot = _b.ReserveLocal();
             _scopes[^1][id.Name] = slot;
             _b.MarkCaptured(slot);
@@ -2102,7 +2530,12 @@ public sealed partial class JsCompiler
                 // need the regular declare path; ReserveForOfLetSlots skips
                 // those, so call DeclarePatternBindings as a fallback.
                 foreach (var d in vd0.Declarations)
-                    if (d.Id is not Identifier) DeclarePatternBindings(d.Id);
+                {
+                    if (d.Id is not Identifier)
+                    {
+                        DeclarePatternBindings(d.Id);
+                    }
+                }
             }
             else
             {
@@ -2181,8 +2614,12 @@ public sealed partial class JsCompiler
             // CreatePerIterationEnvironment — refresh let/const bindings before
             // the iteration's value is stored into them.
             if (perIterSlots is not null)
+            {
                 foreach (var slot in perIterSlots)
+                {
                     _b.EmitSlot(Opcode.RefreshLetBinding, slot);
+                }
+            }
             // Bind the stepped value to LHS. A throw here (LHS reference /
             // destructuring / PutValue error) propagates to the finally, which
             // closes the iterator (§14.7.5.6 step 5.i / body-put / body-dstr).
@@ -2202,7 +2639,11 @@ public sealed partial class JsCompiler
         // return/throw) instead re-route at EndFinally and never reach that
         // jump.
         var continueTarget = _b.Position;
-        foreach (var p in loop.ContinuePatches) PatchBackwardJump(p, continueTarget);
+        foreach (var p in loop.ContinuePatches)
+        {
+            PatchBackwardJump(p, continueTarget);
+        }
+
         _b.Emit(Opcode.LeaveTry);
 
         // finalizer: close the iterator only when leaving abruptly.
@@ -2223,7 +2664,10 @@ public sealed partial class JsCompiler
         _b.Emit(Opcode.Pop);
         // break-target: a break to THIS loop crosses the synthetic finally
         // (BranchThroughFinally), runs the close, then lands here.
-        foreach (var p in loop.BreakPatches) _b.PatchJump(p);
+        foreach (var p in loop.BreakPatches)
+        {
+            _b.PatchJump(p);
+        }
 
         _loops.Pop();
         PopScope();
@@ -2252,16 +2696,29 @@ public sealed partial class JsCompiler
         var jExit = _b.EmitJump(Opcode.JumpIfTrue);
 
         if (perIterSlots is not null)
+        {
             foreach (var slot in perIterSlots)
+            {
                 _b.EmitSlot(Opcode.RefreshLetBinding, slot);
+            }
+        }
+
         _b.EmitProperty(Opcode.LoadProperty, _b.AddConstant("value"));
         EmitForOfBinding(fo.Left);
         EmitStatement(fo.Body);
-        foreach (var p in loop.ContinuePatches) PatchBackwardJump(p, loopStart);
+        foreach (var p in loop.ContinuePatches)
+        {
+            PatchBackwardJump(p, loopStart);
+        }
+
         var jBack = _b.EmitJump(Opcode.Jump);
         PatchBackwardJump(jBack, loopStart);
 
-        foreach (var p in loop.BreakPatches) _b.PatchJump(p);
+        foreach (var p in loop.BreakPatches)
+        {
+            _b.PatchJump(p);
+        }
+
         EmitForOfClose(handleSlot, isAwait: true);
         var jPastNormal = _b.EmitJump(Opcode.Jump);
 
@@ -2327,7 +2784,12 @@ public sealed partial class JsCompiler
             {
                 perIterSlots = ReserveForOfLetSlots(vd0);
                 foreach (var d in vd0.Declarations)
-                    if (d.Id is not Identifier) DeclarePatternBindings(d.Id);
+                {
+                    if (d.Id is not Identifier)
+                    {
+                        DeclarePatternBindings(d.Id);
+                    }
+                }
             }
             else
             {
@@ -2373,7 +2835,9 @@ public sealed partial class JsCompiler
         if (perIterSlots is not null)
         {
             foreach (var slot in perIterSlots)
+            {
                 _b.EmitSlot(Opcode.RefreshLetBinding, slot);
+            }
         }
 
         // key = keys[i].
@@ -2387,7 +2851,10 @@ public sealed partial class JsCompiler
         // continue → increment.
         var incPos = _b.Position;
         _b.PatchJump(jSkip);
-        foreach (var p in loop.ContinuePatches) PatchBackwardJump(p, incPos);
+        foreach (var p in loop.ContinuePatches)
+        {
+            PatchBackwardJump(p, incPos);
+        }
         // i++ (use load/add/store; the Inc-update path is not exposed here).
         _b.EmitSlot(Opcode.LoadLocal, iSlot);
         _b.EmitU16(Opcode.LoadConst, _b.AddConstant((double)1));
@@ -2397,7 +2864,11 @@ public sealed partial class JsCompiler
         PatchBackwardJump(jBack, loopStart);
 
         _b.PatchJump(jExit);
-        foreach (var p in loop.BreakPatches) _b.PatchJump(p);
+        foreach (var p in loop.BreakPatches)
+        {
+            _b.PatchJump(p);
+        }
+
         _loops.Pop();
         PopScope();
     }
@@ -2431,8 +2902,10 @@ public sealed partial class JsCompiler
         // or switch, or an unresolved label) is an early SyntaxError, not a host
         // failure; surface it as a parse error.
         if (_loops.Count == 0)
+        {
             throw new Parse.JsParseException(
                 $"Illegal {(isBreak ? "break" : "continue")} statement (must be inside a loop or switch)", where);
+        }
 
         LoopFrame? targetFrame = null;
 
@@ -2443,16 +2916,25 @@ public sealed partial class JsCompiler
             // switch (§14.9.3 ContinueStatement runtime semantics).
             foreach (var f in _loops)
             {
-                if (f.Label != label) continue;
+                if (f.Label != label)
+                {
+                    continue;
+                }
+
                 if (!isBreak && f.IsSwitch)
+                {
                     throw new Parse.JsParseException(
                         $"Illegal 'continue {label}' — label '{label}' is a switch, not an iteration statement", where);
+                }
+
                 targetFrame = f;
                 break;
             }
             if (targetFrame is null)
+            {
                 throw new Parse.JsParseException(
                     $"Label '{label}' not found for '{(isBreak ? "break" : "continue")}' statement", where);
+            }
         }
         else if (!isBreak)
         {
@@ -2462,8 +2944,10 @@ public sealed partial class JsCompiler
                 if (!f.IsSwitch) { targetFrame = f; break; }
             }
             if (targetFrame is null)
+            {
                 throw new Parse.JsParseException(
                     "Illegal 'continue' — not inside an iteration statement", where);
+            }
         }
         else
         {
@@ -2490,8 +2974,11 @@ public sealed partial class JsCompiler
             // same break/continue patch list as a plain Jump, so the loop's
             // lowering pass patches it identically.
             if (crossedTryFrames > byte.MaxValue)
+            {
                 throw new NotSupportedException(
                     $"'{(isBreak ? "break" : "continue")}' crosses too many try/finally frames ({crossedTryFrames}) (compiler at {where.Line}:{where.Column}).");
+            }
+
             _b.Emit(Opcode.BranchThroughFinally);
             _b.EmitU8Raw(crossedTryFrames);
             var finPatch = _b.Position;
@@ -2511,7 +2998,10 @@ public sealed partial class JsCompiler
         {
             case VariableDeclaration vd:
                 if (vd.Declarations.Count != 1)
+                {
                     throw new NotSupportedException("for…of binding requires exactly one declarator");
+                }
+
                 var d = vd.Declarations[0];
                 if (d.Id is Identifier id)
                 {
@@ -2553,7 +3043,10 @@ public sealed partial class JsCompiler
         switch (e)
         {
             case NumericLiteral n:
-                if (n.Value == 0) _b.Emit(Opcode.LoadZero);
+                if (n.Value == 0)
+                {
+                    _b.Emit(Opcode.LoadZero);
+                }
                 else
                 {
                     var idx = _b.AddConstant(n.Value);
@@ -2769,7 +3262,9 @@ public sealed partial class JsCompiler
         var quasi = tte.Quasi;
         var argCount = 1 + quasi.Expressions.Count; // strings object + substitutions
         if (argCount > 255)
+        {
             throw new NotSupportedException("more than 255 tagged-template args not supported");
+        }
 
         // Emit the tag callee, mirroring EmitCall's this-binding: obj.tag`…` and
         // obj[k]`…` leave [receiver, fn] for CallMethod; a bare tag leaves [fn]
@@ -2805,13 +3300,24 @@ public sealed partial class JsCompiler
 
         // arg 0 — the (cached, frozen) template strings object.
         var cooked = new string?[quasi.Quasis.Count];
-        for (var i = 0; i < cooked.Length; i++) cooked[i] = quasi.Quasis[i];
+        for (var i = 0; i < cooked.Length; i++)
+        {
+            cooked[i] = quasi.Quasis[i];
+        }
+
         var raw = new string[quasi.RawQuasis.Count];
-        for (var i = 0; i < raw.Length; i++) raw[i] = quasi.RawQuasis[i];
+        for (var i = 0; i < raw.Length; i++)
+        {
+            raw[i] = quasi.RawQuasis[i];
+        }
+
         _b.EmitU16(Opcode.TemplateObject, _b.AddConstant(new TemplateObjectTemplate(cooked, raw)));
 
         // args 1.. — the substitution values, in source order.
-        foreach (var sub in quasi.Expressions) EmitExpression(sub);
+        foreach (var sub in quasi.Expressions)
+        {
+            EmitExpression(sub);
+        }
 
         RecordPos(tte);
         _b.Emit(method ? Opcode.CallMethod : Opcode.Call, (byte)argCount);
@@ -2904,16 +3410,35 @@ public sealed partial class JsCompiler
     private void EmitIdLoad(Identifier id, bool checkedGlobal = true)
     {
         if (IdLoadMayThrow(id.Name, checkedGlobal))
+        {
             RecordPos(id);
+        }
+
         EmitIdLoad(id.Name, checkedGlobal);
     }
 
     private bool IdLoadMayThrow(string name, bool checkedGlobal)
     {
-        if (ShouldRouteWith(name)) return true;
-        if (TryResolveLocal(name, out _)) return IsLexicalLocal(name);
-        if (TryResolveUpvalue(name, out var upIdx)) return IsLexicalUpvalue(upIdx);
-        if (_callerScopeNames is { } cs && cs.Contains(name)) return true;
+        if (ShouldRouteWith(name))
+        {
+            return true;
+        }
+
+        if (TryResolveLocal(name, out _))
+        {
+            return IsLexicalLocal(name);
+        }
+
+        if (TryResolveUpvalue(name, out var upIdx))
+        {
+            return IsLexicalUpvalue(upIdx);
+        }
+
+        if (_callerScopeNames is { } cs && cs.Contains(name))
+        {
+            return true;
+        }
+
         return checkedGlobal;
     }
 
@@ -2957,10 +3482,19 @@ public sealed partial class JsCompiler
             }
             if (needsTdzCheck && IsLexicalLocal(name))
             {
-                if (IsSlotCaptured(slot)) _b.EmitSlot(Opcode.StoreCellLocalChecked, slot);
-                else EmitTdzLocalStore(name, slot);
+                if (IsSlotCaptured(slot))
+                {
+                    _b.EmitSlot(Opcode.StoreCellLocalChecked, slot);
+                }
+                else
+                {
+                    EmitTdzLocalStore(name, slot);
+                }
             }
-            else EmitStoreLocalSlot(slot);
+            else
+            {
+                EmitStoreLocalSlot(slot);
+            }
         }
         else if (TryResolveUpvalue(name, out var upIdx))
         {
@@ -2975,10 +3509,14 @@ public sealed partial class JsCompiler
                 ? Opcode.StoreUpvalueChecked : Opcode.StoreUpvalue, upIdx);
         }
         else if (_callerScopeNames is { } cs && cs.Contains(name))
+        {
             // wp:M3-72 — direct-eval write to a caller binding (live store).
             _b.EmitU16(Opcode.StoreEvalScope, _b.AddConstant(name));
+        }
         else
+        {
             _b.EmitU16(Opcode.StoreGlobal, _b.AddConstant(name));
+        }
     }
 
     private void EmitIdLoadStatic(string name, bool checkedGlobal = true)
@@ -3049,7 +3587,13 @@ public sealed partial class JsCompiler
     private bool TryResolveLocal(string name, out int slot)
     {
         for (var i = _scopes.Count - 1; i >= 0; i--)
-            if (_scopes[i].TryGetValue(name, out slot)) return true;
+        {
+            if (_scopes[i].TryGetValue(name, out slot))
+            {
+                return true;
+            }
+        }
+
         slot = -1;
         return false;
     }
@@ -3066,11 +3610,17 @@ public sealed partial class JsCompiler
     private bool TryResolveUpvalue(string name, out int upIdx)
     {
         upIdx = -1;
-        if (_parent is null) return false;
+        if (_parent is null)
+        {
+            return false;
+        }
 
         // Already captured by this function — reuse the same slot so
         // multiple reads of the same name share one upvalue.
-        if (_upvalueByName.TryGetValue(name, out upIdx)) return true;
+        if (_upvalueByName.TryGetValue(name, out upIdx))
+        {
+            return true;
+        }
 
         if (_parent.TryResolveLocal(name, out var parentSlot))
         {
@@ -3088,7 +3638,10 @@ public sealed partial class JsCompiler
     private int AddUpvalue(string name, UpvalueRef u)
     {
         if (_upvalues.Count >= 65535)
+        {
             throw new NotSupportedException("more than 65535 upvalues per function not supported");
+        }
+
         var idx = _upvalues.Count;
         _upvalues.Add(u);
         _upvalueByName[name] = idx;
@@ -3126,10 +3679,18 @@ public sealed partial class JsCompiler
                 EmitIdLoad(id.Name);                            // [old]
                 _b.EmitU16(Opcode.LoadConst, _b.AddConstant(0.0));
                 _b.Emit(Opcode.Add);                            // [ToNumber(old)]
-                if (!up.Prefix) _b.Emit(Opcode.Dup);            // postfix: keep old
+                if (!up.Prefix)
+                {
+                    _b.Emit(Opcode.Dup);            // postfix: keep old
+                }
+
                 _b.EmitU16(Opcode.LoadConst, _b.AddConstant(1.0));
                 _b.Emit(up.Op == JsTokenKind.PlusPlus ? Opcode.Add : Opcode.Sub);
-                if (up.Prefix) _b.Emit(Opcode.Dup);             // prefix: keep new
+                if (up.Prefix)
+                {
+                    _b.Emit(Opcode.Dup);             // prefix: keep new
+                }
+
                 EmitIdStore(id.Name, needsTdzCheck: false);
                 return;
             }
@@ -3140,13 +3701,28 @@ public sealed partial class JsCompiler
                 // init); the subsequent store can be unchecked since a
                 // successful load proves the binding is initialized.
                 var lexical = IsLexicalLocal(id.Name);
-                if (lexical) _b.EmitSlot(IsSlotCaptured(slot)
+                if (lexical)
+                {
+                    _b.EmitSlot(IsSlotCaptured(slot)
                     ? Opcode.LoadCellLocalChecked : Opcode.LoadLocalChecked, slot);
-                else EmitLoadLocalSlot(slot);
-                if (!up.Prefix) _b.Emit(Opcode.Dup);
+                }
+                else
+                {
+                    EmitLoadLocalSlot(slot);
+                }
+
+                if (!up.Prefix)
+                {
+                    _b.Emit(Opcode.Dup);
+                }
+
                 _b.EmitU16(Opcode.LoadConst, _b.AddConstant(1.0));
                 _b.Emit(up.Op == JsTokenKind.PlusPlus ? Opcode.Add : Opcode.Sub);
-                if (up.Prefix) _b.Emit(Opcode.Dup);
+                if (up.Prefix)
+                {
+                    _b.Emit(Opcode.Dup);
+                }
+
                 EmitStoreLocalSlot(slot);
                 return;
             }
@@ -3154,15 +3730,27 @@ public sealed partial class JsCompiler
             {
                 _b.EmitUpvalue(IsLexicalUpvalue(upIdx)
                     ? Opcode.LoadUpvalueChecked : Opcode.LoadUpvalue, upIdx);
-                if (!up.Prefix) _b.Emit(Opcode.Dup);
+                if (!up.Prefix)
+                {
+                    _b.Emit(Opcode.Dup);
+                }
+
                 _b.EmitU16(Opcode.LoadConst, _b.AddConstant(1.0));
                 _b.Emit(up.Op == JsTokenKind.PlusPlus ? Opcode.Add : Opcode.Sub);
-                if (up.Prefix) _b.Emit(Opcode.Dup);
+                if (up.Prefix)
+                {
+                    _b.Emit(Opcode.Dup);
+                }
                 // §16.2.1.6.2 — `import++`/`--` writes to an immutable binding.
                 if (IsImmutableUpvalue(upIdx))
+                {
                     _b.EmitU16(Opcode.ThrowConstAssignment, _b.AddConstant(id.Name));
+                }
                 else
+                {
                     _b.EmitUpvalue(Opcode.StoreUpvalue, upIdx);
+                }
+
                 return;
             }
             // gap:script-top-var-not-global — `x++` where `x` is a global
@@ -3174,10 +3762,18 @@ public sealed partial class JsCompiler
             // §13.4.4.1 — the initial read is GetValue, so an unresolvable free
             // identifier throws a ReferenceError (checked global load).
             _b.EmitU16(Opcode.LoadGlobalChecked, nameIdx);
-            if (!up.Prefix) _b.Emit(Opcode.Dup);
+            if (!up.Prefix)
+            {
+                _b.Emit(Opcode.Dup);
+            }
+
             _b.EmitU16(Opcode.LoadConst, _b.AddConstant(1.0));
             _b.Emit(up.Op == JsTokenKind.PlusPlus ? Opcode.Add : Opcode.Sub);
-            if (up.Prefix) _b.Emit(Opcode.Dup);
+            if (up.Prefix)
+            {
+                _b.Emit(Opcode.Dup);
+            }
+
             _b.EmitU16(Opcode.StoreGlobal, nameIdx);
             return;
         }
@@ -3194,7 +3790,9 @@ public sealed partial class JsCompiler
             // PutValue on a super-reference, which needs separate super-update
             // opcodes (deferred; add them if the McMaster app needs it).
             if (me.Object is SuperPropertyExpression)
+            {
                 throw new NotSupportedException("update of super property not yet supported (wp:M3-15)");
+            }
 
             var isIncrement = up.Op == JsTokenKind.PlusPlus;
 
@@ -3322,13 +3920,25 @@ public sealed partial class JsCompiler
         {
             // Reject `delete super.x` — §13.5.1.2 throws SyntaxError.
             if (me.Object is SuperPropertyExpression)
+            {
                 throw new Parse.JsParseException("delete of super property is a SyntaxError", u.Start);
+            }
             // Private fields cannot be deleted (early error per §13.5.1).
             if (!me.Computed && me.Property is PrivateNameExpression)
+            {
                 throw new Parse.JsParseException("delete of a private field is a SyntaxError", u.Start);
+            }
+
             EmitExpression(me.Object);
-            if (me.Computed) EmitExpression(me.Property);
-            else _b.EmitU16(Opcode.LoadConst, _b.AddConstant(((Identifier)me.Property).Name));
+            if (me.Computed)
+            {
+                EmitExpression(me.Property);
+            }
+            else
+            {
+                _b.EmitU16(Opcode.LoadConst, _b.AddConstant(((Identifier)me.Property).Name));
+            }
+
             _b.Emit(Opcode.DeleteProperty);
             return;
         }
@@ -3374,7 +3984,10 @@ public sealed partial class JsCompiler
             // §13.15.1: a destructuring (array/object) assignment target only
             // pairs with the plain `=` operator — a compound operator such as
             // `[a] += x` is an early SyntaxError.
-            if (a.Op != JsTokenKind.Eq) throw new Parse.JsParseException("compound assignment with a destructuring target is a SyntaxError", a.Start);
+            if (a.Op != JsTokenKind.Eq)
+            {
+                throw new Parse.JsParseException("compound assignment with a destructuring target is a SyntaxError", a.Start);
+            }
             // ECMA-262 §13.15 destructuring assignment evaluates the RHS once,
             // performs the pattern writes, and the whole expression returns the RHS.
             var rhsSlot = _b.ReserveLocal();
@@ -3478,7 +4091,9 @@ public sealed partial class JsCompiler
         {
             // Super-property assignment: super.x = v writes to `this`.
             if (me.Object is SuperPropertyExpression)
+            {
                 throw new NotSupportedException("super.x = v is not supported in B1b-2a");
+            }
             // Private name assignment: this.#x = v (and compound this.#x op= v).
             if (!me.Computed && me.Property is PrivateNameExpression pne)
             {
@@ -3544,10 +4159,21 @@ public sealed partial class JsCompiler
             // value, so the expression's net result is one value on the
             // stack — no extra Dup needed (it would leak a value).
             EmitExpression(me.Object);
-            if (me.Computed) EmitExpression(me.Property);
+            if (me.Computed)
+            {
+                EmitExpression(me.Property);
+            }
+
             EmitExpression(a.Value);
-            if (me.Computed) _b.Emit(Opcode.StoreComputed);
-            else _b.EmitProperty(Opcode.StoreProperty, _b.AddConstant(((Identifier)me.Property).Name));
+            if (me.Computed)
+            {
+                _b.Emit(Opcode.StoreComputed);
+            }
+            else
+            {
+                _b.EmitProperty(Opcode.StoreProperty, _b.AddConstant(((Identifier)me.Property).Name));
+            }
+
             return;
         }
         // Array/object destructuring assignment targets are handled by the
@@ -3587,9 +4213,16 @@ public sealed partial class JsCompiler
             {
                 // TDZ — the initial read checks the sentinel; the store can stay
                 // unchecked since a successful read proves initialization.
-                if (IsLexicalLocal(id.Name)) _b.EmitSlot(IsSlotCaptured(slot)
+                if (IsLexicalLocal(id.Name))
+                {
+                    _b.EmitSlot(IsSlotCaptured(slot)
                     ? Opcode.LoadCellLocalChecked : Opcode.LoadLocalChecked, slot);
-                else EmitLoadLocalSlot(slot);       // [cur]
+                }
+                else
+                {
+                    EmitLoadLocalSlot(slot);       // [cur]
+                }
+
                 _b.Emit(Opcode.Dup);                // [cur, cur]
                 var j = _b.EmitJump(jmp);           // pops one cur; [cur] if short-circuit
                 _b.Emit(Opcode.Pop);                // assign path: drop cur → []
@@ -3611,9 +4244,14 @@ public sealed partial class JsCompiler
                 // §16.2.1.6.2 — `import ||= …` etc. writes to an immutable binding
                 // (only on the assign path; the short-circuit path skips it).
                 if (IsImmutableUpvalue(upIdx))
+                {
                     _b.EmitU16(Opcode.ThrowConstAssignment, _b.AddConstant(id.Name));
+                }
                 else
+                {
                     _b.EmitUpvalue(Opcode.StoreUpvalue, upIdx); // [rhs]
+                }
+
                 _b.PatchJump(j);
                 return;
             }
@@ -3638,7 +4276,9 @@ public sealed partial class JsCompiler
             // plain `=`/compound super paths above use dedicated opcodes and
             // netclaw doesn't need the logical form, so defer it explicitly.
             if (me.Object is SuperPropertyExpression)
+            {
                 throw new NotSupportedException("logical assignment to a super property is not supported");
+            }
             // Private-name logical assignment (this.#x &&= / ||= / ??= …).
             // Same shape as the plain non-computed member path below, but the
             // read/write route through PrivateGet/PrivateSet on a dup'd receiver.
@@ -3685,7 +4325,10 @@ public sealed partial class JsCompiler
                 _b.Emit(Opcode.Pop);                // [obj, key]
                 EmitExpression(a.Value);            // [obj, key, rhs]
                 if (IsAnonymousFunctionDefinition(a.Value))
+                {
                     _b.Emit(Opcode.SetFunctionNameComputed); // [obj, key, rhs]
+                }
+
                 _b.Emit(Opcode.StoreComputed);      // [rhs]
                 var jEnd = _b.EmitJump(Opcode.Jump);
                 // Short-circuit path: stack is [obj, key, cur]; discard the
@@ -3756,16 +4399,28 @@ public sealed partial class JsCompiler
         var first = true;
         while (true)
         {
-            if (!first && e.IsParenthesized) return false;
+            if (!first && e.IsParenthesized)
+            {
+                return false;
+            }
+
             first = false;
             switch (e)
             {
                 case MemberExpression me:
-                    if (me.Optional) return true;
+                    if (me.Optional)
+                    {
+                        return true;
+                    }
+
                     e = me.Object;
                     break;
                 case CallExpression ce:
-                    if (ce.Optional) return true;
+                    if (ce.Optional)
+                    {
+                        return true;
+                    }
+
                     e = ce.Callee;
                     break;
                 default:
@@ -3791,14 +4446,24 @@ public sealed partial class JsCompiler
     /// patched locally when no chain is active (defensive fallback).</summary>
     private void RouteChainExitJump(int jump)
     {
-        if (_chainExitJumps is not null) _chainExitJumps.Add(jump);
-        else _b.PatchJump(jump);
+        if (_chainExitJumps is not null)
+        {
+            _chainExitJumps.Add(jump);
+        }
+        else
+        {
+            _b.PatchJump(jump);
+        }
     }
 
     private void EmitMemberLoad(MemberExpression m)
     {
         var rootsChain = _chainExitJumps is null && HasOptionalLink(m);
-        if (rootsChain) _chainExitJumps = new List<int>();
+        if (rootsChain)
+        {
+            _chainExitJumps = new List<int>();
+        }
+
         try
         {
             EmitMemberLoadCore(m);
@@ -3807,7 +4472,11 @@ public sealed partial class JsCompiler
         {
             if (rootsChain)
             {
-                foreach (var j in _chainExitJumps!) _b.PatchJump(j);
+                foreach (var j in _chainExitJumps!)
+                {
+                    _b.PatchJump(j);
+                }
+
                 _chainExitJumps = null;
             }
         }
@@ -3879,7 +4548,11 @@ public sealed partial class JsCompiler
     private void EmitCall(CallExpression call)
     {
         var rootsChain = _chainExitJumps is null && HasOptionalLink(call);
-        if (rootsChain) _chainExitJumps = new List<int>();
+        if (rootsChain)
+        {
+            _chainExitJumps = new List<int>();
+        }
+
         try
         {
             EmitCallCore(call);
@@ -3888,7 +4561,11 @@ public sealed partial class JsCompiler
         {
             if (rootsChain)
             {
-                foreach (var j in _chainExitJumps!) _b.PatchJump(j);
+                foreach (var j in _chainExitJumps!)
+                {
+                    _b.PatchJump(j);
+                }
+
                 _chainExitJumps = null;
             }
         }
@@ -3897,11 +4574,15 @@ public sealed partial class JsCompiler
     private void EmitCallCore(CallExpression call)
     {
         if (call.Arguments.Count > 255)
+        {
             throw new NotSupportedException("more than 255 call args not supported");
+        }
 
         var hasSpread = false;
         foreach (var arg in call.Arguments)
+        {
             if (arg is SpreadElement) { hasSpread = true; break; }
+        }
 
         // super.method(args) — must bind this=current this.
         if (call.Callee is SuperPropertyExpression sp)
@@ -3927,7 +4608,11 @@ public sealed partial class JsCompiler
                 _b.Emit(Opcode.CallApplyMethod);
                 return;
             }
-            foreach (var arg in call.Arguments) EmitExpression(arg);
+            foreach (var arg in call.Arguments)
+            {
+                EmitExpression(arg);
+            }
+
             RecordPos(call);
             _b.Emit(Opcode.CallMethod, (byte)call.Arguments.Count);
             return;
@@ -4002,7 +4687,11 @@ public sealed partial class JsCompiler
                 _b.Emit(Opcode.CallApplyMethod);
                 return;
             }
-            foreach (var arg in call.Arguments) EmitNonChainSubexpression(arg);
+            foreach (var arg in call.Arguments)
+            {
+                EmitNonChainSubexpression(arg);
+            }
+
             RecordPos(call);
             _b.Emit(Opcode.CallMethod, (byte)call.Arguments.Count);
             return;
@@ -4029,7 +4718,11 @@ public sealed partial class JsCompiler
                 _b.Emit(Opcode.CallApplyMethod);
                 return;
             }
-            foreach (var arg in call.Arguments) EmitNonChainSubexpression(arg);
+            foreach (var arg in call.Arguments)
+            {
+                EmitNonChainSubexpression(arg);
+            }
+
             RecordPos(call);
             _b.Emit(Opcode.CallMethod, (byte)call.Arguments.Count);
             return;
@@ -4060,7 +4753,11 @@ public sealed partial class JsCompiler
             // to closures it creates (which snapshot the store at creation).
             _b.HasDirectEval = true;
             EmitExpression(call.Callee);                  // [callee]
-            foreach (var arg in call.Arguments) EmitNonChainSubexpression(arg);
+            foreach (var arg in call.Arguments)
+            {
+                EmitNonChainSubexpression(arg);
+            }
+
             RecordPos(call);
             _b.EmitU16(Opcode.DirectEval, descIdx);
             _b.EmitU8Raw(call.Arguments.Count);
@@ -4089,7 +4786,11 @@ public sealed partial class JsCompiler
             _b.Emit(Opcode.CallApply);
             return;
         }
-        foreach (var arg in call.Arguments) EmitNonChainSubexpression(arg);
+        foreach (var arg in call.Arguments)
+        {
+            EmitNonChainSubexpression(arg);
+        }
+
         RecordPos(call);
         _b.Emit(Opcode.Call, (byte)call.Arguments.Count);
     }
@@ -4124,7 +4825,11 @@ public sealed partial class JsCompiler
         {
             foreach (var kv in _scopes[i])
             {
-                if (!seen.Add(kv.Key)) continue;
+                if (!seen.Add(kv.Key))
+                {
+                    continue;
+                }
+
                 var slot = kv.Value;
                 var captured = _b.IsCaptured(slot);
                 var lexical = _lexicalScopes[i].Contains(kv.Key);
@@ -4138,7 +4843,11 @@ public sealed partial class JsCompiler
         // Cells in this frame's upvalue table.
         foreach (var kv in _upvalueByName)
         {
-            if (!seen.Add(kv.Key)) continue;
+            if (!seen.Add(kv.Key))
+            {
+                continue;
+            }
+
             bindings.Add(new EvalScopeDescriptor.Binding(
                 kv.Key, EvalScopeDescriptor.Kind.Upvalue, kv.Value,
                 IsLexicalUpvalue(kv.Value), IsImmutableUpvalue(kv.Value)));
@@ -4235,22 +4944,35 @@ public sealed partial class JsCompiler
         sub.HoistFunctionDeclarations(fe.Body.Body);
         // wp:M3-20 — arrows have no own `arguments` (they inherit lexically),
         // so only ordinary function expressions synthesize one.
-        if (!isArrow) sub.MaybeBindArguments(fe.Params, fe.Body.Body);
+        if (!isArrow)
+        {
+            sub.MaybeBindArguments(fe.Params, fe.Body.Body);
+        }
         // wp:M3-21 — §15.2.5. A NON-arrow named function *expression* binds its
         // own name inside the body to the function instance (for recursion /
         // self-reference). Run AFTER params + var/function bindings so a param
         // or body var/function of the same name shadows it (§10.2.11). Function
         // *declarations* bind in the enclosing scope (HoistFunctionDeclarations)
         // and must not double-bind here.
-        if (!isArrow && fe.Name is not null) sub.MaybeBindSelfName(fe.Name.Name);
+        if (!isArrow && fe.Name is not null)
+        {
+            sub.MaybeBindSelfName(fe.Name.Name);
+        }
         // §10.2.1.1 — arrows have no own `this` binding; only an ordinary
         // function expression boxes `this` for a nested arrow that reads it.
-        if (!isArrow) sub.MaybeBindLexicalThis();
+        if (!isArrow)
+        {
+            sub.MaybeBindLexicalThis();
+        }
         // §10.2.1.3 — synchronous parameter-binding prologue boundary for
         // generator / async (incl. async-arrow) bodies; see EmitFunctionBody.
         sub.EmitPrologueEndIfSuspendable(fe.Async, fe.Generator);
         sub._currentIsAsyncGenerator = fe.Async && fe.Generator;
-        foreach (var s in fe.Body.Body) sub.EmitStatement(s);
+        foreach (var s in fe.Body.Body)
+        {
+            sub.EmitStatement(s);
+        }
+
         sub._b.Emit(Opcode.ReturnUndefined);
         // Per ES2024 §15.2 NamedEvaluation, anonymous FunctionExpression
         // produces `name === ""` (not "<anonymous>"); B2-2's Function intrinsic
@@ -4283,8 +5005,15 @@ public sealed partial class JsCompiler
         }
 
         // Simple yield: push the value to yield (or undefined), then Suspend.
-        if (yld.Argument is not null) EmitExpression(yld.Argument);
-        else _b.Emit(Opcode.LoadUndefined);
+        if (yld.Argument is not null)
+        {
+            EmitExpression(yld.Argument);
+        }
+        else
+        {
+            _b.Emit(Opcode.LoadUndefined);
+        }
+
         _b.Emit(Opcode.Suspend);
         _b.EmitU8Raw(0); // kind = 0 (yield)
         // After resume, stack-top holds the value passed to .next(v); that
@@ -4304,9 +5033,21 @@ public sealed partial class JsCompiler
     /// <summary>B1b-2c — map AST async/generator flags to runtime kind.</summary>
     private static Runtime.JsFunctionKind ResolveFunctionKind(bool isAsync, bool isGenerator)
     {
-        if (isAsync && isGenerator) return Runtime.JsFunctionKind.AsyncGenerator;
-        if (isAsync) return Runtime.JsFunctionKind.Async;
-        if (isGenerator) return Runtime.JsFunctionKind.Generator;
+        if (isAsync && isGenerator)
+        {
+            return Runtime.JsFunctionKind.AsyncGenerator;
+        }
+
+        if (isAsync)
+        {
+            return Runtime.JsFunctionKind.Async;
+        }
+
+        if (isGenerator)
+        {
+            return Runtime.JsFunctionKind.Generator;
+        }
+
         return Runtime.JsFunctionKind.Normal;
     }
 
@@ -4375,11 +5116,17 @@ public sealed partial class JsCompiler
                 _b.Emit(Opcode.ToPropertyKey);       // [obj, key]
                 EmitExpression(prop.Value);          // [obj, key, value]
                 if (IsAnonymousFunctionDefinition(prop.Value))
+                {
                     _b.Emit(Opcode.SetFunctionNameComputed); // [obj, key, value]
+                }
                 // wp:M3-64 — §13.2.5 MakeMethod: a concise method (`{ [k]() {} }`)
                 // gets a [[HomeObject]] = the object so `super.x` resolves; a plain
                 // data property (`{ [k]: fn }`) does NOT.
-                if (prop.IsMethod) _b.Emit(Opcode.SetHomeObjectComputed); // [obj, key, value]
+                if (prop.IsMethod)
+                {
+                    _b.Emit(Opcode.SetHomeObjectComputed); // [obj, key, value]
+                }
+
                 _b.Emit(Opcode.DefineDataComputed);  // [obj]
             }
             else
@@ -4403,7 +5150,11 @@ public sealed partial class JsCompiler
                 EmitNamedEvaluation(prop.Value, propName);       // [obj, value]
                 // wp:M3-64 — stamp [[HomeObject]] only for concise methods
                 // (`{ foo() {} }`), not data properties (`{ foo: fn }`).
-                if (prop.IsMethod) _b.Emit(Opcode.SetHomeObject); // [obj, value]
+                if (prop.IsMethod)
+                {
+                    _b.Emit(Opcode.SetHomeObject); // [obj, value]
+                }
+
                 _b.EmitU16(Opcode.DefineDataProperty, nameIdx);  // [obj]
             }
         }
@@ -4442,8 +5193,15 @@ public sealed partial class JsCompiler
     {
         // An explicit param/var/function named `arguments` shadows the implicit
         // one — the scope already owns the name, so don't synthesize.
-        if (_scopes.Any(s => s.ContainsKey("arguments"))) return;
-        if (!CaptureAnalysis.ReferencesArguments(parameters, body)) return;
+        if (_scopes.Any(s => s.ContainsKey("arguments")))
+        {
+            return;
+        }
+
+        if (!CaptureAnalysis.ReferencesArguments(parameters, body))
+        {
+            return;
+        }
 
         var slot = _b.ReserveLocal();
         _scopes[^1]["arguments"] = slot;
@@ -4465,7 +5223,9 @@ public sealed partial class JsCompiler
             // simple lists), only the final index for that name is mapped.
             var lastIndexOfName = new Dictionary<string, int>(StringComparer.Ordinal);
             for (var i = 0; i < parameters.Count; i++)
+            {
                 lastIndexOfName[((Identifier)parameters[i]).Name] = i;
+            }
 
             _b.EmitU16(Opcode.MakeMappedArguments, slot);
             _b.EmitU16Raw(parameters.Count);
@@ -4491,7 +5251,11 @@ public sealed partial class JsCompiler
     /// <see cref="Opcode.BindThis"/> via <see cref="StoreLexicalThisCell"/>.</summary>
     private void MaybeBindLexicalThis()
     {
-        if (!IsNameCaptured(LexicalThisName)) return;
+        if (!IsNameCaptured(LexicalThisName))
+        {
+            return;
+        }
+
         var slot = _b.ReserveLocal();
         _scopes[^1][LexicalThisName] = slot;
         _b.MarkCaptured(slot);
@@ -4507,7 +5271,11 @@ public sealed partial class JsCompiler
     /// nested arrow captured <c>this</c>.</summary>
     private void StoreLexicalThisCell()
     {
-        if (!_scopes[^1].TryGetValue(LexicalThisName, out var slot)) return;
+        if (!_scopes[^1].TryGetValue(LexicalThisName, out var slot))
+        {
+            return;
+        }
+
         _b.Emit(Opcode.LoadThis);
         _b.EmitSlot(Opcode.StoreCellLocal, slot);
     }
@@ -4528,7 +5296,10 @@ public sealed partial class JsCompiler
     {
         // A param / var / function declaration of the same name shadows the
         // self-name — the scope already owns it, so don't synthesize.
-        if (_scopes.Any(s => s.ContainsKey(name))) return;
+        if (_scopes.Any(s => s.ContainsKey(name)))
+        {
+            return;
+        }
 
         var slot = _b.ReserveLocal();
         _scopes[^1][name] = slot;
@@ -4556,7 +5327,10 @@ public sealed partial class JsCompiler
         // (no-default) parameter prologue byte-for-byte unchanged.
         var bracket = (markInitializer || ParamsBindArguments(parameters))
             && parameters.Any(HasParamDefault);
-        if (bracket) _b.Emit(Opcode.EnterInitializer);
+        if (bracket)
+        {
+            _b.Emit(Opcode.EnterInitializer);
+        }
 
         var argSlots = new int[parameters.Count];
         Array.Fill(argSlots, -1);
@@ -4571,7 +5345,11 @@ public sealed partial class JsCompiler
         // positional parameter slot before declaring destructured binding locals.
         for (var i = 0; i < parameters.Count; i++)
         {
-            if (parameters[i] is SpreadElement) break;
+            if (parameters[i] is SpreadElement)
+            {
+                break;
+            }
+
             argSlots[i] = _b.ReserveLocal();
         }
 
@@ -4609,7 +5387,10 @@ public sealed partial class JsCompiler
             EmitPatternFromLocal(param, argSlots[i], isDeclaration: true);
         }
 
-        if (bracket) _b.Emit(Opcode.ExitInitializer);
+        if (bracket)
+        {
+            _b.Emit(Opcode.ExitInitializer);
+        }
     }
 
     /// <summary>wp:M3-81 — does any parameter in <paramref name="parameters"/>
@@ -4621,7 +5402,14 @@ public sealed partial class JsCompiler
     /// declaring <c>arguments</c> in a sibling default would collide with.</summary>
     private static bool ParamsBindArguments(IReadOnlyList<Expression> parameters)
     {
-        foreach (var p in parameters) if (ParamBindsArguments(p)) return true;
+        foreach (var p in parameters)
+        {
+            if (ParamBindsArguments(p))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -4641,17 +5429,31 @@ public sealed partial class JsCompiler
                     switch (el)
                     {
                         case ArrayPatternBindingElement b:
-                            if (ParamBindsArguments(b.Target)) return true;
+                            if (ParamBindsArguments(b.Target))
+                            {
+                                return true;
+                            }
+
                             break;
                         case ArrayPatternRestElement r:
-                            if (ParamBindsArguments(r.Target)) return true;
+                            if (ParamBindsArguments(r.Target))
+                            {
+                                return true;
+                            }
+
                             break;
                     }
                 }
                 return false;
             case ObjectPattern obj:
                 foreach (var prop in obj.Properties)
-                    if (ParamBindsArguments(prop.Target)) return true;
+                {
+                    if (ParamBindsArguments(prop.Target))
+                    {
+                        return true;
+                    }
+                }
+
                 return obj.Rest is not null && ParamBindsArguments(obj.Rest.Argument);
             default:
                 return false;
@@ -4681,23 +5483,51 @@ public sealed partial class JsCompiler
                     switch (el)
                     {
                         case ArrayPatternBindingElement b:
-                            if (b.Default is not null || HasParamDefault(b.Target)) return true;
+                            if (b.Default is not null || HasParamDefault(b.Target))
+                            {
+                                return true;
+                            }
+
                             break;
                         case ArrayPatternRestElement r:
-                            if (HasParamDefault(r.Target)) return true;
+                            if (HasParamDefault(r.Target))
+                            {
+                                return true;
+                            }
+
                             break;
                     }
                 }
                 return false;
             case ObjectPattern obj:
                 foreach (var prop in obj.Properties)
-                    if (prop.Default is not null || HasParamDefault(prop.Target)) return true;
+                {
+                    if (prop.Default is not null || HasParamDefault(prop.Target))
+                    {
+                        return true;
+                    }
+                }
+
                 return obj.Rest is not null && HasParamDefault(obj.Rest.Argument);
             case ArrayExpression aex:
-                foreach (var el in aex.Elements) if (HasParamDefault(el)) return true;
+                foreach (var el in aex.Elements)
+                {
+                    if (HasParamDefault(el))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             case ObjectExpression oex:
-                foreach (var prop in oex.Properties) if (HasParamDefault(prop.Value)) return true;
+                foreach (var prop in oex.Properties)
+                {
+                    if (HasParamDefault(prop.Value))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             default:
                 return false;
@@ -4736,7 +5566,11 @@ public sealed partial class JsCompiler
                     // already pre-declared into the caller's eval-introduced var
                     // store (EmitProgram), or already exists as a caller binding;
                     // either way nothing to declare here.
-                    if (_evalInjectVars) return;
+                    if (_evalInjectVars)
+                    {
+                        return;
+                    }
+
                     _b.EmitU16(Opcode.DeclareGlobalVar, _b.AddConstant(id.Name));
                     return;
                 }
@@ -4781,21 +5615,39 @@ public sealed partial class JsCompiler
                 }
                 return;
             case ObjectPattern obj:
-                foreach (var prop in obj.Properties) DeclarePatternBindings(prop.Target, functionScoped);
-                if (obj.Rest is not null) DeclarePatternBindings(obj.Rest.Argument, functionScoped);
+                foreach (var prop in obj.Properties)
+                {
+                    DeclarePatternBindings(prop.Target, functionScoped);
+                }
+
+                if (obj.Rest is not null)
+                {
+                    DeclarePatternBindings(obj.Rest.Argument, functionScoped);
+                }
+
                 return;
             case ArrayExpression arr:
                 foreach (var element in arr.Elements)
                 {
-                    if (element is null) continue;
+                    if (element is null)
+                    {
+                        continue;
+                    }
+
                     DeclarePatternBindings(element is SpreadElement spread ? spread.Argument : element, functionScoped);
                 }
                 return;
             case ObjectExpression obj:
                 foreach (var prop in obj.Properties)
                 {
-                    if (prop.Value is SpreadElement spread) DeclarePatternBindings(spread.Argument, functionScoped);
-                    else DeclarePatternBindings(prop.Value, functionScoped);
+                    if (prop.Value is SpreadElement spread)
+                    {
+                        DeclarePatternBindings(spread.Argument, functionScoped);
+                    }
+                    else
+                    {
+                        DeclarePatternBindings(prop.Value, functionScoped);
+                    }
                 }
                 return;
             case SpreadElement spread:
@@ -4876,9 +5728,14 @@ public sealed partial class JsCompiler
         // identifier target and is an anonymous function definition, the
         // function adopts the binding's name.
         if (target is Identifier tid)
+        {
             EmitNamedEvaluation(fallback, tid.Name);
+        }
         else
+        {
             EmitExpression(fallback);
+        }
+
         _b.EmitSlot(Opcode.StoreLocal, valueSlot);
         _b.PatchJump(skipDefault);
         EmitPatternFromLocal(target, valueSlot, isDeclaration);
@@ -4902,8 +5759,14 @@ public sealed partial class JsCompiler
             // what transitions the binding out of the TDZ).
             if (IsLexicalLocal(name) && !_inLexicalDeclInit)
             {
-                if (IsSlotCaptured(slot)) _b.EmitSlot(Opcode.StoreCellLocalChecked, slot);
-                else EmitTdzLocalStore(name, slot);
+                if (IsSlotCaptured(slot))
+                {
+                    _b.EmitSlot(Opcode.StoreCellLocalChecked, slot);
+                }
+                else
+                {
+                    EmitTdzLocalStore(name, slot);
+                }
             }
             else
             {
@@ -4926,7 +5789,9 @@ public sealed partial class JsCompiler
                     ? Opcode.StoreUpvalueChecked : Opcode.StoreUpvalue, upIdx);
         }
         else
+        {
             _b.EmitU16(Opcode.StoreGlobal, _b.AddConstant(name));
+        }
     }
 
     /// <summary>TDZ — emit a checked store to a NON-captured lexical local. A
@@ -4965,10 +5830,21 @@ public sealed partial class JsCompiler
             _b.Emit(Opcode.Pop);
             return;
         }
-        if (me.Computed) EmitExpression(me.Property);
+        if (me.Computed)
+        {
+            EmitExpression(me.Property);
+        }
+
         _b.EmitSlot(Opcode.LoadLocal, valueSlot);
-        if (me.Computed) _b.Emit(Opcode.StoreComputed);
-        else _b.EmitProperty(Opcode.StoreProperty, _b.AddConstant(((Identifier)me.Property).Name));
+        if (me.Computed)
+        {
+            _b.Emit(Opcode.StoreComputed);
+        }
+        else
+        {
+            _b.EmitProperty(Opcode.StoreProperty, _b.AddConstant(((Identifier)me.Property).Name));
+        }
+
         _b.Emit(Opcode.Pop);
     }
 
@@ -5082,9 +5958,13 @@ public sealed partial class JsCompiler
                             _b.EmitSlot(Opcode.LoadLocal, handleSlot);
                             _b.Emit(Opcode.IteratorBindNext);   // [value]
                             if (elem.Default is null)
+                            {
                                 EmitPatternFromStack(elem.Target!, isDeclaration);
+                            }
                             else
+                            {
                                 EmitDefaultedPattern(elem.Target!, elem.Default, isDeclaration);
+                            }
                         }
                         break;
                 }
@@ -5152,7 +6032,11 @@ public sealed partial class JsCompiler
 
         // Store value into the pre-evaluated reference.
         _b.EmitSlot(Opcode.LoadLocal, objSlot);
-        if (me.Computed) _b.EmitSlot(Opcode.LoadLocal, keySlot);
+        if (me.Computed)
+        {
+            _b.EmitSlot(Opcode.LoadLocal, keySlot);
+        }
+
         _b.EmitSlot(Opcode.LoadLocal, valueSlot);
         // §13.3.7 — a private member target stores through PrivateSet (brand-
         // checked); it pops [obj, value] and re-pushes value, which we discard.
@@ -5161,8 +6045,15 @@ public sealed partial class JsCompiler
             var mangled = ResolvePrivateName(pne.Name, pne.Start);
             _b.EmitU16(Opcode.PrivateSet, _b.AddConstant(mangled));
         }
-        else if (me.Computed) _b.Emit(Opcode.StoreComputed);
-        else _b.EmitProperty(Opcode.StoreProperty, _b.AddConstant(((Identifier)me.Property).Name));
+        else if (me.Computed)
+        {
+            _b.Emit(Opcode.StoreComputed);
+        }
+        else
+        {
+            _b.EmitProperty(Opcode.StoreProperty, _b.AddConstant(((Identifier)me.Property).Name));
+        }
+
         _b.Emit(Opcode.Pop);
     }
 
@@ -5197,8 +6088,14 @@ public sealed partial class JsCompiler
         foreach (var prop in obj.Properties)
         {
             EmitObjectPatternPropertyLoad(srcSlot, prop.Key, prop.Computed, exclusions);
-            if (prop.Default is null) EmitPatternFromStack(prop.Target, isDeclaration);
-            else EmitDefaultedPattern(prop.Target, prop.Default, isDeclaration);
+            if (prop.Default is null)
+            {
+                EmitPatternFromStack(prop.Target, isDeclaration);
+            }
+            else
+            {
+                EmitDefaultedPattern(prop.Target, prop.Default, isDeclaration);
+            }
         }
         if (obj.Rest is not null)
         {
@@ -5233,9 +6130,13 @@ public sealed partial class JsCompiler
         foreach (var ex in exclusions)
         {
             if (ex.Kind == RestExclusionKind.Constant)
+            {
                 _b.EmitU16(Opcode.LoadConst, _b.AddConstant(ex.Name!));
+            }
             else
+            {
                 _b.EmitSlot(Opcode.LoadLocal, ex.Slot);
+            }
         }
         _b.EmitU16(Opcode.RestObject, exclusions.Count);
         EmitPatternFromStack(target, isDeclaration);
@@ -5317,7 +6218,10 @@ public sealed partial class JsCompiler
         EmitExpression(ne.Callee);
         var hasSpread = false;
         foreach (var arg in ne.Arguments)
+        {
             if (arg is SpreadElement) { hasSpread = true; break; }
+        }
+
         if (hasSpread)
         {
             EmitArgsAsArray(ne.Arguments);
@@ -5325,9 +6229,16 @@ public sealed partial class JsCompiler
             _b.Emit(Opcode.NewApply);
             return;
         }
-        foreach (var arg in ne.Arguments) EmitExpression(arg);
+        foreach (var arg in ne.Arguments)
+        {
+            EmitExpression(arg);
+        }
+
         if (ne.Arguments.Count > 255)
+        {
             throw new NotSupportedException("more than 255 new args not supported");
+        }
+
         RecordPos(ne);
         _b.Emit(Opcode.New, (byte)ne.Arguments.Count);
     }

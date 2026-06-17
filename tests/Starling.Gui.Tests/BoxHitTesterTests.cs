@@ -135,7 +135,11 @@ public sealed class BoxHitTesterTests
     {
         if (box is TextBox tb) { yield return tb; yield break; }
         foreach (var child in box.Children)
+        {
             foreach (var inner in FlattenTextBoxes(child))
+            {
                 yield return inner;
+            }
+        }
     }
 }

@@ -167,7 +167,9 @@ public sealed class Sidebar : Grid
     {
         var stack = new StackPanel { Spacing = 1, Margin = new Thickness(10, 0, 10, 8) };
         foreach (var tab in bookmarks)
+        {
             stack.Children.Add(BuildRow(tm, tab, tab.Id == activeId, onTabActivated));
+        }
 
         return new ScrollViewer
         {
@@ -270,18 +272,33 @@ public sealed class Sidebar : Grid
 
     private static Color TileColorFor(string host)
     {
-        if (string.IsNullOrEmpty(host)) return TileColors[0];
+        if (string.IsNullOrEmpty(host))
+        {
+            return TileColors[0];
+        }
         // Cheap deterministic hash — sum of bytes, mod palette length.
         var sum = 0;
-        foreach (var ch in host) sum += ch;
+        foreach (var ch in host)
+        {
+            sum += ch;
+        }
+
         return TileColors[Math.Abs(sum) % TileColors.Length];
     }
 
     private static string LetterFor(string host)
     {
-        if (string.IsNullOrEmpty(host)) return "?";
+        if (string.IsNullOrEmpty(host))
+        {
+            return "?";
+        }
+
         var trimmed = host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? host[4..] : host;
-        if (string.IsNullOrEmpty(trimmed)) return "?";
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            return "?";
+        }
+
         return trimmed[..1].ToUpperInvariant();
     }
 

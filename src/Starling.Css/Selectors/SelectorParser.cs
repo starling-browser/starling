@@ -33,17 +33,26 @@ public sealed class SelectorParser
         {
             SkipWhitespace();
             if (ConsumeToken(CssTokenType.Comma))
+            {
                 continue;
+            }
+
             if (IsEnd)
+            {
                 break;
+            }
 
             var selector = ParseComplexSelector();
             if (selector.Parts.Count > 0)
+            {
                 selectors.Add(selector);
+            }
 
             SkipWhitespace();
             if (!ConsumeToken(CssTokenType.Comma) && !IsEnd)
+            {
                 break;
+            }
         }
 
         return new SelectorList(selectors);
@@ -59,20 +68,27 @@ public sealed class SelectorParser
         {
             var hadWhitespace = SkipWhitespace();
             if (hadWhitespace && parts.Count > 0 && pendingCombinator == SelectorCombinator.None)
+            {
                 pendingCombinator = SelectorCombinator.Descendant;
+            }
 
             if (TryConsumeCombinator(out var explicitCombinator))
             {
                 pendingCombinator = explicitCombinator;
                 if (parts.Count == 0)
+                {
                     sawExplicitLeadingCombinator = true;
+                }
+
                 SkipWhitespace();
                 continue;
             }
 
             var compound = ParseCompoundSelector();
             if (compound.SimpleSelectors.Count == 0)
+            {
                 break;
+            }
 
             EnforcePseudoElementPosition(compound);
 
@@ -91,7 +107,9 @@ public sealed class SelectorParser
     {
         var simples = new List<SimpleSelector>();
         if (TryParseTypeSelector(out var typeSelector))
+        {
             simples.Add(typeSelector);
+        }
 
         while (!IsEnd)
         {
@@ -99,7 +117,10 @@ public sealed class SelectorParser
             {
                 _position++;
                 if (TryParseAttributeSelector(block, out var attribute))
+                {
                     simples.Add(attribute);
+                }
+
                 continue;
             }
 
@@ -141,8 +162,10 @@ public sealed class SelectorParser
                 continue;
             }
             if (seenPseudoElement && simple is not PseudoClassSelector)
+            {
                 throw new FormatException(
                     "Only pseudo-classes or further pseudo-elements may follow a pseudo-element in a compound selector.");
+            }
         }
     }
 
@@ -151,7 +174,9 @@ public sealed class SelectorParser
         selector = null!;
         // Namespace-prefixed selectors: ns|tag, ns|*, *|tag, *|*, |tag, |*
         if (TryParseNamespacedTypeOrUniversal(out selector))
+        {
             return true;
+        }
 
         if (TryConsumeIdent(out var name))
         {
@@ -197,7 +222,9 @@ public sealed class SelectorParser
         }
 
         if (!consumedPrefix)
+        {
             return false;
+        }
 
         if (TryConsumeIdent(out var localName))
         {
@@ -219,7 +246,9 @@ public sealed class SelectorParser
     {
         className = string.Empty;
         if (!IsDelimiter('.') || !IsToken(CssTokenType.Ident, offset: 1))
+        {
             return false;
+        }
 
         _position++;
         className = TokenAt(0).Value;
@@ -231,7 +260,9 @@ public sealed class SelectorParser
     {
         selector = null!;
         if (!ConsumeToken(CssTokenType.Colon))
+        {
             return false;
+        }
 
         var pseudoElement = ConsumeToken(CssTokenType.Colon);
         if (Current is CssFunction function)
@@ -296,15 +327,22 @@ public sealed class SelectorParser
         foreach (var value in values)
         {
             if (value is CssTokenValue { Token.Type: CssTokenType.Whitespace })
+            {
                 continue;
+            }
 
             if (value is not CssTokenValue token)
+            {
                 return new HeadingArgument([], IsValid: false);
+            }
 
             if (expectNumber)
             {
                 if (token.Token.Type != CssTokenType.Number || !token.Token.IsInteger)
+                {
                     return new HeadingArgument([], IsValid: false);
+                }
+
                 levels.Add((int)token.Token.Number);
                 expectNumber = false;
                 sawAny = true;
@@ -312,14 +350,19 @@ public sealed class SelectorParser
             else
             {
                 if (token.Token.Type != CssTokenType.Comma)
+                {
                     return new HeadingArgument([], IsValid: false);
+                }
+
                 expectNumber = true;
             }
         }
 
         // Reject an empty list and a trailing comma (expectNumber still true after a comma).
         if (!sawAny || expectNumber)
+        {
             return new HeadingArgument([], IsValid: false);
+        }
 
         return new HeadingArgument(levels);
     }
@@ -368,7 +411,10 @@ public sealed class SelectorParser
     {
         var tokens = new List<CssToken>();
         foreach (var v in values)
+        {
             FlattenInto(v, tokens);
+        }
+
         return tokens;
     }
 
@@ -381,12 +427,20 @@ public sealed class SelectorParser
                 break;
             case CssFunction f:
                 tokens.Add(new CssToken(CssTokenType.Function, f.Name));
-                foreach (var inner in f.Values) FlattenInto(inner, tokens);
+                foreach (var inner in f.Values)
+                {
+                    FlattenInto(inner, tokens);
+                }
+
                 tokens.Add(new CssToken(CssTokenType.RightParen));
                 break;
             case CssSimpleBlock b:
                 tokens.Add(new CssToken(b.StartToken));
-                foreach (var inner in b.Values) FlattenInto(inner, tokens);
+                foreach (var inner in b.Values)
+                {
+                    FlattenInto(inner, tokens);
+                }
+
                 tokens.Add(new CssToken(MatchingEnd(b.StartToken)));
                 break;
         }
@@ -408,7 +462,9 @@ public sealed class SelectorParser
             .Select(value => value.Token)
             .ToList();
         if (tokens.Count == 0 || tokens[0].Type != CssTokenType.Ident)
+        {
             return false;
+        }
 
         var name = tokens[0].Value.ToLowerInvariant();
         if (tokens.Count == 1)
@@ -434,11 +490,15 @@ public sealed class SelectorParser
         }
 
         if (index >= tokens.Count || tokens[index].Type != CssTokenType.Delim || tokens[index].Delimiter != '=')
+        {
             return false;
+        }
 
         index++;
         if (index >= tokens.Count || tokens[index].Type is not (CssTokenType.Ident or CssTokenType.String))
+        {
             return false;
+        }
 
         var value = tokens[index].Value;
         index++;
@@ -495,7 +555,9 @@ public sealed class SelectorParser
     {
         value = string.Empty;
         if (!IsToken(CssTokenType.Hash))
+        {
             return false;
+        }
 
         value = TokenAt(0).Value;
         _position++;
@@ -506,7 +568,9 @@ public sealed class SelectorParser
     {
         value = string.Empty;
         if (!IsToken(CssTokenType.Ident))
+        {
             return false;
+        }
 
         value = TokenAt(0).Value;
         _position++;
@@ -516,7 +580,9 @@ public sealed class SelectorParser
     private bool ConsumeToken(CssTokenType type)
     {
         if (!IsToken(type))
+        {
             return false;
+        }
 
         _position++;
         return true;
@@ -525,7 +591,9 @@ public sealed class SelectorParser
     private bool TryConsumeDelimiter(char delimiter)
     {
         if (!IsDelimiter(delimiter))
+        {
             return false;
+        }
 
         _position++;
         return true;

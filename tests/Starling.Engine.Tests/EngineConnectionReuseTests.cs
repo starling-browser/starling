@@ -57,7 +57,7 @@ public sealed class EngineConnectionReuseTests
         }
         finally
         {
-            try { if (File.Exists(tempPng)) File.Delete(tempPng); } catch { /* best-effort */ }
+            try { if (File.Exists(tempPng)) { File.Delete(tempPng); } } catch { /* best-effort */ }
         }
     }
 
@@ -107,7 +107,10 @@ public sealed class EngineConnectionReuseTests
                 while (!_cts.IsCancellationRequested)
                 {
                     var path = await ReadRequestPathAsync(stream, _cts.Token).ConfigureAwait(false);
-                    if (path is null) return; // peer closed the connection
+                    if (path is null)
+                    {
+                        return; // peer closed the connection
+                    }
 
                     Interlocked.Increment(ref _requestsServed);
                     var (status, contentType, body) = _routes.TryGetValue(path, out var route)
@@ -143,7 +146,11 @@ public sealed class EngineConnectionReuseTests
                 int n;
                 try { n = await stream.ReadAsync(buf, ct).ConfigureAwait(false); }
                 catch { return null; }
-                if (n == 0) return null;
+                if (n == 0)
+                {
+                    return null;
+                }
+
                 sb.Append(Encoding.ASCII.GetString(buf, 0, n));
             }
             var firstLine = sb.ToString().Split("\r\n", StringSplitOptions.None)[0];

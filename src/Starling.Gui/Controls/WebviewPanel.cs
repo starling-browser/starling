@@ -358,7 +358,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         _liveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(32) };
         _liveTimer.Tick += (_, _) =>
         {
-            if (Environment.TickCount64 - _lastLiveTickAtMs >= 30) LiveTick();
+            if (Environment.TickCount64 - _lastLiveTickAtMs >= 30)
+            {
+                LiveTick();
+            }
         };
 
         // Caret blink — toggles the overlay's visibility on a fixed cadence
@@ -366,7 +369,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         _caretBlinkTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(530) };
         _caretBlinkTimer.Tick += (_, _) =>
         {
-            if (_caretOverlay is null) return;
+            if (_caretOverlay is null)
+            {
+                return;
+            }
+
             _caretOn = !_caretOn;
             _caretOverlay.IsVisible = _caretOn;
             RefreshOverlays();
@@ -615,7 +622,9 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         // the frame includes them. The live animation loop defers (deferRender:true)
         // and presents exactly once at the end of its own tick instead.
         if (!deferRender)
+        {
             RenderViewportRegion();
+        }
     }
 
     /// <summary>
@@ -646,7 +655,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// </summary>
     private void RenderViewportRegion()
     {
-        if (_currentPage is null) return;
+        if (_currentPage is null)
+        {
+            return;
+        }
+
         var rect = CurrentViewportRect();
 
         ArgumentNullException.ThrowIfNull(_pageSurfaceHost);
@@ -659,7 +672,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         EnsureSurfaceTarget();
         PresentSurface(rect);
 
-        if (_pageImage.IsVisible) _pageImage.IsVisible = false;
+        if (_pageImage.IsVisible)
+        {
+            _pageImage.IsVisible = false;
+        }
     }
 
     /// <summary>Device-pixel size of a page-coordinate viewport rect at the current scale.</summary>
@@ -789,7 +805,9 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         // A present with both reuse flags off rebuilt the layer tree in full;
         // that build's promotion set is the new reuse baseline.
         if (!_animationTickPresent && !scopedRefresh)
+        {
             RebuildPromotedBaseline(_currentPage);
+        }
     }
 
     /// <summary>
@@ -805,29 +823,66 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
         void Add(Control c)
         {
-            if (!c.IsVisible) return;
-            if (c is not Border b || b.Background is not ISolidColorBrush brush) return;
+            if (!c.IsVisible)
+            {
+                return;
+            }
+
+            if (c is not Border b || b.Background is not ISolidColorBrush brush)
+            {
+                return;
+            }
+
             var w = b.Width;
             var h = b.Height;
-            if (double.IsNaN(w) || double.IsNaN(h) || w <= 0 || h <= 0) return;
+            if (double.IsNaN(w) || double.IsNaN(h) || w <= 0 || h <= 0)
+            {
+                return;
+            }
+
             var x = Canvas.GetLeft(b);
             var y = Canvas.GetTop(b);
-            if (double.IsNaN(x) || double.IsNaN(y)) return;
+            if (double.IsNaN(x) || double.IsNaN(y))
+            {
+                return;
+            }
+
             var col = brush.Color;
-            if (col.A == 0) return;
+            if (col.A == 0)
+            {
+                return;
+            }
+
             (instances ??= new List<SurfaceOverlayInstance>())
                 .Add(new SurfaceOverlayInstance(x, y, w, h, new CssColor(col.R, col.G, col.B, col.A)));
             width = Math.Max(width, x + w);
             height = Math.Max(height, y + h);
         }
 
-        foreach (var o in _selectionOverlays) Add(o);
-        foreach (var o in _findOverlays) Add(o);
-        foreach (var o in _highlightOverlays) Add(o);
-        if (_caretOverlay is not null) Add(_caretOverlay);
+        foreach (var o in _selectionOverlays)
+        {
+            Add(o);
+        }
+
+        foreach (var o in _findOverlays)
+        {
+            Add(o);
+        }
+
+        foreach (var o in _highlightOverlays)
+        {
+            Add(o);
+        }
+
+        if (_caretOverlay is not null)
+        {
+            Add(_caretOverlay);
+        }
 
         if (instances is not { Count: > 0 })
+        {
             return null;
+        }
 
         var scene = SurfaceOverlayScene.Create(width, height, HashSurfaceOverlayInstances(instances),
             builder => builder.FillInstances(SurfaceOverlayPrimitive.Rectangle, instances));
@@ -874,10 +929,16 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         // count it (surface or readback) so tests can verify the coalescing, then
         // present on the surface path. The readback present is a no-op (the Avalonia
         // overlay controls composite themselves over the bitmap).
-        if (_currentPage is null || _suppressPresent) return;
+        if (_currentPage is null || _suppressPresent)
+        {
+            return;
+        }
+
         _overlayPresentRequests++;
         if (_useSurface)
+        {
             RenderViewportRegion();
+        }
     }
 
     /// <summary>
@@ -925,11 +986,15 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         {
             var vp = CurrentViewportRect();
             if (scripting.UpdateIntersectionObservations(vp.X, vp.Y, vp.Width, vp.Height))
+            {
                 ScheduleRelayout();
+            }
         }
         RenderViewportRegion();
         if (e.ViewportDelta.X != 0 || e.ViewportDelta.Y != 0)
+        {
             ScheduleRelayout();
+        }
     }
 
     /// <summary>
@@ -953,7 +1018,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private void ScheduleRelayout()
     {
-        if (_relayout is null) return;
+        if (_relayout is null)
+        {
+            return;
+        }
         // Restart the timer so a continuous drag-resize only reflows once it
         // pauses, not on every intermediate size.
         _relayoutTimer.Stop();
@@ -964,20 +1032,27 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     {
         _relayoutTimer.Stop();
         var page = _currentPage;
-        if (page is null || _relayout is null) return;
+        if (page is null || _relayout is null)
+        {
+            return;
+        }
 
         var size = CurrentViewportSize();
         // No-op if the layout viewport already matches what produced this page —
         // guards against scrollbar-toggle flicker and the post-load delta.
         if (size.Width == (int)Math.Round(page.Viewport.Width) &&
             size.Height == (int)Math.Round(page.Viewport.Height))
+        {
             return;
+        }
 
         CaretLog(
             $"RelayoutToViewport: {(int)page.Viewport.Width}x{(int)page.Viewport.Height} -> {size.Width}x{size.Height}");
         var relaid = _relayout(page, size);
         if (relaid is not null)
+        {
             ShowPage(relaid, preserveScroll: true);
+        }
     }
 
     private double GetRenderScale()
@@ -990,10 +1065,22 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private (double X, double Y)? PointerToDocSpace(PointerEventArgs e)
     {
-        if (_currentPage is null) return null;
+        if (_currentPage is null)
+        {
+            return null;
+        }
+
         var p = e.GetPosition(_pageCanvas);
-        if (p.X < 0 || p.Y < 0) return null;
-        if (p.X >= _pageCanvas.Bounds.Width || p.Y >= _pageCanvas.Bounds.Height) return null;
+        if (p.X < 0 || p.Y < 0)
+        {
+            return null;
+        }
+
+        if (p.X >= _pageCanvas.Bounds.Width || p.Y >= _pageCanvas.Bounds.Height)
+        {
+            return null;
+        }
+
         return (p.X, p.Y);
     }
 
@@ -1004,7 +1091,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// </summary>
     private BoxHitTester.HitResult HitTestPage(double x, double y)
     {
-        if (_currentPage is null) return default;
+        if (_currentPage is null)
+        {
+            return default;
+        }
+
         return BoxHitTester.HitTest(
             _currentPage.Root, x, y, _scroll.Offset.X, _scroll.Offset.Y,
             _currentPage.ScrollOffsetLookup, _currentPage.StickyShiftLookup);
@@ -1019,12 +1110,22 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     // falls through to the outer Avalonia ScrollViewer.
     private void OnPageWheel(object? sender, PointerWheelEventArgs e)
     {
-        if (_currentPage is null) return;
+        if (_currentPage is null)
+        {
+            return;
+        }
+
         var doc = PointerToDocSpace(e);
-        if (doc is null) return;
+        if (doc is null)
+        {
+            return;
+        }
 
         var hit = HitTestPage(doc.Value.X, doc.Value.Y);
-        if (hit.Box is null) return;
+        if (hit.Box is null)
+        {
+            return;
+        }
 
         // Avalonia wheel deltas are in lines (positive = up/right, the
         // direction the content moves); negate into content-space deltas.
@@ -1042,7 +1143,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_currentPage is null) return;
+        if (_currentPage is null)
+        {
+            return;
+        }
+
         var doc = PointerToDocSpace(e);
         if (doc is null)
         {
@@ -1080,7 +1185,9 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         {
             var href = anchorEl.GetAttribute("href");
             if (!string.IsNullOrEmpty(href))
+            {
                 _onStatus(href!, false);
+            }
         }
     }
 
@@ -1096,14 +1203,24 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (_currentPage is null) return;
-        if (!e.GetCurrentPoint(_pageCanvas).Properties.IsLeftButtonPressed) return;
+        if (_currentPage is null)
+        {
+            return;
+        }
+
+        if (!e.GetCurrentPoint(_pageCanvas).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
 
         var doc = PointerToDocSpace(e);
 
         HitDiag(e, doc);
 
-        if (doc is null) return;
+        if (doc is null)
+        {
+            return;
+        }
 
         // Always collapse any prior selection on primary press; the new gesture
         // is either a single click (link / blank) or the start of a fresh drag.
@@ -1122,20 +1239,31 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             return;
         }
 
-        if (e.InitialPressMouseButton != MouseButton.Left) return;
+        if (e.InitialPressMouseButton != MouseButton.Left)
+        {
+            return;
+        }
 
         var wasSelecting = _selecting && _selectAnchor is not null;
         var dragged = wasSelecting && _selectionOverlays.Count > 0;
 
         EndSelectionDrag(cancel: false);
 
-        if (dragged) return; // drag-select: don't navigate on release
+        if (dragged)
+        {
+            return; // drag-select: don't navigate on release
+        }
 
         var doc = PointerToDocSpace(e);
-        if (doc is null) return;
+        if (doc is null)
+        {
+            return;
+        }
 
         if (PerformClick(doc.Value).Handled)
+        {
             e.Handled = true;
+        }
     }
 
     /// <summary>
@@ -1159,7 +1287,9 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         }
 
         if (DispatchClick(hit, doc))
+        {
             return (true, $"clicked <{DescribeHit(hit)}> (page handled)");
+        }
 
         // Not consumed by the page: a click elsewhere blurs the current field and
         // then follows a link if one was hit.
@@ -1184,7 +1314,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private void EndSelectionDrag(bool cancel)
     {
         _selecting = false;
-        if (cancel) _selectAnchor = null;
+        if (cancel)
+        {
+            _selectAnchor = null;
+        }
     }
 
     // ---- Text input editing -------------------------------------------
@@ -1207,9 +1340,15 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     {
         for (var b = box; b is not null; b = b.Parent)
         {
-            if (b.Element is not DomElement el) continue;
+            if (b.Element is not DomElement el)
+            {
+                continue;
+            }
+
             if (!el.HasAttribute("disabled") && !el.HasAttribute("readonly") && HtmlFormControls.IsTextControl(el))
+            {
                 return el;
+            }
         }
 
         return null;
@@ -1225,7 +1364,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// </summary>
     private void FocusInput(DomElement input, (double X, double Y) clickDoc)
     {
-        if (_currentPage is null) return;
+        if (_currentPage is null)
+        {
+            return;
+        }
 
         _focusedInput = input;
         _currentPage.Document.FocusedElement = input;
@@ -1247,7 +1389,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// restored), if any. A no-op when nothing is focused.</summary>
     private void BlurInput()
     {
-        if (_focusedInput is null) return;
+        if (_focusedInput is null)
+        {
+            return;
+        }
+
         var was = _focusedInput;
         var finalValue = HtmlFormControls.Value(was);
         var changed = !string.Equals(finalValue, _valueAtFocus, StringComparison.Ordinal);
@@ -1255,10 +1401,16 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         _caretBlinkTimer.Stop();
         RemoveCaretOverlay();
         if (_currentPage is not null && ReferenceEquals(_currentPage.Document.FocusedElement, was))
+        {
             _currentPage.Document.FocusedElement = null;
+        }
 
         // HTML order: a value edited since focus fires `change`, then blur/focusout.
-        if (changed) DispatchDom(was, new Event("change", new EventInit(Bubbles: true)));
+        if (changed)
+        {
+            DispatchDom(was, new Event("change", new EventInit(Bubbles: true)));
+        }
+
         DispatchDom(was, new FocusEvent("blur"));
         DispatchDom(was, new FocusEvent("focusout", new EventInit(Bubbles: true)));
 
@@ -1267,11 +1419,17 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private void OnPageTextInput(object? sender, TextInputEventArgs e)
     {
-        if (_focusedInput is null || string.IsNullOrEmpty(e.Text)) return;
+        if (_focusedInput is null || string.IsNullOrEmpty(e.Text))
+        {
+            return;
+        }
         // Drop control characters — Enter/Tab arrive via OnPageKeyDown, and some
         // platforms also surface them here.
         var text = new string(e.Text.Where(c => !char.IsControl(c)).ToArray());
-        if (text.Length == 0) return;
+        if (text.Length == 0)
+        {
+            return;
+        }
 
         e.Handled = true;
         var val = CurrentValue();
@@ -1282,24 +1440,40 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private void OnPageKeyUp(object? sender, KeyEventArgs e)
     {
-        if (_focusedInput is null) return;
+        if (_focusedInput is null)
+        {
+            return;
+        }
+
         DispatchDom(_focusedInput, MakeKeyboardEvent("keyup", e));
     }
 
     private void OnPageKeyDown(object? sender, KeyEventArgs e)
     {
-        if (_focusedInput is null) return;
+        if (_focusedInput is null)
+        {
+            return;
+        }
+
         DispatchDom(_focusedInput, MakeKeyboardEvent("keydown", e));
         var val = CurrentValue();
         var idx = Math.Clamp(_caretIndex, 0, val.Length);
         switch (e.Key)
         {
             case Key.Back:
-                if (idx > 0) CommitValue(val.Remove(idx - 1, 1), idx - 1);
+                if (idx > 0)
+                {
+                    CommitValue(val.Remove(idx - 1, 1), idx - 1);
+                }
+
                 e.Handled = true;
                 break;
             case Key.Delete:
-                if (idx < val.Length) CommitValue(val.Remove(idx, 1), idx);
+                if (idx < val.Length)
+                {
+                    CommitValue(val.Remove(idx, 1), idx);
+                }
+
                 e.Handled = true;
                 break;
             case Key.Left:
@@ -1330,7 +1504,9 @@ internal sealed class WebviewPanel : UserControl, IDisposable
                 {
                     var actioned = false;
                     if (SubmitOwningForm(_focusedInput, ref actioned))
+                    {
                         RefreshLiveLayout();
+                    }
                 }
 
                 break;
@@ -1341,7 +1517,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// so the rendered label text matches.</summary>
     private void CommitValue(string next, int newCaret)
     {
-        if (_focusedInput is null) return;
+        if (_focusedInput is null)
+        {
+            return;
+        }
+
         HtmlFormControls.SetValue(_focusedInput, next);
         _caretIndex = Math.Clamp(newCaret, 0, next.Length);
         HtmlFormControls.SetSelectionRange(_focusedInput, _caretIndex, _caretIndex, "none");
@@ -1356,7 +1536,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     {
         _caretIndex = Math.Clamp(index, 0, CurrentValue().Length);
         if (_focusedInput is not null)
+        {
             HtmlFormControls.SetSelectionRange(_focusedInput, _caretIndex, _caretIndex, "none");
+        }
+
         RenderCaret(); // value unchanged — no re-layout needed
     }
 
@@ -1374,9 +1557,13 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
         var relaid = _relayout(_currentPage, CurrentViewportSize());
         if (relaid is not null)
+        {
             ShowPage(relaid, preserveScroll: true); // re-renders caret if still focused
+        }
         else
+        {
             RenderCaret();
+        }
     }
 
     // TEMP caret diagnostics — gated behind STARLING_CARET_DEBUG=1.
@@ -1385,7 +1572,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private void CaretLog(string msg)
     {
-        if (!_caretDebug) return;
+        if (!_caretDebug)
+        {
+            return;
+        }
+
         try
         {
             System.IO.File.AppendAllText("/tmp/starling-caret.log", $"{DateTime.Now:HH:mm:ss.fff} {msg}\n");
@@ -1474,7 +1665,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private void RemoveCaretOverlay()
     {
-        if (_caretOverlay is null) return;
+        if (_caretOverlay is null)
+        {
+            return;
+        }
+
         _pageCanvas.Children.Remove(_caretOverlay);
         _caretOverlay = null;
         RefreshOverlays();
@@ -1490,7 +1685,9 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         Starling.Layout.Box.BlockBox root, DomElement input, int caretIndex)
     {
         if (FindBoxAbs(root, 0, 0, b => ReferenceEquals(b.Element, input)) is not { } found)
+        {
             return null;
+        }
 
         var inputBox = found.Box;
         var color = ResolveCaretColor(inputBox);
@@ -1517,8 +1714,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             foreach (var frag in t.Fragments)
             {
                 if (remaining <= frag.Text.Length)
+                {
                     return (th.X + frag.X + XOffsetInFragment(frag, remaining),
                         th.Y + frag.Y, frag.Height, color);
+                }
+
                 remaining -= frag.Text.Length;
             }
 
@@ -1538,14 +1738,23 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private int CaretIndexFromClick((double X, double Y) clickDoc)
     {
         var val = CurrentValue();
-        if (_focusedInput is null || _currentPage is null || val.Length == 0) return val.Length;
-        if (FindBoxAbs(_currentPage.Root, 0, 0, b => ReferenceEquals(b.Element, _focusedInput)) is not { } found)
+        if (_focusedInput is null || _currentPage is null || val.Length == 0)
+        {
             return val.Length;
+        }
+
+        if (FindBoxAbs(_currentPage.Root, 0, 0, b => ReferenceEquals(b.Element, _focusedInput)) is not { } found)
+        {
+            return val.Length;
+        }
 
         var inputBox = found.Box;
         var cx = found.X + inputBox.Border.Left + inputBox.Padding.Left;
         var cy = found.Y + inputBox.Border.Top + inputBox.Padding.Top;
-        if (FindValueTextBox(inputBox, cx, cy) is not { } th) return val.Length;
+        if (FindValueTextBox(inputBox, cx, cy) is not { } th)
+        {
+            return val.Length;
+        }
 
         // Find the value fragment under the click (or the last one when the click
         // is past the text), then add the char offset within it to the count of
@@ -1558,7 +1767,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             var fragLeft = th.X + frag.X;
             var isLast = fi == t.Fragments.Count - 1;
             if (clickDoc.X < fragLeft + frag.Width || isLast)
+            {
                 return prior + CharOffsetInFragment(frag, clickDoc.X - fragLeft);
+            }
+
             prior += frag.Text.Length;
         }
 
@@ -1570,14 +1782,21 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// using shaped glyph midpoints when available and a proportional fallback.</summary>
     private static int CharOffsetInFragment(Starling.Layout.Box.TextFragment frag, double localX)
     {
-        if (localX <= 0) return 0;
+        if (localX <= 0)
+        {
+            return 0;
+        }
+
         if (frag.Shaped is { } sh && sh.Glyphs.Length == frag.Text.Length)
         {
             for (var i = 0; i < sh.Glyphs.Length; i++)
             {
                 var left = sh.Glyphs[i].X;
                 var right = i + 1 < sh.Glyphs.Length ? sh.Glyphs[i + 1].X : frag.Width;
-                if (localX < (left + right) / 2) return i;
+                if (localX < (left + right) / 2)
+                {
+                    return i;
+                }
             }
 
             return frag.Text.Length;
@@ -1596,7 +1815,9 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         {
             if (FindBoxAbs(child, contentX, contentY,
                     b => b is Starling.Layout.Box.TextBox { Fragments.Count: > 0 }) is { } r)
+            {
                 return r;
+            }
         }
 
         return null;
@@ -1610,30 +1831,53 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     {
         var fx = originX + box.Frame.X;
         var fy = originY + box.Frame.Y;
-        if (pred(box)) return (box, fx, fy);
-        if (box is Starling.Layout.Box.TextBox) return null;
+        if (pred(box))
+        {
+            return (box, fx, fy);
+        }
+
+        if (box is Starling.Layout.Box.TextBox)
+        {
+            return null;
+        }
 
         var cx = fx + box.Border.Left + box.Padding.Left;
         var cy = fy + box.Border.Top + box.Padding.Top;
         foreach (var child in box.Children)
+        {
             if (FindBoxAbs(child, cx, cy, pred) is { } r)
+            {
                 return r;
+            }
+        }
+
         return null;
     }
 
     private static double XOffsetInFragment(Starling.Layout.Box.TextFragment frag, int caretIndex)
     {
         var n = Math.Clamp(caretIndex, 0, frag.Text.Length);
-        if (n == 0) return 0;
+        if (n == 0)
+        {
+            return 0;
+        }
+
         if (frag.Shaped is { } sh && sh.Glyphs.Length == frag.Text.Length)
+        {
             return n < sh.Glyphs.Length ? sh.Glyphs[n].X : frag.Width;
+        }
+
         return frag.Text.Length == 0 ? 0 : frag.Width * n / frag.Text.Length;
     }
 
     private static AvColor ResolveCaretColor(LayoutBox box)
     {
         var c = box.Style?.GetColor(PropertyId.Color);
-        if (c is null) return AvColor.FromArgb(255, 0, 0, 0);
+        if (c is null)
+        {
+            return AvColor.FromArgb(255, 0, 0, 0);
+        }
+
         return AvColor.FromArgb(c.A == 0 ? (byte)255 : c.A, c.R, c.G, c.B);
     }
 
@@ -1677,8 +1921,16 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             _liveStopwatch.Restart();
         }
 
-        if (scripting is null && !_liveStopwatch.IsRunning) _liveStopwatch.Restart();
-        if (!_liveTimer.IsEnabled) _liveTimer.Start();
+        if (scripting is null && !_liveStopwatch.IsRunning)
+        {
+            _liveStopwatch.Restart();
+        }
+
+        if (!_liveTimer.IsEnabled)
+        {
+            _liveTimer.Start();
+        }
+
         TryScheduleVsyncTick();
     }
 
@@ -1693,13 +1945,25 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// watchdog timer covers those frames).</summary>
     private void TryScheduleVsyncTick()
     {
-        if (_vsyncTickScheduled || !_liveTimer.IsEnabled) return;
-        if (TopLevel.GetTopLevel(this) is not { } top) return;
+        if (_vsyncTickScheduled || !_liveTimer.IsEnabled)
+        {
+            return;
+        }
+
+        if (TopLevel.GetTopLevel(this) is not { } top)
+        {
+            return;
+        }
+
         _vsyncTickScheduled = true;
         top.RequestAnimationFrame(_ =>
         {
             _vsyncTickScheduled = false;
-            if (!_liveTimer.IsEnabled) return;
+            if (!_liveTimer.IsEnabled)
+            {
+                return;
+            }
+
             LiveTick();
             TryScheduleVsyncTick();
         });
@@ -1778,7 +2042,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
                 return;
             }
 
-            if (scopedRelayout) scopedRelayout = VerifyScopedMutationRoots(page);
+            if (scopedRelayout)
+            {
+                scopedRelayout = VerifyScopedMutationRoots(page);
+            }
         }
 
         // Apply a store-driven root write (window.scrollTo / scrollTop on the
@@ -1803,7 +2070,9 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             // left the hover scope are not here — they animate back via the
             // AnimatedStyle path below, which carries their reverse transition.
             if (_hoverElement is not null)
+            {
                 _hoverOverrides = BuildHoverOverrides(_hoverElement, _animClockMs);
+            }
         }
         else
         {
@@ -1854,7 +2123,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private void ApplyStoreRootScroll(LaidOutPage page)
     {
         var root = page.ScrollState.Root;
-        if (root.OffsetX == _rootScrollSynced.X && root.OffsetY == _rootScrollSynced.Y) return;
+        if (root.OffsetX == _rootScrollSynced.X && root.OffsetY == _rootScrollSynced.Y)
+        {
+            return;
+        }
+
         _rootScrollSynced = (root.OffsetX, root.OffsetY);
         _scroll.Offset = new Vector(root.OffsetX, root.OffsetY);
     }
@@ -1863,9 +2136,16 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// preserving scroll and the text caret. No-op without a relayout hook.</summary>
     private void RefreshLiveLayout(bool deferRender = false)
     {
-        if (_currentPage is null || _relayout is null) return;
+        if (_currentPage is null || _relayout is null)
+        {
+            return;
+        }
+
         var relaid = _relayout(_currentPage, CurrentViewportSize());
-        if (relaid is not null) ShowPage(relaid, preserveScroll: true, deferRender: deferRender);
+        if (relaid is not null)
+        {
+            ShowPage(relaid, preserveScroll: true, deferRender: deferRender);
+        }
     }
 
     /// <summary>Dispatch a DOM event into the page's JS listeners (a no-op for
@@ -1875,7 +2155,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private bool DispatchDom(DomElement target, Event evt)
     {
         var scripting = _currentPage?.Scripting;
-        if (scripting is null) return false;
+        if (scripting is null)
+        {
+            return false;
+        }
+
         bool mutated = false;
         try
         {
@@ -1886,7 +2170,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             WebviewPanelLog.DomDispatchFailed(_log, ex.Message);
         }
 
-        if (!_liveTimer.IsEnabled) BindLiveScripting();
+        if (!_liveTimer.IsEnabled)
+        {
+            BindLiveScripting();
+        }
+
         return mutated;
     }
 
@@ -1901,8 +2189,15 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// </summary>
     private bool DispatchClick(BoxHitTester.HitResult hit, (double X, double Y) doc)
     {
-        if (_currentPage?.Scripting is null) return false;
-        if (FindClickTarget(hit.Box) is not { } target) return false;
+        if (_currentPage?.Scripting is null)
+        {
+            return false;
+        }
+
+        if (FindClickTarget(hit.Box) is not { } target)
+        {
+            return false;
+        }
 
         var click = new MouseEvent("click", new EventInit(Bubbles: true, Cancelable: true))
         {
@@ -1914,9 +2209,15 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
         var actioned = false;
         if (!click.DefaultPrevented)
+        {
             mutated |= RunClickDefault(target, out actioned);
+        }
 
-        if (mutated) RefreshLiveLayout();
+        if (mutated)
+        {
+            RefreshLiveLayout();
+        }
+
         return click.DefaultPrevented || actioned || mutated;
     }
 
@@ -1927,7 +2228,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private bool RunClickDefault(DomElement clicked, out bool actioned)
     {
         actioned = false;
-        if (NearestControl(clicked) is not { } control) return false;
+        if (NearestControl(clicked) is not { } control)
+        {
+            return false;
+        }
 
         switch (control.LocalName)
         {
@@ -1943,13 +2247,19 @@ internal sealed class WebviewPanel : UserControl, IDisposable
                 }
 
                 if (type is "submit" or "image")
+                {
                     return SubmitOwningForm(control, ref actioned);
+                }
+
                 return false;
 
             case "button":
                 var btnType = (control.GetAttribute("type") ?? "submit").Trim().ToLowerInvariant();
                 if (btnType == "submit")
+                {
                     return SubmitOwningForm(control, ref actioned);
+                }
+
                 return false;
 
             default:
@@ -1964,13 +2274,24 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// the SPA/todo pattern preventDefaults and handles submission in JS.</summary>
     private bool SubmitOwningForm(DomElement control, ref bool actioned)
     {
-        if (HtmlFormControls.FormOwner(control) is not { } form) return false;
+        if (HtmlFormControls.FormOwner(control) is not { } form)
+        {
+            return false;
+        }
+
         actioned = true;
-        if (!DispatchInvalidEvents(form)) return true;
+        if (!DispatchInvalidEvents(form))
+        {
+            return true;
+        }
+
         var submit = new Event("submit", new EventInit(Bubbles: true, Cancelable: true));
         var mutated = DispatchDom(form, submit);
         if (!submit.DefaultPrevented)
+        {
             HtmlFormControls.RecordAutocompleteSubmission(form);
+        }
+
         return mutated;
     }
 
@@ -1979,8 +2300,13 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private static DomElement? FindClickTarget(LayoutBox? box)
     {
         for (var b = box; b is not null; b = b.Parent)
+        {
             if (b.Element is DomElement el)
+            {
                 return el;
+            }
+        }
+
         return null;
     }
 
@@ -1990,8 +2316,13 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private static DomElement? NearestControl(DomElement el)
     {
         for (DomNode? n = el; n is not null; n = n.ParentNode)
+        {
             if (n is DomElement { LocalName: "button" or "input" } c)
+            {
                 return c;
+            }
+        }
+
         return null;
     }
 
@@ -2005,7 +2336,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         var valid = true;
         foreach (var control in HtmlFormControls.FormControls(form))
         {
-            if (HtmlFormControls.Validity(control).Valid) continue;
+            if (HtmlFormControls.Validity(control).Valid)
+            {
+                continue;
+            }
+
             valid = false;
             DispatchDom(control, new Event("invalid", new EventInit(Cancelable: true)));
         }
@@ -2028,7 +2363,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// is loaded; the returned detail describes what the click did.</summary>
     public InputResult ClickAt(double x, double y)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
+
         return new InputResult(true, PerformClick((x, y)).Detail);
     }
 
@@ -2039,13 +2378,20 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// loaded.</summary>
     public InputResult MoveTo(double x, double y)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
 
         var hit = HitTestPage(x, y);
         UpdateHover(hit);
         DispatchMouseMove((x, y), FindClickTarget(hit.Box));
 
-        if (hit.Box is null) return new InputResult(true, "moved over empty area");
+        if (hit.Box is null)
+        {
+            return new InputResult(true, "moved over empty area");
+        }
+
         var link = hit.LinkAnchor?.GetAttribute("href") is { Length: > 0 } href ? $" → {href}" : string.Empty;
         return new InputResult(true, $"moved over <{DescribeHit(hit)}>{link}");
     }
@@ -2055,12 +2401,23 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     public InputResult ClickBySelector(string selector)
     {
         var (els, error) = QueryAll(selector);
-        if (error is not null) return new InputResult(false, error);
-        if (els.Count == 0) return new InputResult(true, $"no elements matched '{selector}'");
+        if (error is not null)
+        {
+            return new InputResult(false, error);
+        }
+
+        if (els.Count == 0)
+        {
+            return new InputResult(true, $"no elements matched '{selector}'");
+        }
 
         foreach (var el in els)
         {
-            if (BoxForElement(el) is not { } loc) continue;
+            if (BoxForElement(el) is not { } loc)
+            {
+                continue;
+            }
+
             var doc = (loc.X + loc.Box.Frame.Width / 2, loc.Y + loc.Box.Frame.Height / 2);
             return new InputResult(true, PerformClick(doc).Detail);
         }
@@ -2074,9 +2431,15 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// extent.</summary>
     public InputResult ScrollBy(double deltaX, double deltaY)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
+
         if (!double.IsFinite(deltaX) || !double.IsFinite(deltaY))
+        {
             return new InputResult(false, $"scroll deltas must be finite, got {deltaX}, {deltaY}");
+        }
 
         var pageW = _pageCanvas.Width > 0 ? _pageCanvas.Width : _currentPage.Root.Frame.Width;
         var pageH = _pageCanvas.Height > 0 ? _pageCanvas.Height : _currentPage.Root.Frame.Height;
@@ -2104,14 +2467,26 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// for <paramref name="selector"/>.</summary>
     public InputResult ScrollTo(double? x, double? y, string? selector, string? position)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
+
         if (selector is { Length: > 0 })
         {
             var (els, error) = QueryAll(selector);
-            if (error is not null) return new InputResult(false, error);
+            if (error is not null)
+            {
+                return new InputResult(false, error);
+            }
+
             foreach (var el in els)
             {
-                if (BoxForElement(el) is not { } loc) continue;
+                if (BoxForElement(el) is not { } loc)
+                {
+                    continue;
+                }
+
                 var targetY = position?.Trim().ToLowerInvariant() switch
                 {
                     "center" => loc.Y - (ViewportHeight() - loc.Box.Frame.Height) / 2,
@@ -2120,7 +2495,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
                     var p => double.NaN,
                 };
                 if (double.IsNaN(targetY))
+                {
                     return new InputResult(false, "position must be top, center, or bottom");
+                }
+
                 return ScrollToOffset(x ?? _scroll.Offset.X, targetY,
                     $"scrolled to <{el.LocalName}> matching '{selector}'");
             }
@@ -2129,7 +2507,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         }
 
         if (x is null && y is null)
+        {
             return new InputResult(false, "scroll_to requires x/y or selector");
+        }
+
         return ScrollToOffset(x ?? _scroll.Offset.X, y ?? _scroll.Offset.Y, "scrolled");
     }
 
@@ -2137,15 +2518,26 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// behavior. Page keys scroll the outer viewport. Tab moves DOM focus.</summary>
     public InputResult PressKey(string key, bool shift, bool ctrl, bool alt, bool meta)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
+
         var normalized = NormalizeKey(key);
-        if (normalized.Length == 0) return new InputResult(false, "key is empty");
+        if (normalized.Length == 0)
+        {
+            return new InputResult(false, "key is empty");
+        }
 
         if (normalized == "Tab")
+        {
             return FocusAdjacent(shift ? -1 : 1);
+        }
 
         if (_focusedInput is not null)
+        {
             return PressFocusedInputKey(normalized, shift, ctrl, alt, meta);
+        }
 
         if (_currentPage.Document.FocusedElement is { } focused)
         {
@@ -2159,7 +2551,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             }
 
             mutated |= DispatchDom(focused, MakeKeyboardEvent("keyup", normalized, shift, ctrl, alt, meta));
-            if (mutated) RefreshLiveLayout();
+            if (mutated)
+            {
+                RefreshLiveLayout();
+            }
+
             return new InputResult(true, detail);
         }
 
@@ -2186,9 +2582,15 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// page is loaded or no text field is focused.</summary>
     public InputResult TypeText(string text, bool submit = false)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
+
         if (_focusedInput is null)
+        {
             return new InputResult(false, "no focused text field — click an input first");
+        }
 
         var clean = new string((text ?? string.Empty).Where(c => !char.IsControl(c)).ToArray());
         if (clean.Length > 0)
@@ -2224,15 +2626,26 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     public InputResult HighlightElement(string selector, string? color)
     {
         var (els, error) = QueryAll(selector);
-        if (error is not null) return new InputResult(false, error);
+        if (error is not null)
+        {
+            return new InputResult(false, error);
+        }
+
         ClearHighlightOverlays();
-        if (els.Count == 0) return new InputResult(true, $"no elements matched '{selector}'");
+        if (els.Count == 0)
+        {
+            return new InputResult(true, $"no elements matched '{selector}'");
+        }
 
         var brush = HighlightBrush(color);
         var count = 0;
         foreach (var el in els)
         {
-            if (FindBoxAbs(_currentPage!.Root, 0, 0, b => ReferenceEquals(b.Element, el)) is not { } loc) continue;
+            if (FindBoxAbs(_currentPage!.Root, 0, 0, b => ReferenceEquals(b.Element, el)) is not { } loc)
+            {
+                continue;
+            }
+
             var overlay = MakeOverlay(brush, loc.X, loc.Y, loc.Box.Frame.Width, loc.Box.Frame.Height);
             _pageCanvas.Children.Add(overlay);
             _highlightOverlays.Add(overlay);
@@ -2250,12 +2663,21 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     public InputResult SelectBySelector(string selector)
     {
         var (els, error) = QueryAll(selector);
-        if (error is not null) return new InputResult(false, error);
-        if (els.Count == 0) return new InputResult(true, $"no elements matched '{selector}'");
+        if (error is not null)
+        {
+            return new InputResult(false, error);
+        }
+
+        if (els.Count == 0)
+        {
+            return new InputResult(true, $"no elements matched '{selector}'");
+        }
 
         var el = els[0];
         if (FindBoxAbs(_currentPage!.Root, 0, 0, b => ReferenceEquals(b.Element, el)) is not { } loc)
+        {
             return new InputResult(false, $"matched <{el.LocalName}> has no rendered box to select");
+        }
 
         ClearSelection();
         var brush = new SolidColorBrush(AvColor.FromArgb(80, 51, 144, 255));
@@ -2276,8 +2698,15 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     public InputResult FocusBySelector(string selector)
     {
         var (els, error) = QueryAll(selector);
-        if (error is not null) return new InputResult(false, error);
-        if (els.Count == 0) return new InputResult(true, $"no elements matched '{selector}'");
+        if (error is not null)
+        {
+            return new InputResult(false, error);
+        }
+
+        if (els.Count == 0)
+        {
+            return new InputResult(true, $"no elements matched '{selector}'");
+        }
 
         var el = els[0];
         if (HtmlFormControls.IsTextControl(el) && !el.HasAttribute("disabled")
@@ -2306,18 +2735,33 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// text / serialized HTML.</summary>
     public InputResult QuerySelector(string selector, bool includeText, bool includeHtml, int limit)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
+
         var (els, error) = QueryAll(selector);
-        if (error is not null) return new InputResult(false, error);
+        if (error is not null)
+        {
+            return new InputResult(false, error);
+        }
+
         var capped = Math.Clamp(limit <= 0 ? 20 : limit, 1, 100);
-        if (els.Count == 0) return new InputResult(true, $"matches: 0 for '{selector}'");
+        if (els.Count == 0)
+        {
+            return new InputResult(true, $"matches: 0 for '{selector}'");
+        }
 
         var sb = new StringBuilder();
         sb.Append("matches: ").Append(els.Count).Append(" for '").Append(selector).AppendLine("'");
         var shown = 0;
         foreach (var el in els)
         {
-            if (shown >= capped) break;
+            if (shown >= capped)
+            {
+                break;
+            }
+
             sb.Append('#').Append(shown + 1).Append(' ').Append(DescribeElement(el));
             if (BoxForElement(el) is { } loc)
             {
@@ -2333,15 +2777,24 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             }
 
             if (includeText)
+            {
                 sb.Append(" text=\"").Append(TrimForTool(el.TextContent, 500)).Append('"');
+            }
+
             if (includeHtml)
+            {
                 sb.Append(" html=\"").Append(TrimForTool(HtmlSerializer.SerializeNode(el), 1000)).Append('"');
+            }
+
             sb.AppendLine();
             shown++;
         }
 
         if (els.Count > capped)
+        {
             sb.Append("truncated: ").Append(els.Count - capped).AppendLine(" more");
+        }
+
         return new InputResult(true, sb.ToString());
     }
 
@@ -2357,16 +2810,35 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// <summary>Finds text, scrolls the next/previous match into view, and flashes it.</summary>
     public InputResult FindText(string query, string direction)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
+
         var q = (query ?? string.Empty).Trim();
-        if (q.Length == 0) return new InputResult(false, "query is empty");
-        if (_findIndex.Count == 0) return new InputResult(true, $"no text fragments to search for '{q}'");
+        if (q.Length == 0)
+        {
+            return new InputResult(false, "query is empty");
+        }
+
+        if (_findIndex.Count == 0)
+        {
+            return new InputResult(true, $"no text fragments to search for '{q}'");
+        }
 
         var matches = new List<int>();
         for (var i = 0; i < _findIndex.Count; i++)
+        {
             if (_findIndex[i].Text.Contains(q, StringComparison.OrdinalIgnoreCase))
+            {
                 matches.Add(i);
-        if (matches.Count == 0) return new InputResult(true, $"no matches for '{q}'");
+            }
+        }
+
+        if (matches.Count == 0)
+        {
+            return new InputResult(true, $"no matches for '{q}'");
+        }
 
         var backwards = direction.Equals("previous", StringComparison.OrdinalIgnoreCase)
                         || direction.Equals("prev", StringComparison.OrdinalIgnoreCase);
@@ -2408,7 +2880,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// readSelection.</summary>
     public async Task<InputResult> ClipboardAsync(string action, string? text)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
+
         var mode = (action ?? string.Empty).Trim().ToLowerInvariant();
         var tl = TopLevel.GetTopLevel(this);
         var clip = tl?.Clipboard;
@@ -2417,23 +2893,43 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         {
             case "copy":
                 if (string.IsNullOrEmpty(_selectionText))
+                {
                     return new InputResult(false, "no selected text to copy");
+                }
+
                 if (clip is null)
+                {
                     return new InputResult(false, "clipboard is not available");
+                }
+
                 await clip.SetTextAsync(_selectionText);
                 return new InputResult(true, $"copied {_selectionText.Length} chars");
 
             case "paste":
                 var paste = text;
                 if (paste is null && clip is not null)
+                {
                     paste = await clip.TryGetTextAsync();
+                }
+
                 if (paste is null && clip is null)
+                {
                     return new InputResult(false, "clipboard is not available and no paste text was provided");
-                if (paste is null) paste = string.Empty;
+                }
+
+                if (paste is null)
+                {
+                    paste = string.Empty;
+                }
+
                 return TypeText(paste);
 
             case "read":
-                if (clip is null) return new InputResult(false, "clipboard is not available");
+                if (clip is null)
+                {
+                    return new InputResult(false, "clipboard is not available");
+                }
+
                 return new InputResult(true, await clip.TryGetTextAsync() ?? string.Empty);
 
             case "readselection":
@@ -2447,7 +2943,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// <summary>Captures the current visible viewport to a PNG.</summary>
     public InputResult CaptureViewportToPng(string path)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
 
         var full = Path.GetFullPath(string.IsNullOrWhiteSpace(path) ? "starling-viewport.png" : path);
         var rect = CurrentViewportRect();
@@ -2465,7 +2964,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             drawingOverlays);
 
         var dir = Path.GetDirectoryName(full);
-        if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+        if (!string.IsNullOrEmpty(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
 
         using var image = SixLabors.ImageSharp.Image.LoadPixelData<SixLabors.ImageSharp.PixelFormats.Rgba32>(
             rendered.Rgba, rendered.Width, rendered.Height);
@@ -2488,10 +2990,21 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// </summary>
     public InputResult InspectComputedStyle(string selector)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
+
         var (els, error) = QueryAll(selector);
-        if (error is not null) return new InputResult(false, error);
-        if (els.Count == 0) return new InputResult(true, $"no elements matched '{selector}'");
+        if (error is not null)
+        {
+            return new InputResult(false, error);
+        }
+
+        if (els.Count == 0)
+        {
+            return new InputResult(true, $"no elements matched '{selector}'");
+        }
 
         var page = _currentPage;
         var sb = new System.Text.StringBuilder();
@@ -2513,7 +3026,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
             var color = s.GetColor(PropertyId.Color);
             var bg = s.GetColor(PropertyId.BackgroundColor);
-            if (shown > 0) sb.Append("; ");
+            if (shown > 0)
+            {
+                sb.Append("; ");
+            }
+
             sb.Append($"<{el.LocalName}> opacity={s.Get(PropertyId.Opacity)} " +
                       $"transform={s.Get(PropertyId.Transform)} " +
                       $"color=rgba({color.R},{color.G},{color.B},{color.A}) " +
@@ -2526,8 +3043,16 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
         bool IsAnimating(DomElement el)
         {
-            foreach (var _ in page.Style.AnimationEngine.ActiveProperties(el)) return true;
-            foreach (var _ in page.Style.TransitionEngine.ActiveProperties(el)) return true;
+            foreach (var _ in page.Style.AnimationEngine.ActiveProperties(el))
+            {
+                return true;
+            }
+
+            foreach (var _ in page.Style.TransitionEngine.ActiveProperties(el))
+            {
+                return true;
+            }
+
             return false;
         }
     }
@@ -2541,10 +3066,20 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         var viewportH = _scroll.Viewport.Height > 0 ? _scroll.Viewport.Height : viewport.Height;
         var maxX = Math.Max(0, pageW - viewportW);
         var maxY = Math.Max(0, pageH - viewportH);
-        if (double.IsPositiveInfinity(y)) y = maxY;
-        if (double.IsPositiveInfinity(x)) x = maxX;
+        if (double.IsPositiveInfinity(y))
+        {
+            y = maxY;
+        }
+
+        if (double.IsPositiveInfinity(x))
+        {
+            x = maxX;
+        }
+
         if (!double.IsFinite(x) || !double.IsFinite(y))
+        {
             return new InputResult(false, $"scroll target must be finite, got {x}, {y}");
+        }
 
         var nextX = Math.Clamp(x, 0, maxX);
         var nextY = Math.Clamp(y, 0, maxY);
@@ -2563,9 +3098,16 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private InputResult FocusAdjacent(int step)
     {
-        if (_currentPage is null) return new InputResult(false, "no page is loaded");
+        if (_currentPage is null)
+        {
+            return new InputResult(false, "no page is loaded");
+        }
+
         var focusable = FocusableElements().ToArray();
-        if (focusable.Length == 0) return new InputResult(true, "no focusable elements");
+        if (focusable.Length == 0)
+        {
+            return new InputResult(true, "no focusable elements");
+        }
 
         var current = _focusedInput ?? _currentPage.Document.FocusedElement;
         var idx = current is null ? -1 : Array.IndexOf(focusable, current);
@@ -2578,10 +3120,18 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private IEnumerable<DomElement> FocusableElements()
     {
-        if (_currentPage is null) yield break;
+        if (_currentPage is null)
+        {
+            yield break;
+        }
+
         foreach (var el in _currentPage.Document.DescendantElements())
         {
-            if (el.HasAttribute("disabled")) continue;
+            if (el.HasAttribute("disabled"))
+            {
+                continue;
+            }
+
             if (HtmlFormControls.IsTextControl(el)
                 || el.LocalName is "button" or "select" or "textarea"
                 || (el.LocalName == "input" && (el.GetAttribute("type") ?? "text") != "hidden")
@@ -2595,7 +3145,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private void FocusElement(DomElement el)
     {
-        if (_currentPage is null) return;
+        if (_currentPage is null)
+        {
+            return;
+        }
+
         if (HtmlFormControls.IsTextControl(el) && !el.HasAttribute("disabled") && BoxForElement(el) is { } loc)
         {
             FocusInput(el, (loc.X + loc.Box.Frame.Width / 2, loc.Y + loc.Box.Frame.Height / 2));
@@ -2627,10 +3181,18 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             switch (key)
             {
                 case "Backspace":
-                    if (idx > 0) CommitValue(val.Remove(idx - 1, 1), idx - 1);
+                    if (idx > 0)
+                    {
+                        CommitValue(val.Remove(idx - 1, 1), idx - 1);
+                    }
+
                     break;
                 case "Delete":
-                    if (idx < val.Length) CommitValue(val.Remove(idx, 1), idx);
+                    if (idx < val.Length)
+                    {
+                        CommitValue(val.Remove(idx, 1), idx);
+                    }
+
                     break;
                 case "ArrowLeft":
                     MoveCaret(idx - 1);
@@ -2653,7 +3215,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         }
 
         mutated |= DispatchDom(target, MakeKeyboardEvent("keyup", key, shift, ctrl, alt, meta));
-        if (mutated) RefreshLiveLayout();
+        if (mutated)
+        {
+            RefreshLiveLayout();
+        }
+
         return new InputResult(true, $"pressed {key}");
     }
 
@@ -2671,7 +3237,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private static string NormalizeKey(string key)
     {
         var trimmed = (key ?? string.Empty).Trim();
-        if (trimmed.Length == 0) return string.Empty;
+        if (trimmed.Length == 0)
+        {
+            return string.Empty;
+        }
+
         return trimmed.ToLowerInvariant() switch
         {
             "esc" or "escape" => "Escape",
@@ -2698,9 +3268,15 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         var sb = new StringBuilder();
         sb.Append('<').Append(el.LocalName);
         if (!string.IsNullOrEmpty(el.Id))
+        {
             sb.Append('#').Append(el.Id);
+        }
+
         if (el.GetAttribute("class") is { Length: > 0 } cls)
+        {
             sb.Append('.').Append(cls.Replace(' ', '.'));
+        }
+
         sb.Append('>');
         return sb.ToString();
     }
@@ -2709,15 +3285,25 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     {
         var compact = text.ReplaceLineEndings(" ").Trim();
         while (compact.Contains("  ", StringComparison.Ordinal))
+        {
             compact = compact.Replace("  ", " ", StringComparison.Ordinal);
+        }
+
         return compact.Length <= max ? compact : compact[..max] + "...";
     }
 
     /// <summary>Resolves a CSS selector to the matching elements, in document order.</summary>
     private (List<DomElement> Elements, string? Error) QueryAll(string selector)
     {
-        if (_currentPage is null) return (new List<DomElement>(), "no page is loaded");
-        if (string.IsNullOrWhiteSpace(selector)) return (new List<DomElement>(), "selector is empty");
+        if (_currentPage is null)
+        {
+            return (new List<DomElement>(), "no page is loaded");
+        }
+
+        if (string.IsNullOrWhiteSpace(selector))
+        {
+            return (new List<DomElement>(), "selector is empty");
+        }
 
         SelectorList list;
         try
@@ -2729,19 +3315,30 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             return (new List<DomElement>(), $"invalid selector '{selector}': {ex.Message}");
         }
 
-        if (list.Selectors.Count == 0) return (new List<DomElement>(), $"invalid selector '{selector}'");
+        if (list.Selectors.Count == 0)
+        {
+            return (new List<DomElement>(), $"invalid selector '{selector}'");
+        }
 
         var matched = new List<DomElement>();
         foreach (var el in _currentPage.Document.DescendantElements())
+        {
             if (SelectorMatcher.Matches(list, el))
+            {
                 matched.Add(el);
+            }
+        }
+
         return (matched, null);
     }
 
     private void ClearHighlightOverlays()
     {
         foreach (var o in _highlightOverlays)
+        {
             _pageCanvas.Children.Remove(o);
+        }
+
         _highlightOverlays.Clear();
         RefreshOverlays();
     }
@@ -2752,7 +3349,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         {
             // An opaque colour is dimmed to a translucent highlight so the element
             // shows through; a colour given with alpha is honoured as-is.
-            if (c.A == 255) c = AvColor.FromArgb(110, c.R, c.G, c.B);
+            if (c.A == 255)
+            {
+                c = AvColor.FromArgb(110, c.R, c.G, c.B);
+            }
+
             return new SolidColorBrush(c);
         }
 
@@ -2788,13 +3389,28 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         var mutated = false;
         if (!ReferenceEquals(target, _mouseTarget))
         {
-            if (_mouseTarget is { } prev) mutated |= DispatchDom(prev, Make("mouseout", target));
-            if (target is { } cur) mutated |= DispatchDom(cur, Make("mouseover", _mouseTarget));
+            if (_mouseTarget is { } prev)
+            {
+                mutated |= DispatchDom(prev, Make("mouseout", target));
+            }
+
+            if (target is { } cur)
+            {
+                mutated |= DispatchDom(cur, Make("mouseover", _mouseTarget));
+            }
+
             _mouseTarget = target;
         }
 
-        if (target is not null) mutated |= DispatchDom(target, Make("mousemove", null));
-        if (mutated) RefreshLiveLayout();
+        if (target is not null)
+        {
+            mutated |= DispatchDom(target, Make("mousemove", null));
+        }
+
+        if (mutated)
+        {
+            RefreshLiveLayout();
+        }
     }
 
     /// <summary>Synthesizes an Enter keypress on the focused field: dispatches
@@ -2803,7 +3419,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// <see cref="OnPageKeyDown"/>. Returns whether any of it mutated the DOM.</summary>
     private bool PressEnterOnFocused()
     {
-        if (_focusedInput is null) return false;
+        if (_focusedInput is null)
+        {
+            return false;
+        }
+
         var target = _focusedInput;
         var down = new KeyboardEvent("keydown", new EventInit(Bubbles: true, Cancelable: true))
         { Key = "Enter", Code = "Enter" };
@@ -2817,7 +3437,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         var up = new KeyboardEvent("keyup", new EventInit(Bubbles: true, Cancelable: true))
         { Key = "Enter", Code = "Enter" };
         mutated |= DispatchDom(target, up);
-        if (mutated) RefreshLiveLayout();
+        if (mutated)
+        {
+            RefreshLiveLayout();
+        }
+
         return mutated;
     }
 
@@ -2834,7 +3458,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private static string DomKeyName(KeyEventArgs e)
     {
-        if (!string.IsNullOrEmpty(e.KeySymbol)) return e.KeySymbol!;
+        if (!string.IsNullOrEmpty(e.KeySymbol))
+        {
+            return e.KeySymbol!;
+        }
+
         return e.Key switch
         {
             Key.Enter => "Enter",
@@ -2890,7 +3518,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// </summary>
     private void ApplyHoverState()
     {
-        if (_currentPage is null) return;
+        if (_currentPage is null)
+        {
+            return;
+        }
 
         var style = _currentPage.Style;
         var animationsWired = _prepareAnimationFrame is not null && _hasActiveAnimations is not null;
@@ -2920,13 +3551,17 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         if (_hoverOverrides is not null)
         {
             foreach (var el in _hoverOverrides.Keys)
+            {
                 _recentlyHovered.Note(el);
+            }
         }
 
         if (newOverrides is not null)
         {
             foreach (var el in newOverrides.Keys)
+            {
                 _recentlyHovered.Note(el);
+            }
         }
 
         // Elements leaving the scope revert: re-cascade each once with the new
@@ -2941,7 +3576,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             var revertCache = new CascadeCache();
             foreach (var el in _hoverScope)
             {
-                if (newScope is not null && newScope.Contains(el)) continue;
+                if (newScope is not null && newScope.Contains(el))
+                {
+                    continue;
+                }
+
                 var revertStatic = newCtx is null
                     ? style.Compute(el, context: null, revertCache)
                     : style.ComputeForContext(el, newCtx, revertCache);
@@ -3019,20 +3658,48 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         Dictionary<DomElement, ComputedStyle>? oldOverrides,
         Dictionary<DomElement, ComputedStyle>? newOverrides)
     {
-        if (_currentPage is not { } page || _promotedBaseline.Count == 0) return false;
+        if (_currentPage is not { } page || _promotedBaseline.Count == 0)
+        {
+            return false;
+        }
+
         return AffectedWithinPromoted(oldOverrides, page) && AffectedWithinPromoted(newOverrides, page);
     }
 
     private bool AffectedWithinPromoted(Dictionary<DomElement, ComputedStyle>? overrides, LaidOutPage page)
     {
-        if (overrides is null) return true;
+        if (overrides is null)
+        {
+            return true;
+        }
+
         foreach (var el in overrides.Keys)
         {
-            if (!_promotedBaseline.Contains(el)) return false;
-            if (page.Document.WasRecentlyMutated(el)) continue;
-            if (_recentlyAnimated.Contains(el)) continue;
-            if (_recentlyHovered.Contains(el)) continue;
-            if (HasActiveSample(page, el)) continue;
+            if (!_promotedBaseline.Contains(el))
+            {
+                return false;
+            }
+
+            if (page.Document.WasRecentlyMutated(el))
+            {
+                continue;
+            }
+
+            if (_recentlyAnimated.Contains(el))
+            {
+                continue;
+            }
+
+            if (_recentlyHovered.Contains(el))
+            {
+                continue;
+            }
+
+            if (HasActiveSample(page, el))
+            {
+                continue;
+            }
+
             return false;
         }
 
@@ -3041,8 +3708,16 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private static bool HasActiveSample(LaidOutPage page, DomElement el)
     {
-        foreach (var _ in page.Style.AnimationEngine.ActiveProperties(el)) return true;
-        foreach (var _ in page.Style.TransitionEngine.ActiveProperties(el)) return true;
+        foreach (var _ in page.Style.AnimationEngine.ActiveProperties(el))
+        {
+            return true;
+        }
+
+        foreach (var _ in page.Style.TransitionEngine.ActiveProperties(el))
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -3051,7 +3726,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// context. A bound scripting context already keeps it running.</summary>
     private void EnsureAnimationClock()
     {
-        if (!_liveStopwatch.IsRunning) _liveStopwatch.Restart();
+        if (!_liveStopwatch.IsRunning)
+        {
+            _liveStopwatch.Restart();
+        }
     }
 
     /// <summary>Test hook: true when <paramref name="el"/> is in the current hover
@@ -3085,7 +3763,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         get
         {
             var frags = Fragments;
-            if (frags.Count == 0) return null;
+            if (frags.Count == 0)
+            {
+                return null;
+            }
+
             var first = frags[0];
             var last = frags[^1];
             return ((first.X + 0.5, first.Y + (first.Height / 2)),
@@ -3112,7 +3794,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// </summary>
     private Dictionary<DomElement, ComputedStyle>? BuildHoverOverrides(DomElement? hovered, long nowMs)
     {
-        if (hovered is null || _currentPage is null) return null;
+        if (hovered is null || _currentPage is null)
+        {
+            return null;
+        }
+
         var style = _currentPage.Style;
         var ctx = new SelectorMatchContext { HoveredElement = hovered };
         var animate = _prepareAnimationFrame is not null;
@@ -3131,8 +3817,12 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         // target a non-hovered sibling subtree are not recomputed — a bounded
         // approximation that covers the common cases.)
         for (var n = hovered.ParentNode; n is not null; n = n.ParentNode)
+        {
             if (n is DomElement p && Compose(p) is { } ps)
+            {
                 result[p] = ps;
+            }
+        }
 
         // Only elements whose :hover cascade actually changes a paint-relevant
         // property are overridden. Without this, hovering a big container (or the
@@ -3155,7 +3845,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             // Compare the element's cascade with vs. without :hover; prune it when
             // nothing the painter emits changed (SamePaintProperties value-compares,
             // so identical cascades from two runs match).
-            if (SamePaintProperties(style.Compute(el, context: null, baseCache), hoverStatic)) return null;
+            if (SamePaintProperties(style.Compute(el, context: null, baseCache), hoverStatic))
+            {
+                return null;
+            }
             // Full compose (not Sample): the hover cascade change is exactly
             // where transitions trigger, so the trigger detection must run.
             return animate ? style.Compositor.Compose(el, hoverStatic, nowMs) : hoverStatic;
@@ -3163,10 +3856,18 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
         void Recurse(DomElement el)
         {
-            if (Compose(el) is { } s) result[el] = s;
+            if (Compose(el) is { } s)
+            {
+                result[el] = s;
+            }
+
             for (var child = el.FirstChild; child is not null; child = child.NextSibling)
+            {
                 if (child is DomElement c)
+                {
                     Recurse(c);
+                }
+            }
         }
     }
 
@@ -3179,12 +3880,19 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// </summary>
     private bool OverridesDifferFromBaseline(Dictionary<DomElement, ComputedStyle>? overrides)
     {
-        if (_currentPage is null || overrides is null || overrides.Count == 0) return false;
+        if (_currentPage is null || overrides is null || overrides.Count == 0)
+        {
+            return false;
+        }
+
         var baseline = _currentPage.Style;
         foreach (var (element, hovered) in overrides)
         {
             var original = baseline.Compute(element);
-            if (!SamePaintProperties(original, hovered)) return true;
+            if (!SamePaintProperties(original, hovered))
+            {
+                return true;
+            }
         }
 
         return false;
@@ -3192,22 +3900,56 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private static bool SamePaintProperties(ComputedStyle a, ComputedStyle b)
     {
-        if (a.GetColor(PropertyId.Color) != b.GetColor(PropertyId.Color)) return false;
-        if (a.GetColor(PropertyId.BackgroundColor) != b.GetColor(PropertyId.BackgroundColor)) return false;
-        if (a.GetColor(PropertyId.BorderTopColor) != b.GetColor(PropertyId.BorderTopColor)) return false;
-        if (a.GetColor(PropertyId.BorderRightColor) != b.GetColor(PropertyId.BorderRightColor)) return false;
-        if (a.GetColor(PropertyId.BorderBottomColor) != b.GetColor(PropertyId.BorderBottomColor)) return false;
-        if (a.GetColor(PropertyId.BorderLeftColor) != b.GetColor(PropertyId.BorderLeftColor)) return false;
+        if (a.GetColor(PropertyId.Color) != b.GetColor(PropertyId.Color))
+        {
+            return false;
+        }
+
+        if (a.GetColor(PropertyId.BackgroundColor) != b.GetColor(PropertyId.BackgroundColor))
+        {
+            return false;
+        }
+
+        if (a.GetColor(PropertyId.BorderTopColor) != b.GetColor(PropertyId.BorderTopColor))
+        {
+            return false;
+        }
+
+        if (a.GetColor(PropertyId.BorderRightColor) != b.GetColor(PropertyId.BorderRightColor))
+        {
+            return false;
+        }
+
+        if (a.GetColor(PropertyId.BorderBottomColor) != b.GetColor(PropertyId.BorderBottomColor))
+        {
+            return false;
+        }
+
+        if (a.GetColor(PropertyId.BorderLeftColor) != b.GetColor(PropertyId.BorderLeftColor))
+        {
+            return false;
+        }
         // Value-compare the decoration: two independent cascade runs (with vs.
         // without :hover) produce non-identical CssKeyword instances for the same
         // keyword, so ReferenceEquals would always report a spurious change — which
         // pulled every element into the hover override set (the invisibility bug).
-        if (!Equals(a.Get(PropertyId.TextDecoration), b.Get(PropertyId.TextDecoration))) return false;
+        if (!Equals(a.Get(PropertyId.TextDecoration), b.Get(PropertyId.TextDecoration)))
+        {
+            return false;
+        }
         // Transform / opacity are paint-on-self too (the painter reads them off
         // the override style), so a hover that only moves or fades an element —
         // the common case for the demo's tiles — must still repaint.
-        if (!Equals(a.Get(PropertyId.Transform), b.Get(PropertyId.Transform))) return false;
-        if (!Equals(a.Get(PropertyId.Opacity), b.Get(PropertyId.Opacity))) return false;
+        if (!Equals(a.Get(PropertyId.Transform), b.Get(PropertyId.Transform)))
+        {
+            return false;
+        }
+
+        if (!Equals(a.Get(PropertyId.Opacity), b.Get(PropertyId.Opacity)))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -3221,13 +3963,17 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private static ComputedStyle? ResolveOverride(LayoutBox box, Dictionary<DomElement, ComputedStyle> overrides)
     {
         if (box.Element is { } el && overrides.TryGetValue(el, out var direct))
+        {
             return direct;
+        }
         // TextBox / anonymous block: walk up box parents looking for a
         // box whose element appears in the override map.
         for (var p = box.Parent; p is not null; p = p.Parent)
         {
             if (p.Element is { } pel && overrides.TryGetValue(pel, out var inherited))
+            {
                 return inherited;
+            }
         }
 
         return null;
@@ -3256,21 +4002,35 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     // the cached tree is reused; any real change bumps it and forces a full rebuild.
     private long PageRenderVersion()
     {
-        if (_currentPage is not { } page) return 0;
+        if (_currentPage is not { } page)
+        {
+            return 0;
+        }
+
         var doc = page.Document;
         return unchecked(((long)doc.MutationVersion * 1000003L) + doc.LayoutInvalidationVersion);
     }
 
     private bool IsElementAnimatingLayerRoot(LayoutBox box)
     {
-        if (_currentPage is not { } page || box.Element is not { } el) return false;
+        if (_currentPage is not { } page || box.Element is not { } el)
+        {
+            return false;
+        }
         // A subtree a script mutated in the last few frames is promoted to its own
         // isolated layer, so its repaint does not re-raster the base layer
         // (the base slice excludes it, so the base content hash stays stable and
         // serves from cache). Light hysteresis (Document.DecayRecentMutations)
         // keeps it promoted briefly so promotion does not churn frame to frame.
-        if (page.Document.WasRecentlyMutated(el)) return true;
-        if (_frameAnimatedElements.Contains(el) || _frameTransitionElements.Contains(el)) return true;
+        if (page.Document.WasRecentlyMutated(el))
+        {
+            return true;
+        }
+
+        if (_frameAnimatedElements.Contains(el) || _frameTransitionElements.Contains(el))
+        {
+            return true;
+        }
         // The same hysteresis for animations/transitions: an element stays
         // promoted for a few frames after its last sample, so a transition end
         // does not re-key the base slice on its final frame.
@@ -3279,9 +4039,15 @@ internal sealed class WebviewPanel : UserControl, IDisposable
 
     private ComputedStyle? AnimatedStyle(LaidOutPage page, LayoutBox box)
     {
-        if (box.Element is not { } el) return null;
-        if (!_frameAnimatedElements.Contains(el) && !_frameTransitionElements.Contains(el))
+        if (box.Element is not { } el)
+        {
             return null;
+        }
+
+        if (!_frameAnimatedElements.Contains(el) && !_frameTransitionElements.Contains(el))
+        {
+            return null;
+        }
 
         // The box's style IS the cascade output of the last relayout (the box
         // tree builds via ComputeWithAnimations), and any static-style change
@@ -3305,7 +4071,11 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     {
         _frameAnimatedElements.Clear();
         _frameTransitionElements.Clear();
-        if (_currentPage is not { } page) return;
+        if (_currentPage is not { } page)
+        {
+            return;
+        }
+
         var style = page.Style;
 
         // An element in the animation engine's tables only samples when at least
@@ -3328,9 +4098,14 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         style.TransitionEngine.CollectActiveElements(_frameTransitionElements);
 
         foreach (var el in _frameAnimatedElements)
+        {
             _recentlyAnimated.Note(el);
+        }
+
         foreach (var el in _frameTransitionElements)
+        {
             _recentlyAnimated.Note(el);
+        }
     }
 
     // ---- Scoped-relayout reuse (issue #82 item 1) -----------------------
@@ -3362,9 +4137,16 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private bool TrySnapshotScopedMutationRoots(LaidOutPage page)
     {
         _scopedRootSnapshots.Clear();
-        if (_promotedBaseline.Count == 0) return false;
+        if (_promotedBaseline.Count == 0)
+        {
+            return false;
+        }
+
         var batch = page.Document.PeekLayoutMutations();
-        if (batch.Count == 0) return false;
+        if (batch.Count == 0)
+        {
+            return false;
+        }
 
         // A layout-affecting animation or transition makes incremental layout
         // rebuild-and-splice its target's box (a new object) and can move
@@ -3373,13 +4155,22 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         _frameAnimatedScratch.Clear();
         style.AnimationEngine.CollectActiveElements(_frameAnimatedScratch);
         foreach (var el in _frameAnimatedScratch)
+        {
             if (style.AnimationEngine.HasLayoutAffectingProperty(el))
+            {
                 return false;
+            }
+        }
+
         _frameAnimatedScratch.Clear();
         style.TransitionEngine.CollectActiveElements(_frameAnimatedScratch);
         foreach (var el in _frameAnimatedScratch)
+        {
             if (style.TransitionEngine.HasLayoutAffectingProperty(el))
+            {
                 return false;
+            }
+        }
 
         foreach (var m in batch)
         {
@@ -3390,24 +4181,42 @@ internal sealed class WebviewPanel : UserControl, IDisposable
             if (m.Kind is not (LayoutChangeKind.TextChanged
                 or LayoutChangeKind.ChildInserted
                 or LayoutChangeKind.ChildRemoved))
+            {
                 return false;
+            }
 
             // The owning element — the same resolution Document.NoteRecentlyMutated
             // used when it promoted the subtree.
             var el = m.Target as DomElement ?? NearestElementOf(m.Target);
-            if (el is null || !_promotedBaseline.Contains(el)) return false;
-            if (IsSnapshotted(el)) continue;
-            if (_scopedRootSnapshots.Count >= MaxScopedMutationRoots) return false;
+            if (el is null || !_promotedBaseline.Contains(el))
+            {
+                return false;
+            }
+
+            if (IsSnapshotted(el))
+            {
+                continue;
+            }
+
+            if (_scopedRootSnapshots.Count >= MaxScopedMutationRoots)
+            {
+                return false;
+            }
 
             if (FindBoxAbs(page.Root, 0, 0, b => ReferenceEquals(b.Element, el)) is not { } loc)
+            {
                 return false;
+            }
             // Inline content line-breaks with the surrounding inline formatting
             // context, so a change inside it can move sibling fragments the
             // frame check cannot see. Blocks contain their line boxes (and this
             // engine scopes floats per block), so an unchanged frame proves
             // containment.
             if (loc.Box.Kind is Starling.Layout.Box.BoxKind.Inline or Starling.Layout.Box.BoxKind.Text)
+            {
                 return false;
+            }
+
             _scopedRootSnapshots.Add((el, loc.Box, loc.X, loc.Y, loc.Box.Frame.Width, loc.Box.Frame.Height));
         }
 
@@ -3417,15 +4226,26 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private bool IsSnapshotted(DomElement el)
     {
         foreach (var s in _scopedRootSnapshots)
+        {
             if (ReferenceEquals(s.El, el))
+            {
                 return true;
+            }
+        }
+
         return false;
     }
 
     private static DomElement? NearestElementOf(DomNode node)
     {
         for (var n = node.ParentNode; n is not null; n = n.ParentNode)
-            if (n is DomElement e) return e;
+        {
+            if (n is DomElement e)
+            {
+                return e;
+            }
+        }
+
         return null;
     }
 
@@ -3441,10 +4261,24 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         foreach (var (el, box, absX, absY, w, h) in _scopedRootSnapshots)
         {
             if (FindBoxAbs(page.Root, 0, 0, b => ReferenceEquals(b.Element, el)) is not { } loc)
+            {
                 return false;
-            if (!ReferenceEquals(loc.Box, box)) return false;
-            if (loc.X != absX || loc.Y != absY) return false;
-            if (loc.Box.Frame.Width != w || loc.Box.Frame.Height != h) return false;
+            }
+
+            if (!ReferenceEquals(loc.Box, box))
+            {
+                return false;
+            }
+
+            if (loc.X != absX || loc.Y != absY)
+            {
+                return false;
+            }
+
+            if (loc.Box.Frame.Width != w || loc.Box.Frame.Height != h)
+            {
+                return false;
+            }
         }
 
         return true;
@@ -3459,14 +4293,32 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// </summary>
     private bool ScopedPresentStillValid(LaidOutPage page)
     {
-        if (_promotedBaseline.Count == 0) return false;
-        if (page.ScrollState.OffsetVersion != _baselineScrollVersion) return false;
+        if (_promotedBaseline.Count == 0)
+        {
+            return false;
+        }
+
+        if (page.ScrollState.OffsetVersion != _baselineScrollVersion)
+        {
+            return false;
+        }
+
         foreach (var el in _frameAnimatedElements)
+        {
             if (!_promotedBaseline.Contains(el))
+            {
                 return false;
+            }
+        }
+
         foreach (var el in _frameTransitionElements)
+        {
             if (!_promotedBaseline.Contains(el))
+            {
                 return false;
+            }
+        }
+
         return true;
     }
 
@@ -3506,7 +4358,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         {
             ClearSelectionOverlays();
             var frags = Fragments;
-            if (frags.Count == 0) return;
+            if (frags.Count == 0)
+            {
+                return;
+            }
 
             var anchorCaret = SelectionModel.CaretFromPoint(frags, anchor.X, anchor.Y);
             var cursorCaret = SelectionModel.CaretFromPoint(frags, cursor.X, cursor.Y);
@@ -3545,7 +4400,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private void ClearSelectionOverlays()
     {
         foreach (var o in _selectionOverlays)
+        {
             _pageCanvas.Children.Remove(o);
+        }
+
         _selectionOverlays.Clear();
         RefreshOverlays();
     }
@@ -3553,10 +4411,18 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     /// <summary>Copies the current text selection to the clipboard.</summary>
     public async Task CopySelectionAsync()
     {
-        if (string.IsNullOrEmpty(_selectionText)) return;
+        if (string.IsNullOrEmpty(_selectionText))
+        {
+            return;
+        }
+
         var tl = TopLevel.GetTopLevel(this);
         var clip = tl?.Clipboard;
-        if (clip is null) return;
+        if (clip is null)
+        {
+            return;
+        }
+
         await clip.SetTextAsync(_selectionText);
         _onStatus($"Copied {_selectionText.Length} chars to clipboard", false);
     }
@@ -3598,7 +4464,9 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         _findIndex.Clear();
         _findCursor = 0;
         foreach (var f in Fragments)
+        {
             _findIndex.Add((f.Y, f.Text));
+        }
     }
 
     private void FindNext()
@@ -3611,7 +4479,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
         }
 
         var query = (_findEntry.Text ?? string.Empty).Trim();
-        if (query.Length == 0 || _findIndex.Count == 0) return;
+        if (query.Length == 0 || _findIndex.Count == 0)
+        {
+            return;
+        }
 
         for (var i = 0; i < _findIndex.Count; i++)
         {
@@ -3654,7 +4525,10 @@ internal sealed class WebviewPanel : UserControl, IDisposable
     private void ClearFindHighlight()
     {
         foreach (var o in _findOverlays)
+        {
             _pageCanvas.Children.Remove(o);
+        }
+
         _findOverlays.Clear();
         RefreshOverlays();
     }

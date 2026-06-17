@@ -27,7 +27,10 @@ public static class DataUrl
     {
         ArgumentNullException.ThrowIfNull(url);
         if (maxBytes <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(maxBytes));
+        }
+
         if (!url.IsData)
         {
             payload = default;
@@ -45,8 +48,15 @@ public static class DataUrl
             payload = default;
             return false;
         }
-        if (url.Query is not null) raw = raw + "?" + url.Query;
-        if (url.Fragment is not null) raw = raw + "#" + url.Fragment;
+        if (url.Query is not null)
+        {
+            raw = raw + "?" + url.Query;
+        }
+
+        if (url.Fragment is not null)
+        {
+            raw = raw + "#" + url.Fragment;
+        }
 
         var comma = raw.IndexOf(',');
         if (comma < 0)
@@ -70,7 +80,9 @@ public static class DataUrl
             mediaType = meta;
         }
         if (string.IsNullOrEmpty(mediaType))
+        {
             mediaType = "text/plain;charset=US-ASCII";
+        }
 
         try
         {

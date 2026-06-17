@@ -113,9 +113,16 @@ public class AnimationBench
         engine.Tick(_clock);
         var samples = 0;
         foreach (var el in engine.ActiveElements)
+        {
             foreach (var prop in engine.ActiveProperties(el))
+            {
                 if (engine.GetEffective(el, prop) is not null)
+                {
                     samples++;
+                }
+            }
+        }
+
         return samples;
     }
 }

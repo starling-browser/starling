@@ -74,9 +74,17 @@ internal sealed class FontFaceFetcher : IDisposable
         // exactly once.
         var rules = new List<(FontFaceRule Rule, StarlingUrl? BaseUrl)>();
         foreach (var (sheet, baseUrl) in sheets)
+        {
             foreach (var rule in FontFaceParser.ParseAll(sheet))
+            {
                 rules.Add((rule, baseUrl));
-        if (rules.Count == 0) return;
+            }
+        }
+
+        if (rules.Count == 0)
+        {
+            return;
+        }
 
         // Pass 1: kick off the network fetch for each rule's first usable url()
         // source in parallel, so a page with N web fonts pays one wave of
@@ -92,14 +100,24 @@ internal sealed class FontFaceFetcher : IDisposable
             ct.ThrowIfCancellationRequested();
             foreach (var source in rule.Sources)
             {
-                if (source is not UrlFontSource url) continue;
-                if (!IsLikelyReadableFormat(url.Format)) continue;
+                if (source is not UrlFontSource url)
+                {
+                    continue;
+                }
+
+                if (!IsLikelyReadableFormat(url.Format))
+                {
+                    continue;
+                }
+
                 warm.Add(FetchBytesAsync(url.Url, baseUrl, ct));
                 break; // the remaining url() entries are fallbacks
             }
         }
         if (warm.Count > 0)
+        {
             await Task.WhenAll(warm).ConfigureAwait(false);
+        }
 
         // Pass 2: resolve + register each rule in document order. Registration
         // mutates the (non-thread-safe) FontFaceRegistry, so it stays
@@ -127,12 +145,24 @@ internal sealed class FontFaceFetcher : IDisposable
             switch (source)
             {
                 case LocalFontSource local:
-                    if (TryRegisterLocal(rule, local.Name, registry)) return;
+                    if (TryRegisterLocal(rule, local.Name, registry))
+                    {
+                        return;
+                    }
+
                     break;
                 case UrlFontSource url:
-                    if (!IsLikelyReadableFormat(url.Format)) continue;
+                    if (!IsLikelyReadableFormat(url.Format))
+                    {
+                        continue;
+                    }
+
                     var bytes = await FetchBytesAsync(url.Url, baseUrl, ct).ConfigureAwait(false);
-                    if (bytes is null) continue;
+                    if (bytes is null)
+                    {
+                        continue;
+                    }
+
                     if (registry.TryAdd(rule.FamilyName, rule.Bold, rule.Italic, bytes, rule.UnicodeRange))
                     {
                         StarlingTelemetry.Counter("engine.fetch.font", 1);
@@ -147,7 +177,10 @@ internal sealed class FontFaceFetcher : IDisposable
 
     private static bool TryRegisterLocal(FontFaceRule rule, string name, FontFaceRegistry registry)
     {
-        if (string.IsNullOrEmpty(name)) return false;
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
         // local() lookups are best handled by the system font manager at
         // resolve time, not by us loading bytes. So we leave them for the
         // FontResolver fallback chain: any system family named in the
@@ -161,7 +194,11 @@ internal sealed class FontFaceFetcher : IDisposable
         // Keep this as a coarse fetch filter only; FontFaceRegistry.TryAdd
         // asks SixLabors.Fonts to validate the actual bytes and fall through
         // to the next src entry when the advertised format is misleading.
-        if (string.IsNullOrEmpty(format)) return true;
+        if (string.IsNullOrEmpty(format))
+        {
+            return true;
+        }
+
         var f = format.Trim().ToLowerInvariant();
         return f is "truetype" or "opentype" or "ttf" or "otf" or "woff" or "woff2" or "svg";
     }
@@ -176,7 +213,10 @@ internal sealed class FontFaceFetcher : IDisposable
         }
 
         var key = absolute.ToString();
-        if (_byUrl.TryGetValue(key, out var cached)) return cached;
+        if (_byUrl.TryGetValue(key, out var cached))
+        {
+            return cached;
+        }
 
         using var _ = StarlingTelemetry.Span("engine", "fetch_font");
         Activity.Current?.SetTag("url", key);
@@ -243,7 +283,11 @@ internal sealed class FontFaceFetcher : IDisposable
     public void Dispose()
     {
         _byUrl.Clear();
-        if (_ownsHttp) _sharedHttp?.Dispose();
+        if (_ownsHttp)
+        {
+            _sharedHttp?.Dispose();
+        }
+
         _sharedHttp = null;
     }
 }

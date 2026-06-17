@@ -19,9 +19,16 @@ public static class LayerCandidates
     {
         ArgumentNullException.ThrowIfNull(root);
         if (root.Hints != LayerHint.None)
+        {
             yield return new LayerCandidate(root, root.Hints);
+        }
+
         foreach (var child in root.Children)
+        {
             foreach (var candidate in EnumerateLayerCandidates(child))
+            {
                 yield return candidate;
+            }
+        }
     }
 }

@@ -20,9 +20,15 @@ public class GithubCorpusTests
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx")))
+        {
             dir = dir.Parent;
+        }
+
         if (dir is null)
+        {
             throw new InvalidOperationException("Could not locate Starling.slnx walking up from the test binary.");
+        }
+
         return Path.Combine(dir.FullName, "testdata", "sites", "github", "assets");
     }
 

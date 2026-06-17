@@ -42,7 +42,10 @@ public static class StorageBinding
     {
         ArgumentNullException.ThrowIfNull(runtime);
         var realm = runtime.Realm;
-        if (realm.GlobalObject.HasOwn("localStorage")) return;
+        if (realm.GlobalObject.HasOwn("localStorage"))
+        {
+            return;
+        }
 
         var storageProto = BuildStorageProto(realm);
 
@@ -114,7 +117,11 @@ public static class StorageBinding
 
         EventTargetBinding.DefineMethod(realm, proto, "clear", (thisV, _) =>
         {
-            if (thisV.IsObject && thisV.AsObject is JsStorage s) s.Store.Clear();
+            if (thisV.IsObject && thisV.AsObject is JsStorage s)
+            {
+                s.Store.Clear();
+            }
+
             return JsValue.Undefined;
         }, length: 0);
 
@@ -123,8 +130,16 @@ public static class StorageBinding
 
     private static string OriginFor(string? url)
     {
-        if (string.IsNullOrEmpty(url)) return "about:blank";
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return "about:blank";
+        if (string.IsNullOrEmpty(url))
+        {
+            return "about:blank";
+        }
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return "about:blank";
+        }
+
         var port = uri.IsDefaultPort ? "" : $":{uri.Port}";
         return $"{uri.Scheme}://{uri.Host}{port}".ToLowerInvariant();
     }
@@ -145,13 +160,21 @@ internal sealed class JsStorageStore
 
     public void Set(string key, string value)
     {
-        if (!_map.ContainsKey(key)) _order.Add(key);
+        if (!_map.ContainsKey(key))
+        {
+            _order.Add(key);
+        }
+
         _map[key] = value;
     }
 
     public bool Remove(string key)
     {
-        if (!_map.Remove(key)) return false;
+        if (!_map.Remove(key))
+        {
+            return false;
+        }
+
         _order.Remove(key);
         return true;
     }
@@ -182,7 +205,11 @@ internal sealed class JsStorage : JsObject
 
     public override JsValue Get(string name)
     {
-        if (StorageBinding.IsInterfaceName(name)) return base.Get(name);
+        if (StorageBinding.IsInterfaceName(name))
+        {
+            return base.Get(name);
+        }
+
         return Store.TryGet(name, out var v) ? JsValue.String(v) : base.Get(name);
     }
 
@@ -199,7 +226,10 @@ internal sealed class JsStorage : JsObject
     public override bool DefineOwnProperty(string name, PropertyDescriptor desc)
     {
         if (StorageBinding.IsInterfaceName(name) || desc.IsAccessor)
+        {
             return base.DefineOwnProperty(name, desc);
+        }
+
         Store.Set(name, JsValue.ToStringValue(desc.Value));
         return true;
     }
@@ -207,25 +237,40 @@ internal sealed class JsStorage : JsObject
     public override PropertyDescriptor? GetOwnPropertyDescriptor(string name)
     {
         if (!StorageBinding.IsInterfaceName(name) && Store.TryGet(name, out var v))
+        {
             return PropertyDescriptor.Data(JsValue.String(v), writable: true, enumerable: true, configurable: true);
+        }
+
         return base.GetOwnPropertyDescriptor(name);
     }
 
     public override bool Has(string name)
     {
-        if (Store.TryGet(name, out _)) return true;
+        if (Store.TryGet(name, out _))
+        {
+            return true;
+        }
+
         return base.Has(name);
     }
 
     public override bool HasOwn(string name)
     {
-        if (Store.TryGet(name, out _)) return true;
+        if (Store.TryGet(name, out _))
+        {
+            return true;
+        }
+
         return base.HasOwn(name);
     }
 
     public override bool Delete(string name)
     {
-        if (Store.Remove(name)) return true;
+        if (Store.Remove(name))
+        {
+            return true;
+        }
+
         return base.Delete(name);
     }
 

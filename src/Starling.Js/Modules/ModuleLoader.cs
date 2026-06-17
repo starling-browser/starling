@@ -71,7 +71,11 @@ public sealed class ModuleLoader
 
         // Surface a top-level-await rejection / synchronous throw as the module
         // graph's evaluation error (matching the synchronous contract).
-        if (record.EvaluationError is not null) throw record.EvaluationError;
+        if (record.EvaluationError is not null)
+        {
+            throw record.EvaluationError;
+        }
+
         return record;
     }
 
@@ -86,15 +90,23 @@ public sealed class ModuleLoader
     {
         var realm = _runtime.Realm;
         var promise = Evaluate(record);
-        if (promise is not null) return promise;
+        if (promise is not null)
+        {
+            return promise;
+        }
 
         // Fully synchronous subtree: produce an already-settled promise so
         // callers (import()) get a uniform shape.
         var settled = new JsPromise(realm.PromisePrototype);
         if (record.EvaluationError is not null)
+        {
             PromiseCtor.Reject(realm, settled, record.EvaluationError.Value);
+        }
         else
+        {
             PromiseCtor.Resolve(realm, settled, JsValue.Undefined);
+        }
+
         return settled;
     }
 
@@ -170,7 +182,11 @@ public sealed class ModuleLoader
     /// SyntaxError — the VM surfaces that).</summary>
     internal JsObject? ResolveMetaForUrl(string? url)
     {
-        if (url is null) return null;
+        if (url is null)
+        {
+            return null;
+        }
+
         return _registry.TryGetValue(url, out var record) ? GetOrBuildMeta(record) : null;
     }
 
@@ -180,7 +196,11 @@ public sealed class ModuleLoader
     /// per the spec's note that import.meta is an ordinary extensible object.</summary>
     private JsObject GetOrBuildMeta(ModuleRecord record)
     {
-        if (record.Meta is not null) return record.Meta;
+        if (record.Meta is not null)
+        {
+            return record.Meta;
+        }
+
         var meta = _runtime.Realm.NewOrdinaryObject();
         meta.Set("url", JsValue.String(record.Url));
         record.Meta = meta;
@@ -194,7 +214,10 @@ public sealed class ModuleLoader
     private ModuleRecord LoadGraph(string specifier, string? referrer)
     {
         var url = ResolveOrThrow(specifier, referrer);
-        if (_registry.TryGetValue(url, out var existing)) return existing;
+        if (_registry.TryGetValue(url, out var existing))
+        {
+            return existing;
+        }
 
         var source = _host.FetchSource(url)
             ?? throw new JsThrow(_runtime.Realm.NewError(
@@ -220,7 +243,9 @@ public sealed class ModuleLoader
         // Recurse into dependencies (depth-first) so the whole graph is present
         // before linking. Cycles terminate via the registry check above.
         foreach (var dep in record.RequestedModules)
+        {
             LoadGraph(dep, url);
+        }
 
         return record;
     }
@@ -235,9 +260,15 @@ public sealed class ModuleLoader
     private void Link(ModuleRecord record)
     {
         if (record.Status is ModuleStatus.Linked or ModuleStatus.Evaluating or ModuleStatus.Evaluated)
+        {
             return;
+        }
+
         if (record.Status == ModuleStatus.Linking)
+        {
             return; // already on the stack (cycle) — its cells exist; defer wiring is done below
+        }
+
         record.Status = ModuleStatus.Linking;
 
         // Allocate one live-binding cell per local declaration so importers can
@@ -246,7 +277,9 @@ public sealed class ModuleLoader
 
         // Link dependencies first (depth-first) so their export cells exist.
         foreach (var dep in record.RequestedModules)
+        {
             Link(Resolve(dep, record.Url));
+        }
 
         // Build the upvalue table for the body in BindingOrder slot order.
         var order = _bindingOrders[record];
@@ -289,8 +322,15 @@ public sealed class ModuleLoader
             // Only indirect (`export { x } from`) and named-star
             // (`export * as ns`) entries can fail to resolve; a local export or a
             // bare `export *` either has a cell or contributes no single name.
-            if (e.IsLocal) continue;
-            if (e.IsStar && e.ExportName is null) continue; // bare `export *` — per-name checked lazily
+            if (e.IsLocal)
+            {
+                continue;
+            }
+
+            if (e.IsStar && e.ExportName is null)
+            {
+                continue; // bare `export *` — per-name checked lazily
+            }
 
             // Indirect re-export: the imported name must resolve in the target.
             if (!e.IsStar && e.ImportName is not null && e.ModuleRequest is not null)
@@ -298,8 +338,10 @@ public sealed class ModuleLoader
                 var dep = Resolve(e.ModuleRequest, record.Url);
                 var cell = ResolveExportCell(dep, e.ImportName, new HashSet<string>(StringComparer.Ordinal));
                 if (cell is null)
+                {
                     throw new JsThrow(_runtime.Realm.NewSyntaxError(
                         $"The requested module '{e.ModuleRequest}' does not provide an export named '{e.ImportName}'"));
+                }
             }
         }
     }
@@ -331,7 +373,10 @@ public sealed class ModuleLoader
     /// <paramref name="module"/>, following indirect and star re-exports.</summary>
     private Cell? ResolveExportCell(ModuleRecord module, string exportName, HashSet<string> seen)
     {
-        if (!seen.Add(module.Url + "\0" + exportName)) return null; // cycle in re-exports
+        if (!seen.Add(module.Url + "\0" + exportName))
+        {
+            return null; // cycle in re-exports
+        }
 
         // 1) Local export (export const/function/class, export { x }).
         foreach (var e in module.ExportEntries)
@@ -339,7 +384,10 @@ public sealed class ModuleLoader
             if (e.IsLocal && e.ExportName == exportName && e.LocalName is not null)
             {
                 EnsureLocalCells(module);
-                if (module.LocalBindings.TryGetValue(e.LocalName, out var local)) return local;
+                if (module.LocalBindings.TryGetValue(e.LocalName, out var local))
+                {
+                    return local;
+                }
             }
         }
 
@@ -357,7 +405,10 @@ public sealed class ModuleLoader
             {
                 var dep = Resolve(e.ModuleRequest!, module.Url);
                 var c = ResolveExportCell(dep, e.ImportName, seen);
-                if (c is not null) return c;
+                if (c is not null)
+                {
+                    return c;
+                }
             }
         }
 
@@ -374,7 +425,10 @@ public sealed class ModuleLoader
                 {
                     var dep = Resolve(e.ModuleRequest!, module.Url);
                     var c = ResolveExportCell(dep, exportName, seen);
-                    if (c is not null) return c;
+                    if (c is not null)
+                    {
+                        return c;
+                    }
                 }
             }
         }
@@ -407,7 +461,10 @@ public sealed class ModuleLoader
             // Re-entrant (idempotent or cycle back-edge). For a synchronous
             // module that already errored, preserve the throwing contract.
             if (record.EvaluationError is not null && record.EvaluationPromise is null)
+            {
                 throw record.EvaluationError;
+            }
+
             return record.EvaluationPromise;
         }
 
@@ -539,7 +596,10 @@ public sealed class ModuleLoader
         if (dep.EvaluationPromise is not null)
         {
             var list = _forwardDeps[module];
-            if (!list.Contains(dep.EvaluationPromise)) list.Add(dep.EvaluationPromise);
+            if (!list.Contains(dep.EvaluationPromise))
+            {
+                list.Add(dep.EvaluationPromise);
+            }
         }
     }
 
@@ -560,9 +620,19 @@ public sealed class ModuleLoader
         var anyTla = false;
         foreach (var m in members)
         {
-            if (m.HasTopLevelAwait) anyTla = true;
+            if (m.HasTopLevelAwait)
+            {
+                anyTla = true;
+            }
+
             foreach (var p in _forwardDeps[m])
-                if (!forwardDeps.Contains(p)) forwardDeps.Add(p);
+            {
+                if (!forwardDeps.Contains(p))
+                {
+                    forwardDeps.Add(p);
+                }
+            }
+
             _forwardDeps.Remove(m);
         }
 
@@ -605,8 +675,21 @@ public sealed class ModuleLoader
         // member that imports an awaited export observes the settled value rather
         // than a partial binding. Within each tier we keep DFS post-order.
         var runOrder = new List<ModuleRecord>();
-        foreach (var m in members) if (m.HasTopLevelAwait) runOrder.Add(m);
-        foreach (var m in members) if (!m.HasTopLevelAwait) runOrder.Add(m);
+        foreach (var m in members)
+        {
+            if (m.HasTopLevelAwait)
+            {
+                runOrder.Add(m);
+            }
+        }
+
+        foreach (var m in members)
+        {
+            if (!m.HasTopLevelAwait)
+            {
+                runOrder.Add(m);
+            }
+        }
 
         WhenAll(forwardDeps,
             onFulfilled: () => RunSccBodies(members, runOrder, 0, sccPromise),
@@ -678,7 +761,11 @@ public sealed class ModuleLoader
     private void FailScc(List<ModuleRecord> members, JsValue reason, JsPromise sccPromise)
     {
         var thrown = new JsThrow(reason);
-        foreach (var m in members) m.EvaluationError ??= thrown;
+        foreach (var m in members)
+        {
+            m.EvaluationError ??= thrown;
+        }
+
         PromiseCtor.Reject(_runtime.Realm, sccPromise, reason);
     }
 
@@ -728,7 +815,10 @@ public sealed class ModuleLoader
     /// <c>"Module"</c>).</summary>
     public JsObject GetOrBuildNamespace(ModuleRecord module)
     {
-        if (module.Namespace is not null) return module.Namespace;
+        if (module.Namespace is not null)
+        {
+            return module.Namespace;
+        }
 
         // §10.4.6 / §16.2.1.10 ModuleNamespaceCreate: the [[Exports]] list is the
         // module's resolved export names (export * expanded, default excluded
@@ -741,7 +831,10 @@ public sealed class ModuleLoader
         foreach (var name in ExportedNames(module, new HashSet<string>(StringComparer.Ordinal)))
         {
             var cell = ResolveExportCell(module, name, new HashSet<string>(StringComparer.Ordinal));
-            if (cell is not null) exports[name] = cell;
+            if (cell is not null)
+            {
+                exports[name] = cell;
+            }
         }
 
         ns.RefreshExportNames();
@@ -752,14 +845,24 @@ public sealed class ModuleLoader
     /// <c>export *</c> re-exports (excluding <c>default</c>, per spec).</summary>
     private IEnumerable<string> ExportedNames(ModuleRecord module, HashSet<string> visited)
     {
-        if (!visited.Add(module.Url)) yield break;
+        if (!visited.Add(module.Url))
+        {
+            yield break;
+        }
+
         var names = new List<string>();
-        void Add(string n) { if (!names.Contains(n)) names.Add(n); }
+        void Add(string n) { if (!names.Contains(n)) { names.Add(n); } }
 
         foreach (var e in module.ExportEntries)
         {
-            if (e.ExportName is not null && !e.IsStar) Add(e.ExportName);
-            else if (e.IsStar && e.ExportName is not null) Add(e.ExportName); // export * as ns
+            if (e.ExportName is not null && !e.IsStar)
+            {
+                Add(e.ExportName);
+            }
+            else if (e.IsStar && e.ExportName is not null)
+            {
+                Add(e.ExportName); // export * as ns
+            }
         }
         foreach (var e in module.ExportEntries)
         {
@@ -767,10 +870,18 @@ public sealed class ModuleLoader
             {
                 var dep = Resolve(e.ModuleRequest!, module.Url);
                 foreach (var n in ExportedNames(dep, visited))
-                    if (n != "default") Add(n);
+                {
+                    if (n != "default")
+                    {
+                        Add(n);
+                    }
+                }
             }
         }
-        foreach (var n in names) yield return n;
+        foreach (var n in names)
+        {
+            yield return n;
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -782,6 +893,7 @@ public sealed class ModuleLoader
     private void EnsureLocalCells(ModuleRecord record)
     {
         foreach (var slot in _bindingOrders[record])
+        {
             if (!slot.IsImport)
             {
                 // §16.2.1.6.2 / §9.4.2 — a local lexical binding (let/const/class/
@@ -795,6 +907,7 @@ public sealed class ModuleLoader
                     : JsValue.Undefined;
                 record.LocalBindings.TryAdd(slot.Name, new Cell(initial));
             }
+        }
     }
 
     private ModuleRecord Resolve(string specifier, string referrer)

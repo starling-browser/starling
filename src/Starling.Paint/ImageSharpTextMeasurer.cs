@@ -49,7 +49,11 @@ public sealed class ImageSharpTextMeasurer : ITextMeasurer, IDisposable
     public double MeasureWidth(string text, double fontSize, FontSpec spec)
     {
         ArgumentNullException.ThrowIfNull(text);
-        if (text.Length == 0 || fontSize <= 0) return 0d;
+        if (text.Length == 0 || fontSize <= 0)
+        {
+            return 0d;
+        }
+
         return Shape(text, fontSize, spec).Advance;
     }
 
@@ -77,12 +81,16 @@ public sealed class ImageSharpTextMeasurer : ITextMeasurer, IDisposable
     {
         ArgumentNullException.ThrowIfNull(text);
         if (text.Length == 0 || fontSize <= 0)
+        {
             return new GlyphShapedRun(Array.Empty<ShapedGlyph>(), 0d);
+        }
 
         var size = (float)fontSize;
         var key = new ShapeCacheKey(text, size, spec);
         if (_shapeCache.TryGetValue(key, out var hit))
+        {
             return hit;
+        }
 
         var font = GetFont(size, spec);
         var options = new TextOptions(font);
@@ -110,7 +118,11 @@ public sealed class ImageSharpTextMeasurer : ITextMeasurer, IDisposable
 
     public double NormalLineHeight(double fontSize, FontSpec spec)
     {
-        if (fontSize <= 0) return 0;
+        if (fontSize <= 0)
+        {
+            return 0;
+        }
+
         var font = GetFont((float)fontSize, spec);
         var (ascent, descent, leading) = ScaledMetrics(font);
         return ascent + descent + leading;
@@ -118,7 +130,11 @@ public sealed class ImageSharpTextMeasurer : ITextMeasurer, IDisposable
 
     public double Baseline(double fontSize, FontSpec spec)
     {
-        if (fontSize <= 0) return 0;
+        if (fontSize <= 0)
+        {
+            return 0;
+        }
+
         var font = GetFont((float)fontSize, spec);
         var (ascent, _, leading) = ScaledMetrics(font);
         return ascent + (leading / 2.0);
@@ -153,7 +169,11 @@ public sealed class ImageSharpTextMeasurer : ITextMeasurer, IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         _fontCache.Clear();
         _shapeCache.Clear();

@@ -52,10 +52,16 @@ internal static class Fixtures
         while (dir is not null
             && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx"))
             && !File.Exists(Path.Combine(dir.FullName, "Starling.sln")))
+        {
             dir = dir.Parent;
+        }
+
         if (dir is null)
+        {
             throw new InvalidOperationException(
                 "Could not locate the Starling solution walking up from the bench binary.");
+        }
+
         return dir.FullName;
     }
 }

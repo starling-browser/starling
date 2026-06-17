@@ -63,18 +63,40 @@ internal static class GradientInterpolation
         switch (method)
         {
             case HueInterpolationMethod.Shorter:
-                if (diff > 180) diff -= 360;
-                else if (diff < -180) diff += 360;
+                if (diff > 180)
+                {
+                    diff -= 360;
+                }
+                else if (diff < -180)
+                {
+                    diff += 360;
+                }
+
                 break;
             case HueInterpolationMethod.Longer:
-                if (diff is > (-180) and < 0) diff += 360;
-                else if (diff is > 0 and < 180) diff -= 360;
+                if (diff is > (-180) and < 0)
+                {
+                    diff += 360;
+                }
+                else if (diff is > 0 and < 180)
+                {
+                    diff -= 360;
+                }
+
                 break;
             case HueInterpolationMethod.Increasing:
-                if (diff < 0) diff += 360;
+                if (diff < 0)
+                {
+                    diff += 360;
+                }
+
                 break;
             case HueInterpolationMethod.Decreasing:
-                if (diff > 0) diff -= 360;
+                if (diff > 0)
+                {
+                    diff -= 360;
+                }
+
                 break;
         }
         return h0 + diff * f;
@@ -143,9 +165,19 @@ internal static class GradientInterpolation
         if (d > 1e-10)
         {
             s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            if (max == r) h = (g - b) / d + (g < b ? 6 : 0);
-            else if (max == g) h = (b - r) / d + 2;
-            else h = (r - g) / d + 4;
+            if (max == r)
+            {
+                h = (g - b) / d + (g < b ? 6 : 0);
+            }
+            else if (max == g)
+            {
+                h = (b - r) / d + 2;
+            }
+            else
+            {
+                h = (r - g) / d + 4;
+            }
+
             h *= 60;
         }
         return (h, s, l);
@@ -156,12 +188,28 @@ internal static class GradientInterpolation
         static double Hue2Rgb(double p, double q, double t)
         {
             t = ((t % 1.0) + 1.0) % 1.0;
-            if (t < 1.0 / 6) return p + (q - p) * 6 * t;
-            if (t < 1.0 / 2) return q;
-            if (t < 2.0 / 3) return p + (q - p) * (2.0 / 3 - t) * 6;
+            if (t < 1.0 / 6)
+            {
+                return p + (q - p) * 6 * t;
+            }
+
+            if (t < 1.0 / 2)
+            {
+                return q;
+            }
+
+            if (t < 2.0 / 3)
+            {
+                return p + (q - p) * (2.0 / 3 - t) * 6;
+            }
+
             return p;
         }
-        if (s < 1e-10) return (l, l, l);
+        if (s < 1e-10)
+        {
+            return (l, l, l);
+        }
+
         var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
         var p = 2 * l - q;
         var hN = h / 360.0;

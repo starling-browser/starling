@@ -43,7 +43,10 @@ public static class HistoryBinding
         ArgumentNullException.ThrowIfNull(document);
 
         var realm = runtime.Realm;
-        if (HistoryObjectCache.TryGetValue(realm, out _)) return;
+        if (HistoryObjectCache.TryGetValue(realm, out _))
+        {
+            return;
+        }
 
         var history = new SessionHistory(initialUrl ?? "about:blank");
         RealmToHistory.Add(realm, history);
@@ -74,7 +77,11 @@ public static class HistoryBinding
             (_, args) =>
             {
                 var v = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
-                if (v == "auto" || v == "manual") history.ScrollRestoration = v;
+                if (v == "auto" || v == "manual")
+                {
+                    history.ScrollRestoration = v;
+                }
+
                 return JsValue.Undefined;
             });
 
@@ -97,11 +104,18 @@ public static class HistoryBinding
             if (args.Length > 0 && !args[0].IsUndefined)
             {
                 var n = JsValue.ToNumber(args[0]);
-                if (!double.IsNaN(n) && !double.IsInfinity(n)) delta = (int)n;
+                if (!double.IsNaN(n) && !double.IsInfinity(n))
+                {
+                    delta = (int)n;
+                }
             }
             // Per spec, go(0) reloads. v1 has no cross-document reload path,
             // so we no-op for delta == 0 and document the gap.
-            if (delta != 0) Traverse(realm, history, delta);
+            if (delta != 0)
+            {
+                Traverse(realm, history, delta);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
 
@@ -119,10 +133,17 @@ public static class HistoryBinding
 
     private static void Traverse(JsRealm realm, SessionHistory history, int delta)
     {
-        if (!history.TryTraverse(delta, out var newState)) return;
+        if (!history.TryTraverse(delta, out var newState))
+        {
+            return;
+        }
 
         var hostTarget = EventTargetBinding.ResolveHost(JsValue.Object(realm.GlobalObject));
-        if (hostTarget is null) return;
+        if (hostTarget is null)
+        {
+            return;
+        }
+
         var ev = new PopStateEvent("popstate") { State = newState };
         hostTarget.DispatchEvent(ev);
     }
@@ -133,12 +154,21 @@ public static class HistoryBinding
     /// references; falls back to the current URL on malformed input.</summary>
     internal static string ResolveUrl(string baseUrl, JsValue arg)
     {
-        if (arg.IsUndefined || arg.IsNull) return baseUrl;
+        if (arg.IsUndefined || arg.IsNull)
+        {
+            return baseUrl;
+        }
+
         var raw = JsValue.ToStringValue(arg);
-        if (raw.Length == 0) return baseUrl;
+        if (raw.Length == 0)
+        {
+            return baseUrl;
+        }
 
         if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri))
+        {
             return raw;
+        }
 
         // Only treat as absolute if it has an explicit scheme; otherwise it's a
         // relative reference. Uri.TryCreate(..., Absolute) will happily parse
@@ -146,7 +176,9 @@ public static class HistoryBinding
         // the spec wants — same-document relative paths should resolve against
         // the document base.
         if (HasExplicitScheme(raw) && Uri.TryCreate(raw, UriKind.Absolute, out var absolute))
+        {
             return absolute.ToString();
+        }
 
         try
         {
@@ -161,14 +193,20 @@ public static class HistoryBinding
     private static bool HasExplicitScheme(string raw)
     {
         var colon = raw.IndexOf(':');
-        if (colon <= 0) return false;
+        if (colon <= 0)
+        {
+            return false;
+        }
         // A scheme is ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ) per RFC 3986.
         for (var i = 0; i < colon; i++)
         {
             var ch = raw[i];
             var ok = i == 0 ? char.IsAsciiLetter(ch)
                 : char.IsAsciiLetterOrDigit(ch) || ch == '+' || ch == '-' || ch == '.';
-            if (!ok) return false;
+            if (!ok)
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -201,7 +239,10 @@ internal sealed class SessionHistory
         }
 
         if (_index + 1 < _entries.Count)
+        {
             _entries.RemoveRange(_index + 1, _entries.Count - _index - 1);
+        }
+
         _entries.Add(new HistoryEntry(state, url));
         _index = _entries.Count - 1;
     }

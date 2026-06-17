@@ -24,7 +24,11 @@ internal static class ConsoleBinding
     public static void Install(JintBackendContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
-        if (ctx.Engine.Global.HasOwnProperty("console")) return;
+        if (ctx.Engine.Global.HasOwnProperty("console"))
+        {
+            return;
+        }
+
         var log = ctx.Log;
         Install(ctx.Engine, (level, msg) =>
         {
@@ -102,32 +106,50 @@ internal static class ConsoleBinding
         {
             var label = Label(args, "default");
             if (timers.TryGetValue(label, out var sw))
+            {
                 sink(ConsoleLevel.Info, Indent($"{label}: {sw.Elapsed.TotalMilliseconds.ToString("0.###", CultureInfo.InvariantCulture)}ms"));
+            }
+
             return JsValue.Undefined;
         }, 0);
         JintInterop.DefineMethod(engine, console, "timeEnd", (_, args) =>
         {
             var label = Label(args, "default");
             if (timers.Remove(label, out var sw))
+            {
                 sink(ConsoleLevel.Info, Indent($"{label}: {sw.Elapsed.TotalMilliseconds.ToString("0.###", CultureInfo.InvariantCulture)}ms"));
+            }
+
             return JsValue.Undefined;
         }, 0);
 
         JintInterop.DefineMethod(engine, console, "group", (_, args) =>
         {
-            if (args.Length > 0) sink(ConsoleLevel.Log, Indent(Format(args)));
+            if (args.Length > 0)
+            {
+                sink(ConsoleLevel.Log, Indent(Format(args)));
+            }
+
             groupDepth++;
             return JsValue.Undefined;
         }, 0);
         JintInterop.DefineMethod(engine, console, "groupCollapsed", (_, args) =>
         {
-            if (args.Length > 0) sink(ConsoleLevel.Log, Indent(Format(args)));
+            if (args.Length > 0)
+            {
+                sink(ConsoleLevel.Log, Indent(Format(args)));
+            }
+
             groupDepth++;
             return JsValue.Undefined;
         }, 0);
         JintInterop.DefineMethod(engine, console, "groupEnd", (_, _) =>
         {
-            if (groupDepth > 0) groupDepth--;
+            if (groupDepth > 0)
+            {
+                groupDepth--;
+            }
+
             return JsValue.Undefined;
         }, 0);
 
@@ -141,7 +163,11 @@ internal static class ConsoleBinding
 
     private static string Format(JsValue[] args)
     {
-        if (args.Length == 0) return string.Empty;
+        if (args.Length == 0)
+        {
+            return string.Empty;
+        }
+
         return string.Join(" ", args.Select(a => a.IsNull() ? "null" : a.ToString()));
     }
 }

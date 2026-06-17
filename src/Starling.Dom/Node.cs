@@ -39,7 +39,13 @@ public abstract class Node : EventTarget
         get
         {
             for (Node? n = this; n is not null; n = n.ParentNode)
-                if (n is Document) return true;
+            {
+                if (n is Document)
+                {
+                    return true;
+                }
+            }
+
             return false;
         }
     }
@@ -67,25 +73,37 @@ public abstract class Node : EventTarget
 
         // The parent must be a node that can contain children.
         if (this is not (Document or Element or DocumentFragment))
+        {
             throw DomException.Create("HierarchyRequestError",
                 $"Node of type '{GetType().Name}' cannot have children");
+        }
 
         // The child must not be an inclusive ancestor of the parent (cycle check).
         for (var p = (Node?)this; p is not null; p = p.ParentNode)
+        {
             if (ReferenceEquals(p, child))
+            {
                 throw DomException.Create("HierarchyRequestError", "The new child element contains the parent");
+            }
+        }
 
         // A document cannot be inserted as a child of a non-document.
         if (child is Document && this is not Document)
+        {
             throw DomException.Create("HierarchyRequestError", "Documents cannot be inserted as a child node");
+        }
 
         // An Attr is not part of the normal node tree.
         if (child is AttrNode)
+        {
             throw DomException.Create("HierarchyRequestError", "Cannot insert an Attr into a node tree.");
+        }
 
         // The reference child, when given, must be a child of this node.
         if (referenceChild is not null && referenceChild.ParentNode != this)
+        {
             throw DomException.Create("NotFoundError", "The reference child is not a child of this node.");
+        }
 
         try
         {
@@ -104,7 +122,10 @@ public abstract class Node : EventTarget
     {
         ArgumentNullException.ThrowIfNull(child);
         if (!ReferenceEquals(child.ParentNode, this))
+        {
             throw DomException.Create("NotFoundError", "The node to be removed is not a child of this node");
+        }
+
         try
         {
             return RemoveChild(child);
@@ -124,14 +145,27 @@ public abstract class Node : EventTarget
         ArgumentNullException.ThrowIfNull(oldChild);
 
         if (this is not (Document or Element or DocumentFragment))
+        {
             throw DomException.Create("HierarchyRequestError", $"Node of type '{GetType().Name}' cannot have children");
+        }
+
         for (var p = (Node?)this; p is not null; p = p.ParentNode)
+        {
             if (ReferenceEquals(p, newChild))
+            {
                 throw DomException.Create("HierarchyRequestError", "The new child element contains the parent");
+            }
+        }
+
         if (newChild is AttrNode)
+        {
             throw DomException.Create("HierarchyRequestError", "Cannot insert an Attr into a node tree.");
+        }
+
         if (!ReferenceEquals(oldChild.ParentNode, this))
+        {
             throw DomException.Create("NotFoundError", "The child to be replaced is not a child of this node");
+        }
 
         try
         {
@@ -148,7 +182,13 @@ public abstract class Node : EventTarget
     public bool Contains(Node? other)
     {
         for (var n = other; n is not null; n = n.ParentNode)
-            if (ReferenceEquals(n, this)) return true;
+        {
+            if (ReferenceEquals(n, this))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -160,7 +200,11 @@ public abstract class Node : EventTarget
     public Node GetRootNode()
     {
         var root = this;
-        while (root.ParentNode is { } parent) root = parent;
+        while (root.ParentNode is { } parent)
+        {
+            root = parent;
+        }
+
         return root;
     }
 
@@ -205,7 +249,13 @@ public abstract class Node : EventTarget
     {
         var list = new List<Element>();
         for (var n = FirstChild; n is not null; n = n.NextSibling)
-            if (n is Element e) list.Add(e);
+        {
+            if (n is Element e)
+            {
+                list.Add(e);
+            }
+        }
+
         return list;
     }
 
@@ -228,7 +278,13 @@ public abstract class Node : EventTarget
         get
         {
             for (var n = FirstChild; n is not null; n = n.NextSibling)
-                if (n is Element e) return e;
+            {
+                if (n is Element e)
+                {
+                    return e;
+                }
+            }
+
             return null;
         }
     }
@@ -240,7 +296,13 @@ public abstract class Node : EventTarget
         get
         {
             for (var n = LastChild; n is not null; n = n.PreviousSibling)
-                if (n is Element e) return e;
+            {
+                if (n is Element e)
+                {
+                    return e;
+                }
+            }
+
             return null;
         }
     }
@@ -253,7 +315,13 @@ public abstract class Node : EventTarget
         {
             int count = 0;
             for (var n = FirstChild; n is not null; n = n.NextSibling)
-                if (n is Element) count++;
+            {
+                if (n is Element)
+                {
+                    count++;
+                }
+            }
+
             return count;
         }
     }
@@ -265,7 +333,13 @@ public abstract class Node : EventTarget
         get
         {
             for (var n = NextSibling; n is not null; n = n.NextSibling)
-                if (n is Element e) return e;
+            {
+                if (n is Element e)
+                {
+                    return e;
+                }
+            }
+
             return null;
         }
     }
@@ -277,7 +351,13 @@ public abstract class Node : EventTarget
         get
         {
             for (var n = PreviousSibling; n is not null; n = n.PreviousSibling)
-                if (n is Element e) return e;
+            {
+                if (n is Element e)
+                {
+                    return e;
+                }
+            }
+
             return null;
         }
     }
@@ -286,7 +366,11 @@ public abstract class Node : EventTarget
     /// Cross-root order is implementation-defined but internally consistent.</summary>
     public ushort CompareDocumentPosition(Node other)
     {
-        if (ReferenceEquals(this, other)) return 0;
+        if (ReferenceEquals(this, other))
+        {
+            return 0;
+        }
+
         if (!ReferenceEquals(GetRootNode(), other.GetRootNode()))
         {
             int selfHash = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
@@ -296,8 +380,16 @@ public abstract class Node : EventTarget
         }
 
         int bits = 0;
-        if (Contains(other)) bits |= 16;        // CONTAINED_BY
-        if (other.Contains(this)) bits |= 8;    // CONTAINS
+        if (Contains(other))
+        {
+            bits |= 16;        // CONTAINED_BY
+        }
+
+        if (other.Contains(this))
+        {
+            bits |= 8;    // CONTAINS
+        }
+
         bits |= IsBeforeInTreeOrder(other, this) ? 2 : 4;   // PRECEDING : FOLLOWING
         return (ushort)bits;
     }
@@ -307,7 +399,11 @@ public abstract class Node : EventTarget
         static List<Node> Path(Node n)
         {
             var path = new List<Node>();
-            for (var cur = (Node?)n; cur is not null; cur = cur.ParentNode) path.Insert(0, cur);
+            for (var cur = (Node?)n; cur is not null; cur = cur.ParentNode)
+            {
+                path.Insert(0, cur);
+            }
+
             return path;
         }
 
@@ -319,11 +415,22 @@ public abstract class Node : EventTarget
             if (!ReferenceEquals(pa[i], pb[i]))
             {
                 var parent = i > 0 ? pa[i - 1] : null;
-                if (parent is null) return false;
+                if (parent is null)
+                {
+                    return false;
+                }
+
                 for (var child = parent.FirstChild; child is not null; child = child.NextSibling)
                 {
-                    if (ReferenceEquals(child, pa[i])) return true;
-                    if (ReferenceEquals(child, pb[i])) return false;
+                    if (ReferenceEquals(child, pa[i]))
+                    {
+                        return true;
+                    }
+
+                    if (ReferenceEquals(child, pb[i]))
+                    {
+                        return false;
+                    }
                 }
                 return false;
             }
@@ -333,36 +440,74 @@ public abstract class Node : EventTarget
 
     private static bool NodesEqual(Node? a, Node? b)
     {
-        if (a is null && b is null) return true;
-        if (a is null || b is null) return false;
-        if (a.Kind != b.Kind) return false;
+        if (a is null && b is null)
+        {
+            return true;
+        }
+
+        if (a is null || b is null)
+        {
+            return false;
+        }
+
+        if (a.Kind != b.Kind)
+        {
+            return false;
+        }
 
         switch (a)
         {
             case Element ea when b is Element eb:
-                if (ea.TagName != eb.TagName || ea.Namespace != eb.Namespace) return false;
+                if (ea.TagName != eb.TagName || ea.Namespace != eb.Namespace)
+                {
+                    return false;
+                }
+
                 var attrsA = ea.Attributes;
                 var attrsB = eb.Attributes;
-                if (attrsA.Count != attrsB.Count) return false;
+                if (attrsA.Count != attrsB.Count)
+                {
+                    return false;
+                }
+
                 for (var i = 0; i < attrsA.Count; i++)
                 {
                     var atA = attrsA[i];
                     var localName = NamedNodeMap.LocalNameOf(atA.Name);
                     var atB = eb.GetAttributeNS(atA.Namespace, localName);
-                    if (atB is null || atA.Value != atB) return false;
+                    if (atB is null || atA.Value != atB)
+                    {
+                        return false;
+                    }
                 }
                 break;
             case Text ta when b is Text tb:
-                if (ta.Data != tb.Data) return false;
+                if (ta.Data != tb.Data)
+                {
+                    return false;
+                }
+
                 break;
             case Comment ca when b is Comment cb:
-                if (ca.Data != cb.Data) return false;
+                if (ca.Data != cb.Data)
+                {
+                    return false;
+                }
+
                 break;
             case ProcessingInstruction pia when b is ProcessingInstruction pib:
-                if (pia.Target != pib.Target || pia.Data != pib.Data) return false;
+                if (pia.Target != pib.Target || pia.Data != pib.Data)
+                {
+                    return false;
+                }
+
                 break;
             case DocumentType dta when b is DocumentType dtb:
-                if (dta.Name != dtb.Name) return false;
+                if (dta.Name != dtb.Name)
+                {
+                    return false;
+                }
+
                 break;
         }
 
@@ -370,7 +515,11 @@ public abstract class Node : EventTarget
         var bc = b.FirstChild;
         while (ac is not null && bc is not null)
         {
-            if (!NodesEqual(ac, bc)) return false;
+            if (!NodesEqual(ac, bc))
+            {
+                return false;
+            }
+
             ac = ac.NextSibling;
             bc = bc.NextSibling;
         }
@@ -385,45 +534,79 @@ public abstract class Node : EventTarget
     /// <summary>ParentNode "append": insert each node after the last child.</summary>
     public void Append(IReadOnlyList<Node> nodes)
     {
-        foreach (var n in nodes) AppendChild(n);
+        foreach (var n in nodes)
+        {
+            AppendChild(n);
+        }
     }
 
     /// <summary>ParentNode "prepend": insert each node before the first child.</summary>
     public void Prepend(IReadOnlyList<Node> nodes)
     {
         var reference = FirstChild;
-        foreach (var n in nodes) InsertBefore(n, reference);
+        foreach (var n in nodes)
+        {
+            InsertBefore(n, reference);
+        }
     }
 
     /// <summary>ChildNode "before": insert each node before this node.</summary>
     public void Before(IReadOnlyList<Node> nodes)
     {
-        if (ParentNode is not { } parent) return;
-        foreach (var n in nodes) parent.InsertBefore(n, this);
+        if (ParentNode is not { } parent)
+        {
+            return;
+        }
+
+        foreach (var n in nodes)
+        {
+            parent.InsertBefore(n, this);
+        }
     }
 
     /// <summary>ChildNode "after": insert each node after this node.</summary>
     public void After(IReadOnlyList<Node> nodes)
     {
-        if (ParentNode is not { } parent) return;
+        if (ParentNode is not { } parent)
+        {
+            return;
+        }
+
         var reference = NextSibling;
-        foreach (var n in nodes) parent.InsertBefore(n, reference);
+        foreach (var n in nodes)
+        {
+            parent.InsertBefore(n, reference);
+        }
     }
 
     /// <summary>ChildNode "replaceWith": replace this node with the given nodes.</summary>
     public void ReplaceWith(IReadOnlyList<Node> nodes)
     {
-        if (ParentNode is not { } parent) return;
+        if (ParentNode is not { } parent)
+        {
+            return;
+        }
+
         var reference = NextSibling;
         RemoveFromParent();
-        foreach (var n in nodes) parent.InsertBefore(n, reference);
+        foreach (var n in nodes)
+        {
+            parent.InsertBefore(n, reference);
+        }
     }
 
     /// <summary>ParentNode "replaceChildren": replace all children with the given nodes.</summary>
     public void ReplaceChildren(IReadOnlyList<Node> nodes)
     {
-        while (FirstChild is { } c) c.RemoveFromParent();
-        foreach (var n in nodes) AppendChild(n);
+        while (FirstChild is { } c)
+        {
+            c.RemoveFromParent();
+        }
+
+        foreach (var n in nodes)
+        {
+            AppendChild(n);
+        }
     }
 
     private static DomException MapMutationException(InvalidOperationException ex)
@@ -439,15 +622,26 @@ public abstract class Node : EventTarget
     {
         ArgumentNullException.ThrowIfNull(child);
         if (referenceChild is not null && referenceChild.ParentNode != this)
+        {
             throw new InvalidOperationException("The reference child is not a child of this node.");
+        }
+
         if (child == referenceChild)
+        {
             return child;
+        }
+
         if (child == this)
+        {
             throw new InvalidOperationException("A node cannot be its own child.");
+        }
+
         for (var ancestor = this.ParentNode; ancestor is not null; ancestor = ancestor.ParentNode)
         {
             if (ancestor == child)
+            {
                 throw new InvalidOperationException("A node cannot be inserted into one of its descendants.");
+            }
         }
 
         if (child is DocumentFragment fragment)
@@ -458,14 +652,21 @@ public abstract class Node : EventTarget
             // from the fragment as we go.
             var moved = new List<Node>();
             for (var n = fragment.FirstChild; n is not null; n = n.NextSibling)
+            {
                 moved.Add(n);
+            }
+
             if (moved.Count == 0)
+            {
                 return fragment;
+            }
             // DOM §4.2.3: empty the fragment with the suppress-observers flag set,
             // so the per-child removal from the fragment queues no record — the
             // single insertion record below covers the whole move.
             foreach (var node in moved)
+            {
                 LinkChild(node, referenceChild, suppressRemoveRecord: true);
+            }
             // Capture the inserted range's siblings before any re-entrant
             // NotifyConnected can mutate the tree, then fire one record.
             var fragPrev = moved[0].PreviousSibling;
@@ -473,7 +674,10 @@ public abstract class Node : EventTarget
             (OwnerDocument ?? this as Document)?.ChildListMutated?.Invoke(
                 this, moved, null, fragPrev, fragNext);
             foreach (var node in moved)
+            {
                 NotifyConnected(node);
+            }
+
             return fragment;
         }
 
@@ -522,9 +726,13 @@ public abstract class Node : EventTarget
             child.PreviousSibling = previous;
             referenceChild.PreviousSibling = child;
             if (previous is null)
+            {
                 FirstChild = child;
+            }
             else
+            {
                 previous.NextSibling = child;
+            }
         }
 
         // DOM §5.3.4 "insert": update live Range boundary points now that the
@@ -534,7 +742,9 @@ public abstract class Node : EventTarget
         var childAffectsLayout = !IsLayoutInvariantElement(child);
         OnTreeMutated(affectsLayout: childAffectsLayout);
         if (childAffectsLayout)
+        {
             (OwnerDocument ?? this as Document)?.RecordLayoutMutation(this, LayoutChangeKind.ChildInserted);
+        }
     }
 
     /// <summary>If <paramref name="inserted"/> is now connected to a document
@@ -545,11 +755,16 @@ public abstract class Node : EventTarget
     private void NotifyConnected(Node inserted)
     {
         var document = OwnerDocument ?? (this as Document);
-        if (document?.NodeConnected is null) return;
+        if (document?.NodeConnected is null)
+        {
+            return;
+        }
 
         document.NotifyNodeConnected(inserted);
         foreach (var descendant in inserted.Descendants())
+        {
             document.NotifyNodeConnected(descendant);
+        }
     }
 
     public Node ReplaceChild(Node newChild, Node oldChild)
@@ -557,7 +772,9 @@ public abstract class Node : EventTarget
         ArgumentNullException.ThrowIfNull(newChild);
         ArgumentNullException.ThrowIfNull(oldChild);
         if (oldChild.ParentNode != this)
+        {
             throw new InvalidOperationException("The old child is not a child of this node.");
+        }
 
         InsertBefore(newChild, oldChild);
         RemoveChild(oldChild);
@@ -568,7 +785,9 @@ public abstract class Node : EventTarget
     {
         ArgumentNullException.ThrowIfNull(child);
         if (child.ParentNode != this)
+        {
             throw new InvalidOperationException("The node is not a child of this node.");
+        }
 
         child.RemoveFromParent();
         return child;
@@ -585,13 +804,19 @@ public abstract class Node : EventTarget
     internal void RemoveFromParent(bool suppressObservers)
     {
         var parent = ParentNode;
-        if (parent is null) return;
+        if (parent is null)
+        {
+            return;
+        }
 
         // DOM §6.3.3: notify live NodeIterators before the parent link is cleared.
         if (NodeRemovedHook is { } hook)
         {
             var doc = OwnerDocument ?? (this is Document d ? d : null);
-            if (doc is not null) hook(doc, this);
+            if (doc is not null)
+            {
+                hook(doc, this);
+            }
         }
 
         // DOM §5.3.4 "remove": update live Range boundary points before the
@@ -602,11 +827,23 @@ public abstract class Node : EventTarget
         var oldPrev = PreviousSibling;
         var oldNext = NextSibling;
 
-        if (PreviousSibling is not null) PreviousSibling.NextSibling = NextSibling;
-        else parent.FirstChild = NextSibling;
+        if (PreviousSibling is not null)
+        {
+            PreviousSibling.NextSibling = NextSibling;
+        }
+        else
+        {
+            parent.FirstChild = NextSibling;
+        }
 
-        if (NextSibling is not null) NextSibling.PreviousSibling = PreviousSibling;
-        else parent.LastChild = PreviousSibling;
+        if (NextSibling is not null)
+        {
+            NextSibling.PreviousSibling = PreviousSibling;
+        }
+        else
+        {
+            parent.LastChild = PreviousSibling;
+        }
 
         ParentNode = null;
         PreviousSibling = null;
@@ -616,10 +853,15 @@ public abstract class Node : EventTarget
         var removedAffectsLayout = !IsLayoutInvariantElement(this);
         parent.OnTreeMutated(affectsLayout: removedAffectsLayout);
         if (removedAffectsLayout)
+        {
             (parent.OwnerDocument ?? parent as Document)?.RecordLayoutMutation(parent, LayoutChangeKind.ChildRemoved);
+        }
+
         if (!suppressObservers)
+        {
             (parent.OwnerDocument ?? parent as Document)?.ChildListMutated?.Invoke(
                 parent, null, new[] { this }, oldPrev, oldNext);
+        }
     }
 
     public IEnumerable<Node> ChildNodes
@@ -627,7 +869,9 @@ public abstract class Node : EventTarget
         get
         {
             for (var child = FirstChild; child is not null; child = child.NextSibling)
+            {
                 yield return child;
+            }
         }
     }
 
@@ -636,14 +880,18 @@ public abstract class Node : EventTarget
         // Iterative pre-order walk avoids unbounded recursion on hostile DOM depth.
         var stack = new Stack<Node>();
         for (var child = LastChild; child is not null; child = child.PreviousSibling)
+        {
             stack.Push(child);
+        }
 
         while (stack.Count > 0)
         {
             var node = stack.Pop();
             yield return node;
             for (var child = node.LastChild; child is not null; child = child.PreviousSibling)
+            {
                 stack.Push(child);
+            }
         }
     }
 
@@ -660,7 +908,11 @@ public abstract class Node : EventTarget
 
     public string? LookupPrefix(string? @namespace)
     {
-        if (string.IsNullOrEmpty(@namespace)) return null;
+        if (string.IsNullOrEmpty(@namespace))
+        {
+            return null;
+        }
+
         return LocatePrefix(this is Document d ? d.DocumentElement : this as Element ?? ParentNode as Element, @namespace);
     }
 
@@ -669,13 +921,28 @@ public abstract class Node : EventTarget
         switch (node)
         {
             case Element el:
-                if (!string.IsNullOrEmpty(el.Namespace) && el.Prefix == prefix) return el.Namespace;
+                if (!string.IsNullOrEmpty(el.Namespace) && el.Prefix == prefix)
+                {
+                    return el.Namespace;
+                }
+
                 foreach (var a in el.Attributes)
                 {
-                    if (a.Namespace != XmlnsNamespace) continue;
+                    if (a.Namespace != XmlnsNamespace)
+                    {
+                        continue;
+                    }
+
                     var (pfx, local) = SplitName(a.Name);
-                    if (pfx == "xmlns" && local == prefix) return string.IsNullOrEmpty(a.Value) ? null : a.Value;
-                    if (pfx is null && a.Name == "xmlns" && prefix is null) return string.IsNullOrEmpty(a.Value) ? null : a.Value;
+                    if (pfx == "xmlns" && local == prefix)
+                    {
+                        return string.IsNullOrEmpty(a.Value) ? null : a.Value;
+                    }
+
+                    if (pfx is null && a.Name == "xmlns" && prefix is null)
+                    {
+                        return string.IsNullOrEmpty(a.Value) ? null : a.Value;
+                    }
                 }
                 // Walk up to element ancestors only — stop at the document to avoid
                 // documentElement<->Document recursion.
@@ -691,12 +958,23 @@ public abstract class Node : EventTarget
     {
         for (var node = el; node is not null; node = node.ParentNode as Element)
         {
-            if (node.Namespace == ns && node.Prefix is not null) return node.Prefix;
+            if (node.Namespace == ns && node.Prefix is not null)
+            {
+                return node.Prefix;
+            }
+
             foreach (var a in node.Attributes)
             {
-                if (a.Namespace != XmlnsNamespace) continue;
+                if (a.Namespace != XmlnsNamespace)
+                {
+                    continue;
+                }
+
                 var (pfx, local) = SplitName(a.Name);
-                if (pfx == "xmlns" && a.Value == ns) return local;
+                if (pfx == "xmlns" && a.Value == ns)
+                {
+                    return local;
+                }
             }
         }
         return null;
@@ -715,15 +993,23 @@ public abstract class Node : EventTarget
             var sb = new System.Text.StringBuilder();
             foreach (var node in Descendants())
             {
-                if (node is Text text) sb.Append(text.Data);
-                else if (node is CData cdata) sb.Append(cdata.Data);
+                if (node is Text text)
+                {
+                    sb.Append(text.Data);
+                }
+                else if (node is CData cdata)
+                {
+                    sb.Append(cdata.Data);
+                }
             }
             return sb.ToString();
         }
         set
         {
             while (FirstChild is not null)
+            {
                 RemoveChild(FirstChild);
+            }
 
             if (!string.IsNullOrEmpty(value))
             {
@@ -753,9 +1039,14 @@ public abstract class Node : EventTarget
             // it). Layout invalidation is opt-out for non-rendered children.
             document.BumpMutationVersion();
             if (affectsLayout)
+            {
                 document.BumpLayoutInvalidationVersion();
+            }
         }
-        else ParentNode?.OnTreeMutated(affectsLayout);
+        else
+        {
+            ParentNode?.OnTreeMutated(affectsLayout);
+        }
     }
 
     /// <summary>An element that never produces a box and contributes no
@@ -767,9 +1058,17 @@ public abstract class Node : EventTarget
     /// recascades layout).</summary>
     internal static bool IsLayoutInvariantElement(Node n)
     {
-        if (n is not Element e) return false;
+        if (n is not Element e)
+        {
+            return false;
+        }
+
         var name = e.LocalName;
-        if (string.IsNullOrEmpty(name)) return false;
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+
         return name.Equals("script", StringComparison.OrdinalIgnoreCase)
             || name.Equals("meta", StringComparison.OrdinalIgnoreCase)
             || name.Equals("title", StringComparison.OrdinalIgnoreCase)
@@ -786,10 +1085,14 @@ public abstract class Node : EventTarget
         {
             var node = stack.Pop();
             if (node is not Document)
+            {
                 node.OwnerDocument = document;
+            }
 
             for (var child = node.LastChild; child is not null; child = child.PreviousSibling)
+            {
                 stack.Push(child);
+            }
         }
     }
 }

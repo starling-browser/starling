@@ -90,10 +90,14 @@ public abstract class ShapedRun
         int endGlyph)
     {
         if (startGlyph < 0 || endGlyph > glyphs.Length || startGlyph > endGlyph)
+        {
             throw new ArgumentOutOfRangeException(nameof(startGlyph));
+        }
 
         if (startGlyph == endGlyph)
+        {
             return (Array.Empty<ShapedGlyph>(), 0d);
+        }
 
         var startX = glyphs[startGlyph].X;
         // The pen-X just past the slice's last glyph: either the next glyph's

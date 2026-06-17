@@ -45,7 +45,9 @@ public sealed class AngleSharpHtmlBackend : IHtmlParserBackend
         {
             var copied = CopyNode(child, doc);
             if (copied is not null)
+            {
                 doc.AppendChild(copied);
+            }
         }
 
         return doc;
@@ -76,7 +78,9 @@ public sealed class AngleSharpHtmlBackend : IHtmlParserBackend
         {
             var copied = CopyNode(node, ownerDocument);
             if (copied is not null)
+            {
                 fragment.AppendChild(copied);
+            }
         }
 
         return fragment;
@@ -132,7 +136,9 @@ public sealed class AngleSharpHtmlBackend : IHtmlParserBackend
             {
                 var copied = CopyNode(child, owner);
                 if (copied is not null)
+                {
                     content.AppendChild(copied);
+                }
             }
             return element;
         }
@@ -141,7 +147,9 @@ public sealed class AngleSharpHtmlBackend : IHtmlParserBackend
         {
             var copied = CopyNode(child, owner);
             if (copied is not null)
+            {
                 element.AppendChild(copied);
+            }
         }
 
         return element;

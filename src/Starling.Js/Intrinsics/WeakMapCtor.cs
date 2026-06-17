@@ -15,7 +15,10 @@ public static class WeakMapCtor
             (newTarget, args) =>
             {
                 if (!IntrinsicHelpers.IsConstructInvocation(newTarget))
+                {
                     throw new JsThrow(realm.NewTypeError("Constructor WeakMap requires 'new'"));
+                }
+
                 var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, proto);
                 return JsValue.Object(Construct(realm, instProto, args));
             },
@@ -31,7 +34,11 @@ public static class WeakMapCtor
         IntrinsicHelpers.DefineMethod(realm, proto, "get", 1, (thisV, args) =>
         {
             var m = ThisWeakMap(realm, thisV);
-            if (args.Length == 0 || !args[0].IsObject) return JsValue.Undefined;
+            if (args.Length == 0 || !args[0].IsObject)
+            {
+                return JsValue.Undefined;
+            }
+
             return m.Get(args[0].AsObject);
         });
 
@@ -39,7 +46,10 @@ public static class WeakMapCtor
         {
             var m = ThisWeakMap(realm, thisV);
             if (args.Length == 0 || !args[0].IsObject)
+            {
                 throw new JsThrow(realm.NewTypeError("WeakMap key must be an object"));
+            }
+
             m.Set(args[0].AsObject, args.Length > 1 ? args[1] : JsValue.Undefined);
             return thisV;
         });
@@ -47,14 +57,22 @@ public static class WeakMapCtor
         IntrinsicHelpers.DefineMethod(realm, proto, "has", 1, (thisV, args) =>
         {
             var m = ThisWeakMap(realm, thisV);
-            if (args.Length == 0 || !args[0].IsObject) return JsValue.False;
+            if (args.Length == 0 || !args[0].IsObject)
+            {
+                return JsValue.False;
+            }
+
             return JsValue.Boolean(m.Has(args[0].AsObject));
         });
 
         IntrinsicHelpers.DefineMethod(realm, proto, "delete", 1, (thisV, args) =>
         {
             var m = ThisWeakMap(realm, thisV);
-            if (args.Length == 0 || !args[0].IsObject) return JsValue.False;
+            if (args.Length == 0 || !args[0].IsObject)
+            {
+                return JsValue.False;
+            }
+
             return JsValue.Boolean(m.Delete(args[0].AsObject));
         });
 
@@ -66,18 +84,32 @@ public static class WeakMapCtor
     private static JsWeakMap Construct(JsRealm realm, JsObject instProto, JsValue[] args)
     {
         var m = new JsWeakMap(realm);
-        if (!ReferenceEquals(instProto, realm.WeakMapPrototype)) m.SetPrototypeOf(instProto);
-        if (args.Length == 0 || args[0].IsNullish) return m;
+        if (!ReferenceEquals(instProto, realm.WeakMapPrototype))
+        {
+            m.SetPrototypeOf(instProto);
+        }
+
+        if (args.Length == 0 || args[0].IsNullish)
+        {
+            return m;
+        }
 
         var adder = AbstractOperations.Get(realm.ActiveVm, m, "set");
         if (!AbstractOperations.IsCallable(adder))
+        {
             throw new JsThrow(realm.NewTypeError("WeakMap constructor set method is not callable"));
+        }
+
         var iterable = args[0];
         var record = AbstractOperations.GetIterator(realm, realm.ActiveVm, iterable);
         while (true)
         {
             var next = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-            if (next is null) break;
+            if (next is null)
+            {
+                break;
+            }
+
             JsValue entry;
             try
             {
@@ -110,7 +142,11 @@ public static class WeakMapCtor
 
     private static JsWeakMap ThisWeakMap(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is JsWeakMap m) return m;
+        if (thisV.IsObject && thisV.AsObject is JsWeakMap m)
+        {
+            return m;
+        }
+
         throw new JsThrow(realm.NewTypeError("WeakMap.prototype method called on incompatible receiver"));
     }
 }

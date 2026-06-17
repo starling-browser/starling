@@ -27,7 +27,11 @@ public class LargeJumpOffsetTests
     private static string Filler(int n)
     {
         var sb = new StringBuilder();
-        for (var i = 0; i < n; i++) sb.Append("x+=1;");
+        for (var i = 0; i < n; i++)
+        {
+            sb.Append("x+=1;");
+        }
+
         return sb.ToString();
     }
 

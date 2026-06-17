@@ -56,11 +56,17 @@ public sealed class ConnectionPool : IAsyncDisposable
     public ConnectionPool(int maxPerOrigin, TimeSpan idleTimeout, ILogger<ConnectionPool>? log = null)
     {
         if (maxPerOrigin < 1)
+        {
             throw new ArgumentOutOfRangeException(
                 nameof(maxPerOrigin), "Pool capacity must be at least 1.");
+        }
+
         if (idleTimeout <= TimeSpan.Zero)
+        {
             throw new ArgumentOutOfRangeException(
                 nameof(idleTimeout), "Idle timeout must be positive.");
+        }
+
         MaxPerOrigin = maxPerOrigin;
         IdleTimeout = idleTimeout;
         _log = log ?? NullLogger<ConnectionPool>.Instance;
@@ -77,7 +83,11 @@ public sealed class ConnectionPool : IAsyncDisposable
             lock (_gate)
             {
                 var n = 0;
-                foreach (var q in _byOrigin.Values) n += q.Count;
+                foreach (var q in _byOrigin.Values)
+                {
+                    n += q.Count;
+                }
+
                 return n;
             }
         }
@@ -104,9 +114,15 @@ public sealed class ConnectionPool : IAsyncDisposable
     {
         lock (_gate)
         {
-            if (_disposed) return null;
-            if (!_byOrigin.TryGetValue(origin, out var q) || q.Count == 0)
+            if (_disposed)
+            {
                 return null;
+            }
+
+            if (!_byOrigin.TryGetValue(origin, out var q) || q.Count == 0)
+            {
+                return null;
+            }
 
             // MRU: take from the tail. Discard any that have since closed
             // (e.g., peer FIN we haven't noticed yet) and try the next.
@@ -115,7 +131,9 @@ public sealed class ConnectionPool : IAsyncDisposable
                 var node = q.Last!;
                 q.RemoveLast();
                 if (node.Value.Transport.IsOpen)
+                {
                     return node.Value.Transport;
+                }
 
                 // Stale: dispose and keep looking.
                 _ = DiscardAsync(node.Value.Transport, _log);
@@ -157,9 +175,14 @@ public sealed class ConnectionPool : IAsyncDisposable
         }
 
         if (transport is not null)
+        {
             await DiscardAsync(transport, _log).ConfigureAwait(false);
+        }
+
         if (evicted is not null)
+        {
             await DiscardAsync(evicted, _log).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
@@ -188,9 +211,16 @@ public sealed class ConnectionPool : IAsyncDisposable
             }
         }
 
-        if (expired is null) return 0;
+        if (expired is null)
+        {
+            return 0;
+        }
+
         foreach (var t in expired)
+        {
             await DiscardAsync(t, _log).ConfigureAwait(false);
+        }
+
         return expired.Count;
     }
 
@@ -208,20 +238,32 @@ public sealed class ConnectionPool : IAsyncDisposable
             foreach (var (_, q) in _byOrigin)
             {
                 foreach (var entry in q)
+                {
                     (toClose ??= []).Add(entry.Transport);
+                }
+
                 q.Clear();
             }
             _byOrigin.Clear();
         }
-        if (toClose is null) return;
+        if (toClose is null)
+        {
+            return;
+        }
+
         foreach (var t in toClose)
+        {
             await DiscardAsync(t, _log).ConfigureAwait(false);
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         await DisposeAllAsync().ConfigureAwait(false);
-        lock (_gate) _disposed = true;
+        lock (_gate)
+        {
+            _disposed = true;
+        }
     }
 
     private LinkedList<Entry> GetQueue(OriginKey origin)

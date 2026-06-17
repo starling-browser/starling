@@ -82,7 +82,13 @@ public class TodoInteractionTests
     {
         var n = 0;
         for (var c = list.FirstChild; c is not null; c = c.NextSibling)
-            if (c is DomElement { LocalName: "li" }) n++;
+        {
+            if (c is DomElement { LocalName: "li" })
+            {
+                n++;
+            }
+        }
+
         return n;
     }
 
@@ -90,16 +96,27 @@ public class TodoInteractionTests
     {
         var titles = new List<string>();
         for (var c = list.FirstChild; c is not null; c = c.NextSibling)
+        {
             if (c is DomElement { LocalName: "li" } li
                 && FirstWithClass(li, "item__title") is { } title)
+            {
                 titles.Add(title.TextContent);
+            }
+        }
+
         return titles;
     }
 
     private static DomElement? FirstWithClass(Starling.Dom.Node root, string cls)
     {
         foreach (var e in root.DescendantElements())
-            if (e.ClassList.Contains(cls)) return e;
+        {
+            if (e.ClassList.Contains(cls))
+            {
+                return e;
+            }
+        }
+
         return null;
     }
 
@@ -108,8 +125,15 @@ public class TodoInteractionTests
         var dir = AppContext.BaseDirectory;
         while (dir is not null
             && !File.Exists(Path.Combine(dir, "testdata", "sites", "todo", "index.html")))
+        {
             dir = Path.GetDirectoryName(dir);
-        if (dir is null) throw new InvalidOperationException("testdata/sites/todo not found above " + AppContext.BaseDirectory);
+        }
+
+        if (dir is null)
+        {
+            throw new InvalidOperationException("testdata/sites/todo not found above " + AppContext.BaseDirectory);
+        }
+
         var path = Path.Combine(dir, "testdata", "sites", "todo", "index.html");
         return "file://" + path.Replace('\\', '/');
     }
@@ -153,13 +177,25 @@ public class TodoInteractionTests
         var fx = originX + box.Frame.X;
         var fy = originY + box.Frame.Y;
         if (ReferenceEquals(box.Element, target))
+        {
             return (fx + box.Frame.Width / 2, fy + box.Frame.Height / 2);
-        if (box is Starling.Layout.Box.TextBox) return null;
+        }
+
+        if (box is Starling.Layout.Box.TextBox)
+        {
+            return null;
+        }
 
         var cx = fx + box.Border.Left + box.Padding.Left;
         var cy = fy + box.Border.Top + box.Padding.Top;
         foreach (var child in box.Children)
-            if (CenterOf(child, target, cx, cy) is { } r) return r;
+        {
+            if (CenterOf(child, target, cx, cy) is { } r)
+            {
+                return r;
+            }
+        }
+
         return null;
     }
 }

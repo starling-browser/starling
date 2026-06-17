@@ -47,9 +47,15 @@ public class StyleBench
         foreach (var child in root.ChildNodes)
         {
             if (child is Element e && string.Equals(e.LocalName, tag, StringComparison.OrdinalIgnoreCase))
+            {
                 return e;
+            }
+
             var nested = FirstByTag(child, tag);
-            if (nested is not null) return nested;
+            if (nested is not null)
+            {
+                return nested;
+            }
         }
         return null;
     }

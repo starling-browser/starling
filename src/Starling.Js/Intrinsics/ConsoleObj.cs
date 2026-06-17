@@ -96,13 +96,20 @@ public static class ConsoleObj
 
     private static void Group(JsRealm realm, JsValue[] args)
     {
-        if (args.Length > 0) Emit(realm, ConsoleLevel.Log, FormatArgs(args));
+        if (args.Length > 0)
+        {
+            Emit(realm, ConsoleLevel.Log, FormatArgs(args));
+        }
+
         realm.ConsoleGroupDepth++;
     }
 
     private static void GroupEnd(JsRealm realm)
     {
-        if (realm.ConsoleGroupDepth > 0) realm.ConsoleGroupDepth--;
+        if (realm.ConsoleGroupDepth > 0)
+        {
+            realm.ConsoleGroupDepth--;
+        }
     }
 
     private static void Trace(JsRealm realm, JsValue[] args)
@@ -115,7 +122,10 @@ public static class ConsoleObj
     private static void Assert(JsRealm realm, JsValue[] args)
     {
         var condition = args.Length > 0 ? args[0] : JsValue.Undefined;
-        if (JsValue.ToBoolean(condition)) return;
+        if (JsValue.ToBoolean(condition))
+        {
+            return;
+        }
 
         var rest = args.Length <= 1 ? Array.Empty<JsValue>() : args[1..];
         var suffix = rest.Length == 0 ? string.Empty : " " + FormatArgs(rest);
@@ -125,8 +135,15 @@ public static class ConsoleObj
     // Console Standard §2.2.1 Formatter: consume % substitutions from first string.
     private static string FormatArgs(JsValue[] args)
     {
-        if (args.Length == 0) return string.Empty;
-        if (!args[0].IsString) return JoinArgs(args, 0);
+        if (args.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        if (!args[0].IsString)
+        {
+            return JoinArgs(args, 0);
+        }
 
         var fmt = args[0].AsString;
         var sb = new StringBuilder();
@@ -166,7 +183,11 @@ public static class ConsoleObj
 
         if (argIndex < args.Length)
         {
-            if (sb.Length > 0) sb.Append(' ');
+            if (sb.Length > 0)
+            {
+                sb.Append(' ');
+            }
+
             sb.Append(JoinArgs(args, argIndex));
         }
         return sb.ToString();
@@ -177,7 +198,11 @@ public static class ConsoleObj
         var sb = new StringBuilder();
         for (var i = start; i < args.Length; i++)
         {
-            if (i > start) sb.Append(' ');
+            if (i > start)
+            {
+                sb.Append(' ');
+            }
+
             sb.Append(FormatValue(args[i], objectLiteralString: false, new HashSet<JsObject>()));
         }
         return sb.ToString();
@@ -187,43 +212,72 @@ public static class ConsoleObj
     {
         if (!value.IsObject)
         {
-            if (objectLiteralString && value.IsString) return Quote(value.AsString);
+            if (objectLiteralString && value.IsString)
+            {
+                return Quote(value.AsString);
+            }
+
             return JsValue.ToStringValue(value);
         }
 
         var obj = value.AsObject;
-        if (obj is JsNativeFunction fn) return fn.ToString();
-        if (!seen.Add(obj)) return "[Circular]";
+        if (obj is JsNativeFunction fn)
+        {
+            return fn.ToString();
+        }
+
+        if (!seen.Add(obj))
+        {
+            return "[Circular]";
+        }
 
         var parts = new List<string>();
         foreach (var key in obj.EnumerableKeys())
+        {
             parts.Add(key + ": " + FormatValue(obj.Get(key), objectLiteralString: true, seen));
+        }
+
         seen.Remove(obj);
         return "{ " + string.Join(", ", parts) + " }";
     }
 
     private static string FormatTable(JsValue value)
     {
-        if (!value.IsObject) return FormatValue(value, objectLiteralString: false, new HashSet<JsObject>());
+        if (!value.IsObject)
+        {
+            return FormatValue(value, objectLiteralString: false, new HashSet<JsObject>());
+        }
 
         var rows = new List<(string Key, string Value)>();
         foreach (var key in value.AsObject.EnumerableKeys())
+        {
             rows.Add((key, FormatValue(value.AsObject.Get(key), objectLiteralString: true, new HashSet<JsObject>())));
-        if (rows.Count == 0) return "(empty)";
+        }
+
+        if (rows.Count == 0)
+        {
+            return "(empty)";
+        }
 
         var keyWidth = Math.Max("(index)".Length, rows.Max(r => r.Key.Length));
         var valueWidth = Math.Max("Value".Length, rows.Max(r => r.Value.Length));
         var sb = new StringBuilder();
         sb.Append("(index)".PadRight(keyWidth)).Append(" | ").Append("Value".PadRight(valueWidth));
         foreach (var row in rows)
+        {
             sb.AppendLine().Append(row.Key.PadRight(keyWidth)).Append(" | ").Append(row.Value.PadRight(valueWidth));
+        }
+
         return sb.ToString();
     }
 
     private static string FormatNumber(double value, bool integer)
     {
         if (integer && !double.IsNaN(value) && !double.IsInfinity(value))
+        {
             value = Math.Truncate(value);
+        }
+
         return JsValue.ToStringValue(JsValue.Number(value));
     }
 

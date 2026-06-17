@@ -31,14 +31,29 @@ internal static class Test262Corpus
         foreach (var sub in dirs)
         {
             var path = Path.Combine(testDir, sub);
-            if (!Directory.Exists(path)) continue;
+            if (!Directory.Exists(path))
+            {
+                continue;
+            }
+
             foreach (var file in Directory.EnumerateFiles(path, "*.js", SearchOption.AllDirectories).OrderBy(p => p, StringComparer.Ordinal))
             {
                 // _FIXTURE.js files are imported by module tests, never run directly.
-                if (file.EndsWith("_FIXTURE.js", StringComparison.Ordinal)) continue;
-                if (filter is not null && file.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                if (file.EndsWith("_FIXTURE.js", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (filter is not null && file.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
                 yield return file;
-                if (max > 0 && ++count >= max) yield break;
+                if (max > 0 && ++count >= max)
+                {
+                    yield break;
+                }
             }
         }
     }
@@ -60,7 +75,11 @@ internal static class Test262Corpus
         for (var i = 0; i < 12 && dir is not null; i++)
         {
             var candidate = Path.Combine(dir, "testdata", "test262");
-            if (Directory.Exists(Path.Combine(candidate, "test"))) return candidate;
+            if (Directory.Exists(Path.Combine(candidate, "test")))
+            {
+                return candidate;
+            }
+
             dir = Path.GetDirectoryName(dir.TrimEnd(Path.DirectorySeparatorChar));
         }
         return null;

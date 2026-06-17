@@ -67,7 +67,10 @@ internal sealed class PictureCache
     public bool TryServe(LayoutRect viewport, float scale, long pageVersion, out CacheBlit blit)
     {
         if (!TryServeRaw(viewport, scale, pageVersion, out blit))
+        {
             return false;
+        }
+
         StarlingTelemetry.Counter("paint.cache.hit", 1);
         return true;
     }
@@ -84,7 +87,9 @@ internal sealed class PictureCache
         var want = ToDeviceRect(viewport, scale);
 
         if (_pixels is null || pageVersion != _pageVersion || scale != _scale || !_bounds.Contains(want))
+        {
             return false;
+        }
 
         blit = new CacheBlit(
             SourcePixels: _pixels,
@@ -118,7 +123,9 @@ internal sealed class PictureCache
         }
 
         if (_bounds.Contains(want))
+        {
             return Array.Empty<DeviceRect>();
+        }
 
         StarlingTelemetry.Counter("paint.cache.partial", 1);
         return Subtract(want, _bounds);
@@ -143,14 +150,18 @@ internal sealed class PictureCache
         // A version/scale mismatch slipping through here means the caller is
         // sliding against a stale key — refuse so it reseeds wholesale.
         if (_pixels is null || pageVersion != _pageVersion || scale != _scale)
+        {
             return false;
+        }
 
         var dest = new byte[checked(window.Width * window.Height * 4)];
 
         // Retain the part of the old window still visible in the new one.
         var overlap = _bounds.Intersect(window);
         if (overlap.Width > 0 && overlap.Height > 0)
+        {
             CopyRegion(_pixels, _bounds, dest, window, overlap);
+        }
 
         // Overlay each freshly-painted strip, clamped to the window in case a
         // fractional-scale ceil sized the raster a pixel past the edge.
@@ -160,7 +171,9 @@ internal sealed class PictureCache
             StarlingTelemetry.Counter("paint.cache.strip_area", (double)rect.Width * rect.Height);
             var region = rect.Intersect(window);
             if (region.Width > 0 && region.Height > 0)
+            {
                 CopyRegion(pixels.Rgba, rect, dest, window, region);
+            }
         }
 
         _pixels = dest;
@@ -190,8 +203,10 @@ internal sealed class PictureCache
     {
         var expected = checked(rect.Width * rect.Height * 4);
         if (pixels.Rgba.Length != expected || pixels.Width != rect.Width || pixels.Height != rect.Height)
+        {
             throw new ArgumentException(
                 $"Seed/strip pixels {pixels.Width}x{pixels.Height} do not match device rect {rect.Width}x{rect.Height}.");
+        }
         // Copy so the cache owns an independent buffer (callers may reuse/dispose).
         var owned = new byte[expected];
         Array.Copy(pixels.Rgba, owned, expected);

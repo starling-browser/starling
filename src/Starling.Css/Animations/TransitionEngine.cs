@@ -90,7 +90,10 @@ public sealed class TransitionEngine
     {
         get
         {
-            foreach (var (element, _) in _active.Keys) yield return element;
+            foreach (var (element, _) in _active.Keys)
+            {
+                yield return element;
+            }
         }
     }
 
@@ -100,7 +103,10 @@ public sealed class TransitionEngine
     /// probes over the whole active table.</summary>
     public void CollectActiveElements(ISet<Element> into)
     {
-        foreach (var (element, _) in _active.Keys) into.Add(element);
+        foreach (var (element, _) in _active.Keys)
+        {
+            into.Add(element);
+        }
     }
 
     /// <summary>
@@ -127,7 +133,9 @@ public sealed class TransitionEngine
         }
 
         if (Equals(previous, newValue))
+        {
             return;
+        }
 
         if (!Interpolator.IsAnimatable(property))
         {
@@ -184,7 +192,10 @@ public sealed class TransitionEngine
             // state. Leave the in-flight transition running; only a genuinely new
             // target (below) starts a fresh one (Transitions 1 §3 "reversing").
             if (Equals(prior.To, newValue))
+            {
                 return;
+            }
+
             fromValue = Sample(prior, _nowMs);
             // The in-flight transition is replaced before it completed —
             // it fires transitioncancel, then the replacement fires its own
@@ -222,7 +233,10 @@ public sealed class TransitionEngine
     {
         var key = (element, property);
         if (_active.TryGetValue(key, out var t))
+        {
             return Sample(t, _nowMs);
+        }
+
         return _lastEffective.TryGetValue(key, out var v) ? v : null;
     }
 
@@ -235,12 +249,17 @@ public sealed class TransitionEngine
     public int Tick(double nowMs)
     {
         if (nowMs < _nowMs)
+        {
             // Time going backwards is a programming error — clamp to avoid
             // negative progress and a corrupted sample.
             nowMs = _nowMs;
+        }
 
         _nowMs = nowMs;
-        if (_active.Count == 0) return 0;
+        if (_active.Count == 0)
+        {
+            return 0;
+        }
 
         var completed = 0;
         List<(Element, PropertyId)>? toRemove = null;
@@ -264,7 +283,13 @@ public sealed class TransitionEngine
             }
         }
         if (toRemove is not null)
-            foreach (var k in toRemove) _active.Remove(k);
+        {
+            foreach (var k in toRemove)
+            {
+                _active.Remove(k);
+            }
+        }
+
         return completed;
     }
 
@@ -275,8 +300,12 @@ public sealed class TransitionEngine
     public IEnumerable<PropertyId> ActiveProperties(Element element)
     {
         foreach (var key in _active.Keys)
+        {
             if (ReferenceEquals(key.Item1, element))
+            {
                 yield return key.Item2;
+            }
+        }
     }
 
     /// <summary>
@@ -291,9 +320,16 @@ public sealed class TransitionEngine
         var any = false;
         foreach (var key in _active.Keys)
         {
-            if (!ReferenceEquals(key.Item1, element)) continue;
+            if (!ReferenceEquals(key.Item1, element))
+            {
+                continue;
+            }
+
             any = true;
-            if (PropertyRegistry.AffectsLayout(key.Item2)) return true;
+            if (PropertyRegistry.AffectsLayout(key.Item2))
+            {
+                return true;
+            }
         }
         return !any;
     }
@@ -313,7 +349,10 @@ public sealed class TransitionEngine
             _active.Remove(k);
         }
         var keys2 = _lastEffective.Keys.Where(k => ReferenceEquals(k.Item1, element)).ToList();
-        foreach (var k in keys2) _lastEffective.Remove(k);
+        foreach (var k in keys2)
+        {
+            _lastEffective.Remove(k);
+        }
     }
 
     /// <summary>Reset the engine to an empty state — primarily for tests.</summary>
@@ -335,7 +374,11 @@ public sealed class TransitionEngine
     public void DrainPendingEvents(List<AnimationEventRecord> into)
     {
         ArgumentNullException.ThrowIfNull(into);
-        if (_pendingEvents.Count == 0) return;
+        if (_pendingEvents.Count == 0)
+        {
+            return;
+        }
+
         into.AddRange(_pendingEvents);
         _pendingEvents.Clear();
     }
@@ -360,8 +403,16 @@ public sealed class TransitionEngine
     private static CssValue Sample(ActiveTransition t, double nowMs)
     {
         var elapsed = nowMs - t.StartMs - t.DelayMs;
-        if (elapsed <= 0) return t.From;
-        if (t.DurationMs <= 0 || elapsed >= t.DurationMs) return t.To;
+        if (elapsed <= 0)
+        {
+            return t.From;
+        }
+
+        if (t.DurationMs <= 0 || elapsed >= t.DurationMs)
+        {
+            return t.To;
+        }
+
         var linear = elapsed / t.DurationMs;
         var eased = t.TimingFunction.Evaluate(linear);
         return Interpolator.Interpolate(t.Property, t.From, t.To, eased);
@@ -377,8 +428,16 @@ public sealed class TransitionEngine
         {
             case CssKeyword k:
                 var name = k.Name.ToLowerInvariant();
-                if (name == "none") return false;
-                if (name == "all") return true;
+                if (name == "none")
+                {
+                    return false;
+                }
+
+                if (name == "all")
+                {
+                    return true;
+                }
+
                 return string.Equals(name, PropertyName(property), StringComparison.OrdinalIgnoreCase);
             case CssValueList list:
                 // Comma-separated transition-property list (e.g.,
@@ -391,8 +450,15 @@ public sealed class TransitionEngine
                     if (v is CssKeyword item)
                     {
                         var nm = item.Name.ToLowerInvariant();
-                        if (nm == "all") return true;
-                        if (string.Equals(nm, PropertyName(property), StringComparison.OrdinalIgnoreCase)) return true;
+                        if (nm == "all")
+                        {
+                            return true;
+                        }
+
+                        if (string.Equals(nm, PropertyName(property), StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
                     }
                 }
                 return false;
@@ -425,7 +491,11 @@ public sealed class TransitionEngine
         for (var i = 0; i < s.Length; i++)
         {
             var c = s[i];
-            if (i > 0 && char.IsUpper(c)) sb.Append('-');
+            if (i > 0 && char.IsUpper(c))
+            {
+                sb.Append('-');
+            }
+
             sb.Append(char.ToLowerInvariant(c));
         }
         return sb.ToString();

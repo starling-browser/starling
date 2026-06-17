@@ -50,7 +50,9 @@ internal static class ListMarker
         }
 
         if (!KnownCounterStyles.Contains(type))
+        {
             return null;
+        }
 
         // Numeric / alphabetic counter styles render the ordinal followed by a
         // "." suffix per the UA's list-item marker formatting (CSS Lists 3 §3.2).

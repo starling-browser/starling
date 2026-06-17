@@ -31,7 +31,10 @@ public sealed class InlineThemeStyleTests
         var doc = new Document();
         var engine = new StyleEngine(includeUserAgentStyleSheet: false);
         if (css.Length > 0)
+        {
             engine.AddStyleSheet(CssParser.ParseStyleSheet(css));
+        }
+
         return (doc, engine);
     }
 

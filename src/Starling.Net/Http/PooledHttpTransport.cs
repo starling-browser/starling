@@ -68,7 +68,11 @@ internal sealed class PooledHttpTransport : IHttpTransport
 
     public async ValueTask DisposeAsync()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         if (_tls is not null)
         {

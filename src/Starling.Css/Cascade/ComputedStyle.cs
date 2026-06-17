@@ -31,11 +31,24 @@ public sealed class ComputedStyle
     /// </summary>
     public bool ValuesEqual(ComputedStyle? other)
     {
-        if (ReferenceEquals(this, other)) return true;
-        if (other is null || _values.Count != other._values.Count) return false;
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        if (other is null || _values.Count != other._values.Count)
+        {
+            return false;
+        }
+
         foreach (var (id, value) in _values)
+        {
             if (!other._values.TryGetValue(id, out var v) || !ValueEquals(value, v))
+            {
                 return false;
+            }
+        }
+
         return true;
     }
 
@@ -50,19 +63,43 @@ public sealed class ComputedStyle
     /// </summary>
     private static bool ValueEquals(CssValue a, CssValue b)
     {
-        if (ReferenceEquals(a, b)) return true;
+        if (ReferenceEquals(a, b))
+        {
+            return true;
+        }
+
         switch (a, b)
         {
             case (CssValueList la, CssValueList lb):
-                if (la.Values.Count != lb.Values.Count) return false;
+                if (la.Values.Count != lb.Values.Count)
+                {
+                    return false;
+                }
+
                 for (var i = 0; i < la.Values.Count; i++)
-                    if (!ValueEquals(la.Values[i], lb.Values[i])) return false;
+                {
+                    if (!ValueEquals(la.Values[i], lb.Values[i]))
+                    {
+                        return false;
+                    }
+                }
+
                 return true;
             case (CssFunctionValue fa, CssFunctionValue fb):
                 if (!string.Equals(fa.Name, fb.Name, StringComparison.Ordinal)
-                    || fa.Arguments.Count != fb.Arguments.Count) return false;
+                    || fa.Arguments.Count != fb.Arguments.Count)
+                {
+                    return false;
+                }
+
                 for (var i = 0; i < fa.Arguments.Count; i++)
-                    if (!ValueEquals(fa.Arguments[i], fb.Arguments[i])) return false;
+                {
+                    if (!ValueEquals(fa.Arguments[i], fb.Arguments[i]))
+                    {
+                        return false;
+                    }
+                }
+
                 return true;
             default:
                 return a.Equals(b);
@@ -88,10 +125,22 @@ public sealed class ComputedStyle
     /// </summary>
     internal ComputedStyle WithOverrides(IReadOnlyDictionary<PropertyId, CssValue> overrides)
     {
-        if (overrides.Count == 0) return this;
+        if (overrides.Count == 0)
+        {
+            return this;
+        }
+
         var merged = new Dictionary<PropertyId, CssValue>(_values.Count);
-        foreach (var kv in _values) merged[kv.Key] = kv.Value;
-        foreach (var kv in overrides) merged[kv.Key] = kv.Value;
+        foreach (var kv in _values)
+        {
+            merged[kv.Key] = kv.Value;
+        }
+
+        foreach (var kv in overrides)
+        {
+            merged[kv.Key] = kv.Value;
+        }
+
         return new ComputedStyle(merged, CustomProperties);
     }
 
@@ -111,9 +160,12 @@ public sealed class ComputedStyle
     {
         var values = new Dictionary<PropertyId, CssValue>(_values.Count);
         foreach (var kv in _values)
+        {
             values[kv.Key] = PropertyRegistry.Inherits(kv.Key)
                 ? kv.Value
                 : PropertyRegistry.InitialValue(kv.Key);
+        }
+
         return new ComputedStyle(values, CustomProperties);
     }
 
@@ -149,7 +201,10 @@ public sealed class ComputedStyle
         // serialize their component-value list back to text per CSSOM §6.7.4.
         if (name.StartsWith("--", StringComparison.Ordinal))
         {
-            if (!CustomProperties.TryGetValue(name, out var tokens)) return string.Empty;
+            if (!CustomProperties.TryGetValue(name, out var tokens))
+            {
+                return string.Empty;
+            }
             // Substitute any var() references, then serialize with comment-insertion
             // for consecutive tokens that would otherwise re-tokenize differently.
             var flat = SubstituteVars(tokens, CustomProperties, depth: 0);
@@ -173,7 +228,11 @@ public sealed class ComputedStyle
         IReadOnlyDictionary<string, IReadOnlyList<CssComponentValue>> customProps,
         int depth)
     {
-        if (depth > 8) return Array.Empty<Starling.Css.Tokenizer.CssToken>();
+        if (depth > 8)
+        {
+            return Array.Empty<Starling.Css.Tokenizer.CssToken>();
+        }
+
         var result = new List<Starling.Css.Tokenizer.CssToken>();
         foreach (var cv in values)
         {
@@ -195,7 +254,9 @@ public sealed class ComputedStyle
                             // Try the fallback (everything after the first comma).
                             var fallback = ExtractVarFallback(func.Values);
                             if (fallback is not null)
+                            {
                                 result.AddRange(SubstituteVars(fallback, customProps, depth + 1));
+                            }
                             // If neither, substitute with nothing (guaranteed-invalid token).
                         }
                         break;
@@ -229,10 +290,16 @@ public sealed class ComputedStyle
         foreach (var cv in args)
         {
             if (cv is CssTokenValue { Token.Type: Starling.Css.Tokenizer.CssTokenType.Whitespace })
+            {
                 continue;
+            }
+
             if (cv is CssTokenValue tv && tv.Token.Type == Starling.Css.Tokenizer.CssTokenType.Ident
                 && tv.Token.Value.StartsWith("--", StringComparison.Ordinal))
+            {
                 return tv.Token.Value;
+            }
+
             return null;
         }
         return null;
@@ -244,7 +311,9 @@ public sealed class ComputedStyle
         for (var i = 0; i < args.Count; i++)
         {
             if (args[i] is CssTokenValue { Token.Type: Starling.Css.Tokenizer.CssTokenType.Comma })
+            {
                 return args.Skip(i + 1).ToList();
+            }
         }
         return null;
     }
@@ -267,7 +336,10 @@ public sealed class ComputedStyle
                 continue;
             }
             if (prev.HasValue && NeedsComment(prev.Value, t))
+            {
                 sb.Append("/**/");
+            }
+
             sb.Append(TokenToText(t));
             prev = t;
         }
@@ -298,13 +370,28 @@ public sealed class ComputedStyle
 
         // ident followed by: ident, function, url, dimension, number, percentage,
         // Cdc (-->), or '(' or '-'.
-        if (aIsIdent && bIsIdentStart) return true;
+        if (aIsIdent && bIsIdentStart)
+        {
+            return true;
+        }
+
         if (aIsIdent && bType is
             Starling.Css.Tokenizer.CssTokenType.Number or
             Starling.Css.Tokenizer.CssTokenType.Percentage or
-            Starling.Css.Tokenizer.CssTokenType.Cdc) return true;
-        if (aIsIdent && bType == Starling.Css.Tokenizer.CssTokenType.Delim && (b.Delimiter == '-' || b.Delimiter == '(')) return true;
-        if (aIsIdent && bType == Starling.Css.Tokenizer.CssTokenType.LeftParen) return true;
+            Starling.Css.Tokenizer.CssTokenType.Cdc)
+        {
+            return true;
+        }
+
+        if (aIsIdent && bType == Starling.Css.Tokenizer.CssTokenType.Delim && (b.Delimiter == '-' || b.Delimiter == '('))
+        {
+            return true;
+        }
+
+        if (aIsIdent && bType == Starling.Css.Tokenizer.CssTokenType.LeftParen)
+        {
+            return true;
+        }
 
         // number / percentage followed by: ident, function, url, %, dimension,
         // number, '('.
@@ -312,30 +399,67 @@ public sealed class ComputedStyle
             Starling.Css.Tokenizer.CssTokenType.Number or
             Starling.Css.Tokenizer.CssTokenType.Percentage or
             Starling.Css.Tokenizer.CssTokenType.Dimension;
-        if (aIsNum && bIsIdentStart) return true;
+        if (aIsNum && bIsIdentStart)
+        {
+            return true;
+        }
+
         if (aIsNum && bType is
             Starling.Css.Tokenizer.CssTokenType.Number or
-            Starling.Css.Tokenizer.CssTokenType.Percentage) return true;
-        if (aIsNum && bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '%') return true;
-        if (aIsNum && bType == Starling.Css.Tokenizer.CssTokenType.LeftParen) return true;
+            Starling.Css.Tokenizer.CssTokenType.Percentage)
+        {
+            return true;
+        }
+
+        if (aIsNum && bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '%')
+        {
+            return true;
+        }
+
+        if (aIsNum && bType == Starling.Css.Tokenizer.CssTokenType.LeftParen)
+        {
+            return true;
+        }
 
         // hash / delim('#') followed by ident-start tokens.
-        if (aType == Starling.Css.Tokenizer.CssTokenType.Hash && bIsIdentStart) return true;
+        if (aType == Starling.Css.Tokenizer.CssTokenType.Hash && bIsIdentStart)
+        {
+            return true;
+        }
+
         if (aType == Starling.Css.Tokenizer.CssTokenType.Hash && bType is
             Starling.Css.Tokenizer.CssTokenType.Number or
             Starling.Css.Tokenizer.CssTokenType.Percentage or
             Starling.Css.Tokenizer.CssTokenType.Dimension or
-            Starling.Css.Tokenizer.CssTokenType.Cdc) return true;
-        if (aType == Starling.Css.Tokenizer.CssTokenType.Hash && bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '-') return true;
+            Starling.Css.Tokenizer.CssTokenType.Cdc)
+        {
+            return true;
+        }
+
+        if (aType == Starling.Css.Tokenizer.CssTokenType.Hash && bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '-')
+        {
+            return true;
+        }
 
         // '#' delim followed by ident.
-        if (aType == Starling.Css.Tokenizer.CssTokenType.Delim && a.Delimiter == '#' && bIsIdentStart) return true;
+        if (aType == Starling.Css.Tokenizer.CssTokenType.Delim && a.Delimiter == '#' && bIsIdentStart)
+        {
+            return true;
+        }
+
         if (aType == Starling.Css.Tokenizer.CssTokenType.Delim && a.Delimiter == '#' && bType is
             Starling.Css.Tokenizer.CssTokenType.Number or
             Starling.Css.Tokenizer.CssTokenType.Percentage or
             Starling.Css.Tokenizer.CssTokenType.Dimension or
-            Starling.Css.Tokenizer.CssTokenType.Cdc) return true;
-        if (aType == Starling.Css.Tokenizer.CssTokenType.Delim && a.Delimiter == '#' && bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '-') return true;
+            Starling.Css.Tokenizer.CssTokenType.Cdc)
+        {
+            return true;
+        }
+
+        if (aType == Starling.Css.Tokenizer.CssTokenType.Delim && a.Delimiter == '#' && bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '-')
+        {
+            return true;
+        }
 
         // '-' delim followed by: ident, function, url, number, percentage, dimension.
         if (aType == Starling.Css.Tokenizer.CssTokenType.Delim && a.Delimiter == '-')
@@ -343,14 +467,24 @@ public sealed class ComputedStyle
             if (bIsIdentStart || bType is
                 Starling.Css.Tokenizer.CssTokenType.Number or
                 Starling.Css.Tokenizer.CssTokenType.Percentage or
-                Starling.Css.Tokenizer.CssTokenType.Dimension) return true;
-            if (bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '-') return true;
+                Starling.Css.Tokenizer.CssTokenType.Dimension)
+            {
+                return true;
+            }
+
+            if (bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '-')
+            {
+                return true;
+            }
         }
 
         // '@' delim followed by ident.
         if (aType == Starling.Css.Tokenizer.CssTokenType.Delim && a.Delimiter == '@')
         {
-            if (bIsIdentStart || bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '-') return true;
+            if (bIsIdentStart || bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '-')
+            {
+                return true;
+            }
         }
 
         // '.' delim followed by number/percentage/dimension.
@@ -358,7 +492,10 @@ public sealed class ComputedStyle
         {
             if (bType is Starling.Css.Tokenizer.CssTokenType.Number or
                 Starling.Css.Tokenizer.CssTokenType.Percentage or
-                Starling.Css.Tokenizer.CssTokenType.Dimension) return true;
+                Starling.Css.Tokenizer.CssTokenType.Dimension)
+            {
+                return true;
+            }
         }
 
         // '+' delim followed by number/percentage/dimension — "+123" is a signed number.
@@ -366,13 +503,18 @@ public sealed class ComputedStyle
         {
             if (bType is Starling.Css.Tokenizer.CssTokenType.Number or
                 Starling.Css.Tokenizer.CssTokenType.Percentage or
-                Starling.Css.Tokenizer.CssTokenType.Dimension) return true;
+                Starling.Css.Tokenizer.CssTokenType.Dimension)
+            {
+                return true;
+            }
         }
 
         // '/' delim followed by '*' delim — "/*" starts a CSS block comment.
         if (aType == Starling.Css.Tokenizer.CssTokenType.Delim && a.Delimiter == '/' &&
             bType == Starling.Css.Tokenizer.CssTokenType.Delim && b.Delimiter == '*')
+        {
             return true;
+        }
 
         return false;
     }
@@ -421,10 +563,17 @@ public sealed class ComputedStyle
     // without creating a cross-assembly dependency.
     private static string SerializeNum(double n)
     {
-        if (n == 0) return "0";
+        if (n == 0)
+        {
+            return "0";
+        }
+
         var s = n.ToString("R", CultureInfo.InvariantCulture);
         if (s.Contains('E') || s.Contains('e'))
+        {
             s = n.ToString("0.################", CultureInfo.InvariantCulture);
+        }
+
         return s;
     }
 

@@ -34,7 +34,11 @@ public sealed class NthChildOfTests
         for (var i = 0; i < 5; i++)
         {
             var li = doc.CreateElement("li");
-            if (i is 0 or 2 or 4) li.ClassList.Add("special");
+            if (i is 0 or 2 or 4)
+            {
+                li.ClassList.Add("special");
+            }
+
             ul.AppendChild(li);
             items.Add(li);
         }

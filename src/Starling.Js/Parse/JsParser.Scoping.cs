@@ -39,24 +39,37 @@ public ref partial struct JsParser
             {
                 case VariableDeclaration vd when vd.Kind is "let" or "const":
                     foreach (var name in BoundNamesOf(vd))
+                    {
                         AddLexical(lexical, name.Name, name.Pos);
+                    }
+
                     break;
                 case ClassDeclaration cd:
                     AddLexical(lexical, cd.Name.Name, cd.Name.Start);
                     break;
                 case FunctionDeclaration fd:
                     if (kind == ScopeKind.Block)
+                    {
                         AddLexical(lexical, fd.Name.Name, fd.Name.Start);
+                    }
                     else
+                    {
                         varNames.Add(fd.Name.Name); // var-scoped at function/script top level
+                    }
+
                     break;
                 case LabeledStatement lab when Unlabel(lab) is FunctionDeclaration lfd:
                     // A labelled function declaration is sloppy-only and is
                     // var-scoped for these purposes; treat like a plain function.
                     if (kind == ScopeKind.Block)
+                    {
                         AddLexical(lexical, lfd.Name.Name, lfd.Name.Start);
+                    }
                     else
+                    {
                         varNames.Add(lfd.Name.Name);
+                    }
+
                     break;
             }
         }
@@ -64,14 +77,18 @@ public ref partial struct JsParser
         // VarDeclaredNames across the whole scope (transitively, not crossing
         // function/class boundaries).
         foreach (var stmt in body)
+        {
             CollectVarNames(stmt, varNames);
+        }
 
         // Early error: a lexically-declared name also appears as a var name.
         foreach (var kv in lexical)
         {
             if (varNames.Contains(kv.Key))
+            {
                 throw new JsParseException(
                     $"'{kv.Key}' is already declared as a var binding", kv.Value);
+            }
         }
     }
 
@@ -91,13 +108,27 @@ public ref partial struct JsParser
             case ArrayPattern arr:
                 foreach (var el in arr.Elements)
                 {
-                    if (el is ArrayPatternBindingElement be) CheckLexicalBindingNotLet(be.Target);
-                    else if (el is ArrayPatternRestElement re) CheckLexicalBindingNotLet(re.Target);
+                    if (el is ArrayPatternBindingElement be)
+                    {
+                        CheckLexicalBindingNotLet(be.Target);
+                    }
+                    else if (el is ArrayPatternRestElement re)
+                    {
+                        CheckLexicalBindingNotLet(re.Target);
+                    }
                 }
                 break;
             case ObjectPattern obj:
-                foreach (var p in obj.Properties) CheckLexicalBindingNotLet(p.Target);
-                if (obj.Rest is not null) CheckLexicalBindingNotLet(obj.Rest.Argument);
+                foreach (var p in obj.Properties)
+                {
+                    CheckLexicalBindingNotLet(p.Target);
+                }
+
+                if (obj.Rest is not null)
+                {
+                    CheckLexicalBindingNotLet(obj.Rest.Argument);
+                }
+
                 break;
             case RestElement rest:
                 CheckLexicalBindingNotLet(rest.Argument);
@@ -107,7 +138,11 @@ public ref partial struct JsParser
 
     private static Statement Unlabel(Statement s)
     {
-        while (s is LabeledStatement lab) s = lab.Body;
+        while (s is LabeledStatement lab)
+        {
+            s = lab.Body;
+        }
+
         return s;
     }
 
@@ -119,14 +154,25 @@ public ref partial struct JsParser
     private static void CheckForHeadLexicalVsBodyVar(AstNode? head, Statement body)
     {
         if (head is not VariableDeclaration vd || vd.Kind is not ("let" or "const"))
+        {
             return;
+        }
+
         var bodyVars = new HashSet<string>(StringComparer.Ordinal);
         CollectVarNames(body, bodyVars);
-        if (bodyVars.Count == 0) return;
+        if (bodyVars.Count == 0)
+        {
+            return;
+        }
+
         foreach (var n in BoundNamesOf(vd))
+        {
             if (bodyVars.Contains(n.Name))
+            {
                 throw new JsParseException(
                     $"'{n.Name}' is already declared as a var binding", n.Pos);
+            }
+        }
     }
 
     /// <summary>§15.2.1 / §15.3.1 etc. — a FormalParameter BindingIdentifier may
@@ -145,21 +191,36 @@ public ref partial struct JsParser
             switch (stmt)
             {
                 case VariableDeclaration vd when vd.Kind is "let" or "const":
-                    foreach (var n in BoundNamesOf(vd)) (lexical ??= new(StringComparer.Ordinal)).Add(n.Name);
+                    foreach (var n in BoundNamesOf(vd))
+                    {
+                        (lexical ??= new(StringComparer.Ordinal)).Add(n.Name);
+                    }
+
                     break;
                 case ClassDeclaration cd:
                     (lexical ??= new(StringComparer.Ordinal)).Add(cd.Name.Name);
                     break;
             }
         }
-        if (lexical is null || lexical.Count == 0) return;
+        if (lexical is null || lexical.Count == 0)
+        {
+            return;
+        }
 
         var paramNames = new List<(string Name, JsPosition Pos)>();
-        foreach (var p in @params) CollectPatternNames(p, paramNames);
+        foreach (var p in @params)
+        {
+            CollectPatternNames(p, paramNames);
+        }
+
         foreach (var (name, pos) in paramNames)
+        {
             if (lexical.Contains(name))
+            {
                 throw new JsParseException(
                     $"'{name}' is already declared as a parameter", pos);
+            }
+        }
     }
 
     /// <summary>Parse a Statement in a position that forbids declarations — the
@@ -176,38 +237,54 @@ public ref partial struct JsParser
         if (_current.Kind is JsTokenKind.Const
             || (_current.Kind == JsTokenKind.Identifier && _current.TextEquals("let")
                 && IsLetDeclarationStart()))
+        {
             throw new JsParseException(
                 "lexical declaration cannot appear in a single-statement context",
                 _current.Start);
+        }
+
         if (_current.Kind == JsTokenKind.Class)
+        {
             throw new JsParseException(
                 "class declaration cannot appear in a single-statement context",
                 _current.Start);
+        }
+
         if (_current.Kind == JsTokenKind.Function)
         {
             if (_strict || !allowSloppyFunction)
+            {
                 throw new JsParseException(
                     "function declaration cannot appear in a single-statement context",
                     _current.Start);
+            }
             // sloppy Annex B: a generator declaration is still forbidden here.
             if (_lex.Peek().Kind == JsTokenKind.Star)
+            {
                 throw new JsParseException(
                     "generator declaration cannot appear in a single-statement context",
                     _current.Start);
+            }
         }
         // `async function …` declaration is never allowed as a sub-statement.
         if (_current.Kind == JsTokenKind.Identifier && _current.TextEquals("async")
             && _lex.Peek().Kind == JsTokenKind.Function)
+        {
             throw new JsParseException(
                 "async function declaration cannot appear in a single-statement context",
                 _current.Start);
+        }
         // The iteration-body labelled-function ban (set by ParseIterationBody)
         // only applies to a label chain DIRECTLY in the body position. Once we
         // enter any non-label statement (a block, etc.) the Annex B extension
         // applies normally again, so clear the flag here.
         var isLabel = _current.Kind == JsTokenKind.Identifier
             && _lex.Peek().Kind == JsTokenKind.Colon;
-        if (!isLabel) _forbidLabelledFunction = false;
+        if (!isLabel)
+        {
+            _forbidLabelledFunction = false;
+        }
+
         return ParseStatement();
     }
 
@@ -227,8 +304,10 @@ public ref partial struct JsParser
     private static void AddLexical(Dictionary<string, JsPosition> lexical, string name, JsPosition pos)
     {
         if (!lexical.TryAdd(name, pos))
+        {
             throw new JsParseException(
                 $"'{name}' has already been declared", pos);
+        }
     }
 
     /// <summary>VarDeclaredNames: walk into nested statements collecting `var`
@@ -239,14 +318,26 @@ public ref partial struct JsParser
         switch (stmt)
         {
             case VariableDeclaration vd when vd.Kind == "var":
-                foreach (var n in BoundNamesOf(vd)) into.Add(n.Name);
+                foreach (var n in BoundNamesOf(vd))
+                {
+                    into.Add(n.Name);
+                }
+
                 break;
             case BlockStatement block:
-                foreach (var s in block.Body) CollectVarNames(s, into);
+                foreach (var s in block.Body)
+                {
+                    CollectVarNames(s, into);
+                }
+
                 break;
             case IfStatement ifs:
                 CollectVarNames(ifs.Consequent, into);
-                if (ifs.Alternate is not null) CollectVarNames(ifs.Alternate, into);
+                if (ifs.Alternate is not null)
+                {
+                    CollectVarNames(ifs.Alternate, into);
+                }
+
                 break;
             case WhileStatement w:
                 CollectVarNames(w.Body, into);
@@ -256,30 +347,69 @@ public ref partial struct JsParser
                 break;
             case ForStatement f:
                 if (f.Init is VariableDeclaration fvd && fvd.Kind == "var")
-                    foreach (var n in BoundNamesOf(fvd)) into.Add(n.Name);
+                {
+                    foreach (var n in BoundNamesOf(fvd))
+                    {
+                        into.Add(n.Name);
+                    }
+                }
+
                 CollectVarNames(f.Body, into);
                 break;
             case ForInStatement fin:
                 if (fin.Left is VariableDeclaration finvd && finvd.Kind == "var")
-                    foreach (var n in BoundNamesOf(finvd)) into.Add(n.Name);
+                {
+                    foreach (var n in BoundNamesOf(finvd))
+                    {
+                        into.Add(n.Name);
+                    }
+                }
+
                 CollectVarNames(fin.Body, into);
                 break;
             case ForOfStatement fof:
                 if (fof.Left is VariableDeclaration fofvd && fofvd.Kind == "var")
-                    foreach (var n in BoundNamesOf(fofvd)) into.Add(n.Name);
+                {
+                    foreach (var n in BoundNamesOf(fofvd))
+                    {
+                        into.Add(n.Name);
+                    }
+                }
+
                 CollectVarNames(fof.Body, into);
                 break;
             case SwitchStatement sw:
                 foreach (var c in sw.Cases)
+                {
                     foreach (var s in c.Consequent)
+                    {
                         CollectVarNames(s, into);
+                    }
+                }
+
                 break;
             case TryStatement t:
-                foreach (var s in t.Block.Body) CollectVarNames(s, into);
+                foreach (var s in t.Block.Body)
+                {
+                    CollectVarNames(s, into);
+                }
+
                 if (t.Handler is not null)
-                    foreach (var s in t.Handler.Body.Body) CollectVarNames(s, into);
+                {
+                    foreach (var s in t.Handler.Body.Body)
+                    {
+                        CollectVarNames(s, into);
+                    }
+                }
+
                 if (t.Finalizer is not null)
-                    foreach (var s in t.Finalizer.Body) CollectVarNames(s, into);
+                {
+                    foreach (var s in t.Finalizer.Body)
+                    {
+                        CollectVarNames(s, into);
+                    }
+                }
+
                 break;
             case LabeledStatement lab:
                 CollectVarNames(lab.Body, into);
@@ -313,7 +443,10 @@ public ref partial struct JsParser
             }
         }
         foreach (var stmt in program.Body)
+        {
             CollectVarNames(stmt, names);
+        }
+
         return names;
     }
 
@@ -330,7 +463,11 @@ public ref partial struct JsParser
             switch (stmt)
             {
                 case VariableDeclaration vd when vd.Kind is "let" or "const":
-                    foreach (var n in BoundNamesOf(vd)) names.Add(n.Name);
+                    foreach (var n in BoundNamesOf(vd))
+                    {
+                        names.Add(n.Name);
+                    }
+
                     break;
                 case ClassDeclaration cd:
                     names.Add(cd.Name.Name);
@@ -346,7 +483,10 @@ public ref partial struct JsParser
     {
         var result = new List<(string Name, JsPosition Pos)>();
         foreach (var d in vd.Declarations)
+        {
             CollectPatternNames(d.Id, result);
+        }
+
         return result;
     }
 
@@ -373,9 +513,15 @@ public ref partial struct JsParser
                 break;
             case ObjectPattern obj:
                 foreach (var p in obj.Properties)
+                {
                     CollectPatternNames(p.Target, into);
+                }
+
                 if (obj.Rest is not null)
+                {
                     CollectPatternNames(obj.Rest.Argument, into);
+                }
+
                 break;
             case AssignmentPattern ap:
                 CollectPatternNames(ap.Target, into);

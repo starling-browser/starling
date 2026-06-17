@@ -51,18 +51,29 @@ public sealed class IdlParser
 
     private void ExpectPunct(string text)
     {
-        if (!TryPunct(text)) throw Error($"expected '{text}'");
+        if (!TryPunct(text))
+        {
+            throw Error($"expected '{text}'");
+        }
     }
 
     private string ExpectIdentifier()
     {
-        if (Cur.Kind != IdlTokenKind.Identifier) throw Error("expected identifier");
+        if (Cur.Kind != IdlTokenKind.Identifier)
+        {
+            throw Error("expected identifier");
+        }
+
         return Advance().Text;
     }
 
     private string ExpectString()
     {
-        if (Cur.Kind != IdlTokenKind.String) throw Error("expected string");
+        if (Cur.Kind != IdlTokenKind.String)
+        {
+            throw Error("expected string");
+        }
+
         return Advance().Text;
     }
 
@@ -86,12 +97,35 @@ public sealed class IdlParser
     {
         bool partial = TryIdent("partial");
 
-        if (IsIdent("interface")) return ParseInterface(ext, partial);
-        if (IsIdent("callback")) return ParseCallback(ext);
-        if (IsIdent("namespace")) return ParseNamespace(ext, partial);
-        if (IsIdent("dictionary")) return ParseDictionary(ext, partial);
-        if (IsIdent("enum")) return ParseEnum(ext);
-        if (IsIdent("typedef")) return ParseTypedef(ext);
+        if (IsIdent("interface"))
+        {
+            return ParseInterface(ext, partial);
+        }
+
+        if (IsIdent("callback"))
+        {
+            return ParseCallback(ext);
+        }
+
+        if (IsIdent("namespace"))
+        {
+            return ParseNamespace(ext, partial);
+        }
+
+        if (IsIdent("dictionary"))
+        {
+            return ParseDictionary(ext, partial);
+        }
+
+        if (IsIdent("enum"))
+        {
+            return ParseEnum(ext);
+        }
+
+        if (IsIdent("typedef"))
+        {
+            return ParseTypedef(ext);
+        }
 
         // The only remaining form is "Target includes Mixin;".
         return ParseIncludes(ext);
@@ -103,7 +137,10 @@ public sealed class IdlParser
         bool mixin = TryIdent("mixin");
         string name = ExpectIdentifier();
         string? inherits = null;
-        if (!mixin && TryPunct(":")) inherits = ExpectIdentifier();
+        if (!mixin && TryPunct(":"))
+        {
+            inherits = ExpectIdentifier();
+        }
 
         var members = ParseMemberBlockOrForward();
         return new IdlInterface
@@ -183,7 +220,11 @@ public sealed class IdlParser
             values.Add(ExpectString());
             while (TryPunct(","))
             {
-                if (IsPunct("}")) break;   // trailing comma
+                if (IsPunct("}"))
+                {
+                    break;   // trailing comma
+                }
+
                 values.Add(ExpectString());
             }
         }
@@ -204,7 +245,11 @@ public sealed class IdlParser
     private IdlIncludes ParseIncludes(IReadOnlyList<IdlExtendedAttribute> ext)
     {
         string target = ExpectIdentifier();
-        if (!TryIdent("includes")) throw Error("expected 'includes'");
+        if (!TryIdent("includes"))
+        {
+            throw Error("expected 'includes'");
+        }
+
         string mixin = ExpectIdentifier();
         ExpectPunct(";");
         return new IdlIncludes { Name = target, Mixin = mixin, ExtendedAttributes = ext };
@@ -213,10 +258,18 @@ public sealed class IdlParser
     // Parses "{ members };" or a bare ";" forward declaration.
     private List<IdlMember> ParseMemberBlockOrForward()
     {
-        if (TryPunct(";")) return [];   // forward declaration
+        if (TryPunct(";"))
+        {
+            return [];   // forward declaration
+        }
+
         ExpectPunct("{");
         var members = new List<IdlMember>();
-        while (!IsPunct("}") && !AtEof) members.Add(ParseMember());
+        while (!IsPunct("}") && !AtEof)
+        {
+            members.Add(ParseMember());
+        }
+
         ExpectPunct("}");
         ExpectPunct(";");
         return members;
@@ -339,12 +392,32 @@ public sealed class IdlParser
 
     private string ParseConstValue()
     {
-        if (TryIdent("true")) return "true";
-        if (TryIdent("false")) return "false";
-        if (TryIdent("Infinity")) return "Infinity";
-        if (TryIdent("NaN")) return "NaN";
+        if (TryIdent("true"))
+        {
+            return "true";
+        }
+
+        if (TryIdent("false"))
+        {
+            return "false";
+        }
+
+        if (TryIdent("Infinity"))
+        {
+            return "Infinity";
+        }
+
+        if (TryIdent("NaN"))
+        {
+            return "NaN";
+        }
+
         if (IsPunct("-") && Ahead().Text == "Infinity") { Advance(); Advance(); return "-Infinity"; }
-        if (Cur.Kind is IdlTokenKind.Integer or IdlTokenKind.Decimal) return Advance().Text;
+        if (Cur.Kind is IdlTokenKind.Integer or IdlTokenKind.Decimal)
+        {
+            return Advance().Text;
+        }
+
         throw Error("expected constant value");
     }
 
@@ -366,7 +439,11 @@ public sealed class IdlParser
         }
         ExpectPunct(">");
         var args = new List<IdlArgument>();
-        if (async && IsPunct("(")) args = ParseArgumentList();
+        if (async && IsPunct("("))
+        {
+            args = ParseArgumentList();
+        }
+
         ExpectPunct(";");
         return new IdlIterable { KeyType = key, ValueType = value, Async = async, Arguments = args };
     }
@@ -386,7 +463,11 @@ public sealed class IdlParser
         {
             Advance();
             var members = new List<IdlType> { ParseTypeInner() };
-            while (TryIdent("or")) members.Add(ParseTypeInner());
+            while (TryIdent("or"))
+            {
+                members.Add(ParseTypeInner());
+            }
+
             ExpectPunct(")");
             bool n = TryPunct("?");
             return new IdlType { Union = members, Nullable = n };
@@ -399,8 +480,11 @@ public sealed class IdlParser
         string name;
         if (TryIdent("unsigned"))
         {
-            if (TryIdent("long")) name = TryIdent("long") ? "unsigned long long" : "unsigned long";
-            else { if (!TryIdent("short")) throw Error("expected 'short' or 'long'"); name = "unsigned short"; }
+            if (TryIdent("long"))
+            {
+                name = TryIdent("long") ? "unsigned long long" : "unsigned long";
+            }
+            else { if (!TryIdent("short")) { throw Error("expected 'short' or 'long'"); } name = "unsigned short"; }
         }
         else if (TryIdent("long"))
         {
@@ -444,7 +528,10 @@ public sealed class IdlParser
         if (!IsPunct(")"))
         {
             args.Add(ParseArgument());
-            while (TryPunct(",")) args.Add(ParseArgument());
+            while (TryPunct(","))
+            {
+                args.Add(ParseArgument());
+            }
         }
         ExpectPunct(")");
         return args;
@@ -471,16 +558,44 @@ public sealed class IdlParser
 
     private IdlDefaultValue ParseDefaultValue()
     {
-        if (TryIdent("null")) return new IdlDefaultValue { Kind = IdlDefaultKind.Null };
-        if (TryIdent("true")) return new IdlDefaultValue { Kind = IdlDefaultKind.Boolean, Value = "true" };
-        if (TryIdent("false")) return new IdlDefaultValue { Kind = IdlDefaultKind.Boolean, Value = "false" };
-        if (TryIdent("Infinity")) return new IdlDefaultValue { Kind = IdlDefaultKind.Infinity };
-        if (TryIdent("NaN")) return new IdlDefaultValue { Kind = IdlDefaultKind.NaN };
+        if (TryIdent("null"))
+        {
+            return new IdlDefaultValue { Kind = IdlDefaultKind.Null };
+        }
+
+        if (TryIdent("true"))
+        {
+            return new IdlDefaultValue { Kind = IdlDefaultKind.Boolean, Value = "true" };
+        }
+
+        if (TryIdent("false"))
+        {
+            return new IdlDefaultValue { Kind = IdlDefaultKind.Boolean, Value = "false" };
+        }
+
+        if (TryIdent("Infinity"))
+        {
+            return new IdlDefaultValue { Kind = IdlDefaultKind.Infinity };
+        }
+
+        if (TryIdent("NaN"))
+        {
+            return new IdlDefaultValue { Kind = IdlDefaultKind.NaN };
+        }
+
         if (IsPunct("-") && Ahead().Text == "Infinity") { Advance(); Advance(); return new IdlDefaultValue { Kind = IdlDefaultKind.NegInfinity }; }
         if (TryPunct("[")) { ExpectPunct("]"); return new IdlDefaultValue { Kind = IdlDefaultKind.EmptySequence }; }
         if (TryPunct("{")) { ExpectPunct("}"); return new IdlDefaultValue { Kind = IdlDefaultKind.EmptyDictionary }; }
-        if (Cur.Kind == IdlTokenKind.String) return new IdlDefaultValue { Kind = IdlDefaultKind.String, Value = Advance().Text };
-        if (Cur.Kind is IdlTokenKind.Integer or IdlTokenKind.Decimal) return new IdlDefaultValue { Kind = IdlDefaultKind.Number, Value = Advance().Text };
+        if (Cur.Kind == IdlTokenKind.String)
+        {
+            return new IdlDefaultValue { Kind = IdlDefaultKind.String, Value = Advance().Text };
+        }
+
+        if (Cur.Kind is IdlTokenKind.Integer or IdlTokenKind.Decimal)
+        {
+            return new IdlDefaultValue { Kind = IdlDefaultKind.Number, Value = Advance().Text };
+        }
+
         throw Error("expected default value");
     }
 
@@ -488,9 +603,17 @@ public sealed class IdlParser
 
     private List<IdlExtendedAttribute> ParseExtendedAttributeList()
     {
-        if (!TryPunct("[")) return [];
+        if (!TryPunct("["))
+        {
+            return [];
+        }
+
         var list = new List<IdlExtendedAttribute> { ParseExtendedAttribute() };
-        while (TryPunct(",")) list.Add(ParseExtendedAttribute());
+        while (TryPunct(","))
+        {
+            list.Add(ParseExtendedAttribute());
+        }
+
         ExpectPunct("]");
         return list;
     }
@@ -505,7 +628,11 @@ public sealed class IdlParser
             {
                 Advance();
                 var ids = new List<string> { ExpectIdentifier() };
-                while (TryPunct(",")) ids.Add(ExpectIdentifier());
+                while (TryPunct(","))
+                {
+                    ids.Add(ExpectIdentifier());
+                }
+
                 ExpectPunct(")");
                 return new IdlExtendedAttribute { Name = name, Kind = IdlExtAttrKind.IdentList, Identifiers = ids };
             }

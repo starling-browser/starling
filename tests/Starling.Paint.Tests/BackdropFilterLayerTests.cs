@@ -27,9 +27,19 @@ public sealed class BackdropFilterLayerTests
 {
     private static Box? Find(Box box, Element el)
     {
-        if (ReferenceEquals(box.Element, el)) return box;
+        if (ReferenceEquals(box.Element, el))
+        {
+            return box;
+        }
+
         foreach (var c in box.Children)
-            if (Find(c, el) is { } f) return f;
+        {
+            if (Find(c, el) is { } f)
+            {
+                return f;
+            }
+        }
+
         return null;
     }
 

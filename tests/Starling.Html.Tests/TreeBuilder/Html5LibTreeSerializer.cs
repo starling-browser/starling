@@ -46,7 +46,11 @@ internal static class Html5LibTreeSerializer
         WriteChildren(document, depth: 0, sb);
         // Trim the trailing newline so the result lines up with the corpus's
         // captured #document body (which never has a trailing blank line).
-        if (sb.Length > 0 && sb[^1] == '\n') sb.Length--;
+        if (sb.Length > 0 && sb[^1] == '\n')
+        {
+            sb.Length--;
+        }
+
         return sb.ToString();
     }
 
@@ -56,14 +60,20 @@ internal static class Html5LibTreeSerializer
     {
         var sb = new StringBuilder();
         WriteChildren(fragment, depth: 0, sb);
-        if (sb.Length > 0 && sb[^1] == '\n') sb.Length--;
+        if (sb.Length > 0 && sb[^1] == '\n')
+        {
+            sb.Length--;
+        }
+
         return sb.ToString();
     }
 
     private static void WriteChildren(Node parent, int depth, StringBuilder sb)
     {
         for (var child = parent.FirstChild; child is not null; child = child.NextSibling)
+        {
             WriteNode(child, depth, sb);
+        }
     }
 
     private static void WriteNode(Node node, int depth, StringBuilder sb)
@@ -120,7 +130,10 @@ internal static class Html5LibTreeSerializer
         {
             var attrs = new List<(string key, string value)>(el.Attributes.Count);
             foreach (var a in el.Attributes)
+            {
                 attrs.Add((AttributeDesignator(a) + a.LocalName, a.Value));
+            }
+
             attrs.Sort(static (a, b) => string.CompareOrdinal(a.key, b.key));
             foreach (var (key, value) in attrs)
             {
@@ -161,6 +174,9 @@ internal static class Html5LibTreeSerializer
 
     private static void AppendIndent(StringBuilder sb, int depth)
     {
-        for (var i = 0; i < depth; i++) sb.Append(Indent);
+        for (var i = 0; i < depth; i++)
+        {
+            sb.Append(Indent);
+        }
     }
 }

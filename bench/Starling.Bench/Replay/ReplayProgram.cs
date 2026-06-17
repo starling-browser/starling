@@ -19,7 +19,9 @@ internal static class ReplayProgram
         }
 
         if (args[0] == "--selftest")
+        {
             return SelfTest();
+        }
 
         var page = args[0];
         var frames = 600;
@@ -103,7 +105,11 @@ internal static class ReplayProgram
         Console.WriteLine($"{"phase",-13}{"mean",9}{"p50",9}{"p95",9}{"p99",9}{"max",9}{"drop>16.7",11}{"drop>8.3",10}{"alloc/f",12}");
         foreach (var key in new[] { "frame", "style_anim", "layout", "display_list", "raster" })
         {
-            if (!r.Phases.TryGetValue(key, out var p)) continue;
+            if (!r.Phases.TryGetValue(key, out var p))
+            {
+                continue;
+            }
+
             Console.WriteLine(
                 $"{key,-13}{Ms(p.MeanMs),9}{Ms(p.P50Ms),9}{Ms(p.P95Ms),9}{Ms(p.P99Ms),9}{Ms(p.MaxMs),9}"
                 + $"{p.DroppedOver16_67ms,11}{p.DroppedOver8_33ms,10}{Bytes(p.MeanAllocBytes),12}");
@@ -115,9 +121,11 @@ internal static class ReplayProgram
             + $"shape cache hit-rate {r.TextMeasure.ShapeCacheHitRate.ToString("P1", CultureInfo.InvariantCulture)}");
         Console.WriteLine($"Nodes visited/frame: {r.TextMeasure.MeanNodesVisited.ToString("F0", CultureInfo.InvariantCulture)}");
         if (r.Composite is { } c)
+        {
             Console.WriteLine(
                 $"Compositor: layers/frame {F1(c.MeanLayersPerFrame)}  rastered/frame {F1(c.MeanLayersRasteredPerFrame)}  "
                 + $"blitted-from-cache/frame {F1(c.MeanLayersBlittedPerFrame)}");
+        }
     }
 
     /// <summary>

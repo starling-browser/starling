@@ -30,7 +30,11 @@ public static class BigIntCtor
             // Without `new`, run §21.2.1.1.1 ThisBigIntValue / ToBigInt.
             var input = args.Length == 0 ? JsValue.Undefined : args[0];
             var prim = AbstractOperations.ToPrimitive(input, "number");
-            if (prim.IsNumber) return JsValue.BigInt(BigIntOps.NumberToBigInt(realm, prim.AsNumber));
+            if (prim.IsNumber)
+            {
+                return JsValue.BigInt(BigIntOps.NumberToBigInt(realm, prim.AsNumber));
+            }
+
             return JsValue.BigInt(BigIntOps.ToBigInt(realm, prim));
         }, isConstructor: false);
 
@@ -63,7 +67,10 @@ public static class BigIntCtor
             {
                 var r = JsValue.ToNumber(args[0]);
                 if (double.IsNaN(r) || r < 2 || r > 36 || r != Math.Truncate(r))
+                {
                     throw new JsThrow(realm.NewRangeError("toString() radix must be an integer between 2 and 36"));
+                }
+
                 radix = (int)r;
             }
             return JsValue.String(BigIntOps.ToRadixString(v, radix));
@@ -81,11 +88,18 @@ public static class BigIntCtor
     /// a BigInt primitive directly; throw TypeError otherwise.</summary>
     private static BigInteger ThisBigIntValue(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsBigInt) return thisV.AsBigInt;
+        if (thisV.IsBigInt)
+        {
+            return thisV.AsBigInt;
+        }
+
         if (thisV.IsObject)
         {
             var slot = thisV.AsObject.Get("__primitiveValue");
-            if (slot.IsBigInt) return slot.AsBigInt;
+            if (slot.IsBigInt)
+            {
+                return slot.AsBigInt;
+            }
         }
         throw new JsThrow(realm.NewTypeError("BigInt.prototype method called on non-BigInt receiver"));
     }
@@ -93,18 +107,32 @@ public static class BigIntCtor
     private static long ToBitCountIndex(JsRealm realm, JsValue value)
     {
         const double MaxSafeInteger = 9007199254740991d;
-        if (value.IsUndefined) return 0;
+        if (value.IsUndefined)
+        {
+            return 0;
+        }
+
         var n = JsValue.ToNumber(value);
-        if (double.IsNaN(n) || n == 0) return 0;
+        if (double.IsNaN(n) || n == 0)
+        {
+            return 0;
+        }
+
         if (double.IsInfinity(n) || n < 0 || n != Math.Truncate(n) || n > MaxSafeInteger)
+        {
             throw new JsThrow(realm.NewRangeError("Bit count must be a non-negative integer"));
+        }
+
         return (long)n;
     }
 
     private static int ToSupportedBitCount(JsRealm realm, long bits)
     {
         if (bits > int.MaxValue)
+        {
             throw new JsThrow(realm.NewRangeError("Bit count is too large"));
+        }
+
         return (int)bits;
     }
 

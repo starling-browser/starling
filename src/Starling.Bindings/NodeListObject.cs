@@ -36,7 +36,10 @@ internal sealed class NodeListObject : JsObject
 
     public IEnumerable<JsValue> Values()
     {
-        foreach (var n in Items) yield return JsValue.Object(DomWrappers.Wrap(_realm, n));
+        foreach (var n in Items)
+        {
+            yield return JsValue.Object(DomWrappers.Wrap(_realm, n));
+        }
     }
 
     // WebIDL "array index": a canonical numeric string in [0, 2^32-2]. 2^32-1 and
@@ -45,11 +48,26 @@ internal sealed class NodeListObject : JsObject
     private static bool TryIndex(string name, out int index)
     {
         index = 0;
-        if (name.Length == 0) return false;
-        if (name.Length > 1 && name[0] == '0') return false;
-        if (!ulong.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var v))
+        if (name.Length == 0)
+        {
             return false;
-        if (v > 4294967294UL) return false;
+        }
+
+        if (name.Length > 1 && name[0] == '0')
+        {
+            return false;
+        }
+
+        if (!ulong.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var v))
+        {
+            return false;
+        }
+
+        if (v > 4294967294UL)
+        {
+            return false;
+        }
+
         index = v > int.MaxValue ? int.MaxValue : (int)v;
         return true;
     }
@@ -66,7 +84,11 @@ internal sealed class NodeListObject : JsObject
 
     public override bool HasOwn(string name)
     {
-        if (TryIndex(name, out var i)) return i < Items.Count;
+        if (TryIndex(name, out var i))
+        {
+            return i < Items.Count;
+        }
+
         return base.HasOwn(name);
     }
 
@@ -91,8 +113,14 @@ internal sealed class NodeListObject : JsObject
         {
             var count = Items.Count;
             for (var i = 0; i < count; i++)
+            {
                 yield return i.ToString(CultureInfo.InvariantCulture);
-            foreach (var k in base.Keys) yield return k; // expando properties
+            }
+
+            foreach (var k in base.Keys)
+            {
+                yield return k; // expando properties
+            }
         }
     }
 
@@ -100,8 +128,15 @@ internal sealed class NodeListObject : JsObject
     {
         get
         {
-            foreach (var k in Keys) yield return JsPropertyKey.String(k);
-            foreach (var s in SymbolKeys) yield return JsPropertyKey.Symbol(s);
+            foreach (var k in Keys)
+            {
+                yield return JsPropertyKey.String(k);
+            }
+
+            foreach (var s in SymbolKeys)
+            {
+                yield return JsPropertyKey.Symbol(s);
+            }
         }
     }
 
@@ -110,19 +145,31 @@ internal sealed class NodeListObject : JsObject
     // ordinary expando.
     public override void Set(string name, JsValue value)
     {
-        if (TryIndex(name, out _)) return;
+        if (TryIndex(name, out _))
+        {
+            return;
+        }
+
         base.Set(name, value);
     }
 
     public override bool Delete(string name)
     {
-        if (TryIndex(name, out _)) return false;
+        if (TryIndex(name, out _))
+        {
+            return false;
+        }
+
         return base.Delete(name);
     }
 
     public override bool DefineOwnProperty(string name, PropertyDescriptor desc)
     {
-        if (TryIndex(name, out _)) return false;
+        if (TryIndex(name, out _))
+        {
+            return false;
+        }
+
         return base.DefineOwnProperty(name, desc);
     }
 }

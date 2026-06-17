@@ -10,10 +10,20 @@ public static class NamedCharacterReferences
         Match? best = null;
         foreach (var (name, cp1, cp2) in Table)
         {
-            if (input.Length < name.Length) continue;
-            if (!input.StartsWith(name)) continue;
+            if (input.Length < name.Length)
+            {
+                continue;
+            }
+
+            if (!input.StartsWith(name))
+            {
+                continue;
+            }
+
             if (best is null || name.Length > best.Value.Length)
+            {
                 best = new Match(name.Length, cp1, cp2);
+            }
         }
         return best;
     }

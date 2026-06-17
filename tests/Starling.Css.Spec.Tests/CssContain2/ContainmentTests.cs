@@ -30,7 +30,9 @@ public sealed class ContainmentTests
         var list = value.Should().BeOfType<CssValueList>().Subject;
         list.Values.Should().HaveCount(keywords.Length);
         for (var i = 0; i < keywords.Length; i++)
+        {
             list.Values[i].Should().Be(new CssKeyword(keywords[i]));
+        }
     }
 
     // ---- contain: single keywords ----

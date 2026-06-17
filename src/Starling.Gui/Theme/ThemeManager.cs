@@ -24,7 +24,11 @@ public sealed class ThemeManager
 
     public void SetTheme(ThemeMode mode)
     {
-        if (Theme == mode) return;
+        if (Theme == mode)
+        {
+            return;
+        }
+
         Theme = mode;
         Tokens = ThemeTokens.For(mode);
         Changed?.Invoke(this, EventArgs.Empty);
@@ -32,7 +36,11 @@ public sealed class ThemeManager
 
     public void SetDensity(DensityMode mode)
     {
-        if (Density == mode) return;
+        if (Density == mode)
+        {
+            return;
+        }
+
         Density = mode;
         Metrics = DensityTokens.For(mode).Scaled(UiScale);
         Changed?.Invoke(this, EventArgs.Empty);
@@ -40,7 +48,11 @@ public sealed class ThemeManager
 
     public void SetType(TypeMode mode)
     {
-        if (Type == mode) return;
+        if (Type == mode)
+        {
+            return;
+        }
+
         Type = mode;
         Changed?.Invoke(this, EventArgs.Empty);
     }

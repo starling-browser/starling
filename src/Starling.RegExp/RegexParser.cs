@@ -57,14 +57,22 @@ public sealed class RegexParser
         // \k IdentityEscape rule).
         _captureCount = CountCaptures(_src, out _hasNamedGroups);
         var node = ParseAlternation();
-        if (_i != _src.Length) throw new RegexSyntaxException($"Unexpected character at index {_i}");
+        if (_i != _src.Length)
+        {
+            throw new RegexSyntaxException($"Unexpected character at index {_i}");
+        }
         // §22.2.1.1 — every \k<name> must reference a GroupName defined somewhere
         // in the enclosing Pattern (forward references are permitted, so this is
         // validated only after the whole pattern — and all its GroupSpecifiers —
         // has been parsed).
         foreach (var r in _namedRefs)
+        {
             if (!NamedCaptures.ContainsKey(r))
+            {
                 throw new RegexSyntaxException($"Invalid named backreference: {r}");
+            }
+        }
+
         return node;
     }
 
@@ -80,7 +88,10 @@ public sealed class RegexParser
             {
                 while (++i < src.Length && src[i] != ']')
                 {
-                    if (src[i] == '\\') i++;
+                    if (src[i] == '\\')
+                    {
+                        i++;
+                    }
                 }
                 continue;
             }
@@ -91,7 +102,9 @@ public sealed class RegexParser
                     if (i + 2 < src.Length && src[i + 2] == '<')
                     {
                         if (i + 3 < src.Length && (src[i + 3] == '=' || src[i + 3] == '!'))
+                        {
                             continue; // lookbehind, not a capture
+                        }
                         // named capture
                         n++;
                         hasNamed = true;
@@ -138,19 +151,35 @@ public sealed class RegexParser
         while (_i < _src.Length)
         {
             var c = _src[_i];
-            if (c == '|' || c == ')') break;
+            if (c == '|' || c == ')')
+            {
+                break;
+            }
+
             var atom = ParseAtom();
             atom = MaybeQuantify(atom);
             items.Add(atom);
         }
-        if (items.Count == 0) return new EmptyNode();
-        if (items.Count == 1) return items[0];
+        if (items.Count == 0)
+        {
+            return new EmptyNode();
+        }
+
+        if (items.Count == 1)
+        {
+            return items[0];
+        }
+
         return new SequenceNode(items);
     }
 
     private RegexNode MaybeQuantify(RegexNode atom)
     {
-        if (_i >= _src.Length) return atom;
+        if (_i >= _src.Length)
+        {
+            return atom;
+        }
+
         var c = _src[_i];
         int min, max;
         switch (c)
@@ -176,9 +205,14 @@ public sealed class RegexParser
         if (atom is LookaroundNode look)
         {
             if (look.Behind)
+            {
                 throw new RegexSyntaxException("Lookbehind assertion is not quantifiable");
+            }
+
             if (_unicode)
+            {
                 throw new RegexSyntaxException("Assertion is not quantifiable under the u/v flag");
+            }
         }
         bool greedy = true;
         if (_i < _src.Length && _src[_i] == '?')
@@ -193,12 +227,28 @@ public sealed class RegexParser
     {
         min = 0; max = 0;
         var i = _i;
-        if (i >= _src.Length || _src[i] != '{') return false;
+        if (i >= _src.Length || _src[i] != '{')
+        {
+            return false;
+        }
+
         i++;
         var start = i;
-        while (i < _src.Length && _src[i] >= '0' && _src[i] <= '9') i++;
-        if (i == start) return false;
-        if (!int.TryParse(_src[start..i], out min)) min = int.MaxValue;
+        while (i < _src.Length && _src[i] >= '0' && _src[i] <= '9')
+        {
+            i++;
+        }
+
+        if (i == start)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(_src[start..i], out min))
+        {
+            min = int.MaxValue;
+        }
+
         if (i < _src.Length && _src[i] == '}')
         {
             max = min;
@@ -209,13 +259,27 @@ public sealed class RegexParser
         {
             i++;
             var maxStart = i;
-            while (i < _src.Length && _src[i] >= '0' && _src[i] <= '9') i++;
+            while (i < _src.Length && _src[i] >= '0' && _src[i] <= '9')
+            {
+                i++;
+            }
+
             if (i < _src.Length && _src[i] == '}')
             {
-                if (maxStart == i) max = -1;
-                else if (!int.TryParse(_src[maxStart..i], out max)) max = int.MaxValue;
+                if (maxStart == i)
+                {
+                    max = -1;
+                }
+                else if (!int.TryParse(_src[maxStart..i], out max))
+                {
+                    max = int.MaxValue;
+                }
+
                 if (max != -1 && max < min)
+                {
                     throw new RegexSyntaxException("Numbers out of order in {} quantifier");
+                }
+
                 _i = i + 1;
                 return true;
             }
@@ -265,7 +329,10 @@ public sealed class RegexParser
                     }
                     _i = save;
                     if (_unicode)
+                    {
                         throw new RegexSyntaxException($"Lone quantifier brace '{{' at index {_i}");
+                    }
+
                     goto default;
                 }
             case '}':
@@ -276,7 +343,10 @@ public sealed class RegexParser
                 // Unicode/UnicodeSets the strict grammar applies and they remain
                 // a SyntaxError.
                 if (_unicode)
+                {
                     throw new RegexSyntaxException($"Unexpected '{c}' at index {_i}");
+                }
+
                 goto default;
             default:
                 {
@@ -305,7 +375,11 @@ public sealed class RegexParser
         if (_i < _src.Length && _src[_i] == '?')
         {
             _i++;
-            if (_i >= _src.Length) throw new RegexSyntaxException("Unterminated group");
+            if (_i >= _src.Length)
+            {
+                throw new RegexSyntaxException("Unterminated group");
+            }
+
             var ch = _src[_i];
             switch (ch)
             {
@@ -330,7 +404,10 @@ public sealed class RegexParser
                             // that can both participate are an early error. Names
                             // active in the current alternative chain conflict.
                             if (!_activeNames.Add(name))
+                            {
                                 throw new RegexSyntaxException($"Duplicate capture group name: {name}");
+                            }
+
                             capture = ++_currentCapture;
                             // Keep first index for a name; duplicates across
                             // alternatives share the name but get distinct slots.
@@ -347,9 +424,17 @@ public sealed class RegexParser
             capture = ++_currentCapture;
         }
         var inner = ParseAlternation();
-        if (_i >= _src.Length || _src[_i] != ')') throw new RegexSyntaxException("Unterminated group");
+        if (_i >= _src.Length || _src[_i] != ')')
+        {
+            throw new RegexSyntaxException("Unterminated group");
+        }
+
         _i++;
-        if (isLookaround) return new LookaroundNode(lookBehind, negative, inner);
+        if (isLookaround)
+        {
+            return new LookaroundNode(lookBehind, negative, inner);
+        }
+
         return new GroupNode(capture, name, inner);
     }
 
@@ -361,7 +446,10 @@ public sealed class RegexParser
     {
         var name = ParseRegExpIdentifierName();
         if (_i >= _src.Length || _src[_i] != '>')
+        {
             throw new RegexSyntaxException("Invalid or unterminated capture group name");
+        }
+
         _i++; // consume '>'
         return name;
     }
@@ -377,14 +465,20 @@ public sealed class RegexParser
         while (_i < _src.Length)
         {
             var c = _src[_i];
-            if (c == '>') break; // GroupName terminator handled by caller
+            if (c == '>')
+            {
+                break; // GroupName terminator handled by caller
+            }
 
             int cp;
             if (c == '\\')
             {
                 // RegExpIdentifierStart/Part allows a `\u` UnicodeEscapeSequence.
                 if (_i + 1 >= _src.Length || _src[_i + 1] != 'u')
+                {
                     throw new RegexSyntaxException("Invalid escape in capture group name");
+                }
+
                 _i += 2; // past "\u"
                 cp = ParseUnicodeEscapeSequence();
             }
@@ -407,24 +501,36 @@ public sealed class RegexParser
             if (first)
             {
                 if (cp != '$' && cp != '_' && !IsIdStartCp(cp))
+                {
                     throw new RegexSyntaxException("Invalid capture group name: bad start character");
+                }
+
                 first = false;
             }
             else
             {
                 if (cp != '$' && cp != '‌' && cp != '‍' && !IsIdPartCp(cp))
+                {
                     throw new RegexSyntaxException("Invalid capture group name: bad continuation character");
+                }
             }
             sb.Append(char.ConvertFromUtf32(cp));
         }
         if (sb.Length == 0)
+        {
             throw new RegexSyntaxException("Empty capture group name");
+        }
+
         return sb.ToString();
     }
 
     private static bool IsIdStartCp(int cp)
     {
-        if (cp < 0 || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) return false;
+        if (cp < 0 || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))
+        {
+            return false;
+        }
+
         var cat = CharUnicodeInfo.GetUnicodeCategory(char.ConvertFromUtf32(cp), 0);
         return cat is UnicodeCategory.UppercaseLetter or UnicodeCategory.LowercaseLetter
             or UnicodeCategory.TitlecaseLetter or UnicodeCategory.ModifierLetter
@@ -433,8 +539,16 @@ public sealed class RegexParser
 
     private static bool IsIdPartCp(int cp)
     {
-        if (cp < 0 || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) return false;
-        if (IsIdStartCp(cp)) return true;
+        if (cp < 0 || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))
+        {
+            return false;
+        }
+
+        if (IsIdStartCp(cp))
+        {
+            return true;
+        }
+
         var cat = CharUnicodeInfo.GetUnicodeCategory(char.ConvertFromUtf32(cp), 0);
         return cat is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark
             or UnicodeCategory.DecimalDigitNumber or UnicodeCategory.ConnectorPunctuation;
@@ -456,9 +570,14 @@ public sealed class RegexParser
         while (_i < _src.Length && _src[_i] != ']')
         {
             if ((_flags & RegexFlags.UnicodeSets) != 0 && _src[_i] == '[')
+            {
                 throw new RegexSyntaxException("v-flag character class set operations are not supported");
+            }
+
             if (_i + 1 < _src.Length && _src[_i] == '&' && _src[_i + 1] == '&')
+            {
                 throw new RegexSyntaxException("v-flag character class set operations are not supported");
+            }
 
             // §22.2.1 (u/v): in a NonemptyClassRanges, a ClassAtom that is a
             // CharacterClassEscape (\d \w \s …) cannot be an endpoint of a `-`
@@ -473,19 +592,33 @@ public sealed class RegexParser
                 var hiWasClassEscape = NextClassAtomIsClassEscape();
                 var hi = ParseClassAtom(ranges, nestedKlasses);
                 if (_unicode && (loWasClassEscape || hiWasClassEscape))
+                {
                     throw new RegexSyntaxException("Invalid character class range with a class escape endpoint");
+                }
+
                 if (lo.HasValue && hi.HasValue)
                 {
                     if (hi.Value < lo.Value)
+                    {
                         throw new RegexSyntaxException("Range out of order in character class");
+                    }
+
                     ranges.Add((lo.Value, hi.Value));
                 }
                 else
                 {
                     // Treat as literal '-' between escapes that produced ranges already
-                    if (lo.HasValue) ranges.Add((lo.Value, lo.Value));
+                    if (lo.HasValue)
+                    {
+                        ranges.Add((lo.Value, lo.Value));
+                    }
+
                     ranges.Add(('-', '-'));
-                    if (hi.HasValue) ranges.Add((hi.Value, hi.Value));
+                    if (hi.HasValue)
+                    {
+                        ranges.Add((hi.Value, hi.Value));
+                    }
+
                     _ = dashAt;
                 }
             }
@@ -494,7 +627,11 @@ public sealed class RegexParser
                 ranges.Add((lo.Value, lo.Value));
             }
         }
-        if (_i >= _src.Length) throw new RegexSyntaxException("Unterminated character class");
+        if (_i >= _src.Length)
+        {
+            throw new RegexSyntaxException("Unterminated character class");
+        }
+
         _i++; // ']'
         // Merge nested classes (predefined) into ranges. If any of them is
         // negated independently, we expand it inversely. Simpler approach:
@@ -503,7 +640,12 @@ public sealed class RegexParser
         foreach (var nested in nestedKlasses)
         {
             for (var cp = 0; cp <= 0xFFFF; cp++)
-                if (nested.Contains(cp)) ranges.Add((cp, cp));
+            {
+                if (nested.Contains(cp))
+                {
+                    ranges.Add((cp, cp));
+                }
+            }
         }
         var caseInsensitive = (_flags & RegexFlags.IgnoreCase) != 0;
         return new CharClassNode(new RegexCharClass(ranges, negated, caseInsensitive));
@@ -513,7 +655,11 @@ public sealed class RegexParser
     /// begin a CharacterClassEscape (<c>\d \D \w \W \s \S \p{…} \P{…}</c>)?</summary>
     private bool NextClassAtomIsClassEscape()
     {
-        if (_i + 1 >= _src.Length || _src[_i] != '\\') return false;
+        if (_i + 1 >= _src.Length || _src[_i] != '\\')
+        {
+            return false;
+        }
+
         return _src[_i + 1] is 'd' or 'D' or 'w' or 'W' or 's' or 'S' or 'p' or 'P';
     }
 
@@ -523,15 +669,19 @@ public sealed class RegexParser
         {
             // Escape inside class
             _i++;
-            if (_i >= _src.Length) throw new RegexSyntaxException("Trailing backslash in class");
+            if (_i >= _src.Length)
+            {
+                throw new RegexSyntaxException("Trailing backslash in class");
+            }
+
             var esc = _src[_i];
             switch (esc)
             {
-                case 'd': _i++; foreach (var r in RegexCharClass.Digits()) ranges.Add(r); return null;
+                case 'd': _i++; foreach (var r in RegexCharClass.Digits()) { ranges.Add(r); } return null;
                 case 'D': _i++; AddNegatedRanges(ranges, RegexCharClass.Digits()); return null;
-                case 'w': _i++; foreach (var r in RegexCharClass.Word()) ranges.Add(r); return null;
+                case 'w': _i++; foreach (var r in RegexCharClass.Word()) { ranges.Add(r); } return null;
                 case 'W': _i++; AddNegatedRanges(ranges, RegexCharClass.Word()); return null;
-                case 's': _i++; foreach (var r in RegexCharClass.Whitespace()) ranges.Add(r); return null;
+                case 's': _i++; foreach (var r in RegexCharClass.Whitespace()) { ranges.Add(r); } return null;
                 case 'S': _i++; AddNegatedRanges(ranges, RegexCharClass.Whitespace()); return null;
                 case 'p':
                 case 'P':
@@ -553,7 +703,10 @@ public sealed class RegexParser
                     // (SyntaxCharacter or '/') may be escaped. A letter/digit
                     // identity escape is a SyntaxError under u/v.
                     if (_unicode && !IsClassIdentityEscape(esc))
+                    {
                         throw new RegexSyntaxException($"Invalid escape '\\{esc}' in character class under u/v flag");
+                    }
+
                     _i++;
                     return esc;
             }
@@ -584,10 +737,17 @@ public sealed class RegexParser
         int cursor = 0;
         foreach (var (lo, hi) in src)
         {
-            if (lo > cursor) dest.Add((cursor, lo - 1));
+            if (lo > cursor)
+            {
+                dest.Add((cursor, lo - 1));
+            }
+
             cursor = hi + 1;
         }
-        if (cursor <= 0xFFFF) dest.Add((cursor, 0xFFFF));
+        if (cursor <= 0xFFFF)
+        {
+            dest.Add((cursor, 0xFFFF));
+        }
     }
 
     /// <summary>Caller must have already consumed the leading 'p'/'P'; we
@@ -595,19 +755,36 @@ public sealed class RegexParser
     private RegexCharClass ParsePropertyEscape(bool negated)
     {
         if (_i >= _src.Length || _src[_i] != '{')
+        {
             throw new RegexSyntaxException("Invalid \\p escape: missing '{'");
+        }
+
         _i++;
         var start = _i;
-        while (_i < _src.Length && _src[_i] != '}') _i++;
-        if (_i >= _src.Length) throw new RegexSyntaxException("Unterminated \\p{ escape");
+        while (_i < _src.Length && _src[_i] != '}')
+        {
+            _i++;
+        }
+
+        if (_i >= _src.Length)
+        {
+            throw new RegexSyntaxException("Unterminated \\p{ escape");
+        }
+
         var raw = _src[start.._i];
         _i++;
         // Accept "Property=Value" or just "Value"
         var name = raw;
         var eq = raw.IndexOf('=');
-        if (eq >= 0) name = raw[(eq + 1)..];
+        if (eq >= 0)
+        {
+            name = raw[(eq + 1)..];
+        }
+
         if (!RegexCharClass.SupportedProperties.Contains(name))
+        {
             throw new RegexSyntaxException($"Unsupported Unicode property: {name}");
+        }
         // Use precomputed (cached at type init) ranges to avoid per-\p scan + allocs.
         var baseRanges = RegexCharClass.GetPropertyRanges(name);
         var caseInsensitive = (_flags & RegexFlags.IgnoreCase) != 0;
@@ -617,7 +794,11 @@ public sealed class RegexParser
     private RegexNode ParseEscape()
     {
         _i++; // consume '\'
-        if (_i >= _src.Length) throw new RegexSyntaxException("Trailing backslash");
+        if (_i >= _src.Length)
+        {
+            throw new RegexSyntaxException("Trailing backslash");
+        }
+
         var c = _src[_i];
         switch (c)
         {
@@ -649,7 +830,9 @@ public sealed class RegexParser
                     // \0 followed by a digit is a LegacyOctalEscape — allowed in
                     // Annex B (non-u) but a SyntaxError under u/v.
                     if (_unicode)
+                    {
                         throw new RegexSyntaxException("\\0 may not be followed by another digit under u/v flag");
+                    }
                 }
                 return new LiteralNode(0);
             case 'x': _i++; return new LiteralNode(ParseHex(2));
@@ -668,11 +851,17 @@ public sealed class RegexParser
                     }
                     _i++;
                     if (_i >= _src.Length || _src[_i] != '<')
+                    {
                         throw new RegexSyntaxException("\\k must be followed by <name>");
+                    }
+
                     _i++;
                     var name = ParseRegExpIdentifierName();
                     if (_i >= _src.Length || _src[_i] != '>')
+                    {
                         throw new RegexSyntaxException("Unterminated \\k<name>");
+                    }
+
                     _i++; // '>'
                     // Defer the "is defined" check to end-of-parse so forward
                     // references like /\k<a>(?<a>x)/ are accepted.
@@ -683,18 +872,28 @@ public sealed class RegexParser
                 if (c >= '1' && c <= '9')
                 {
                     var start = _i;
-                    while (_i < _src.Length && _src[_i] >= '0' && _src[_i] <= '9') _i++;
+                    while (_i < _src.Length && _src[_i] >= '0' && _src[_i] <= '9')
+                    {
+                        _i++;
+                    }
+
                     var n = int.Parse(_src[start.._i]);
                     // §22.2.1.1 — under u/v a DecimalEscape must reference an
                     // existing capture group (no octal fallback / out-of-bounds).
                     if (_unicode && n > _captureCount)
+                    {
                         throw new RegexSyntaxException($"Invalid backreference \\{n}: only {_captureCount} group(s)");
+                    }
+
                     return new BackrefNode(n);
                 }
                 // IdentityEscape: under u/v only SyntaxCharacters and '/' may be
                 // escaped; an alphanumeric identity escape is a SyntaxError.
                 if (_unicode && !IsIdentityEscape(c))
+                {
                     throw new RegexSyntaxException($"Invalid escape '\\{c}' under u/v flag");
+                }
+
                 _i++;
                 return new LiteralNode(c);
         }
@@ -706,10 +905,17 @@ public sealed class RegexParser
 
     private int ParseHex(int digits)
     {
-        if (_i + digits > _src.Length) throw new RegexSyntaxException("Invalid hex escape");
+        if (_i + digits > _src.Length)
+        {
+            throw new RegexSyntaxException("Invalid hex escape");
+        }
+
         var hex = _src.Substring(_i, digits);
         if (!int.TryParse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var v))
+        {
             throw new RegexSyntaxException("Invalid hex escape");
+        }
+
         _i += digits;
         return v;
     }
@@ -718,7 +924,10 @@ public sealed class RegexParser
     {
         var cp = ParseUnicodeEscape(out var braced);
         if (_unicode && !braced && IsLeadSurrogate(cp) && TryConsumeTrailingSurrogateEscape(out var trail))
+        {
             return char.ConvertToUtf32((char)cp, (char)trail);
+        }
+
         return cp;
     }
 
@@ -731,15 +940,28 @@ public sealed class RegexParser
             braced = true;
             _i++;
             var start = _i;
-            while (_i < _src.Length && _src[_i] != '}') _i++;
-            if (_i >= _src.Length) throw new RegexSyntaxException("Unterminated \\u{ escape");
+            while (_i < _src.Length && _src[_i] != '}')
+            {
+                _i++;
+            }
+
+            if (_i >= _src.Length)
+            {
+                throw new RegexSyntaxException("Unterminated \\u{ escape");
+            }
+
             var hex = _src[start.._i];
             if (hex.Length == 0
                 || !int.TryParse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var v))
+            {
                 throw new RegexSyntaxException("Invalid \\u{ escape");
+            }
             // §22.2.1 — CodePoint must be <= 0x10FFFF.
             if (v > 0x10FFFF)
+            {
                 throw new RegexSyntaxException("\\u{} code point out of range");
+            }
+
             _i++; // '}'
             return v;
         }
@@ -750,9 +972,15 @@ public sealed class RegexParser
     {
         trail = 0;
         if (_i + 5 >= _src.Length || _src[_i] != '\\' || _src[_i + 1] != 'u')
+        {
             return false;
+        }
+
         if (!TryParseFixedHex(_i + 2, out var value) || !IsTrailSurrogate(value))
+        {
             return false;
+        }
+
         _i += 6;
         trail = value;
         return true;
@@ -761,11 +989,19 @@ public sealed class RegexParser
     private bool TryParseFixedHex(int start, out int value)
     {
         value = 0;
-        if (start + 4 > _src.Length) return false;
+        if (start + 4 > _src.Length)
+        {
+            return false;
+        }
+
         for (var j = 0; j < 4; j++)
         {
             var digit = HexValue(_src[start + j]);
-            if (digit < 0) return false;
+            if (digit < 0)
+            {
+                return false;
+            }
+
             value = (value << 4) | digit;
         }
         return true;
@@ -777,15 +1013,31 @@ public sealed class RegexParser
 
     private static int HexValue(char c)
     {
-        if (c >= '0' && c <= '9') return c - '0';
-        if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        if (c >= '0' && c <= '9')
+        {
+            return c - '0';
+        }
+
+        if (c >= 'a' && c <= 'f')
+        {
+            return c - 'a' + 10;
+        }
+
+        if (c >= 'A' && c <= 'F')
+        {
+            return c - 'A' + 10;
+        }
+
         return -1;
     }
 
     private int ParseControlChar()
     {
-        if (_i >= _src.Length) throw new RegexSyntaxException("Invalid \\c escape");
+        if (_i >= _src.Length)
+        {
+            throw new RegexSyntaxException("Invalid \\c escape");
+        }
+
         var c = _src[_i];
         if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
         {

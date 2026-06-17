@@ -160,7 +160,11 @@ public class DnsResolverTests
 
             // Parse the question to discover the qtype + name.
             var (h, qs, _) = DnsMessage.Parse(queryPacket);
-            if (qs.Count == 0) throw new InvalidOperationException();
+            if (qs.Count == 0)
+            {
+                throw new InvalidOperationException();
+            }
+
             var q = qs[0];
 
             // Build a response only for the A query; for AAAA return NOERROR

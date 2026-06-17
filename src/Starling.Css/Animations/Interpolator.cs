@@ -26,10 +26,20 @@ public static class Interpolator
     /// </summary>
     public static CssValue Interpolate(PropertyId property, CssValue from, CssValue to, double progress)
     {
-        if (progress <= 0) return from;
-        if (progress >= 1) return to;
+        if (progress <= 0)
+        {
+            return from;
+        }
 
-        if (ReferenceEquals(from, to)) return from;
+        if (progress >= 1)
+        {
+            return to;
+        }
+
+        if (ReferenceEquals(from, to))
+        {
+            return from;
+        }
 
         // `transform` is stored in the cascade as a function value / value list
         // (e.g. rotate(0deg)), not a CssTransform, so the type switch below would
@@ -49,13 +59,24 @@ public static class Interpolator
         // parse to the typed form once per endpoint (cached — the transition
         // engines hold stable endpoint references and sample per frame).
         if (property == PropertyId.BoxShadow)
+        {
             return InterpolateBoxShadowValue(from, to, progress);
-        if (property == PropertyId.TextShadow && from is CssTextShadow fromText && to is CssTextShadow toText)
-            return InterpolateTextShadow(fromText, toText, progress);
-        if (property == PropertyId.BackgroundImage)
-            return InterpolateBackgroundImage(from, to, progress);
+        }
 
-        if (from.GetType() != to.GetType()) return Discrete(from, to, progress);
+        if (property == PropertyId.TextShadow && from is CssTextShadow fromText && to is CssTextShadow toText)
+        {
+            return InterpolateTextShadow(fromText, toText, progress);
+        }
+
+        if (property == PropertyId.BackgroundImage)
+        {
+            return InterpolateBackgroundImage(from, to, progress);
+        }
+
+        if (from.GetType() != to.GetType())
+        {
+            return Discrete(from, to, progress);
+        }
 
         switch (from)
         {
@@ -70,9 +91,16 @@ public static class Interpolator
                 // subsequent computed-value passes don't need a second
                 // conversion. Different units fall through to the px
                 // common-denominator branch handled below.
-                if (f.Unit == t.Unit) return new CssLength(Lerp(f.Value, t.Value, progress), f.Unit);
+                if (f.Unit == t.Unit)
+                {
+                    return new CssLength(Lerp(f.Value, t.Value, progress), f.Unit);
+                }
+
                 if (TryToPx(f, out var fpx) && TryToPx(t, out var tpx))
+                {
                     return new CssLength(Lerp(fpx, tpx, progress), CssLengthUnit.Px);
+                }
+
                 return Discrete(from, to, progress);
 
             case CssTime f when to is CssTime t:
@@ -160,7 +188,10 @@ public static class Interpolator
         {
             var result = new List<CssTransformFunction>(fa.Count);
             for (var i = 0; i < fa.Count; i++)
+            {
                 result.Add(LerpFunction(fa[i], fb[i], p));
+            }
+
             return new CssTransform(result);
         }
 
@@ -186,7 +217,13 @@ public static class Interpolator
     private static bool CanLerpPairwise(IReadOnlyList<CssTransformFunction> a, IReadOnlyList<CssTransformFunction> b)
     {
         for (var i = 0; i < a.Count; i++)
-            if (a[i].GetType() != b[i].GetType()) return false;
+        {
+            if (a[i].GetType() != b[i].GetType())
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -225,7 +262,11 @@ public static class Interpolator
         // resolve the percent to px). Fall back to discrete switch — matches
         // the behaviour you'd get from a calc() that the engine can't yet
         // evaluate at sample time.
-        if (a.IsPercent != b.IsPercent) return p < 0.5 ? a : b;
+        if (a.IsPercent != b.IsPercent)
+        {
+            return p < 0.5 ? a : b;
+        }
+
         return new CssLengthOrPercent(Lerp(a.Value, b.Value, p), a.IsPercent);
     }
 
@@ -243,7 +284,10 @@ public static class Interpolator
         var b = to as CssBoxShadow ?? ShadowCache.GetValue(to, static v => CssBoxShadowParser.Parse(v));
 
         var count = Math.Max(a.Layers.Count, b.Layers.Count);
-        if (count == 0) return from; // none → none
+        if (count == 0)
+        {
+            return from; // none → none
+        }
 
         var layers = new CssShadow[count];
         for (var i = 0; i < count; i++)
@@ -257,8 +301,15 @@ public static class Interpolator
             lb ??= NeutralShadow(la);
             // A pair that disagrees on inset is not interpolable — the whole
             // property falls back to discrete.
-            if (la.Inset != lb.Inset) return Discrete(from, to, p);
-            if (!TryLerpShadow(la, lb, p, out layers[i]!)) return Discrete(from, to, p);
+            if (la.Inset != lb.Inset)
+            {
+                return Discrete(from, to, p);
+            }
+
+            if (!TryLerpShadow(la, lb, p, out layers[i]!))
+            {
+                return Discrete(from, to, p);
+            }
         }
 
         return new CssBoxShadow(layers);
@@ -271,13 +322,31 @@ public static class Interpolator
     private static bool TryLerpShadow(CssShadow a, CssShadow b, double p, out CssShadow? result)
     {
         result = null;
-        if (!TryLerpLength(a.OffsetX, b.OffsetX, p, out var ox)) return false;
-        if (!TryLerpLength(a.OffsetY, b.OffsetY, p, out var oy)) return false;
-        if (!TryLerpLength(a.Blur, b.Blur, p, out var blur)) return false;
-        if (!TryLerpLength(a.Spread, b.Spread, p, out var spread)) return false;
+        if (!TryLerpLength(a.OffsetX, b.OffsetX, p, out var ox))
+        {
+            return false;
+        }
+
+        if (!TryLerpLength(a.OffsetY, b.OffsetY, p, out var oy))
+        {
+            return false;
+        }
+
+        if (!TryLerpLength(a.Blur, b.Blur, p, out var blur))
+        {
+            return false;
+        }
+
+        if (!TryLerpLength(a.Spread, b.Spread, p, out var spread))
+        {
+            return false;
+        }
         // Blur radius is non-negative per spec; the endpoints already are, but
         // clamp anyway so an overshooting easing can never paint a negative.
-        if (blur!.Value < 0) blur = new CssLength(0, blur.Unit);
+        if (blur!.Value < 0)
+        {
+            blur = new CssLength(0, blur.Unit);
+        }
 
         CssColor? color;
         if (a.Color is null && b.Color is null)
@@ -323,7 +392,10 @@ public static class Interpolator
     private static CssValue InterpolateTextShadow(CssTextShadow a, CssTextShadow b, double p)
     {
         var count = Math.Max(a.Layers.Count, b.Layers.Count);
-        if (count == 0) return a;
+        if (count == 0)
+        {
+            return a;
+        }
 
         var layers = new CssTextShadowLayer[count];
         for (var i = 0; i < count; i++)
@@ -332,9 +404,18 @@ public static class Interpolator
             var lb = i < b.Layers.Count ? b.Layers[i] : NeutralTextShadowLayer;
 
             CssColor? color;
-            if (la.Color is null && lb.Color is null) color = null;
-            else if (la.Color is null || lb.Color is null) return Discrete(a, b, p);
-            else color = InterpolateColor(la.Color, lb.Color, p);
+            if (la.Color is null && lb.Color is null)
+            {
+                color = null;
+            }
+            else if (la.Color is null || lb.Color is null)
+            {
+                return Discrete(a, b, p);
+            }
+            else
+            {
+                color = InterpolateColor(la.Color, lb.Color, p);
+            }
 
             layers[i] = new CssTextShadowLayer(
                 Lerp(la.OffsetX, lb.OffsetX, p),
@@ -365,13 +446,18 @@ public static class Interpolator
         // land here every sampled frame) — lerp directly, no per-sample
         // wrapper allocation.
         if (from is CssGradient fg && to is CssGradient tg)
+        {
             return TryLerpGradient(fg, tg, p, out var direct) ? direct! : Discrete(from, to, p);
+        }
 
         var a = ImageLayersCache.GetValue(from, static v => ParseImageLayers(v));
         var b = ImageLayersCache.GetValue(to, static v => ParseImageLayers(v));
 
         var n = a.Layers.Length;
-        if (n == 0 || n != b.Layers.Length) return Discrete(from, to, p);
+        if (n == 0 || n != b.Layers.Length)
+        {
+            return Discrete(from, to, p);
+        }
 
         // Single layer stays a bare CssGradient; multi-layer becomes a clean
         // CssValueList of gradients (the same shape the `background` shorthand
@@ -381,7 +467,10 @@ public static class Interpolator
             var ga = a.Layers[0];
             var gb = b.Layers[0];
             if (ga is null || gb is null || !TryLerpGradient(ga, gb, p, out var lerped))
+            {
                 return Discrete(from, to, p);
+            }
+
             return lerped!;
         }
 
@@ -391,7 +480,10 @@ public static class Interpolator
             var ga = a.Layers[i];
             var gb = b.Layers[i];
             if (ga is null || gb is null || !TryLerpGradient(ga, gb, p, out var lerped))
+            {
                 return Discrete(from, to, p);
+            }
+
             values[i] = lerped!;
         }
         return new CssValueList(values);
@@ -399,7 +491,11 @@ public static class Interpolator
 
     private static ParsedImageLayers ParseImageLayers(CssValue value)
     {
-        if (value is CssGradient g) return new ParsedImageLayers([g]);
+        if (value is CssGradient g)
+        {
+            return new ParsedImageLayers([g]);
+        }
+
         if (value is CssValueList list)
         {
             var layers = new List<CssGradient?>(list.Values.Count);
@@ -408,7 +504,11 @@ public static class Interpolator
                 // Longhand lists keep top-level commas as empty/"," keywords
                 // (see CssBoxShadowParser.IsCommaSeparator); shorthand-built
                 // lists carry one value per layer with no separators.
-                if (item is CssKeyword { Name: "" or "," }) continue;
+                if (item is CssKeyword { Name: "" or "," })
+                {
+                    continue;
+                }
+
                 layers.Add(ParseImageLayer(item));
             }
             return new ParsedImageLayers(layers.ToArray());
@@ -431,12 +531,30 @@ public static class Interpolator
         // repeating flag, same stop count (CSS Images 3 §3.4.1). Radial
         // keyword shape/size and the color-interpolation prelude must match —
         // none of those lerp without layout context.
-        if (a.Kind != b.Kind || a.Repeating != b.Repeating) return false;
-        if (a.Stops.Count != b.Stops.Count) return false;
-        if (a.Kind == CssGradientKind.Radial && (a.Shape != b.Shape || a.Size != b.Size)) return false;
-        if (!Equals(a.Interpolation, b.Interpolation)) return false;
+        if (a.Kind != b.Kind || a.Repeating != b.Repeating)
+        {
+            return false;
+        }
 
-        if (!TryLerpGradientLine(a, b, p, out var line)) return false;
+        if (a.Stops.Count != b.Stops.Count)
+        {
+            return false;
+        }
+
+        if (a.Kind == CssGradientKind.Radial && (a.Shape != b.Shape || a.Size != b.Size))
+        {
+            return false;
+        }
+
+        if (!Equals(a.Interpolation, b.Interpolation))
+        {
+            return false;
+        }
+
+        if (!TryLerpGradientLine(a, b, p, out var line))
+        {
+            return false;
+        }
 
         // `at <position>` center (radial/conic): null means center, so both
         // endpoints always resolve; keep null when both ends used the default.
@@ -459,7 +577,10 @@ public static class Interpolator
         {
             var sa = a.Stops[i];
             var sb = b.Stops[i];
-            if (sa.IsHint != sb.IsHint) return false; // hint must pair with hint
+            if (sa.IsHint != sb.IsHint)
+            {
+                return false; // hint must pair with hint
+            }
 
             CssGradientStopPosition? pos;
             if (sa.Position is null && sb.Position is null)
@@ -502,7 +623,11 @@ public static class Interpolator
         // `to <side-or-corner>` needs the box aspect ratio to become an angle,
         // so any mismatch involving sides stays discrete.
         var defaultDeg = a.Kind == CssGradientKind.Linear ? 180.0 : 0.0; // linear default `to bottom`; conic default 0deg
-        if (!TryLineAngle(la, defaultDeg, out var da) || !TryLineAngle(lb, defaultDeg, out var db)) return false;
+        if (!TryLineAngle(la, defaultDeg, out var da) || !TryLineAngle(lb, defaultDeg, out var db))
+        {
+            return false;
+        }
+
         line = CssGradientLine.FromAngle(Lerp(da, db, p));
         return true;
     }

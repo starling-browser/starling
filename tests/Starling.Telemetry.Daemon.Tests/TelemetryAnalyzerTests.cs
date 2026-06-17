@@ -40,8 +40,16 @@ public sealed class TelemetryAnalyzerTests
         var store = new TelemetryIngestStore();
         var now = DateTime.UtcNow;
         var samples = new List<MeterRecord>();
-        for (var i = 0; i < 5; i++) samples.Add(Gauge(RenderMetrics.FrameTimeMs, now, 10));
-        for (var i = 0; i < 5; i++) samples.Add(Gauge(RenderMetrics.FrameTimeMs, now, 40));
+        for (var i = 0; i < 5; i++)
+        {
+            samples.Add(Gauge(RenderMetrics.FrameTimeMs, now, 10));
+        }
+
+        for (var i = 0; i < 5; i++)
+        {
+            samples.Add(Gauge(RenderMetrics.FrameTimeMs, now, 40));
+        }
+
         store.IngestMetrics(samples);
 
         var frames = new TelemetryAnalyzer(store).Frames(Wide);

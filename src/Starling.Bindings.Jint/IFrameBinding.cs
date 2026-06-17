@@ -50,29 +50,50 @@ internal static class IFrameBinding
         var engine = ctx.Engine;
         var elProto = ctx.Wrappers.ElementPrototype;
         var docProto = ctx.Wrappers.DocumentPrototype;
-        if (elProto is null) return;
+        if (elProto is null)
+        {
+            return;
+        }
 
         JintInterop.DefineAccessor(engine, elProto, "contentDocument", (t, _) =>
         {
-            if (ctx.Wrappers.UnwrapElement(t) is not { } e || !IsFrameElement(e)) return JsValue.Null;
+            if (ctx.Wrappers.UnwrapElement(t) is not { } e || !IsFrameElement(e))
+            {
+                return JsValue.Null;
+            }
+
             var fc = EnsureContext(ctx, e);
             return ctx.Wrappers.Wrap(fc.Document);
         });
         JintInterop.DefineAccessor(engine, elProto, "contentWindow", (t, _) =>
         {
-            if (ctx.Wrappers.UnwrapElement(t) is not { } e || !IsFrameElement(e)) return JsValue.Null;
+            if (ctx.Wrappers.UnwrapElement(t) is not { } e || !IsFrameElement(e))
+            {
+                return JsValue.Null;
+            }
+
             return EnsureContentWindow(ctx, EnsureContext(ctx, e));
         });
 
         // document.defaultView — nested iframe doc → its contentWindow; otherwise
         // the main window (matching the NodeBindings default).
         if (docProto is not null)
+        {
             JintInterop.DefineAccessor(engine, docProto, "defaultView", (t, _) =>
             {
-                if (ctx.Wrappers.UnwrapDocument(t) is not { } d) return JsValue.Null;
-                if (ByDocument.TryGetValue(d, out var fc)) return EnsureContentWindow(ctx, fc);
+                if (ctx.Wrappers.UnwrapDocument(t) is not { } d)
+                {
+                    return JsValue.Null;
+                }
+
+                if (ByDocument.TryGetValue(d, out var fc))
+                {
+                    return EnsureContentWindow(ctx, fc);
+                }
+
                 return engine.Global;
             });
+        }
     }
 
     private static bool IsFrameElement(Element e) =>
@@ -93,7 +114,11 @@ internal static class IFrameBinding
 
     private static JsObject EnsureContentWindow(JintBackendContext ctx, FrameContext fc)
     {
-        if (fc.ContentWindow is not null) return fc.ContentWindow;
+        if (fc.ContentWindow is not null)
+        {
+            return fc.ContentWindow;
+        }
+
         var engine = ctx.Engine;
         var win = new JsObject(engine);
         JintInterop.DefineAccessor(engine, win, "document", (_, _) => ctx.Wrappers.Wrap(fc.Document));
@@ -110,11 +135,19 @@ internal static class IFrameBinding
     private static void MaybeLoadSrc(JintBackendContext ctx, FrameContext fc)
     {
         var src = fc.Frame.GetAttribute("src");
-        if (string.IsNullOrEmpty(src) || src == fc.LoadedSrc) return;
+        if (string.IsNullOrEmpty(src) || src == fc.LoadedSrc)
+        {
+            return;
+        }
+
         fc.LoadedSrc = src;
 
         var parsed = StarlingUrlParser.Parse(src, ctx.BaseUrl);
-        if (parsed.IsErr) return;
+        if (parsed.IsErr)
+        {
+            return;
+        }
+
         var url = parsed.Value;
 
         string? body;
@@ -143,15 +176,30 @@ internal static class IFrameBinding
 
         foreach (var node in fc.Document.Descendants())
         {
-            if (node is not Element { LocalName: "script" } sc) continue;
+            if (node is not Element { LocalName: "script" } sc)
+            {
+                continue;
+            }
+
             var type = sc.GetAttribute("type");
             if (!string.IsNullOrEmpty(type)
                 && !type.Equals("text/javascript", StringComparison.OrdinalIgnoreCase)
                 && !type.Equals("application/javascript", StringComparison.OrdinalIgnoreCase))
+            {
                 continue;
-            if (!string.IsNullOrEmpty(sc.GetAttribute("src"))) continue; // external skipped (best-effort)
+            }
+
+            if (!string.IsNullOrEmpty(sc.GetAttribute("src")))
+            {
+                continue; // external skipped (best-effort)
+            }
+
             var source = sc.TextContent;
-            if (string.IsNullOrEmpty(source)) continue;
+            if (string.IsNullOrEmpty(source))
+            {
+                continue;
+            }
+
             try { childEngine.Execute(source); }
             catch { /* fail-soft: nested script errors stay in the frame */ }
         }

@@ -35,7 +35,9 @@ internal static partial class LibJpegDecoder
     {
         nint handle = tjInitDecompress();
         if (handle == 0)
+        {
             throw new ImageDecodeException("libturbojpeg: tjInitDecompress returned null.");
+        }
 
         byte[] srcCopy = bytes.ToArray();
         try
@@ -47,7 +49,9 @@ internal static partial class LibJpegDecoder
                     handle, (nint)src, (nuint)srcCopy.Length,
                     out width, out height, out jpegSubsamp, out jpegColorspace);
                 if (hr != 0)
+                {
                     throw new ImageDecodeException($"libturbojpeg: tjDecompressHeader3 failed ({ReadError(handle)}).");
+                }
             }
             var (w, h, _) = NativeImageDecoder.ValidateDecodedDimensions(width, height);
             int stride = w * 4;
@@ -61,7 +65,9 @@ internal static partial class LibJpegDecoder
                         handle, (nint)src, (nuint)srcCopy.Length,
                         (nint)dst, w, stride, h, TJPF_RGBA, TJFLAG_NONE);
                     if (hr != 0)
+                    {
                         throw new ImageDecodeException($"libturbojpeg: tjDecompress2 failed ({ReadError(handle)}).");
+                    }
                 }
             });
         }

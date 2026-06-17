@@ -97,7 +97,11 @@ internal static class DisplayListContentHash
                     continue;
                 case PopTransform:
                     entries.Add(new Entry(item, alwaysFold: true, default));
-                    if (stack.Count > 1) stack.Pop();
+                    if (stack.Count > 1)
+                    {
+                        stack.Pop();
+                    }
+
                     transform = stack.Peek();
                     continue;
                 case PushClip:
@@ -151,8 +155,13 @@ internal static class DisplayListContentHash
         {
             var h = FnvOffset;
             foreach (var e in _entries)
+            {
                 if (e.AlwaysFold || Intersects(e.Aabb, tilePage))
+                {
                     HashItem(ref h, e.Item);
+                }
+            }
+
             return unchecked((long)h);
         }
     }
@@ -189,7 +198,11 @@ internal static class DisplayListContentHash
 
     private static Rect TransformedAabb(Rect r, Matrix2D m)
     {
-        if (m.IsIdentity) return r;
+        if (m.IsIdentity)
+        {
+            return r;
+        }
+
         var (x0, y0) = m.Transform(r.X, r.Y);
         var (x1, y1) = m.Transform(r.X + r.Width, r.Y);
         var (x2, y2) = m.Transform(r.X + r.Width, r.Y + r.Height);
@@ -382,7 +395,9 @@ internal static class DisplayListContentHash
     private static void HashLong(ref ulong h, long v)
     {
         for (var i = 0; i < 8; i++)
+        {
             HashByte(ref h, (byte)(v >> (i * 8)));
+        }
     }
 
     private static void HashDouble(ref ulong h, double d)
@@ -405,7 +420,9 @@ internal static class DisplayListContentHash
     {
         HashInt(ref h, families.Count);
         for (var i = 0; i < families.Count; i++)
+        {
             HashString(ref h, families[i]);
+        }
     }
 
     private static void HashFilters(ref ulong h, IReadOnlyList<FilterFunction> filters)

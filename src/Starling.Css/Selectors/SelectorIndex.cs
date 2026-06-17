@@ -15,7 +15,9 @@ public sealed class SelectorIndex<T>
     {
         ArgumentNullException.ThrowIfNull(selectorList);
         foreach (var selector in selectorList.Selectors)
+        {
             Add(selector, value);
+        }
     }
 
     public void Add(ComplexSelector selector, T value)
@@ -25,7 +27,9 @@ public sealed class SelectorIndex<T>
         var entry = new SelectorIndexEntry<T>(selector, value, _sequence++, pseudo);
 
         foreach (var bucket in BucketsFor(selector))
+        {
             AddToBucket(bucket, entry);
+        }
     }
 
     public IReadOnlyList<SelectorIndexEntry<T>> GetCandidates(Element element)
@@ -52,15 +56,31 @@ public sealed class SelectorIndex<T>
         seenSequences.Clear();
 
         if (!string.IsNullOrEmpty(element.Id) && _ids.TryGetValue(element.Id, out var idEntries))
+        {
             AddEntries(results, seenSequences, idEntries, filterPseudoElement, pseudoElement);
+        }
+
         foreach (var className in element.ClassList)
+        {
             if (_classes.TryGetValue(className, out var classEntries))
+            {
                 AddEntries(results, seenSequences, classEntries, filterPseudoElement, pseudoElement);
+            }
+        }
+
         foreach (var attribute in element.Attributes)
+        {
             if (_attributes.TryGetValue(attribute.Name, out var attributeEntries))
+            {
                 AddEntries(results, seenSequences, attributeEntries, filterPseudoElement, pseudoElement);
+            }
+        }
+
         if (_tags.TryGetValue(element.LocalName, out var tagEntries))
+        {
             AddEntries(results, seenSequences, tagEntries, filterPseudoElement, pseudoElement);
+        }
+
         AddEntries(results, seenSequences, _universal, filterPseudoElement, pseudoElement);
         results.Sort(static (left, right) => left.Sequence.CompareTo(right.Sequence));
     }
@@ -105,9 +125,15 @@ public sealed class SelectorIndex<T>
     {
         var buckets = new List<Bucket>();
         if (TryAddDirectBucket(selector.RightmostCompound, buckets))
+        {
             return buckets;
+        }
+
         if (TryAddFunctionalPseudoBuckets(selector.RightmostCompound, buckets))
+        {
             return buckets;
+        }
+
         buckets.Add(Bucket.Universal);
         return buckets;
     }
@@ -115,32 +141,40 @@ public sealed class SelectorIndex<T>
     private static bool TryAddDirectBucket(CompoundSelector compound, List<Bucket> buckets)
     {
         foreach (var simple in compound.SimpleSelectors)
+        {
             if (simple is IdSelector id)
             {
                 AddUnique(buckets, new Bucket(BucketKind.Id, id.Id));
                 return true;
             }
+        }
 
         foreach (var simple in compound.SimpleSelectors)
+        {
             if (simple is ClassSelector @class)
             {
                 AddUnique(buckets, new Bucket(BucketKind.Class, @class.ClassName));
                 return true;
             }
+        }
 
         foreach (var simple in compound.SimpleSelectors)
+        {
             if (simple is AttributeSelector attribute)
             {
                 AddUnique(buckets, new Bucket(BucketKind.Attribute, attribute.Name));
                 return true;
             }
+        }
 
         foreach (var simple in compound.SimpleSelectors)
+        {
             if (simple is TypeSelector type)
             {
                 AddUnique(buckets, new Bucket(BucketKind.Tag, type.LocalName));
                 return true;
             }
+        }
 
         return false;
     }
@@ -151,9 +185,15 @@ public sealed class SelectorIndex<T>
         foreach (var simple in compound.SimpleSelectors)
         {
             if (simple is not PseudoClassSelector { Argument: SelectorList list } pseudo)
+            {
                 continue;
+            }
+
             if (pseudo.Name is not ("is" or "where" or "matches"))
+            {
                 continue;
+            }
+
             TryAddSelectorListBuckets(list, buckets);
         }
 
@@ -170,12 +210,17 @@ public sealed class SelectorIndex<T>
                 && !TryAddFunctionalPseudoBuckets(selector.RightmostCompound, selectorBuckets))
             {
                 while (buckets.Count > start)
+                {
                     buckets.RemoveAt(buckets.Count - 1);
+                }
+
                 return false;
             }
 
             foreach (var bucket in selectorBuckets)
+            {
                 AddUnique(buckets, bucket);
+            }
         }
 
         return buckets.Count > start;
@@ -184,7 +229,9 @@ public sealed class SelectorIndex<T>
     private static void AddUnique(List<Bucket> buckets, Bucket bucket)
     {
         if (!buckets.Contains(bucket))
+        {
             buckets.Add(bucket);
+        }
     }
 
     private static void AddEntries(
@@ -197,9 +244,14 @@ public sealed class SelectorIndex<T>
         foreach (var entry in entries)
         {
             if (filterPseudoElement && entry.PseudoElementTarget != pseudoElement)
+            {
                 continue;
+            }
+
             if (seenSequences.Add(entry.Sequence))
+            {
                 target.Add(entry);
+            }
         }
     }
 

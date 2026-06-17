@@ -33,9 +33,15 @@ public static class RangeBinding
     {
         ArgumentNullException.ThrowIfNull(realm);
         // Idempotent: check for the Range global already defined.
-        if (!realm.GlobalObject.Get("Range").IsUndefined) return;
+        if (!realm.GlobalObject.Get("Range").IsUndefined)
+        {
+            return;
+        }
+
         if (realm.DocumentPrototype is null)
+        {
             throw new InvalidOperationException("NodeBindings.Install must run before RangeBinding.Install");
+        }
 
         // ----- Range prototype
         var rangeProto = new JsObject(realm.ObjectPrototype);
@@ -134,7 +140,10 @@ public static class RangeBinding
                 ? 0 : (uint)(long)howRaw);
             DomRange other;
             if (args.Length < 2 || UnwrapRange(args[1]) is not { } o)
+            {
                 throw new JsThrow(realm.NewTypeError("compareBoundaryPoints: second argument must be a Range"));
+            }
+
             other = o;
             return WrapDomExceptionReturn(realm, () => JsValue.Number(r.CompareBoundaryPoints(how, other)));
         }, length: 2);
@@ -202,7 +211,10 @@ public static class RangeBinding
         {
             var r = RequireRange(realm, thisV, "insertNode");
             if (args.Length == 0 || DomWrappers.UnwrapNode(args[0]) is not { } node)
+            {
                 throw new JsThrow(realm.NewTypeError("insertNode: requires a Node argument"));
+            }
+
             try { r.InsertNode(node); return JsValue.Undefined; }
             catch (DomRangeException ex) { throw DomExceptionBinding.Throw(realm, ex.DomName, ex.Message); }
         }, length: 1);
@@ -210,7 +222,10 @@ public static class RangeBinding
         {
             var r = RequireRange(realm, thisV, "surroundContents");
             if (args.Length == 0 || DomWrappers.UnwrapNode(args[0]) is not { } node)
+            {
                 throw new JsThrow(realm.NewTypeError("surroundContents: requires a Node argument"));
+            }
+
             try { r.SurroundContents(node); return JsValue.Undefined; }
             catch (DomRangeException ex) { throw DomExceptionBinding.Throw(realm, ex.DomName, ex.Message); }
         }, length: 1);
@@ -269,13 +284,17 @@ public static class RangeBinding
         {
             var init = args.Length > 0 && args[0].IsObject ? args[0].AsObject : null;
             if (init is null)
+            {
                 throw new JsThrow(realm.NewTypeError("StaticRange: argument must be an object"));
+            }
 
             var sc = DomWrappers.UnwrapNode(init.Get("startContainer"));
             var ec = DomWrappers.UnwrapNode(init.Get("endContainer"));
             if (sc is null || ec is null)
+            {
                 throw DomExceptionBinding.Throw(realm, "InvalidNodeTypeError",
                     "StaticRange: startContainer and endContainer must be nodes");
+            }
 
             var so = (int)JsValue.ToNumber(init.Get("startOffset"));
             var eo = (int)JsValue.ToNumber(init.Get("endOffset"));
@@ -307,7 +326,10 @@ public static class RangeBinding
     internal static JsObject WrapRange(JsRealm realm, DomRange range)
     {
         var cache = RangeCachesPerRealm.GetValue(realm, _ => new ConditionalWeakTable<DomRange, JsObject>());
-        if (cache.TryGetValue(range, out var existing)) return existing;
+        if (cache.TryGetValue(range, out var existing))
+        {
+            return existing;
+        }
 
         var proto = (JsObject?)realm.GlobalObject.Get("Range").AsObject?.Get("prototype").AsObject
             ?? realm.ObjectPrototype;
@@ -333,10 +355,17 @@ public static class RangeBinding
 
     private static int RequireIntArg(JsValue[] args, int idx)
     {
-        if (idx >= args.Length) return 0;
+        if (idx >= args.Length)
+        {
+            return 0;
+        }
         // Per WebIDL, treat as unsigned long (wraps modulo 2^32).
         var n = JsValue.ToNumber(args[idx]);
-        if (double.IsNaN(n) || double.IsInfinity(n)) return 0;
+        if (double.IsNaN(n) || double.IsInfinity(n))
+        {
+            return 0;
+        }
+
         return (int)(uint)(long)n;
     }
 

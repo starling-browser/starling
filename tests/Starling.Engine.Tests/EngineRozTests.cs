@@ -36,8 +36,15 @@ public class EngineRozTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
+
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -71,17 +78,32 @@ public class EngineRozTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
+
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
     private static string BuildDeepDomHtml(int depth)
     {
         var sb = new System.Text.StringBuilder("<!doctype html><body>");
-        for (var i = 0; i < depth; i++) sb.Append("<div>");
+        for (var i = 0; i < depth; i++)
+        {
+            sb.Append("<div>");
+        }
+
         sb.Append("x");
-        for (var i = 0; i < depth; i++) sb.Append("</div>");
+        for (var i = 0; i < depth; i++)
+        {
+            sb.Append("</div>");
+        }
+
         sb.Append("</body>");
         return sb.ToString();
     }
@@ -89,7 +111,11 @@ public class EngineRozTests
     private static string BuildWideDomHtml(int nodeCount)
     {
         var sb = new System.Text.StringBuilder("<!doctype html><body>");
-        for (var i = 0; i < nodeCount; i++) sb.Append("<span>x</span>");
+        for (var i = 0; i < nodeCount; i++)
+        {
+            sb.Append("<span>x</span>");
+        }
+
         sb.Append("</body>");
         return sb.ToString();
     }

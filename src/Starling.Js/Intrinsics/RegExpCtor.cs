@@ -86,11 +86,16 @@ public static class RegExpCtor
         if (patternArg.IsObject && patternArg.AsObject is JsRegExp existing)
         {
             source = existing.Source;
-            if (flagsArg.IsUndefined) flags = existing.Flags;
+            if (flagsArg.IsUndefined)
+            {
+                flags = existing.Flags;
+            }
             else
             {
                 if (!RegexFlagParser.TryParse(JsValue.ToStringValue(flagsArg), out flags, out var err))
+                {
                     throw new JsThrow(realm.NewSyntaxError(err!));
+                }
             }
         }
         else
@@ -98,7 +103,9 @@ public static class RegExpCtor
             source = patternArg.IsUndefined ? string.Empty : JsValue.ToStringValue(patternArg);
             var flagsStr = flagsArg.IsUndefined ? string.Empty : JsValue.ToStringValue(flagsArg);
             if (!RegexFlagParser.TryParse(flagsStr, out flags, out var err))
+            {
                 throw new JsThrow(realm.NewSyntaxError(err!));
+            }
         }
 
         IRegexMatcher compiled;
@@ -111,7 +118,11 @@ public static class RegExpCtor
             throw new JsThrow(realm.NewSyntaxError($"Invalid regular expression: /{source}/: {ex.Message}"));
         }
         var re = new JsRegExp(realm, compiled);
-        if (!ReferenceEquals(instProto, realm.RegExpPrototype)) re.SetPrototypeOf(instProto);
+        if (!ReferenceEquals(instProto, realm.RegExpPrototype))
+        {
+            re.SetPrototypeOf(instProto);
+        }
+
         return JsValue.Object(re);
     }
 
@@ -121,7 +132,9 @@ public static class RegExpCtor
     private static JsValue RegExpToString(JsRealm realm, JsValue thisV)
     {
         if (!thisV.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("RegExp.prototype.toString called on non-object"));
+        }
 
         var obj = thisV.AsObject;
         var pattern = JsValue.ToStringValue(AbstractOperations.Get(realm.ActiveVm, obj, "source"));
@@ -150,10 +163,18 @@ public static class RegExpCtor
         {
             if (!re.Compiled.ExecSpans(input, start, spanBuffer, out _, out var matchEnd))
             {
-                if (advancing) re.LastIndex = 0;
+                if (advancing)
+                {
+                    re.LastIndex = 0;
+                }
+
                 return JsValue.Null;
             }
-            if (advancing) re.LastIndex = matchEnd;
+            if (advancing)
+            {
+                re.LastIndex = matchEnd;
+            }
+
             return JsValue.Object(BuildMatchArrayFromSpans(realm, re, input, spanBuffer));
         }
         finally
@@ -225,7 +246,10 @@ public static class RegExpCtor
             {
                 int gs = spanBuffer[i * 2];
                 int ge = spanBuffer[i * 2 + 1];
-                if (gs < 0) indicesArr.Push(JsValue.Undefined);
+                if (gs < 0)
+                {
+                    indicesArr.Push(JsValue.Undefined);
+                }
                 else
                 {
                     var pair = new JsArray(realm, 2);
@@ -255,7 +279,10 @@ public static class RegExpCtor
         // Step 2: `this` must be an Object (need not be a genuine RegExp — a
         // user object whose `exec`/`global`/`unicode` we read is allowed).
         if (!thisV.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("RegExp.prototype[Symbol.match] called on non-object"));
+        }
+
         var rx = thisV.AsObject;
         var vm = realm.ActiveVm;
         var s = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "undefined";
@@ -276,7 +303,9 @@ public static class RegExpCtor
         // we fall through to the generic loop, preserving the §22.2.7.1
         // DELEGATES_TO_EXEC contract (core-js's feature-detect).
         if (rx is JsRegExp fastRe && IsBuiltinExecAndFlags(realm, fastRe))
+        {
             return GlobalMatchFastPath(realm, fastRe, s);
+        }
 
         // Generic path: read the unicode flag, reset lastIndex, then loop
         // RegExpExec collecting each result's [0].
@@ -286,7 +315,11 @@ public static class RegExpCtor
         while (true)
         {
             var result = RegExpExec(realm, rx, s);
-            if (result.IsNull) break;
+            if (result.IsNull)
+            {
+                break;
+            }
+
             var matchStr = JsValue.ToStringValue(
                 AbstractOperations.Get(vm, result.AsObject, "0"));
             results.Push(JsValue.String(matchStr));
@@ -360,7 +393,10 @@ public static class RegExpCtor
         // re-pointed __proto__, subclass) takes the full spec walk below.
         if (re.HasPristineShape && ReferenceEquals(re.GetPrototypeOf(), realm.RegExpPrototype)
             && ProtoBuiltinsIntact(realm))
+        {
             return true;
+        }
+
         return ResolvesToBuiltin(re, "exec", realm.RegExpBuiltinExec, accessor: false)
             && ResolvesToBuiltin(re, "global", realm.RegExpGlobalGetter, accessor: true)
             && ResolvesToBuiltin(re, "unicode", realm.RegExpUnicodeGetter, accessor: true);
@@ -383,7 +419,9 @@ public static class RegExpCtor
         // generic dictionary-mode Set path, which globals in eval scope hit.)
         int epoch = JsObject.ProtoEpoch;
         if (epoch == realm.RegExpGuardCachedEpoch)
+        {
             return realm.RegExpGuardCachedIntact && ExecStillBuiltin(realm);
+        }
 
         bool fresh = ComputeProtoBuiltinsIntact(realm, realm.RegExpPrototype);
         realm.RegExpGuardCachedEpoch = epoch;
@@ -400,11 +438,23 @@ public static class RegExpCtor
 
     private static bool ComputeProtoBuiltinsIntact(JsRealm realm, JsObject p)
     {
-        if (!ExecStillBuiltin(realm)) return false;
+        if (!ExecStillBuiltin(realm))
+        {
+            return false;
+        }
+
         var g = p.GetOwnPropertyDescriptor("global");
-        if (g is not { IsAccessor: true } gd || !ReferenceEquals(gd.Getter, realm.RegExpGlobalGetter)) return false;
+        if (g is not { IsAccessor: true } gd || !ReferenceEquals(gd.Getter, realm.RegExpGlobalGetter))
+        {
+            return false;
+        }
+
         var u = p.GetOwnPropertyDescriptor("unicode");
-        if (u is not { IsAccessor: true } ud || !ReferenceEquals(ud.Getter, realm.RegExpUnicodeGetter)) return false;
+        if (u is not { IsAccessor: true } ud || !ReferenceEquals(ud.Getter, realm.RegExpUnicodeGetter))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -414,14 +464,25 @@ public static class RegExpCtor
     // if it is the wrong kind, so a deleted/overridden slot fails the guard.
     private static bool ResolvesToBuiltin(JsObject start, string name, JsObject? expected, bool accessor)
     {
-        if (expected is null) return false;
+        if (expected is null)
+        {
+            return false;
+        }
+
         for (var o = (JsObject?)start; o is not null; o = o.GetPrototypeOf())
         {
             var d = o.GetOwnPropertyDescriptor(name);
-            if (d is null) continue;
+            if (d is null)
+            {
+                continue;
+            }
+
             var desc = d.Value;
             if (accessor)
+            {
                 return desc.IsAccessor && ReferenceEquals(desc.Getter, expected);
+            }
+
             return !desc.IsAccessor && desc.Value.IsObject && ReferenceEquals(desc.Value.AsObject, expected);
         }
         return false;
@@ -431,11 +492,23 @@ public static class RegExpCtor
     // `unicode` flag is set and `index` sits on a leading surrogate.
     internal static int AdvanceStringIndex(string s, int index, bool unicode)
     {
-        if (!unicode || index + 1 >= s.Length) return index + 1;
+        if (!unicode || index + 1 >= s.Length)
+        {
+            return index + 1;
+        }
+
         var first = s[index];
-        if (first < 0xD800 || first > 0xDBFF) return index + 1;
+        if (first < 0xD800 || first > 0xDBFF)
+        {
+            return index + 1;
+        }
+
         var second = s[index + 1];
-        if (second < 0xDC00 || second > 0xDFFF) return index + 1;
+        if (second < 0xDC00 || second > 0xDFFF)
+        {
+            return index + 1;
+        }
+
         return index + 2;
     }
 
@@ -447,7 +520,10 @@ public static class RegExpCtor
     {
         var re = RequireRegExp(realm, thisV);
         if ((re.Flags & RegexFlags.Global) == 0)
+        {
             throw new JsThrow(realm.NewTypeError("matchAll requires a global regular expression"));
+        }
+
         var s = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "undefined";
         var unicode = (re.Flags & RegexFlags.Unicode) != 0;
         return JsValue.Object(new JsRegExpStringIterator(realm, re, s, global: true, unicode: unicode));
@@ -468,13 +544,19 @@ public static class RegExpCtor
             var result = AbstractOperations.Call(vm, exec, JsValue.Object(r),
                 new[] { JsValue.String(s) });
             if (!result.IsObject && !result.IsNull)
+            {
                 throw new JsThrow(realm.NewTypeError(
                     "RegExp exec method returned something other than an Object or null"));
+            }
+
             return result;
         }
         // Fallback: must be a real RegExp to run the built-in.
         if (r is not JsRegExp)
+        {
             throw new JsThrow(realm.NewTypeError("RegExp#exec called on incompatible receiver"));
+        }
+
         return Exec(realm, JsValue.Object(r), new[] { JsValue.String(s) });
     }
 
@@ -484,11 +566,17 @@ public static class RegExpCtor
         // need not be a genuine RegExp (it can be a user object whose `exec`
         // and `global` we read), so we do not RequireRegExp here.
         if (!thisV.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("RegExp.prototype[Symbol.replace] called on non-object"));
+        }
+
         var s = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "undefined";
         var replacement = args.Length > 1 ? args[1] : JsValue.Undefined;
         if (thisV.AsObject is JsRegExp re)
+        {
             return ReplaceString(realm, re, s, replacement);
+        }
+
         return ReplaceGeneric(realm, thisV.AsObject, s, replacement);
     }
 
@@ -517,16 +605,26 @@ public static class RegExpCtor
         bool functional = AbstractOperations.IsCallable(replacement);
         string replStr = functional ? null! : JsValue.ToStringValue(replacement);
         bool global = JsValue.ToBoolean(AbstractOperations.Get(vm, rx, "global"));
-        if (global) rx.Set("lastIndex", JsValue.Number(0));
+        if (global)
+        {
+            rx.Set("lastIndex", JsValue.Number(0));
+        }
 
         // Step 14: gather every match through RegExpExec (which calls rx.exec).
         var results = new List<JsValue>();
         while (true)
         {
             var result = RegExpExec(realm, rx, s);
-            if (result.IsNull) break;
+            if (result.IsNull)
+            {
+                break;
+            }
+
             results.Add(result);
-            if (!global) break;
+            if (!global)
+            {
+                break;
+            }
             // Empty-match advance (§22.2.6.11 step 14.d.iii).
             var resObj = result.AsObject;
             var matchStr = JsValue.ToStringValue(AbstractOperations.Get(vm, resObj, "0"));
@@ -566,7 +664,11 @@ public static class RegExpCtor
                 fnArgs.AddRange(captures);
                 fnArgs.Add(JsValue.Number(position));
                 fnArgs.Add(JsValue.String(s));
-                if (!namedCaptures.IsUndefined) fnArgs.Add(namedCaptures);
+                if (!namedCaptures.IsUndefined)
+                {
+                    fnArgs.Add(namedCaptures);
+                }
+
                 var r = AbstractOperations.Call(vm, replacement, JsValue.Undefined, fnArgs.ToArray());
                 replacementText = JsValue.ToStringValue(r);
             }
@@ -583,7 +685,10 @@ public static class RegExpCtor
             }
         }
         if (nextSourcePosition < s.Length)
+        {
             sb.Append(s, nextSourcePosition, s.Length - nextSourcePosition);
+        }
+
         return JsValue.String(sb.ToString());
     }
 
@@ -603,7 +708,15 @@ public static class RegExpCtor
         // non-sticky exec never touches lastIndex. The pristine-shape case (the
         // norm: this method is only reached when the builtin guard held) writes
         // slot 0 directly, skipping the generic setter's name lookup.
-        if (global) { if (re.HasPristineShape) re.ResetLastIndexFast(); else re.LastIndex = 0; }
+        if (global) { if (re.HasPristineShape)
+            {
+                re.ResetLastIndexFast();
+            }
+            else
+            {
+                re.LastIndex = 0;
+            }
+        }
 
         // Literal replacement (no '$' substitution tokens) on a backend that can
         // do a single-pass whole-string replace (the .NET engine): delegate the
@@ -612,7 +725,10 @@ public static class RegExpCtor
         if (!functional && replStr is not null && replStr.IndexOf('$') < 0)
         {
             var whole = re.Compiled.TryReplaceLiteral(s, replStr, global);
-            if (whole is not null) return JsValue.String(whole);
+            if (whole is not null)
+            {
+                return JsValue.String(whole);
+            }
         }
 
         var spans = ArrayPool<int>.Shared.Rent(2 * (captureCount + 1));
@@ -634,13 +750,27 @@ public static class RegExpCtor
                 sb.Append(replacementText);
                 nextSourcePosition = matchStart + matchLen;
 
-                if (!global) break;
+                if (!global)
+                {
+                    break;
+                }
+
                 pos = matchLen == 0 ? AdvanceStringIndex(s, matchEnd, fullUnicode) : matchEnd;
-                if (pos > s.Length) break;
+                if (pos > s.Length)
+                {
+                    break;
+                }
             }
-            if (sb is null) return JsValue.String(s); // no match → original string, no allocation
+            if (sb is null)
+            {
+                return JsValue.String(s); // no match → original string, no allocation
+            }
+
             if (nextSourcePosition < s.Length)
+            {
                 sb.Append(s, nextSourcePosition, s.Length - nextSourcePosition);
+            }
+
             return JsValue.String(sb.ToString());
         }
         finally
@@ -673,7 +803,10 @@ public static class RegExpCtor
     {
         // No '$' ⇒ the replacement is literal (the common case, e.g. "0"); skip
         // the StringBuilder entirely.
-        if (replacement.IndexOf('$') < 0) return replacement;
+        if (replacement.IndexOf('$') < 0)
+        {
+            return replacement;
+        }
 
         int position = matchStart;
         int tailPos = matchEnd;
@@ -706,7 +839,11 @@ public static class RegExpCtor
                         if (n >= 1 && n <= captureCount)
                         {
                             int cs = spans[2 * n], ce = spans[2 * n + 1];
-                            if (cs >= 0) sb.Append(str, cs, ce - cs);
+                            if (cs >= 0)
+                            {
+                                sb.Append(str, cs, ce - cs);
+                            }
+
                             i += consumed;
                         }
                         else { sb.Append('$').Append(next); i++; }
@@ -721,7 +858,11 @@ public static class RegExpCtor
     private static double ToLengthLocal(JsValue v)
     {
         var n = JsValue.ToNumber(v);
-        if (double.IsNaN(n) || n <= 0) return 0;
+        if (double.IsNaN(n) || n <= 0)
+        {
+            return 0;
+        }
+
         return System.Math.Min(System.Math.Floor(n), 9007199254740991d);
     }
 
@@ -758,7 +899,11 @@ public static class RegExpCtor
                         var name = replacement.Substring(i + 2, close - (i + 2));
                         var groupsObj = AbstractOperations.ToObject(realm, namedCaptures);
                         var cap = AbstractOperations.Get(vm, groupsObj, name);
-                        if (!cap.IsUndefined) sb.Append(JsValue.ToStringValue(cap));
+                        if (!cap.IsUndefined)
+                        {
+                            sb.Append(JsValue.ToStringValue(cap));
+                        }
+
                         i = close;
                         break;
                     }
@@ -775,7 +920,11 @@ public static class RegExpCtor
                         if (n >= 1 && n <= m)
                         {
                             var cap = captures[n - 1];
-                            if (!cap.IsUndefined) sb.Append(JsValue.ToStringValue(cap));
+                            if (!cap.IsUndefined)
+                            {
+                                sb.Append(JsValue.ToStringValue(cap));
+                            }
+
                             i += consumed;
                         }
                         else
@@ -813,7 +962,10 @@ public static class RegExpCtor
         var s = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "undefined";
         var limit = args.Length > 1 && !args[1].IsUndefined ? (uint)System.Math.Max(0, (int)JsValue.ToNumber(args[1])) : uint.MaxValue;
         var arr = new JsArray(realm);
-        if (limit == 0) return JsValue.Object(arr);
+        if (limit == 0)
+        {
+            return JsValue.Object(arr);
+        }
 
         int captureCount = re.Compiled.CaptureCount;
         bool unicode = (re.Flags & RegexFlags.Unicode) != 0;
@@ -825,7 +977,10 @@ public static class RegExpCtor
             {
                 // Per spec, if pattern matches empty string return [], else [""].
                 if (!re.Compiled.ExecSpans(s, 0, spanBuffer, out _, out _))
+                {
                     arr.Push(JsValue.String(string.Empty));
+                }
+
                 return JsValue.Object(arr);
             }
             int pos = 0;
@@ -833,21 +988,30 @@ public static class RegExpCtor
             while (pos < s.Length)
             {
                 if (!re.Compiled.ExecSpans(s, pos, spanBuffer, out var matchStart, out var matchEnd))
+                {
                     break;
+                }
+
                 if (matchEnd == prev)
                 {
                     pos = AdvanceStringIndex(s, pos, unicode);
                     continue;
                 }
                 arr.Push(JsValue.String(s[prev..matchStart]));
-                if (arr.Length >= limit) return JsValue.Object(arr);
+                if (arr.Length >= limit)
+                {
+                    return JsValue.Object(arr);
+                }
                 // Push captures — substring only for participating groups.
                 for (var i = 1; i <= captureCount; i++)
                 {
                     int gs = spanBuffer[i * 2];
                     int ge = spanBuffer[i * 2 + 1];
                     arr.Push(gs < 0 ? JsValue.Undefined : JsValue.String(s.Substring(gs, ge - gs)));
-                    if (arr.Length >= limit) return JsValue.Object(arr);
+                    if (arr.Length >= limit)
+                    {
+                        return JsValue.Object(arr);
+                    }
                 }
                 prev = matchEnd;
                 pos = matchEnd;
@@ -870,7 +1034,10 @@ public static class RegExpCtor
     public static JsRegExp Create(JsRealm realm, string source, string flags = "")
     {
         if (!RegexFlagParser.TryParse(flags, out var f, out var err))
+        {
             throw new JsThrow(realm.NewSyntaxError(err!));
+        }
+
         IRegexMatcher compiled;
         try
         {
@@ -887,7 +1054,11 @@ public static class RegExpCtor
 
     private static JsRegExp RequireRegExp(JsRealm realm, JsValue v)
     {
-        if (v.IsObject && v.AsObject is JsRegExp r) return r;
+        if (v.IsObject && v.AsObject is JsRegExp r)
+        {
+            return r;
+        }
+
         throw new JsThrow(realm.NewTypeError("Method called on non-RegExp object"));
     }
 
@@ -896,7 +1067,10 @@ public static class RegExpCtor
         return DefineGetter(realm, target, name, (thisV) =>
         {
             if (thisV.IsObject && thisV.AsObject is JsRegExp r)
+            {
                 return JsValue.Boolean((r.Flags & flag) != 0);
+            }
+
             throw new JsThrow(realm.NewTypeError($"Getter '{name}' called on non-RegExp"));
         });
     }

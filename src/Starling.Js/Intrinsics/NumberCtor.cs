@@ -25,7 +25,11 @@ public static class NumberCtor
             {
                 var box = realm.BoxNumber(JsValue.Number(n));
                 var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, proto);
-                if (!ReferenceEquals(instProto, proto)) box.SetPrototypeOf(instProto);
+                if (!ReferenceEquals(instProto, proto))
+                {
+                    box.SetPrototypeOf(instProto);
+                }
+
                 return JsValue.Object(box);
             }
             return JsValue.Number(n);
@@ -83,14 +87,22 @@ public static class NumberCtor
 
     internal static double ToNumber(JsValue value)
     {
-        if (!value.IsObject) return value.IsString ? StringToNumber(value.AsString) : JsValue.ToNumber(value);
+        if (!value.IsObject)
+        {
+            return value.IsString ? StringToNumber(value.AsString) : JsValue.ToNumber(value);
+        }
+
         var prim = AbstractOperations.ToPrimitive(value, "number");
         return prim.IsString ? StringToNumber(prim.AsString) : JsValue.ToNumber(prim);
     }
 
     private static bool IsInteger(JsValue value)
     {
-        if (!value.IsNumber) return false;
+        if (!value.IsNumber)
+        {
+            return false;
+        }
+
         var n = value.AsNumber;
         return double.IsFinite(n) && n == Math.Truncate(n);
     }
@@ -99,11 +111,18 @@ public static class NumberCtor
 
     private static double ThisNumber(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsNumber) return thisV.AsNumber;
+        if (thisV.IsNumber)
+        {
+            return thisV.AsNumber;
+        }
+
         if (thisV.IsObject)
         {
             var slot = thisV.AsObject.GetOwnPropertyDescriptor("__primitiveValue");
-            if (slot is { } d && d.Value.IsNumber) return d.Value.AsNumber;
+            if (slot is { } d && d.Value.IsNumber)
+            {
+                return d.Value.AsNumber;
+            }
         }
         throw new JsThrow(realm.NewTypeError("Number.prototype method called on incompatible receiver"));
     }
@@ -111,17 +130,29 @@ public static class NumberCtor
     private static double StringToNumber(string s)
     {
         var t = s.Trim();
-        if (t.Length == 0) return 0;
+        if (t.Length == 0)
+        {
+            return 0;
+        }
+
         var sign = 1;
-        if (t[0] == '+' || t[0] == '-') { if (t[0] == '-') sign = -1; t = t[1..]; }
-        if (string.Equals(t, "Infinity", StringComparison.Ordinal)) return sign > 0 ? double.PositiveInfinity : double.NegativeInfinity;
+        if (t[0] == '+' || t[0] == '-') { if (t[0] == '-') { sign = -1; } t = t[1..]; }
+        if (string.Equals(t, "Infinity", StringComparison.Ordinal))
+        {
+            return sign > 0 ? double.PositiveInfinity : double.NegativeInfinity;
+        }
+
         if (t.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
             var acc = 0d;
             for (var i = 2; i < t.Length; i++)
             {
                 var digit = DigitValue(t[i]);
-                if (digit < 0 || digit >= 16) return double.NaN;
+                if (digit < 0 || digit >= 16)
+                {
+                    return double.NaN;
+                }
+
                 acc = acc * 16 + digit;
             }
             return sign * acc;
@@ -134,12 +165,16 @@ public static class NumberCtor
     {
         var pos = 0;
         var sign = 1;
-        if (pos < s.Length && (s[pos] == '+' || s[pos] == '-')) { if (s[pos] == '-') sign = -1; pos++; }
+        if (pos < s.Length && (s[pos] == '+' || s[pos] == '-')) { if (s[pos] == '-') { sign = -1; } pos++; }
         var stripPrefix = true;
         var radix = double.IsNaN(radixNumber) || radixNumber == 0 ? 0 : (int)radixNumber;
         if (radix != 0)
         {
-            if (radix < 2 || radix > 36) return double.NaN;
+            if (radix < 2 || radix > 36)
+            {
+                return double.NaN;
+            }
+
             stripPrefix = radix == 16;
         }
         if (stripPrefix && pos + 1 < s.Length && s[pos] == '0' && (s[pos + 1] == 'x' || s[pos + 1] == 'X'))
@@ -147,13 +182,21 @@ public static class NumberCtor
             radix = 16;
             pos += 2;
         }
-        if (radix == 0) radix = 10;
+        if (radix == 0)
+        {
+            radix = 10;
+        }
+
         var any = false;
         var value = 0d;
         for (; pos < s.Length; pos++)
         {
             var d = DigitValue(s[pos]);
-            if (d < 0 || d >= radix) break;
+            if (d < 0 || d >= radix)
+            {
+                break;
+            }
+
             any = true;
             value = value * radix + d;
         }
@@ -162,29 +205,63 @@ public static class NumberCtor
 
     private static double ParseFloatString(string s)
     {
-        if (s.Length == 0) return double.NaN;
+        if (s.Length == 0)
+        {
+            return double.NaN;
+        }
+
         var pos = 0;
-        if (s[pos] == '+' || s[pos] == '-') pos++;
+        if (s[pos] == '+' || s[pos] == '-')
+        {
+            pos++;
+        }
+
         if (pos + 8 <= s.Length && string.Equals(s.Substring(pos, 8), "Infinity", StringComparison.Ordinal))
+        {
             return s[0] == '-' ? double.NegativeInfinity : double.PositiveInfinity;
+        }
+
         var startDigits = pos;
-        while (pos < s.Length && char.IsAsciiDigit(s[pos])) pos++;
+        while (pos < s.Length && char.IsAsciiDigit(s[pos]))
+        {
+            pos++;
+        }
+
         var before = pos > startDigits;
         if (pos < s.Length && s[pos] == '.')
         {
             pos++;
             var fracStart = pos;
-            while (pos < s.Length && char.IsAsciiDigit(s[pos])) pos++;
+            while (pos < s.Length && char.IsAsciiDigit(s[pos]))
+            {
+                pos++;
+            }
+
             before = before || pos > fracStart;
         }
-        if (!before) return double.NaN;
+        if (!before)
+        {
+            return double.NaN;
+        }
+
         if (pos < s.Length && (s[pos] == 'e' || s[pos] == 'E'))
         {
             var expMark = pos++;
-            if (pos < s.Length && (s[pos] == '+' || s[pos] == '-')) pos++;
+            if (pos < s.Length && (s[pos] == '+' || s[pos] == '-'))
+            {
+                pos++;
+            }
+
             var expStart = pos;
-            while (pos < s.Length && char.IsAsciiDigit(s[pos])) pos++;
-            if (pos == expStart) pos = expMark;
+            while (pos < s.Length && char.IsAsciiDigit(s[pos]))
+            {
+                pos++;
+            }
+
+            if (pos == expStart)
+            {
+                pos = expMark;
+            }
         }
         return double.TryParse(s[..pos], NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : double.NaN;
     }
@@ -201,12 +278,36 @@ public static class NumberCtor
     private static string NumberToString(double n, JsValue radixValue, JsRealm realm)
     {
         var radix = radixValue.IsUndefined ? 10 : (int)ToNumber(radixValue);
-        if (radix < 2 || radix > 36) throw new JsThrow(realm.NewRangeError("radix must be between 2 and 36"));
-        if (radix == 10) return JsValue.ToStringValue(JsValue.Number(n));
-        if (double.IsNaN(n)) return "NaN";
-        if (double.IsPositiveInfinity(n)) return "Infinity";
-        if (double.IsNegativeInfinity(n)) return "-Infinity";
-        if (n == 0) return "0";
+        if (radix < 2 || radix > 36)
+        {
+            throw new JsThrow(realm.NewRangeError("radix must be between 2 and 36"));
+        }
+
+        if (radix == 10)
+        {
+            return JsValue.ToStringValue(JsValue.Number(n));
+        }
+
+        if (double.IsNaN(n))
+        {
+            return "NaN";
+        }
+
+        if (double.IsPositiveInfinity(n))
+        {
+            return "Infinity";
+        }
+
+        if (double.IsNegativeInfinity(n))
+        {
+            return "-Infinity";
+        }
+
+        if (n == 0)
+        {
+            return "0";
+        }
+
         var sign = n < 0 ? "-" : "";
         n = Math.Abs(n);
         var integer = Math.Truncate(n);
@@ -235,25 +336,57 @@ public static class NumberCtor
     /// <summary>§21.1.3.3 Number.prototype.toFixed — fixed decimal formatting, invariant culture.</summary>
     private static string ToFixed(double n, int digits, JsRealm realm)
     {
-        if (digits < 0 || digits > 100) throw new JsThrow(realm.NewRangeError("toFixed digits out of range"));
-        if (double.IsNaN(n)) return "NaN";
-        if (double.IsInfinity(n)) return JsValue.ToStringValue(JsValue.Number(n));
-        if (Math.Abs(n) >= 1e21) return JsValue.ToStringValue(JsValue.Number(n));
+        if (digits < 0 || digits > 100)
+        {
+            throw new JsThrow(realm.NewRangeError("toFixed digits out of range"));
+        }
+
+        if (double.IsNaN(n))
+        {
+            return "NaN";
+        }
+
+        if (double.IsInfinity(n))
+        {
+            return JsValue.ToStringValue(JsValue.Number(n));
+        }
+
+        if (Math.Abs(n) >= 1e21)
+        {
+            return JsValue.ToStringValue(JsValue.Number(n));
+        }
+
         return n.ToString("F" + digits.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
     }
 
     private static JsValue ToPrecision(double n, JsValue precisionValue, JsRealm realm)
     {
-        if (precisionValue.IsUndefined) return JsValue.String(JsValue.ToStringValue(JsValue.Number(n)));
+        if (precisionValue.IsUndefined)
+        {
+            return JsValue.String(JsValue.ToStringValue(JsValue.Number(n)));
+        }
+
         var p = ToDigits(new[] { precisionValue }, 0);
-        if (p < 1 || p > 100) throw new JsThrow(realm.NewRangeError("toPrecision precision out of range"));
-        if (double.IsNaN(n) || double.IsInfinity(n)) return JsValue.String(JsValue.ToStringValue(JsValue.Number(n)));
+        if (p < 1 || p > 100)
+        {
+            throw new JsThrow(realm.NewRangeError("toPrecision precision out of range"));
+        }
+
+        if (double.IsNaN(n) || double.IsInfinity(n))
+        {
+            return JsValue.String(JsValue.ToStringValue(JsValue.Number(n)));
+        }
+
         if (n == 0)
+        {
             return JsValue.String(p == 1 ? "0" : "0." + new string('0', p - 1));
+        }
 
         var exponent = (int)Math.Floor(Math.Log10(Math.Abs(n)));
         if (exponent >= p || exponent < -6)
+        {
             return JsValue.String(ToExponential(n, JsValue.Number(p - 1), realm));
+        }
 
         var fractionDigits = Math.Max(0, p - exponent - 1);
         return JsValue.String(n.ToString("F" + fractionDigits.ToString(CultureInfo.InvariantCulture),
@@ -262,17 +395,32 @@ public static class NumberCtor
 
     private static string ToExponential(double n, JsValue digitsValue, JsRealm realm)
     {
-        if (double.IsNaN(n) || double.IsInfinity(n)) return JsValue.ToStringValue(JsValue.Number(n));
+        if (double.IsNaN(n) || double.IsInfinity(n))
+        {
+            return JsValue.ToStringValue(JsValue.Number(n));
+        }
+
         string fmt;
-        if (digitsValue.IsUndefined) fmt = "E15";
+        if (digitsValue.IsUndefined)
+        {
+            fmt = "E15";
+        }
         else
         {
             var f = (int)ToNumber(digitsValue);
-            if (f < 0 || f > 100) throw new JsThrow(realm.NewRangeError("toExponential digits out of range"));
+            if (f < 0 || f > 100)
+            {
+                throw new JsThrow(realm.NewRangeError("toExponential digits out of range"));
+            }
+
             fmt = "E" + f.ToString(CultureInfo.InvariantCulture);
         }
         var s = NormalizeExponent(n.ToString(fmt, CultureInfo.InvariantCulture));
-        if (digitsValue.IsUndefined) s = s.TrimEnd('0').Replace(".e", "e", StringComparison.Ordinal);
+        if (digitsValue.IsUndefined)
+        {
+            s = s.TrimEnd('0').Replace(".e", "e", StringComparison.Ordinal);
+        }
+
         return s;
     }
 
@@ -281,7 +429,11 @@ public static class NumberCtor
     private static string NormalizeExponent(string s)
     {
         var e = s.IndexOf('E');
-        if (e < 0) return s;
+        if (e < 0)
+        {
+            return s;
+        }
+
         var mant = s[..e];
         var exp = int.Parse(s[(e + 1)..], CultureInfo.InvariantCulture);
         return mant + "e" + (exp >= 0 ? "+" : "") + exp.ToString(CultureInfo.InvariantCulture);

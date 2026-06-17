@@ -166,18 +166,34 @@ public class DirectEvalInitializerArgumentsTests
 
     private static bool IsSyntaxError(JsThrow t)
     {
-        if (!t.Value.IsObject) return false;
+        if (!t.Value.IsObject)
+        {
+            return false;
+        }
+
         var ctor = t.Value.AsObject.Get("constructor");
-        if (!ctor.IsObject) return false;
+        if (!ctor.IsObject)
+        {
+            return false;
+        }
+
         var name = ctor.AsObject.Get("name");
         return name.IsString && name.AsString == "SyntaxError";
     }
 
     private static bool IsReferenceError(JsThrow t)
     {
-        if (!t.Value.IsObject) return false;
+        if (!t.Value.IsObject)
+        {
+            return false;
+        }
+
         var ctor = t.Value.AsObject.Get("constructor");
-        if (!ctor.IsObject) return false;
+        if (!ctor.IsObject)
+        {
+            return false;
+        }
+
         var name = ctor.AsObject.Get("name");
         return name.IsString && name.AsString == "ReferenceError";
     }

@@ -7,13 +7,22 @@ public ref partial struct JsParser
 {
     private Expression ParseBindingTarget()
     {
-        if (Check(JsTokenKind.LBracket)) return ParseArrayBindingPattern();
-        if (Check(JsTokenKind.LBrace)) return ParseObjectBindingPattern();
+        if (Check(JsTokenKind.LBracket))
+        {
+            return ParseArrayBindingPattern();
+        }
+
+        if (Check(JsTokenKind.LBrace))
+        {
+            return ParseObjectBindingPattern();
+        }
         // §14.4.1 / §15.5 — inside a generator, `yield` is the YieldExpression
         // keyword and may NOT be a BindingIdentifier (even in sloppy code).
         if (_inGenerator && Check(JsTokenKind.Yield))
+        {
             throw new JsParseException(
                 "'yield' may not be used as a binding identifier in a generator", _current.Start);
+        }
         // In sloppy (non-strict) code outside a generator, `yield` is a plain
         // IdentifierReference and a legal BindingIdentifier (§12.7.1). The lexer
         // always classifies it as the `Yield` keyword token, so accept it here.
@@ -27,8 +36,11 @@ public ref partial struct JsParser
         // Module top level), `await` is the AwaitExpression keyword and may NOT
         // be a BindingIdentifier.
         if (AwaitIsKeyword && Check(JsTokenKind.Identifier) && _current.TextEquals("await"))
+        {
             throw new JsParseException(
                 "'await' may not be used as a binding identifier in an await context", _current.Start);
+        }
+
         var id = Expect(JsTokenKind.Identifier, "expected binding name or pattern");
         return new Identifier(id.Lexeme, id.Start, id.End);
     }
@@ -36,7 +48,11 @@ public ref partial struct JsParser
     private Expression ParseParameter()
     {
         var target = ParseBindingTarget();
-        if (!Match(JsTokenKind.Eq)) return target;
+        if (!Match(JsTokenKind.Eq))
+        {
+            return target;
+        }
+
         var fallback = ParseAssignment();
         return new AssignmentPattern(target, fallback, target.Start, fallback.End);
     }
@@ -61,19 +77,32 @@ public ref partial struct JsParser
                 Advance();
                 var target = ParseBindingTarget();
                 if (Check(JsTokenKind.Eq))
+                {
                     throw new JsParseException("array rest binding cannot have a default", _current.Start);
+                }
+
                 elements.Add(new ArrayPatternRestElement(target, restStart, target.End));
                 if (!Check(JsTokenKind.RBracket))
+                {
                     throw new JsParseException("array rest binding must be last", _current.Start);
+                }
+
                 break;
             }
 
             var elementStart = _current.Start;
             var inner = ParseBindingTarget();
             Expression? fallback = null;
-            if (Match(JsTokenKind.Eq)) fallback = ParseAssignment();
+            if (Match(JsTokenKind.Eq))
+            {
+                fallback = ParseAssignment();
+            }
+
             elements.Add(new ArrayPatternBindingElement(inner, fallback, elementStart, (fallback ?? inner).End));
-            if (!Match(JsTokenKind.Comma)) break;
+            if (!Match(JsTokenKind.Comma))
+            {
+                break;
+            }
         }
         var end = _current.End;
         Expect(JsTokenKind.RBracket, "expected ']' to close array binding pattern");
@@ -94,15 +123,24 @@ public ref partial struct JsParser
                 Advance();
                 var target = ParseBindingTarget();
                 if (Check(JsTokenKind.Eq))
+                {
                     throw new JsParseException("object rest binding cannot have a default", _current.Start);
+                }
+
                 rest = new RestElement(target, restStart, target.End);
                 if (!Check(JsTokenKind.RBrace))
+                {
                     throw new JsParseException("object rest binding must be last", _current.Start);
+                }
+
                 break;
             }
 
             props.Add(ParseObjectBindingProperty());
-            if (!Match(JsTokenKind.Comma)) break;
+            if (!Match(JsTokenKind.Comma))
+            {
+                break;
+            }
         }
         var end = _current.End;
         Expect(JsTokenKind.RBrace, "expected '}' to close object binding pattern");
@@ -122,7 +160,11 @@ public ref partial struct JsParser
         {
             var target = ParseBindingTarget();
             Expression? fallback = null;
-            if (Match(JsTokenKind.Eq)) fallback = ParseAssignment();
+            if (Match(JsTokenKind.Eq))
+            {
+                fallback = ParseAssignment();
+            }
+
             return new ObjectPatternProperty(key, target, Shorthand: false, computed,
                 fallback, start, (fallback ?? target).End);
         }
@@ -135,7 +177,11 @@ public ref partial struct JsParser
             // Unicode escape, which keeps its keyword kind) is a SyntaxError.
             CheckShorthandIdentifier(keyToken);
             Expression? fallback = null;
-            if (Match(JsTokenKind.Eq)) fallback = ParseAssignment();
+            if (Match(JsTokenKind.Eq))
+            {
+                fallback = ParseAssignment();
+            }
+
             return new ObjectPatternProperty(key, id, Shorthand: true, Computed: false,
                 fallback, start, (fallback ?? id).End);
         }
@@ -205,7 +251,11 @@ public ref partial struct JsParser
     {
         while (expr is MemberExpression me)
         {
-            if (me.Optional) return true;
+            if (me.Optional)
+            {
+                return true;
+            }
+
             expr = me.Object;
         }
         return false;
@@ -248,12 +298,17 @@ public ref partial struct JsParser
                 // a trailing/intervening comma (`[...x,]`, `[...x, y]`) is an
                 // early SyntaxError even though the parser drops the comma.
                 if (i != array.Elements.Count - 1 || _spreadFollowedByComma.Contains(spread))
+                {
                     throw new JsParseException("array rest binding must be last", spread.Start);
+                }
                 // §13.15.5.1 — a rest element's AssignmentRestElement is a bare
                 // DestructuringAssignmentTarget; it may NOT carry an Initializer
                 // (`[...x = 1] = …` is a SyntaxError).
                 if (spread.Argument is AssignmentExpression { Op: JsTokenKind.Eq } or AssignmentPattern)
+                {
                     throw new JsParseException("rest element may not have a default value", spread.Start);
+                }
+
                 elements.Add(new ArrayPatternRestElement(ReinterpretAssignmentTarget(spread.Argument), spread.Start, spread.End));
                 continue;
             }
@@ -282,7 +337,10 @@ public ref partial struct JsParser
             if (prop.Value is SpreadElement spread)
             {
                 if (i != obj.Properties.Count - 1)
+                {
                     throw new JsParseException("object rest binding must be last", spread.Start);
+                }
+
                 rest = new RestElement(ReinterpretAssignmentTarget(spread.Argument), spread.Start, spread.End);
                 continue;
             }

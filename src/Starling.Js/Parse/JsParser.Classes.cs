@@ -68,7 +68,11 @@ public ref partial struct JsParser
         {
             baseClass = ParseLeftHandSide();
         }
-        if (baseClass is not null) _baseClassContextDepth++;
+        if (baseClass is not null)
+        {
+            _baseClassContextDepth++;
+        }
+
         try
         {
             var body = ParseClassBody();
@@ -76,7 +80,10 @@ public ref partial struct JsParser
         }
         finally
         {
-            if (baseClass is not null) _baseClassContextDepth--;
+            if (baseClass is not null)
+            {
+                _baseClassContextDepth--;
+            }
         }
     }
 
@@ -113,9 +120,16 @@ public ref partial struct JsParser
             // succeed; we validate at compile time. Doing one-pass parse here.
             while (!Check(JsTokenKind.RBrace) && !Check(JsTokenKind.EndOfFile))
             {
-                if (Match(JsTokenKind.Semicolon)) continue; // empty class element
+                if (Match(JsTokenKind.Semicolon))
+                {
+                    continue; // empty class element
+                }
+
                 ParseClassMember(ctor, methods, fields, staticBlocks, privateScope, out var newCtor);
-                if (newCtor is not null) ctor = newCtor;
+                if (newCtor is not null)
+                {
+                    ctor = newCtor;
+                }
             }
             var end = _current.End;
             Expect(JsTokenKind.RBrace, "expected '}' to close class body");
@@ -147,10 +161,16 @@ public ref partial struct JsParser
     {
         _ = kind;
         if (key is PrivateNameExpression { Name: "#constructor" })
+        {
             throw new JsParseException(
                 "'#constructor' is a reserved class private name", pos);
+        }
         // A computed key is checked at runtime, not statically.
-        if (computed) return;
+        if (computed)
+        {
+            return;
+        }
+
         var name = key switch
         {
             Identifier id => id.Name,
@@ -161,11 +181,16 @@ public ref partial struct JsParser
         // (whether static or not, identifier or string key). A static field may
         // additionally not be named "prototype".
         if (isField && name == "constructor")
+        {
             throw new JsParseException(
                 "a class field may not be named 'constructor'", pos);
+        }
+
         if (isStatic && name == "prototype")
+        {
             throw new JsParseException(
                 "a static class element may not be named 'prototype'", pos);
+        }
     }
 
     /// <summary>§15.7.1 — record a private element declaration and reject an
@@ -198,8 +223,11 @@ public ref partial struct JsParser
         }
 
         if (dup)
+        {
             throw new JsParseException(
                 $"duplicate private name '{name}' in class body", pos);
+        }
+
         decls[name] = d;
     }
 
@@ -309,7 +337,10 @@ public ref partial struct JsParser
             // §15.7.1 early errors for a field name.
             CheckClassElementName(key, computed, isStatic, isField: true, MethodKind.Method, memberStart);
             if (isPrivate && key is PrivateNameExpression pf)
+            {
                 RecordPrivateDeclaration(pf.Name, MethodKind.Method, isField: true, isStatic, memberStart);
+            }
+
             Expression? init = null;
             if (Match(JsTokenKind.Eq))
             {
@@ -337,20 +368,27 @@ public ref partial struct JsParser
             && !computed
             && !isPrivate
             && key is Identifier { Name: "constructor" };
-        if (isCtor) methodKind = MethodKind.Constructor;
+        if (isCtor)
+        {
+            methodKind = MethodKind.Constructor;
+        }
         // A generator/async method named "constructor" (non-static) is a
         // SyntaxError (§15.7.1 Early Errors).
         if (!isStatic && (isAsync || isGenerator) && !computed && !isPrivate
             && key is Identifier { Name: "constructor" })
+        {
             throw new JsParseException(
                 "class constructor may not be a generator or async method", memberStart);
+        }
         // §15.7.1 — a non-static accessor named "constructor" is a SyntaxError
         // (`get constructor`/`set constructor`). A non-computed, non-private
         // method named "constructor" is the constructor itself (isCtor above).
         if (!isStatic && methodKind is MethodKind.Get or MethodKind.Set
             && !computed && !isPrivate && key is Identifier { Name: "constructor" })
+        {
             throw new JsParseException(
                 "class constructor may not be an accessor", memberStart);
+        }
 
         // §15.7.1 early errors for the (non-constructor) method element name:
         // `static prototype`, `#constructor`, etc.
@@ -358,7 +396,9 @@ public ref partial struct JsParser
         {
             CheckClassElementName(key, computed, isStatic, isField: false, methodKind, memberStart);
             if (isPrivate && key is PrivateNameExpression pm)
+            {
                 RecordPrivateDeclaration(pm.Name, methodKind, isField: false, isStatic, memberStart);
+            }
         }
 
         // Track derived-constructor scope so `super(...)` is allowed only
@@ -405,7 +445,11 @@ public ref partial struct JsParser
         }
         finally
         {
-            if (enteredDerivedCtor) _derivedConstructorDepth--;
+            if (enteredDerivedCtor)
+            {
+                _derivedConstructorDepth--;
+            }
+
             (_inAsync, _inGenerator) = (savedAsync, savedGen);
             _moduleTopAwait = savedModuleAwait;
             _superPropertyDepth = savedSuper;
@@ -418,7 +462,10 @@ public ref partial struct JsParser
         if (isCtor)
         {
             if (existingCtor is not null)
+            {
                 throw new JsParseException("a class may only have one constructor", memberStart);
+            }
+
             newCtor = method;
         }
         else
@@ -437,14 +484,21 @@ public ref partial struct JsParser
         if (kind == MethodKind.Get)
         {
             if (@params.Count != 0)
+            {
                 throw new JsParseException("a getter must have no parameters", pos);
+            }
         }
         else if (kind == MethodKind.Set)
         {
             if (@params.Count != 1)
+            {
                 throw new JsParseException("a setter must have exactly one parameter", pos);
+            }
+
             if (@params[0] is SpreadElement)
+            {
                 throw new JsParseException("a setter parameter may not be a rest element", pos);
+            }
         }
     }
 
@@ -512,7 +566,9 @@ public ref partial struct JsParser
             // [[HomeObject]]). Outside one — e.g. global code, an ordinary
             // function, or indirect/global eval — it is an early SyntaxError.
             if (_superPropertyDepth == 0)
+            {
                 throw new JsParseException("'super' keyword unexpected here", start);
+            }
             // super.x or super.#x — private super access is rare but valid.
             if (_current.Kind == JsTokenKind.PrivateIdentifier)
             {
@@ -527,7 +583,10 @@ public ref partial struct JsParser
         {
             // §13.3.7.1 — same gate as the dotted form (see above).
             if (_superPropertyDepth == 0)
+            {
                 throw new JsParseException("'super' keyword unexpected here", start);
+            }
+
             var expr = ParseAssignment();
             var end = _current.End;
             Expect(JsTokenKind.RBracket, "expected ']' after computed super key");
@@ -536,8 +595,11 @@ public ref partial struct JsParser
         if (Check(JsTokenKind.LParen))
         {
             if (_derivedConstructorDepth == 0)
+            {
                 throw new JsParseException(
                     "'super(...)' is only allowed inside a derived class constructor", start);
+            }
+
             Advance(); // (
             var args = ParseArgumentList();
             var end = _current.End;

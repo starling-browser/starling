@@ -54,7 +54,9 @@ public class EngineEncodingTests
                 {
                     var canonical = WhatwgEncodingLabels.TryGetCanonicalName(label);
                     if (!string.Equals(canonical, enc.Name, StringComparison.OrdinalIgnoreCase))
+                    {
                         misses.Add($"{label} → {canonical ?? "(null)"} (expected {enc.Name})");
+                    }
                 }
             }
         }
@@ -158,7 +160,10 @@ public class EngineEncodingTests
         }
         finally
         {
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -176,9 +181,13 @@ public class EngineEncodingTests
         foreach (var ch in s)
         {
             if (ch < 0x20 || ch == 0x7F || ch > 0x7E)
+            {
                 sb.Append($"\\u{(int)ch:X4}");
+            }
             else
+            {
                 sb.Append(ch);
+            }
         }
         sb.Append('"');
         return sb.ToString();

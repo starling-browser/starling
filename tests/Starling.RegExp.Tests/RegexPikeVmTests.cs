@@ -237,7 +237,11 @@ public class RegexPikeVmTests
         // thread's stack.
         const int reps = 8000;
         var sb = new System.Text.StringBuilder(reps * 6);
-        for (var i = 0; i < reps; i++) sb.Append("(?:|a)");
+        for (var i = 0; i < reps; i++)
+        {
+            sb.Append("(?:|a)");
+        }
+
         var pattern = sb.ToString();
 
         RegexMatch? result = null;

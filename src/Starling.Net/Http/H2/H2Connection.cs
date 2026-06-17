@@ -138,7 +138,9 @@ internal sealed class H2Connection : IAsyncDisposable
         get
         {
             lock (_lock)
+            {
                 return !_closed && !_goAwayReceived && _nextStreamId > 0 && _nextStreamId < int.MaxValue;
+            }
         }
     }
 
@@ -168,9 +170,15 @@ internal sealed class H2Connection : IAsyncDisposable
                 lock (_lock)
                 {
                     if (_closed || _goAwayReceived)
+                    {
                         return Result<HttpResponse, NetworkError>.Err(NetworkError.TransportFailure);
+                    }
+
                     if (_nextStreamId <= 0 || _nextStreamId >= int.MaxValue)
+                    {
                         return Result<HttpResponse, NetworkError>.Err(NetworkError.TransportFailure);
+                    }
+
                     if (_activeStreams < _peerMaxConcurrentStreams)
                     {
                         stream = new H2Stream(_nextStreamId) { SendWindow = _peerInitialWindowSize };
@@ -193,7 +201,9 @@ internal sealed class H2Connection : IAsyncDisposable
         }
 
         if (hasBody)
+        {
             await SendBodyAsync(stream, request.Body, ct).ConfigureAwait(false);
+        }
 
         try
         {
@@ -224,7 +234,10 @@ internal sealed class H2Connection : IAsyncDisposable
                 lock (_lock)
                 {
                     if (_closed)
+                    {
                         return; // stream will be failed by the reader-loop teardown
+                    }
+
                     budget = Math.Min(Math.Min(stream.SendWindow, _connSendWindow), _peerMaxFrameSize);
                     budget = Math.Min(budget, remaining.Length);
                     if (budget > 0)
@@ -270,21 +283,49 @@ internal sealed class H2Connection : IAsyncDisposable
             // the authority replaces Host.
             if (lower is "connection" or "keep-alive" or "proxy-connection"
                 or "transfer-encoding" or "upgrade" or "host")
+            {
                 continue;
-            if (lower == "te" && !string.Equals(kv.Value, "trailers", StringComparison.OrdinalIgnoreCase))
-                continue;
+            }
 
-            if (lower == "user-agent") hasUserAgent = true;
-            else if (lower == "accept") hasAccept = true;
-            else if (lower == "accept-encoding") hasAcceptEncoding = true;
-            else if (lower == "content-length") hasContentLength = true;
+            if (lower == "te" && !string.Equals(kv.Value, "trailers", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (lower == "user-agent")
+            {
+                hasUserAgent = true;
+            }
+            else if (lower == "accept")
+            {
+                hasAccept = true;
+            }
+            else if (lower == "accept-encoding")
+            {
+                hasAcceptEncoding = true;
+            }
+            else if (lower == "content-length")
+            {
+                hasContentLength = true;
+            }
 
             fields.Add((lower, kv.Value));
         }
 
-        if (!hasUserAgent) fields.Add(("user-agent", DefaultUserAgent));
-        if (!hasAccept) fields.Add(("accept", DefaultAccept));
-        if (!hasAcceptEncoding) fields.Add(("accept-encoding", DefaultAcceptEncoding));
+        if (!hasUserAgent)
+        {
+            fields.Add(("user-agent", DefaultUserAgent));
+        }
+
+        if (!hasAccept)
+        {
+            fields.Add(("accept", DefaultAccept));
+        }
+
+        if (!hasAcceptEncoding)
+        {
+            fields.Add(("accept-encoding", DefaultAcceptEncoding));
+        }
         // Send content-length for body-bearing methods even with an empty body.
         // END_STREAM already signals "no DATA", but some origins/WAFs reject an
         // empty POST that lacks content-length (411). Browsers always send "0".
@@ -316,7 +357,11 @@ internal sealed class H2Connection : IAsyncDisposable
                     break; // truncated frame == peer closed
                 }
 
-                if (maybe is not { } frame) break; // clean EOF
+                if (maybe is not { } frame)
+                {
+                    break; // clean EOF
+                }
+
                 await HandleFrameAsync(frame, ct).ConfigureAwait(false);
             }
 
@@ -352,7 +397,9 @@ internal sealed class H2Connection : IAsyncDisposable
         // stream are legal (RFC 9113 §6.10).
         if (_headerStreamId != 0
             && (frame.Type != H2FrameType.Continuation || frame.StreamId != _headerStreamId))
+        {
             throw new H2ConnectionException(H2ErrorCode.ProtocolError, "expected CONTINUATION");
+        }
 
         switch (frame.Type)
         {
@@ -375,7 +422,9 @@ internal sealed class H2Connection : IAsyncDisposable
     private void HandleHeaders(RawFrame frame)
     {
         if (frame.StreamId == 0)
+        {
             throw new H2ConnectionException(H2ErrorCode.ProtocolError, "HEADERS on stream 0");
+        }
 
         var payload = frame.Payload.AsSpan();
         var content = StripHeadersPadding(payload, frame.Flags);
@@ -386,14 +435,18 @@ internal sealed class H2Connection : IAsyncDisposable
         _headerEndStream = frame.HasFlag(H2Flags.EndStream);
 
         if (frame.HasFlag(H2Flags.EndHeaders))
+        {
             CompleteHeaderBlock();
+        }
     }
 
     private void HandleContinuation(RawFrame frame)
     {
         _headerFragments.Write(frame.Payload);
         if (frame.HasFlag(H2Flags.EndHeaders))
+        {
             CompleteHeaderBlock();
+        }
     }
 
     private void CompleteHeaderBlock()
@@ -406,11 +459,20 @@ internal sealed class H2Connection : IAsyncDisposable
 
         // Always decode to keep HPACK state in sync, even if the stream is gone.
         if (!_decoder.TryDecode(block, out var fields))
+        {
             throw new H2ConnectionException(H2ErrorCode.CompressionError, "HPACK decode failed");
+        }
 
         H2Stream? stream;
-        lock (_lock) _streams.TryGetValue(streamId, out stream);
-        if (stream is null) return; // unknown/reset stream — fields discarded
+        lock (_lock)
+        {
+            _streams.TryGetValue(streamId, out stream);
+        }
+
+        if (stream is null)
+        {
+            return; // unknown/reset stream — fields discarded
+        }
 
         if (stream.ResponseHeaders is null)
         {
@@ -421,31 +483,43 @@ internal sealed class H2Connection : IAsyncDisposable
                 return;
             }
             if (status is >= 100 and < 200)
+            {
                 return; // interim (1xx) response — keep waiting for the final one
+            }
+
             stream.ResponseHeaders = fields;
         }
         // else: trailers — decoded for state, otherwise ignored (v1).
 
         if (endStream)
+        {
             FinishStream(stream);
+        }
     }
 
     private async Task HandleDataAsync(RawFrame frame, CancellationToken ct)
     {
         if (frame.StreamId == 0)
+        {
             throw new H2ConnectionException(H2ErrorCode.ProtocolError, "DATA on stream 0");
+        }
 
         var flowLength = frame.Payload.Length; // padding counts toward flow control
         var data = StripDataPadding(frame.Payload.AsSpan(), frame.Flags);
 
         H2Stream? stream;
-        lock (_lock) _streams.TryGetValue(frame.StreamId, out stream);
+        lock (_lock)
+        {
+            _streams.TryGetValue(frame.StreamId, out stream);
+        }
 
         if (stream is not null)
         {
             stream.Body.Write(data);
             if (frame.HasFlag(H2Flags.EndStream))
+            {
                 FinishStream(stream);
+            }
         }
 
         // Replenish receive windows so the peer can keep sending.
@@ -453,23 +527,33 @@ internal sealed class H2Connection : IAsyncDisposable
         {
             await _writer.WriteWindowUpdateAsync(0, flowLength, ct).ConfigureAwait(false);
             if (stream is not null && !frame.HasFlag(H2Flags.EndStream))
+            {
                 await _writer.WriteWindowUpdateAsync(frame.StreamId, flowLength, ct)
                     .ConfigureAwait(false);
+            }
         }
     }
 
     private async Task HandleSettingsAsync(RawFrame frame, CancellationToken ct)
     {
         if (frame.StreamId != 0)
+        {
             throw new H2ConnectionException(H2ErrorCode.ProtocolError, "SETTINGS on non-zero stream");
+        }
+
         if (frame.HasFlag(H2Flags.Ack))
         {
             if (frame.Payload.Length != 0)
+            {
                 throw new H2ConnectionException(H2ErrorCode.FrameSizeError, "SETTINGS ACK with payload");
+            }
+
             return;
         }
         if (frame.Payload.Length % 6 != 0)
+        {
             throw new H2ConnectionException(H2ErrorCode.FrameSizeError, "SETTINGS length not a multiple of 6");
+        }
 
         var p = frame.Payload;
         for (var i = 0; i < p.Length; i += 6)
@@ -489,26 +573,45 @@ internal sealed class H2Connection : IAsyncDisposable
         {
             case H2SettingId.InitialWindowSize:
                 if (value > int.MaxValue)
+                {
                     throw new H2ConnectionException(H2ErrorCode.FlowControlError, "INITIAL_WINDOW_SIZE too large");
+                }
+
                 lock (_lock)
                 {
                     var delta = (int)value - _peerInitialWindowSize;
                     _peerInitialWindowSize = (int)value;
                     foreach (var s in _streams.Values)
+                    {
                         s.SendWindow += delta; // RFC 9113 §6.9.2
+                    }
                 }
                 break;
             case H2SettingId.MaxFrameSize:
                 if (value is < H2Protocol.DefaultMaxFrameSize or > H2Protocol.MaxAllowedFrameSize)
+                {
                     throw new H2ConnectionException(H2ErrorCode.ProtocolError, "invalid MAX_FRAME_SIZE");
-                lock (_lock) _peerMaxFrameSize = (int)value;
+                }
+
+                lock (_lock)
+                {
+                    _peerMaxFrameSize = (int)value;
+                }
+
                 break;
             case H2SettingId.MaxConcurrentStreams:
-                lock (_lock) _peerMaxConcurrentStreams = value;
+                lock (_lock)
+                {
+                    _peerMaxConcurrentStreams = value;
+                }
+
                 break;
             case H2SettingId.EnablePush:
                 if (value > 1)
+                {
                     throw new H2ConnectionException(H2ErrorCode.ProtocolError, "invalid ENABLE_PUSH");
+                }
+
                 break;
             case H2SettingId.HeaderTableSize:
             case H2SettingId.MaxHeaderListSize:
@@ -520,19 +623,28 @@ internal sealed class H2Connection : IAsyncDisposable
     private void HandleWindowUpdate(RawFrame frame)
     {
         if (frame.Payload.Length != 4)
+        {
             throw new H2ConnectionException(H2ErrorCode.FrameSizeError, "WINDOW_UPDATE length != 4");
+        }
+
         var increment = (int)(((uint)frame.Payload[0] << 24 | (uint)frame.Payload[1] << 16
             | (uint)frame.Payload[2] << 8 | frame.Payload[3]) & 0x7fff_ffff);
 
         if (frame.StreamId == 0)
         {
             if (increment == 0)
+            {
                 throw new H2ConnectionException(H2ErrorCode.ProtocolError, "0 connection WINDOW_UPDATE");
+            }
+
             lock (_lock)
             {
                 var updated = (long)_connSendWindow + increment;
                 if (updated > H2Protocol.MaxWindowSize)
+                {
                     throw new H2ConnectionException(H2ErrorCode.FlowControlError, "connection window overflow");
+                }
+
                 _connSendWindow = (int)updated;
             }
             _windowSignal.Pulse();
@@ -544,25 +656,41 @@ internal sealed class H2Connection : IAsyncDisposable
         {
             _streams.TryGetValue(frame.StreamId, out stream);
             if (stream is not null && increment > 0)
+            {
                 stream.SendWindow = (int)Math.Min((long)stream.SendWindow + increment, H2Protocol.MaxWindowSize);
+            }
         }
-        if (increment > 0) _windowSignal.Pulse();
+        if (increment > 0)
+        {
+            _windowSignal.Pulse();
+        }
     }
 
     private async Task HandlePingAsync(RawFrame frame, CancellationToken ct)
     {
         if (frame.StreamId != 0)
+        {
             throw new H2ConnectionException(H2ErrorCode.ProtocolError, "PING on non-zero stream");
+        }
+
         if (frame.Payload.Length != 8)
+        {
             throw new H2ConnectionException(H2ErrorCode.FrameSizeError, "PING length != 8");
+        }
+
         if (!frame.HasFlag(H2Flags.Ack))
+        {
             await _writer.WritePingAckAsync(frame.Payload, ct).ConfigureAwait(false);
+        }
     }
 
     private void HandleGoAway(RawFrame frame)
     {
         if (frame.Payload.Length < 8)
+        {
             throw new H2ConnectionException(H2ErrorCode.FrameSizeError, "GOAWAY too short");
+        }
+
         var lastStreamId = (int)(((uint)frame.Payload[0] << 24 | (uint)frame.Payload[1] << 16
             | (uint)frame.Payload[2] << 8 | frame.Payload[3]) & 0x7fff_ffff);
 
@@ -574,21 +702,34 @@ internal sealed class H2Connection : IAsyncDisposable
             refused = _streams.Values.Where(s => s.Id > lastStreamId).ToList();
         }
         foreach (var s in refused)
+        {
             FailStream(s, NetworkError.TransportFailure, rstCode: null);
+        }
+
         _windowSignal.Pulse();
     }
 
     private void HandleRstStream(RawFrame frame)
     {
         if (frame.StreamId == 0)
+        {
             throw new H2ConnectionException(H2ErrorCode.ProtocolError, "RST_STREAM on stream 0");
+        }
+
         if (frame.Payload.Length != 4)
+        {
             throw new H2ConnectionException(H2ErrorCode.FrameSizeError, "RST_STREAM length != 4");
+        }
+
         var code = (H2ErrorCode)((uint)frame.Payload[0] << 24 | (uint)frame.Payload[1] << 16
             | (uint)frame.Payload[2] << 8 | frame.Payload[3]);
 
         H2Stream? stream;
-        lock (_lock) _streams.TryGetValue(frame.StreamId, out stream);
+        lock (_lock)
+        {
+            _streams.TryGetValue(frame.StreamId, out stream);
+        }
+
         if (stream is not null)
         {
             var err = code == H2ErrorCode.RefusedStream
@@ -604,7 +745,11 @@ internal sealed class H2Connection : IAsyncDisposable
     {
         lock (_lock)
         {
-            if (stream.Finished) return;
+            if (stream.Finished)
+            {
+                return;
+            }
+
             stream.Finished = true;
             _streams.Remove(stream.Id);
             _activeStreams--;
@@ -628,11 +773,18 @@ internal sealed class H2Connection : IAsyncDisposable
                 _activeStreams--;
             }
         }
-        if (!first) return;
+        if (!first)
+        {
+            return;
+        }
+
         _windowSignal.Pulse();
 
         if (rstCode is { } rc)
+        {
             _ = SafeWriteAsync(() => _writer.WriteRstStreamAsync(stream.Id, rc, _lifetimeToken));
+        }
+
         stream.Completion.TrySetResult(Result<HttpResponse, NetworkError>.Err(error));
     }
 
@@ -644,7 +796,11 @@ internal sealed class H2Connection : IAsyncDisposable
         var headers = new HttpHeaders();
         foreach (var f in fields)
         {
-            if (f.Name.Length == 0 || f.Name[0] == ':') continue; // skip pseudo-headers
+            if (f.Name.Length == 0 || f.Name[0] == ':')
+            {
+                continue; // skip pseudo-headers
+            }
+
             try { headers.Add(f.Name, f.Value); }
             catch (ArgumentException) { return Result<HttpResponse, NetworkError>.Err(NetworkError.ProtocolError); }
         }
@@ -669,7 +825,11 @@ internal sealed class H2Connection : IAsyncDisposable
     {
         foreach (var f in fields)
         {
-            if (!string.Equals(f.Name, ":status", StringComparison.Ordinal)) continue;
+            if (!string.Equals(f.Name, ":status", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             return int.TryParse(f.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var code)
                 && code is >= 100 and <= 599
                 ? code
@@ -685,7 +845,11 @@ internal sealed class H2Connection : IAsyncDisposable
         List<H2Stream> pending;
         lock (_lock)
         {
-            if (_closed) return;
+            if (_closed)
+            {
+                return;
+            }
+
             _closed = true;
             pending = [.. _streams.Values];
             _streams.Clear();
@@ -709,14 +873,21 @@ internal sealed class H2Connection : IAsyncDisposable
     {
         lock (_lock)
         {
-            if (_streams.Remove(streamId)) _activeStreams--;
+            if (_streams.Remove(streamId))
+            {
+                _activeStreams--;
+            }
         }
         _windowSignal.Pulse();
     }
 
     private async Task SafeDisposeTransportAsync()
     {
-        if (Interlocked.Exchange(ref _transportDisposed, 1) != 0) return;
+        if (Interlocked.Exchange(ref _transportDisposed, 1) != 0)
+        {
+            return;
+        }
+
         try { await _transport.DisposeAsync().ConfigureAwait(false); }
         catch (Exception ex) { H2ConnectionLog.TransportDisposeFailed(_log, ex); /* a half-broken socket may throw on shutdown */ }
     }
@@ -734,31 +905,50 @@ internal sealed class H2Connection : IAsyncDisposable
         if ((flags & H2Flags.Padded) != 0)
         {
             if (payload.Length < 1)
+            {
                 throw new H2ConnectionException(H2ErrorCode.ProtocolError, "padded HEADERS too short");
+            }
+
             padLength = payload[0];
             offset = 1;
         }
         if ((flags & H2Flags.Priority) != 0)
         {
             if (payload.Length < offset + 5)
+            {
                 throw new H2ConnectionException(H2ErrorCode.ProtocolError, "HEADERS priority too short");
+            }
+
             offset += 5;
         }
         var contentLength = payload.Length - offset - padLength;
         if (contentLength < 0)
+        {
             throw new H2ConnectionException(H2ErrorCode.ProtocolError, "HEADERS padding exceeds frame");
+        }
+
         return payload.Slice(offset, contentLength);
     }
 
     private static Span<byte> StripDataPadding(Span<byte> payload, H2Flags flags)
     {
-        if ((flags & H2Flags.Padded) == 0) return payload;
+        if ((flags & H2Flags.Padded) == 0)
+        {
+            return payload;
+        }
+
         if (payload.Length < 1)
+        {
             throw new H2ConnectionException(H2ErrorCode.ProtocolError, "padded DATA too short");
+        }
+
         var padLength = payload[0];
         var contentLength = payload.Length - 1 - padLength;
         if (contentLength < 0)
+        {
             throw new H2ConnectionException(H2ErrorCode.ProtocolError, "DATA padding exceeds frame");
+        }
+
         return payload.Slice(1, contentLength);
     }
 

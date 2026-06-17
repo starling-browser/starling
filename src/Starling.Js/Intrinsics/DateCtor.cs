@@ -33,7 +33,9 @@ public static class DateCtor
             // sniff host locale formatting; we return a stable UTC string).
             var calledAsConstructor = IntrinsicHelpers.IsConstructInvocation(newTarget);
             if (!calledAsConstructor)
+            {
                 return JsValue.String(FormatToString(NowMs()));
+            }
 
             double ms;
             if (args.Length == 0)
@@ -43,9 +45,18 @@ public static class DateCtor
             else if (args.Length == 1)
             {
                 var v = args[0];
-                if (v.IsString) ms = ParseDate(v.AsString);
-                else if (v.IsObject && v.AsObject is JsDate other) ms = other.TimeValueMs;
-                else ms = JsValue.ToNumber(v);
+                if (v.IsString)
+                {
+                    ms = ParseDate(v.AsString);
+                }
+                else if (v.IsObject && v.AsObject is JsDate other)
+                {
+                    ms = other.TimeValueMs;
+                }
+                else
+                {
+                    ms = JsValue.ToNumber(v);
+                }
             }
             else
             {
@@ -55,7 +66,11 @@ public static class DateCtor
             // new.target so `class D extends Date {}` produces a D-prototyped date.
             var date = new JsDate(realm, ms);
             var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, proto);
-            if (!ReferenceEquals(instProto, proto)) date.SetPrototypeOf(instProto);
+            if (!ReferenceEquals(instProto, proto))
+            {
+                date.SetPrototypeOf(instProto);
+            }
+
             return JsValue.Object(date);
         }, isConstructor: true);
 
@@ -140,9 +155,17 @@ public static class DateCtor
         IntrinsicHelpers.DefineMethod(realm, proto, "toISOString", 0, (thisV, _) =>
         {
             var d = RequireDate(realm, thisV);
-            if (!d.IsValid) throw new JsThrow(realm.NewRangeError("Invalid time value"));
+            if (!d.IsValid)
+            {
+                throw new JsThrow(realm.NewRangeError("Invalid time value"));
+            }
+
             var dto = d.ToDto();
-            if (dto is null) throw new JsThrow(realm.NewRangeError("Invalid time value"));
+            if (dto is null)
+            {
+                throw new JsThrow(realm.NewRangeError("Invalid time value"));
+            }
+
             return JsValue.String(dto.Value.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture));
         });
         IntrinsicHelpers.DefineMethod(realm, proto, "toJSON", 1, (thisV, _) =>
@@ -151,9 +174,17 @@ public static class DateCtor
             // return null (the TimeClip / NaN check on the time value short-
             // circuits before toISOString throws).
             var d = RequireDate(realm, thisV);
-            if (!d.IsValid) return JsValue.Null;
+            if (!d.IsValid)
+            {
+                return JsValue.Null;
+            }
+
             var dto = d.ToDto();
-            if (dto is null) return JsValue.Null;
+            if (dto is null)
+            {
+                return JsValue.Null;
+            }
+
             return JsValue.String(dto.Value.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture));
         });
         IntrinsicHelpers.DefineMethod(realm, proto, "toUTCString", 0, (thisV, _) =>
@@ -185,7 +216,11 @@ public static class DateCtor
         {
             var d = RequireDate(realm, thisV);
             var hint = args.Length > 0 && args[0].IsString ? args[0].AsString : "default";
-            if (hint == "number") return d.IsValid ? JsValue.Number(d.TimeValueMs) : JsValue.NaN;
+            if (hint == "number")
+            {
+                return d.IsValid ? JsValue.Number(d.TimeValueMs) : JsValue.NaN;
+            }
+
             return JsValue.String(d.IsValid ? FormatToString(d.TimeValueMs) : "Invalid Date");
         }, isConstructor: false);
         proto.DefineOwnProperty(SymbolCtor.ToPrimitive,
@@ -204,7 +239,11 @@ public static class DateCtor
 
     private static JsDate RequireDate(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is JsDate d) return d;
+        if (thisV.IsObject && thisV.AsObject is JsDate d)
+        {
+            return d;
+        }
+
         throw new JsThrow(realm.NewTypeError("Date.prototype method called on non-Date receiver"));
     }
 
@@ -218,7 +257,11 @@ public static class DateCtor
     {
         var d = RequireDate(realm, thisV);
         var dto = d.ToDto();
-        if (dto is null) return JsValue.NaN;
+        if (dto is null)
+        {
+            return JsValue.NaN;
+        }
+
         return JsValue.Number(selector(dto.Value));
     }
 
@@ -231,11 +274,21 @@ public static class DateCtor
 
     private static double MakeUtcMs(JsValue[] args)
     {
-        if (args.Length == 0) return double.NaN;
+        if (args.Length == 0)
+        {
+            return double.NaN;
+        }
+
         var year = JsValue.ToNumber(args[0]);
-        if (double.IsNaN(year)) return double.NaN;
+        if (double.IsNaN(year))
+        {
+            return double.NaN;
+        }
         // §21.4.1.16 — 0..99 maps to 1900..1999.
-        if (year >= 0 && year <= 99) year += 1900;
+        if (year >= 0 && year <= 99)
+        {
+            year += 1900;
+        }
 
         var month = args.Length > 1 ? JsValue.ToNumber(args[1]) : 0;
         var day = args.Length > 2 ? JsValue.ToNumber(args[2]) : 1;
@@ -246,7 +299,9 @@ public static class DateCtor
 
         if (double.IsNaN(month) || double.IsNaN(day) || double.IsNaN(hours)
             || double.IsNaN(minutes) || double.IsNaN(seconds) || double.IsNaN(ms))
+        {
             return double.NaN;
+        }
 
         return MakeMs((int)year, (int)month, (int)day, (int)hours, (int)minutes, (int)seconds, (int)ms);
     }
@@ -262,7 +317,11 @@ public static class DateCtor
             if (mm < 0) { mm += 12; yy -= 1; }
             // Build a UTC DateTime then add day/time deltas as TimeSpans so
             // out-of-range day/hour values normalize per spec.
-            if (yy < 1 || yy > 9999) return double.NaN;
+            if (yy < 1 || yy > 9999)
+            {
+                return double.NaN;
+            }
+
             var baseDate = new System.DateTime(yy, mm + 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
             var delta = System.TimeSpan.FromDays(day - 1)
                 + System.TimeSpan.FromHours(hours)
@@ -305,7 +364,11 @@ public static class DateCtor
 
         double TakeOr(int i, double fallback)
         {
-            if (i >= args.Length) return fallback;
+            if (i >= args.Length)
+            {
+                return fallback;
+            }
+
             var n = JsValue.ToNumber(args[i]);
             return n;
         }
@@ -379,7 +442,11 @@ public static class DateCtor
 
     internal static double ParseDate(string input)
     {
-        if (string.IsNullOrWhiteSpace(input)) return double.NaN;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return double.NaN;
+        }
+
         var s = input.Trim();
 
         // Fast path: ISO 8601 with optional fractional seconds + offset.
@@ -402,7 +469,9 @@ public static class DateCtor
         // "Tue Jun 09 2026 20:00:00 GMT+0000 (Coordinated Universal Time)"
         // (Date.prototype.toString round-trip), "Jun 9, 2026" and friends.
         if (TryParseLegacy(s, out var legacy))
+        {
             return legacy;
+        }
 
         return double.NaN;
     }
@@ -429,16 +498,25 @@ public static class DateCtor
                 || tok.StartsWith("UTC", System.StringComparison.OrdinalIgnoreCase))
             {
                 tok = tok[3..];
-                if (tok.Length == 0) continue; // bare GMT/UTC → offset 0
+                if (tok.Length == 0)
+                {
+                    continue; // bare GMT/UTC → offset 0
+                }
             }
-            if (tok is "Z" or "z") continue;
+            if (tok is "Z" or "z")
+            {
+                continue;
+            }
 
             if (tok[0] is '+' or '-')
             {
                 var sign = tok[0] == '-' ? -1 : 1;
                 var digits = tok[1..].Replace(":", "");
                 if (digits.Length != 4 || !int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var hhmm))
+                {
                     return false;
+                }
+
                 offsetMinutes = sign * (hhmm / 100 * 60 + hhmm % 100);
                 continue;
             }
@@ -447,14 +525,33 @@ public static class DateCtor
             {
                 var fracSplit = tok.Split('.');
                 var parts = fracSplit[0].Split(':');
-                if (parts.Length is < 2 or > 3) return false;
-                if (!int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out hour)) return false;
-                if (!int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out minute)) return false;
-                if (parts.Length == 3 && !int.TryParse(parts[2], NumberStyles.None, CultureInfo.InvariantCulture, out second)) return false;
+                if (parts.Length is < 2 or > 3)
+                {
+                    return false;
+                }
+
+                if (!int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out hour))
+                {
+                    return false;
+                }
+
+                if (!int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out minute))
+                {
+                    return false;
+                }
+
+                if (parts.Length == 3 && !int.TryParse(parts[2], NumberStyles.None, CultureInfo.InvariantCulture, out second))
+                {
+                    return false;
+                }
+
                 if (fracSplit.Length == 2)
                 {
                     var frac = fracSplit[1].PadRight(3, '0')[..3];
-                    if (!int.TryParse(frac, NumberStyles.None, CultureInfo.InvariantCulture, out milli)) return false;
+                    if (!int.TryParse(frac, NumberStyles.None, CultureInfo.InvariantCulture, out milli))
+                    {
+                        return false;
+                    }
                 }
                 sawTime = true;
                 continue;
@@ -462,10 +559,18 @@ public static class DateCtor
 
             if (char.IsAsciiDigit(tok[0]))
             {
-                if (!int.TryParse(tok, NumberStyles.None, CultureInfo.InvariantCulture, out var num)) return false;
+                if (!int.TryParse(tok, NumberStyles.None, CultureInfo.InvariantCulture, out var num))
+                {
+                    return false;
+                }
+
                 if (tok.Length >= 3 || num > 31)
                 {
-                    if (year != int.MinValue) return false;
+                    if (year != int.MinValue)
+                    {
+                        return false;
+                    }
+
                     year = num;
                 }
                 else if (day < 0)
@@ -479,7 +584,11 @@ public static class DateCtor
                     // for Date(y, m) construction, strings keep the literal).
                     year = num;
                 }
-                else return false;
+                else
+                {
+                    return false;
+                }
+
                 continue;
             }
 
@@ -489,18 +598,36 @@ public static class DateCtor
                 m => string.Equals(m, name, System.StringComparison.OrdinalIgnoreCase));
             if (monthIdx >= 0)
             {
-                if (month >= 0) return false;
+                if (month >= 0)
+                {
+                    return false;
+                }
+
                 month = monthIdx + 1;
                 continue;
             }
             var isWeekday = System.Array.Exists(WeekdayShort,
                 w => string.Equals(w, name, System.StringComparison.OrdinalIgnoreCase));
-            if (!isWeekday) return false;
+            if (!isWeekday)
+            {
+                return false;
+            }
         }
 
-        if (month < 0 || day < 1 || day > 31 || year == int.MinValue) return false;
-        if (hour > 24 || minute > 59 || second > 59) return false;
-        if (!sawTime && (hour != 0 || minute != 0)) return false;
+        if (month < 0 || day < 1 || day > 31 || year == int.MinValue)
+        {
+            return false;
+        }
+
+        if (hour > 24 || minute > 59 || second > 59)
+        {
+            return false;
+        }
+
+        if (!sawTime && (hour != 0 || minute != 0))
+        {
+            return false;
+        }
 
         try
         {
@@ -523,7 +650,11 @@ public static class DateCtor
     private static string FormatToString(double ms)
     {
         var dto = SafeFromMs(ms);
-        if (dto is null) return "Invalid Date";
+        if (dto is null)
+        {
+            return "Invalid Date";
+        }
+
         var v = dto.Value.UtcDateTime;
         return string.Format(CultureInfo.InvariantCulture,
             "{0} {1} {2:D2} {3:D4} {4:D2}:{5:D2}:{6:D2} GMT+0000 (Coordinated Universal Time)",
@@ -533,7 +664,11 @@ public static class DateCtor
     private static string FormatDateString(double ms)
     {
         var dto = SafeFromMs(ms);
-        if (dto is null) return "Invalid Date";
+        if (dto is null)
+        {
+            return "Invalid Date";
+        }
+
         var v = dto.Value.UtcDateTime;
         return string.Format(CultureInfo.InvariantCulture, "{0} {1} {2:D2} {3:D4}",
             WeekdayShort[(int)v.DayOfWeek], MonthShort[v.Month - 1], v.Day, v.Year);
@@ -542,7 +677,11 @@ public static class DateCtor
     private static string FormatTimeString(double ms)
     {
         var dto = SafeFromMs(ms);
-        if (dto is null) return "Invalid Date";
+        if (dto is null)
+        {
+            return "Invalid Date";
+        }
+
         var v = dto.Value.UtcDateTime;
         return string.Format(CultureInfo.InvariantCulture,
             "{0:D2}:{1:D2}:{2:D2} GMT+0000 (Coordinated Universal Time)", v.Hour, v.Minute, v.Second);
@@ -551,7 +690,11 @@ public static class DateCtor
     private static string FormatUtcString(double ms)
     {
         var dto = SafeFromMs(ms);
-        if (dto is null) return "Invalid Date";
+        if (dto is null)
+        {
+            return "Invalid Date";
+        }
+
         var v = dto.Value.UtcDateTime;
         return string.Format(CultureInfo.InvariantCulture,
             "{0}, {1:D2} {2} {3:D4} {4:D2}:{5:D2}:{6:D2} GMT",
@@ -560,8 +703,16 @@ public static class DateCtor
 
     private static System.DateTimeOffset? SafeFromMs(double ms)
     {
-        if (double.IsNaN(ms) || double.IsInfinity(ms)) return null;
-        if (ms < -62135596800000d || ms > 253402300799999d) return null;
+        if (double.IsNaN(ms) || double.IsInfinity(ms))
+        {
+            return null;
+        }
+
+        if (ms < -62135596800000d || ms > 253402300799999d)
+        {
+            return null;
+        }
+
         try { return System.DateTimeOffset.FromUnixTimeMilliseconds((long)ms); }
         catch (System.ArgumentOutOfRangeException) { return null; }
     }

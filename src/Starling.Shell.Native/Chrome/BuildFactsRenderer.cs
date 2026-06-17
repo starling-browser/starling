@@ -35,7 +35,11 @@ internal static class BuildFactsRenderer
             ?.InformationalVersion ?? string.Empty;
 
         var plus = info.IndexOf('+', StringComparison.Ordinal);
-        if (plus >= 0) info = info[(plus + 1)..];
+        if (plus >= 0)
+        {
+            info = info[(plus + 1)..];
+        }
+
         return info.Length > 8 ? info[..8] : info;
     }
 

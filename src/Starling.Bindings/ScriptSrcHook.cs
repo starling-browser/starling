@@ -45,6 +45,8 @@ public static class ScriptSrcHook
     internal static void NotifySrcSet(JsRealm realm, Element script)
     {
         if (ByRealm.TryGetValue(realm, out var box) && box.Callback is { } cb)
+        {
             cb(script);
+        }
     }
 }

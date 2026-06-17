@@ -23,7 +23,9 @@ public static class BodyDecoder
         ArgumentNullException.ThrowIfNull(contentEncodings);
 
         if (contentEncodings.Count == 0)
+        {
             return body.ToArray();
+        }
 
         var current = body.ToArray();
         for (var i = contentEncodings.Count - 1; i >= 0; i--)
@@ -41,14 +43,20 @@ public static class BodyDecoder
     public static IReadOnlyList<string> ParseEncodings(string? headerValue)
     {
         if (string.IsNullOrWhiteSpace(headerValue))
+        {
             return Array.Empty<string>();
+        }
 
         var parts = headerValue.Split(',');
         List<string>? result = null;
         foreach (var raw in parts)
         {
             var token = raw.Trim().ToLowerInvariant();
-            if (token.Length == 0 || token == "identity") continue;
+            if (token.Length == 0 || token == "identity")
+            {
+                continue;
+            }
+
             (result ??= []).Add(token);
         }
         return result ?? (IReadOnlyList<string>)Array.Empty<string>();

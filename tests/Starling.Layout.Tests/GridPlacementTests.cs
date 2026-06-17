@@ -22,7 +22,10 @@ public sealed class GridPlacementTests
     {
         var engine = new StyleEngine();
         if (css is not null)
+        {
             engine.AddStyleSheet(CssParser.ParseStyleSheet(css, StyleOrigin.Author));
+        }
+
         return new LayoutEngine(engine).LayoutDocument(HtmlParser.Parse(html), viewport);
     }
 
@@ -220,11 +223,18 @@ public sealed class GridPlacementTests
 
     private static Box.Box? FindBox(Box.Box root, Func<Box.Box, bool> pred)
     {
-        if (pred(root)) return root;
+        if (pred(root))
+        {
+            return root;
+        }
+
         foreach (var c in root.Children)
         {
             var hit = FindBox(c, pred);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }

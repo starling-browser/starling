@@ -67,7 +67,10 @@ public static class CalcEvaluator
     private static CalcNode MinMax(string name, List<CalcNode> args)
     {
         if (args.Count == 0)
+        {
             throw new FormatException($"{name}() requires at least one argument");
+        }
+
         if (args.All(IsAbsoluteLiteral))
         {
             var values = args.Select(GetAbsoluteValue).ToArray();
@@ -81,7 +84,10 @@ public static class CalcEvaluator
     private static CalcNode ClampNode(List<CalcNode> args)
     {
         if (args.Count != 3)
+        {
             throw new FormatException("clamp() requires 3 arguments");
+        }
+
         if (args.All(IsAbsoluteLiteral))
         {
             var lo = GetAbsoluteValue(args[0]);
@@ -108,13 +114,19 @@ public static class CalcEvaluator
 
         var args = rawArgs.Select(arg => ParseExpression(arg)).ToList();
         if (args.Count != 2)
+        {
             throw new FormatException("round() requires 2 numeric arguments");
+        }
+
         if (args.All(IsAbsoluteLiteral))
         {
             var a = GetAbsoluteValue(args[0]);
             var b = GetAbsoluteValue(args[1]);
             if (b == 0)
+            {
                 return MakeLiteral(double.NaN, GetPreferredUnit(args), args[0].Type);
+            }
+
             var q = a / b;
             var rounded = strategy switch
             {
@@ -131,13 +143,19 @@ public static class CalcEvaluator
     private static CalcNode ModRem(string name, List<CalcNode> args)
     {
         if (args.Count != 2)
+        {
             throw new FormatException(name + "() requires 2 arguments");
+        }
+
         if (args.All(IsAbsoluteLiteral))
         {
             var a = GetAbsoluteValue(args[0]);
             var b = GetAbsoluteValue(args[1]);
             if (b == 0)
+            {
                 return MakeLiteral(double.NaN, GetPreferredUnit(args), args[0].Type);
+            }
+
             double v;
             if (name == "mod")
             {
@@ -155,7 +173,10 @@ public static class CalcEvaluator
     private static CalcNode UnaryFunc(string name, List<CalcNode> args)
     {
         if (args.Count != 1)
+        {
             throw new FormatException(name + "() requires 1 argument");
+        }
+
         if (args[0] is CalcNumber n)
         {
             return name switch
@@ -197,7 +218,10 @@ public static class CalcEvaluator
             };
             // asin/acos/atan/atan2 produce angles in radians per spec.
             if (name is "asin" or "acos" or "atan" or "atan2")
+            {
                 return new CalcAngle(v * 180.0 / Math.PI, CssAngleUnit.Degrees);
+            }
+
             return new CalcNumber(v);
         }
         // sin/cos/tan accept angles too — fold if all-angle.
@@ -253,7 +277,9 @@ public static class CalcEvaluator
         private void SkipWs()
         {
             while (_pos < _items.Count && _items[_pos] is CssTokenValue { Token.Type: CssTokenType.Whitespace })
+            {
                 _pos++;
+            }
         }
     }
 
@@ -263,9 +289,15 @@ public static class CalcEvaluator
         while (true)
         {
             var peek = s.Peek();
-            if (peek is not CssTokenValue tv) break;
-            if (tv.Token.Type != CssTokenType.Delim || (tv.Token.Delimiter != '+' && tv.Token.Delimiter != '-'))
+            if (peek is not CssTokenValue tv)
+            {
                 break;
+            }
+
+            if (tv.Token.Type != CssTokenType.Delim || (tv.Token.Delimiter != '+' && tv.Token.Delimiter != '-'))
+            {
+                break;
+            }
             // Spec requires whitespace around + / - in calc.
             s.Read();
             var right = ParseMultiplicative(s);
@@ -282,9 +314,16 @@ public static class CalcEvaluator
         while (true)
         {
             var peek = s.Peek();
-            if (peek is not CssTokenValue tv) break;
-            if (tv.Token.Type != CssTokenType.Delim || (tv.Token.Delimiter != '*' && tv.Token.Delimiter != '/'))
+            if (peek is not CssTokenValue tv)
+            {
                 break;
+            }
+
+            if (tv.Token.Type != CssTokenType.Delim || (tv.Token.Delimiter != '*' && tv.Token.Delimiter != '/'))
+            {
+                break;
+            }
+
             s.Read();
             var right = ParseUnary(s);
             var op = tv.Token.Delimiter == '*' ? CalcOperator.Multiply : CalcOperator.Divide;
@@ -348,7 +387,10 @@ public static class CalcEvaluator
     private static CalcNode DimensionToNode(double value, string unit)
     {
         if (Enum.TryParse<CssLengthUnit>(unit, ignoreCase: true, out var lengthUnit))
+        {
             return new CalcLength(value, lengthUnit);
+        }
+
         return unit.ToLowerInvariant() switch
         {
             "deg" => new CalcAngle(value, CssAngleUnit.Degrees),
@@ -413,9 +455,14 @@ public static class CalcEvaluator
         if (op is CalcOperator.Multiply or CalcOperator.Divide)
         {
             if (right is CalcNumber n2)
+            {
                 return ScaleNode(left, op == CalcOperator.Multiply ? n2.Value : (n2.Value == 0 ? double.NaN : 1.0 / n2.Value));
+            }
+
             if (left is CalcNumber n1 && op == CalcOperator.Multiply)
+            {
                 return ScaleNode(right, n1.Value);
+            }
         }
 
         // length + length (absolute units): fold to px-equivalent in the larger unit if both absolute.
@@ -450,7 +497,10 @@ public static class CalcEvaluator
             && left is CalcTime lT && right is CalcTime rT)
         {
             if (lT.Unit == rT.Unit)
+            {
                 return new CalcTime(op == CalcOperator.Add ? lT.Value + rT.Value : lT.Value - rT.Value, lT.Unit);
+            }
+
             var t = lT.InSeconds() + (op == CalcOperator.Add ? 1 : -1) * rT.InSeconds();
             return new CalcTime(t, CssTimeUnit.Seconds);
         }
@@ -459,7 +509,10 @@ public static class CalcEvaluator
             && left is CalcFrequency lF && right is CalcFrequency rF)
         {
             if (lF.Unit == rF.Unit)
+            {
                 return new CalcFrequency(op == CalcOperator.Add ? lF.Value + rF.Value : lF.Value - rF.Value, lF.Unit);
+            }
+
             var f = lF.InHertz() + (op == CalcOperator.Add ? 1 : -1) * rF.InHertz();
             return new CalcFrequency(f, CssFrequencyUnit.Hertz);
         }
@@ -484,13 +537,28 @@ public static class CalcEvaluator
 
     private static NumericType CombineAdditiveType(NumericType a, NumericType b, CalcOperator op)
     {
-        if (a == b) return a;
+        if (a == b)
+        {
+            return a;
+        }
+
         if ((a == NumericType.Length && b == NumericType.Percentage) ||
             (a == NumericType.Percentage && b == NumericType.Length) ||
             a == NumericType.LengthPercentage || b == NumericType.LengthPercentage)
+        {
             return NumericType.LengthPercentage;
-        if (a == NumericType.Number) return b;
-        if (b == NumericType.Number) return a;
+        }
+
+        if (a == NumericType.Number)
+        {
+            return b;
+        }
+
+        if (b == NumericType.Number)
+        {
+            return a;
+        }
+
         return NumericType.Unknown;
     }
 
@@ -498,13 +566,29 @@ public static class CalcEvaluator
     {
         if (op == CalcOperator.Multiply)
         {
-            if (a == NumericType.Number) return b;
-            if (b == NumericType.Number) return a;
+            if (a == NumericType.Number)
+            {
+                return b;
+            }
+
+            if (b == NumericType.Number)
+            {
+                return a;
+            }
+
             return NumericType.Unknown; // length*length etc. is a type error
         }
         // Divide:
-        if (b == NumericType.Number) return a;
-        if (a == b) return NumericType.Number;
+        if (b == NumericType.Number)
+        {
+            return a;
+        }
+
+        if (a == b)
+        {
+            return NumericType.Number;
+        }
+
         return NumericType.Unknown;
     }
 

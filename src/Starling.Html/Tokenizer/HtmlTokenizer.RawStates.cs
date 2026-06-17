@@ -75,7 +75,10 @@ public sealed partial class HtmlTokenizer
         _emitted.Enqueue(new CharacterToken('<'));
         _emitted.Enqueue(new CharacterToken('/'));
         for (var i = 0; i < _tempBuffer.Length; i++)
+        {
             _emitted.Enqueue(new CharacterToken(_tempBuffer[i]));
+        }
+
         _tempBuffer.Clear();
         _tagName.Clear();
         _tagAttrs.Clear();

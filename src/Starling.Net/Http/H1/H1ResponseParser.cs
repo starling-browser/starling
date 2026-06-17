@@ -46,14 +46,23 @@ public sealed class H1ResponseParser
         while (true)
         {
             var headBlock = await ReadHeaderBlockAsync(buf, ct).ConfigureAwait(false);
-            if (headBlock.IsErr) return Result<HttpResponse, HttpError>.Err(headBlock.Error);
+            if (headBlock.IsErr)
+            {
+                return Result<HttpResponse, HttpError>.Err(headBlock.Error);
+            }
 
             var parsed = ParseHeadBlock(headBlock.Value);
-            if (parsed.IsErr) return Result<HttpResponse, HttpError>.Err(parsed.Error);
+            if (parsed.IsErr)
+            {
+                return Result<HttpResponse, HttpError>.Err(parsed.Error);
+            }
 
             headline = parsed.Value.Headline;
             headers = parsed.Value.Headers;
-            if (headline.StatusCode is < 100 or >= 200) break;
+            if (headline.StatusCode is < 100 or >= 200)
+            {
+                break;
+            }
             // 1xx — keep reading.
         }
 
@@ -114,11 +123,17 @@ public sealed class H1ResponseParser
                 return Result<byte[], HttpError>.Ok(headBytes);
             }
             if (buf.BufferedCount > MaxHeaderBlockBytes)
+            {
                 return Result<byte[], HttpError>.Err(HttpError.HeadersTooLarge);
+            }
+
             if (!await buf.ReadMoreAsync(ct).ConfigureAwait(false))
             {
                 if (buf.BufferedCount == 0)
+                {
                     return Result<byte[], HttpError>.Err(HttpError.UnexpectedEof);
+                }
+
                 return Result<byte[], HttpError>.Err(HttpError.UnexpectedEof);
             }
         }
@@ -131,17 +146,24 @@ public sealed class H1ResponseParser
         // newline is the one ending the final header line.
         var lines = text.Split("\r\n");
         if (lines.Length == 0 || string.IsNullOrEmpty(lines[0]))
+        {
             return Result<(Headline, HttpHeaders), HttpError>.Err(HttpError.BadStatusLine);
+        }
 
         var headlineResult = ParseStatusLine(lines[0]);
         if (headlineResult.IsErr)
+        {
             return Result<(Headline, HttpHeaders), HttpError>.Err(headlineResult.Error);
+        }
 
         var headers = new HttpHeaders();
         for (var i = 1; i < lines.Length; i++)
         {
             var line = lines[i];
-            if (line.Length == 0) continue;
+            if (line.Length == 0)
+            {
+                continue;
+            }
 
             if (line[0] is ' ' or '\t')
             {
@@ -151,7 +173,9 @@ public sealed class H1ResponseParser
 
             var colon = line.IndexOf(':', StringComparison.Ordinal);
             if (colon <= 0)
+            {
                 return Result<(Headline, HttpHeaders), HttpError>.Err(HttpError.BadHeader);
+            }
 
             var name = line[..colon];
             var value = line[(colon + 1)..].Trim(' ', '\t');
@@ -168,17 +192,23 @@ public sealed class H1ResponseParser
         // status-line = HTTP-version SP status-code SP [ reason-phrase ]
         var firstSp = line.IndexOf(' ', StringComparison.Ordinal);
         if (firstSp <= 0)
+        {
             return Result<Headline, HttpError>.Err(HttpError.BadStatusLine);
+        }
 
         var version = line[..firstSp];
         if (!version.StartsWith("HTTP/", StringComparison.Ordinal))
+        {
             return Result<Headline, HttpError>.Err(HttpError.BadStatusLine);
+        }
 
         var secondSp = line.IndexOf(' ', firstSp + 1);
         var codeStr = secondSp < 0 ? line[(firstSp + 1)..] : line[(firstSp + 1)..secondSp];
         if (!int.TryParse(codeStr, NumberStyles.None, CultureInfo.InvariantCulture, out var code)
             || code is < 100 or > 599)
+        {
             return Result<Headline, HttpError>.Err(HttpError.BadStatusLine);
+        }
 
         var reason = secondSp < 0 ? string.Empty : line[(secondSp + 1)..];
 
@@ -195,7 +225,9 @@ public sealed class H1ResponseParser
         // know the request method here. RFC 9112 §6.3 step 1 covers status —
         // the rest is the caller's responsibility.
         if (headline.StatusCode is 204 or 304)
+        {
             return Array.Empty<byte>();
+        }
 
         var te = headers.GetFirst("Transfer-Encoding");
         if (te is not null && ContainsToken(te, "chunked"))
@@ -207,9 +239,15 @@ public sealed class H1ResponseParser
         if (clText is not null)
         {
             if (!long.TryParse(clText, NumberStyles.None, CultureInfo.InvariantCulture, out var cl) || cl < 0)
+            {
                 throw new InvalidDataException("Bad Content-Length");
+            }
+
             if (cl > MaxBodyBytes)
+            {
                 throw new InvalidDataException("Content-Length exceeded cap.");
+            }
+
             return cl == 0 ? Array.Empty<byte>() : await buf.ReadExactAsync((int)cl, ct).ConfigureAwait(false);
         }
 
@@ -221,7 +259,9 @@ public sealed class H1ResponseParser
         foreach (var raw in headerValue.Split(','))
         {
             if (string.Equals(raw.Trim(), token, StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -251,13 +291,27 @@ public sealed class H1ResponseParser
 
         if (connection is not null)
         {
-            if (ContainsToken(connection, "close")) return false;
-            if (ContainsToken(connection, "keep-alive")) return true;
+            if (ContainsToken(connection, "close"))
+            {
+                return false;
+            }
+
+            if (ContainsToken(connection, "keep-alive"))
+            {
+                return true;
+            }
         }
 
         // No explicit signal: HTTP/1.1 default keep-alive; HTTP/1.0 default close.
-        if (isHttp11) return true;
-        if (isHttp10) return false;
+        if (isHttp11)
+        {
+            return true;
+        }
+
+        if (isHttp10)
+        {
+            return false;
+        }
         // Anything unrecognised (e.g. a malformed version we still parsed) —
         // be conservative and close.
         return false;
@@ -273,10 +327,16 @@ public sealed class H1ResponseParser
     {
         ArgumentNullException.ThrowIfNull(response);
 
-        if (response.StatusCode is 204 or 304) return true;
+        if (response.StatusCode is 204 or 304)
+        {
+            return true;
+        }
 
         var te = response.Headers.GetFirst("Transfer-Encoding");
-        if (te is not null && ContainsToken(te, "chunked")) return true;
+        if (te is not null && ContainsToken(te, "chunked"))
+        {
+            return true;
+        }
 
         return response.Headers.GetFirst("Content-Length") is not null;
     }

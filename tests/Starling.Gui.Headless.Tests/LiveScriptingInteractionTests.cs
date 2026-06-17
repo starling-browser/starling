@@ -94,13 +94,25 @@ public class LiveScriptingInteractionTests
         var fx = originX + box.Frame.X;
         var fy = originY + box.Frame.Y;
         if (ReferenceEquals(box.Element, target))
+        {
             return (fx + box.Frame.Width / 2, fy + box.Frame.Height / 2);
-        if (box is Starling.Layout.Box.TextBox) return null;
+        }
+
+        if (box is Starling.Layout.Box.TextBox)
+        {
+            return null;
+        }
 
         var cx = fx + box.Border.Left + box.Padding.Left;
         var cy = fy + box.Border.Top + box.Padding.Top;
         foreach (var child in box.Children)
-            if (CenterOf(child, target, cx, cy) is { } r) return r;
+        {
+            if (CenterOf(child, target, cx, cy) is { } r)
+            {
+                return r;
+            }
+        }
+
         return null;
     }
 }

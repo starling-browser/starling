@@ -253,12 +253,26 @@ public static class ColorConversion
         var min = Math.Min(r, Math.Min(g, b));
         var l = (max + min) / 2.0;
         var d = max - min;
-        if (d == 0) return (0, 0, l);
+        if (d == 0)
+        {
+            return (0, 0, l);
+        }
+
         var s = l > 0.5 ? d / (2.0 - max - min) : d / (max + min);
         double h;
-        if (max == r) h = (g - b) / d + (g < b ? 6.0 : 0.0);
-        else if (max == g) h = (b - r) / d + 2.0;
-        else h = (r - g) / d + 4.0;
+        if (max == r)
+        {
+            h = (g - b) / d + (g < b ? 6.0 : 0.0);
+        }
+        else if (max == g)
+        {
+            h = (b - r) / d + 2.0;
+        }
+        else
+        {
+            h = (r - g) / d + 4.0;
+        }
+
         return (h * 60.0, s, l);
     }
 }

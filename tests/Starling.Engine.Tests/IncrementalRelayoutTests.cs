@@ -56,7 +56,10 @@ public class IncrementalRelayoutTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 
@@ -82,7 +85,10 @@ public class IncrementalRelayoutTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 }

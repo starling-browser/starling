@@ -57,7 +57,9 @@ public static class Program
             if (note.Contains(": not in model", StringComparison.Ordinal)
                 || note.Contains(": no CLR type", StringComparison.Ordinal)
                 || note.Contains(": no prototype slot", StringComparison.Ordinal))
+            {
                 continue;   // interface-level, not a member
+            }
 
             if (note.Contains("override skip", StringComparison.Ordinal)) { deliberate++; continue; }
 
@@ -86,7 +88,11 @@ public static class Program
             string status = min is null ? "(no gate)"
                 : iface.CoveragePercent + 1e-9 >= min ? $"gate {min}% OK"
                 : $"gate {min}% FAIL";
-            if (min is not null && iface.CoveragePercent + 1e-9 < min) gateFailed = true;
+            if (min is not null && iface.CoveragePercent + 1e-9 < min)
+            {
+                gateFailed = true;
+            }
+
             Console.WriteLine($"  {iface.CoveragePercent,5:F1}%  {iface.Interface,-22} (gen {iface.Generated}, deliberate {iface.Deliberate}, gap {iface.Gap})  {status}");
         }
         if (gates is not null)
@@ -102,7 +108,9 @@ public static class Program
 
         Console.WriteLine("Gaps by cause:");
         foreach (var (cause, count) in gapByCause.OrderByDescending(kv => kv.Value))
+        {
             Console.WriteLine($"  {count,4}  {cause}");
+        }
 
         if (notes)
         {
@@ -113,7 +121,9 @@ public static class Program
                                   && !n.Contains(": no CLR type", StringComparison.Ordinal)
                                   && !n.Contains(": no prototype slot", StringComparison.Ordinal))
                          .OrderBy(n => n, StringComparer.Ordinal))
+            {
                 Console.WriteLine($"    {note}");
+            }
         }
         return gateFailed ? 1 : 0;
     }
@@ -201,7 +211,10 @@ public static class Program
                           $"typedefs={model.Typedefs.Count}");
         Console.WriteLine($"  unresolved includes (external mixins): {model.UnresolvedIncludes.Count}");
         foreach (var u in model.UnresolvedIncludes.OrderBy(x => x, StringComparer.Ordinal))
+        {
             Console.WriteLine($"    - {u}");
+        }
+
         return 0;
     }
 
@@ -226,7 +239,11 @@ public static class Program
                 var doc = IdlParser.Parse(File.ReadAllText(path));
                 foreach (var d in doc.Definitions)
                 {
-                    if (d.Partial) partials++;
+                    if (d.Partial)
+                    {
+                        partials++;
+                    }
+
                     switch (d)
                     {
                         case IdlInterface { Mixin: true }: mixins++; break;

@@ -29,8 +29,15 @@ public class EngineRenderTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
+
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -54,7 +61,10 @@ public class EngineRenderTests
                     for (var y = 0; y < rows.Height; y++)
                     {
                         var row = rows.GetRowSpan(y);
-                        for (var x = 0; x < row.Length; x++) row[x] = new Rgba32(0, 128, 0);
+                        for (var x = 0; x < row.Length; x++)
+                        {
+                            row[x] = new Rgba32(0, 128, 0);
+                        }
                     }
                 });
                 swatch.SaveAsPng(imagePath);
@@ -75,7 +85,10 @@ public class EngineRenderTests
         }
         finally
         {
-            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, recursive: true);
+            }
         }
     }
 
@@ -125,8 +138,15 @@ public class EngineRenderTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
+
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -146,8 +166,12 @@ public class EngineRenderTests
             {
                 var row = rows.GetRowSpan(y);
                 foreach (var px in row)
+                {
                     if (px.Equals(color))
+                    {
                         count++;
+                    }
+                }
             }
         });
         return count;

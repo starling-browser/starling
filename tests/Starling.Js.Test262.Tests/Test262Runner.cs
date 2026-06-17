@@ -92,10 +92,17 @@ public sealed class Test262Runner
                 var baseDir = referrer is not null
                     ? Path.GetDirectoryName(referrer)
                     : Directory.GetCurrentDirectory();
-                if (baseDir is null) return null;
+                if (baseDir is null)
+                {
+                    return null;
+                }
                 // Only relative/absolute path specifiers are resolvable here;
                 // bare specifiers (no leading . or /) have no mapping.
-                if (!specifier.StartsWith('.') && !specifier.StartsWith('/')) return null;
+                if (!specifier.StartsWith('.') && !specifier.StartsWith('/'))
+                {
+                    return null;
+                }
+
                 return Path.GetFullPath(Path.Combine(baseDir, specifier));
             }
             catch { return null; }
@@ -124,12 +131,19 @@ public sealed class Test262Runner
         // is not expected to pass them, so counting them would understate
         // conformance against the targeted surface.
         foreach (var f in meta.Features)
+        {
             if (OutOfScopeFeatures.Contains(f))
+            {
                 return new[] { new ScenarioResult(rel, ScenarioMode.NonStrict, Outcome.Skip, "out-of-scope:" + f) };
+            }
+        }
 
         var results = new List<ScenarioResult>();
         foreach (var mode in Modes(meta))
+        {
             results.Add(RunScenario(rel, source, meta, mode, path));
+        }
+
         return results;
     }
 
@@ -140,8 +154,15 @@ public sealed class Test262Runner
         // loader — there is no non-strict variant and we must not inject a
         // "use strict" prologue. Run a single scenario.
         if (meta.IsModule) { yield return ScenarioMode.NonStrict; yield break; }
-        if (!meta.OnlyStrict) yield return ScenarioMode.NonStrict;
-        if (!meta.NoStrict) yield return ScenarioMode.Strict;
+        if (!meta.OnlyStrict)
+        {
+            yield return ScenarioMode.NonStrict;
+        }
+
+        if (!meta.NoStrict)
+        {
+            yield return ScenarioMode.Strict;
+        }
     }
 
     private ScenarioResult RunScenario(string rel, string source, Test262Metadata meta, ScenarioMode mode, string absPath)
@@ -158,7 +179,10 @@ public sealed class Test262Runner
 
         worker.Start();
         if (!worker.Join(_timeoutMs))
+        {
             return new ScenarioResult(rel, mode, Outcome.Timeout, "timeout");
+        }
+
         return new ScenarioResult(rel, mode, outcome, detail);
     }
 
@@ -180,8 +204,15 @@ public sealed class Test262Runner
                 var prog = meta.IsModule
                     ? new JsParser(source).ParseModule()
                     : new JsParser(WithStrict(source, mode)).ParseProgram();
-                if (meta.IsModule) _ = JsCompiler.CompileModule(prog, "<test262>");
-                else _ = JsCompiler.Compile(prog, "<test262>");
+                if (meta.IsModule)
+                {
+                    _ = JsCompiler.CompileModule(prog, "<test262>");
+                }
+                else
+                {
+                    _ = JsCompiler.Compile(prog, "<test262>");
+                }
+
                 return (Outcome.Fail, "expected parse error, parsed OK");
             }
             catch (JsParseException) { return (Outcome.Pass, null); }
@@ -220,8 +251,15 @@ public sealed class Test262Runner
             {
                 RunHarness(vm, "assert.js");
                 RunHarness(vm, "sta.js");
-                if (meta.IsAsync) RunHarness(vm, "doneprintHandle.js");
-                foreach (var inc in meta.Includes) RunHarness(vm, inc);
+                if (meta.IsAsync)
+                {
+                    RunHarness(vm, "doneprintHandle.js");
+                }
+
+                foreach (var inc in meta.Includes)
+                {
+                    RunHarness(vm, inc);
+                }
             }
         }
         catch (Exception ex)
@@ -241,9 +279,13 @@ public sealed class Test262Runner
         try
         {
             if (meta.IsModule)
+            {
                 runtime.WithActiveVm(() => loader.LoadAndEvaluate(absPath));
+            }
             else
+            {
                 RunSource(vm, WithStrict(source, mode), absPath);
+            }
         }
         catch (JsThrow jt)
         {
@@ -268,7 +310,9 @@ public sealed class Test262Runner
 
         // Reached end without throwing.
         if (meta.IsNegative)
+        {
             return (Outcome.Fail, $"expected {meta.NegativeType}, no throw");
+        }
 
         if (meta.IsAsync)
         {
@@ -368,7 +412,11 @@ public sealed class Test262Runner
     /// "TypeError"); null when the throw isn't an error-shaped object.</summary>
     private static string? ErrorName(JsValue value)
     {
-        if (!value.IsObject) return null;
+        if (!value.IsObject)
+        {
+            return null;
+        }
+
         var n = value.AsObject.Get("name");
         return n.IsString ? n.AsString : null;
     }
@@ -379,7 +427,11 @@ public sealed class Test262Runner
     /// <summary>Format a thrown JS value as "Name: message" for triage.</summary>
     private static string FormatThrow(JsValue value)
     {
-        if (!value.IsObject) return Stringify(value);
+        if (!value.IsObject)
+        {
+            return Stringify(value);
+        }
+
         var obj = value.AsObject;
         var name = obj.Get("name");
         var msg = obj.Get("message");
@@ -400,9 +452,17 @@ public sealed class Test262Runner
     {
         var meta = new Test262Metadata();
         var start = source.IndexOf("/*---", StringComparison.Ordinal);
-        if (start < 0) return meta;
+        if (start < 0)
+        {
+            return meta;
+        }
+
         var end = source.IndexOf("---*/", start, StringComparison.Ordinal);
-        if (end < 0) return meta;
+        if (end < 0)
+        {
+            return meta;
+        }
+
         var block = source.Substring(start + 5, end - start - 5);
         var lines = block.Replace("\r\n", "\n").Split('\n');
 
@@ -412,13 +472,21 @@ public sealed class Test262Runner
             var trimmed = line.Trim();
 
             if (trimmed.StartsWith("flags:", StringComparison.Ordinal))
+            {
                 AddInlineList(trimmed["flags:".Length..], meta.Flags);
+            }
             else if (trimmed.StartsWith("features:", StringComparison.Ordinal))
+            {
                 CollectList(lines, ref i, trimmed["features:".Length..], meta.Features);
+            }
             else if (trimmed.StartsWith("includes:", StringComparison.Ordinal))
+            {
                 CollectList(lines, ref i, trimmed["includes:".Length..], meta.Includes);
+            }
             else if (trimmed.StartsWith("negative:", StringComparison.Ordinal))
+            {
                 ParseNegative(lines, ref i, meta);
+            }
         }
         return meta;
     }
@@ -431,11 +499,20 @@ public sealed class Test262Runner
         for (var j = i + 1; j < lines.Length; j++)
         {
             var t = lines[j].Trim();
-            if (t.Length == 0) continue;
+            if (t.Length == 0)
+            {
+                continue;
+            }
             // Stop at the next top-level key (no leading indent on original line).
             if (!char.IsWhiteSpace(lines[j][0]) && t.Contains(':')) { i = j - 1; return; }
-            if (t.StartsWith("phase:", StringComparison.Ordinal)) meta.NegativePhase = t["phase:".Length..].Trim();
-            else if (t.StartsWith("type:", StringComparison.Ordinal)) meta.NegativeType = t["type:".Length..].Trim();
+            if (t.StartsWith("phase:", StringComparison.Ordinal))
+            {
+                meta.NegativePhase = t["phase:".Length..].Trim();
+            }
+            else if (t.StartsWith("type:", StringComparison.Ordinal))
+            {
+                meta.NegativeType = t["type:".Length..].Trim();
+            }
             else { i = j - 1; return; }
         }
     }
@@ -459,7 +536,11 @@ public sealed class Test262Runner
             if (t.StartsWith("- ", StringComparison.Ordinal) || t == "-")
             {
                 var item = t.Length > 2 ? t[2..].Trim() : "";
-                if (item.Length > 0) into.Add(item);
+                if (item.Length > 0)
+                {
+                    into.Add(item);
+                }
+
                 i = j;
             }
             else { return; }
@@ -471,11 +552,18 @@ public sealed class Test262Runner
         rest = rest.Trim();
         var lb = rest.IndexOf('[');
         var rb = rest.LastIndexOf(']');
-        if (lb < 0 || rb < lb) return;
+        if (lb < 0 || rb < lb)
+        {
+            return;
+        }
+
         foreach (var part in rest.Substring(lb + 1, rb - lb - 1).Split(','))
         {
             var item = part.Trim().Trim('"', '\'');
-            if (item.Length > 0) into.Add(item);
+            if (item.Length > 0)
+            {
+                into.Add(item);
+            }
         }
     }
 }

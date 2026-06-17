@@ -54,7 +54,11 @@ internal static class ObserversBinding
 
         JintInterop.DefineMethod(engine, proto, "observe", (thisV, args) =>
         {
-            if (thisV is not ObjectInstance obs || args.Length == 0 || args[0].IsUndefined()) return JsValue.Undefined;
+            if (thisV is not ObjectInstance obs || args.Length == 0 || args[0].IsUndefined())
+            {
+                return JsValue.Undefined;
+            }
+
             var target = args[0];
 
             // ResizeObserver §box option validation.
@@ -63,22 +67,34 @@ internal static class ObserversBinding
                 var box = opts.Get("box");
                 if (box.IsString() && box.AsString() is var b
                     && b is not ("content-box" or "border-box" or "device-pixel-content-box"))
+                {
                     throw new JavaScriptException(engine.Intrinsics.TypeError,
                         $"Failed to execute 'observe' on 'ResizeObserver': The provided value '{b}' is not a valid enum value of type ResizeObserverBoxOptions.");
+                }
             }
 
             // Track the target.
             if (obs.Get("_targets") is JsArray targets)
             {
                 var found = false;
-                for (uint i = 0; i < targets.Length; i++) if (ReferenceEquals(targets[(int)i], target)) { found = true; break; }
-                if (!found) targets.Push(target);
+                for (uint i = 0; i < targets.Length; i++)
+                {
+                    if (ReferenceEquals(targets[(int)i], target)) { found = true; break; }
+                }
+
+                if (!found)
+                {
+                    targets.Push(target);
+                }
             }
 
             // IntersectionObserver delivers one fully-intersecting record per observe
             // (the documented one-shot headless-render model).
             if (fireIntersecting && obs.Get("_callback") is global::Jint.Native.Function.Function cb)
+            {
                 ctx.Post(() => DeliverIntersecting(ctx, cb, obs, target));
+            }
+
             return JsValue.Undefined;
         }, length: 1);
         JintInterop.DefineMethod(engine, proto, "unobserve", (thisV, args) =>
@@ -87,7 +103,13 @@ internal static class ObserversBinding
             {
                 var kept = new List<JsValue>();
                 for (uint i = 0; i < targets.Length; i++)
-                    if (!ReferenceEquals(targets[(int)i], args[0])) kept.Add(targets[(int)i]);
+                {
+                    if (!ReferenceEquals(targets[(int)i], args[0]))
+                    {
+                        kept.Add(targets[(int)i]);
+                    }
+                }
+
                 obs.FastSetProperty("_targets", new PropertyDescriptor(new JsArray(engine, kept.ToArray()), writable: false, enumerable: false, configurable: false));
             }
             return JsValue.Undefined;
@@ -95,7 +117,10 @@ internal static class ObserversBinding
         JintInterop.DefineMethod(engine, proto, "disconnect", (thisV, _) =>
         {
             if (thisV is ObjectInstance obs)
+            {
                 obs.FastSetProperty("_targets", new PropertyDescriptor(new JsArray(engine, System.Array.Empty<JsValue>()), writable: false, enumerable: false, configurable: false));
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         if (takeRecords)
@@ -115,14 +140,21 @@ internal static class ObserversBinding
         var ctor = new NativeConstructor(engine, name, 1, (args, _) =>
         {
             if (args.Length == 0 || !args[0].IsCallable())
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError,
                     $"{name}: callback is not a function");
+            }
+
             var inst = new JsObject(engine) { Prototype = proto };
             JintInterop.DefineDataProp(inst, "_callback", args[0],
                 writable: false, enumerable: false, configurable: false);
             JintInterop.DefineDataProp(inst, "_targets", new JsArray(engine, System.Array.Empty<JsValue>()),
                 writable: false, enumerable: false, configurable: false);
-            if (fireIntersecting) CaptureIntersectionOptions(ctx, inst, args.Length > 1 ? args[1] : JsValue.Undefined);
+            if (fireIntersecting)
+            {
+                CaptureIntersectionOptions(ctx, inst, args.Length > 1 ? args[1] : JsValue.Undefined);
+            }
+
             return inst;
         });
 
@@ -147,15 +179,30 @@ internal static class ObserversBinding
         if (optionsVal is ObjectInstance o)
         {
             var r = o.Get("root");
-            if (r is ObjectInstance) root = r;
+            if (r is ObjectInstance)
+            {
+                root = r;
+            }
+
             var rm = o.Get("rootMargin");
-            if (rm.IsString() && rm.AsString().Length > 0) rootMargin = JintInterop.Str(rm.AsString());
+            if (rm.IsString() && rm.AsString().Length > 0)
+            {
+                rootMargin = JintInterop.Str(rm.AsString());
+            }
+
             var th = o.Get("threshold");
             if (th is JsArray ta)
             {
                 thresholds.Clear();
-                for (uint i = 0; i < ta.Length; i++) thresholds.Add(global::Jint.Runtime.TypeConverter.ToNumber(ta[(int)i]));
-                if (thresholds.Count == 0) thresholds.Add(0);
+                for (uint i = 0; i < ta.Length; i++)
+                {
+                    thresholds.Add(global::Jint.Runtime.TypeConverter.ToNumber(ta[(int)i]));
+                }
+
+                if (thresholds.Count == 0)
+                {
+                    thresholds.Add(0);
+                }
             }
             else if (th.IsNumber()) { thresholds.Clear(); thresholds.Add(th.AsNumber()); }
         }

@@ -24,7 +24,10 @@ public sealed class AngleSharpBackendTests
     {
         var sb = new System.Text.StringBuilder();
         foreach (var child in doc.ChildNodes)
+        {
             sb.Append(HtmlSerializer.SerializeNode(child));
+        }
+
         return sb.ToString();
     }
 

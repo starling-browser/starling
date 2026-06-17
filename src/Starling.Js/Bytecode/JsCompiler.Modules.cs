@@ -99,16 +99,20 @@ public sealed partial class JsCompiler
         var constLocals = new HashSet<string>(StringComparer.Ordinal);
         CollectLocalBindingNames(program.Body, localNames, lexicalLocals, constLocals);
         foreach (var local in localNames)
+        {
             ReserveModuleBinding(local, isImport: false, bindingOrder,
                 isLexical: lexicalLocals.Contains(local),
                 isImmutable: constLocals.Contains(local));
+        }
 
         // 2) …then one per imported local name (each resolves to the exporting
         //    module's cell at instantiation). Imported bindings are immutable and
         //    are TDZ-checked (they mirror the source module's lexical binding).
         foreach (var imp in imports)
+        {
             ReserveModuleBinding(imp.LocalName, isImport: true, bindingOrder, imp,
                 isLexical: true);
+        }
 
         // Hoist module-top function declarations (they bind into the upvalue
         // cell so importers see them, and so they are callable before their
@@ -116,7 +120,9 @@ public sealed partial class JsCompiler
         HoistModuleFunctionDeclarations(program.Body);
 
         foreach (var stmt in program.Body)
+        {
             EmitModuleItem(stmt);
+        }
 
         _b.Emit(Opcode.Halt);
         var chunk = _b.Build(name);
@@ -144,7 +150,13 @@ public sealed partial class JsCompiler
     private static bool ModuleBodyHasTopLevelAwait(IReadOnlyList<Statement> body)
     {
         foreach (var s in body)
-            if (StatementHasTopLevelAwait(s)) return true;
+        {
+            if (StatementHasTopLevelAwait(s))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -189,12 +201,25 @@ public sealed partial class JsCompiler
                     || ExprHasTopLevelAwait(fos.Right)
                     || StatementHasTopLevelAwait(fos.Body);
             case SwitchStatement sw:
-                if (ExprHasTopLevelAwait(sw.Discriminant)) return true;
+                if (ExprHasTopLevelAwait(sw.Discriminant))
+                {
+                    return true;
+                }
+
                 foreach (var c in sw.Cases)
                 {
-                    if (c.Test is not null && ExprHasTopLevelAwait(c.Test)) return true;
+                    if (c.Test is not null && ExprHasTopLevelAwait(c.Test))
+                    {
+                        return true;
+                    }
+
                     foreach (var cs in c.Consequent)
-                        if (StatementHasTopLevelAwait(cs)) return true;
+                    {
+                        if (StatementHasTopLevelAwait(cs))
+                        {
+                            return true;
+                        }
+                    }
                 }
                 return false;
             case TryStatement tr:
@@ -209,7 +234,13 @@ public sealed partial class JsCompiler
                 return ExprHasTopLevelAwait(ws2.Object) || StatementHasTopLevelAwait(ws2.Body);
             case VariableDeclaration vd:
                 foreach (var d in vd.Declarations)
-                    if (d.Init is not null && ExprHasTopLevelAwait(d.Init)) return true;
+                {
+                    if (d.Init is not null && ExprHasTopLevelAwait(d.Init))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
 
             // A class declaration's `extends` heritage clause and any computed
@@ -271,40 +302,108 @@ public sealed partial class JsCompiler
             case ConditionalExpression c:
                 return ExprHasTopLevelAwait(c.Test) || ExprHasTopLevelAwait(c.Consequent) || ExprHasTopLevelAwait(c.Alternate);
             case SequenceExpression seq:
-                foreach (var x in seq.Expressions) if (ExprHasTopLevelAwait(x)) return true;
+                foreach (var x in seq.Expressions)
+                {
+                    if (ExprHasTopLevelAwait(x))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             case MemberExpression m:
                 return ExprHasTopLevelAwait(m.Object) || (m.Computed && ExprHasTopLevelAwait(m.Property));
             case CallExpression call:
-                if (ExprHasTopLevelAwait(call.Callee)) return true;
-                foreach (var arg in call.Arguments) if (ExprHasTopLevelAwait(arg)) return true;
+                if (ExprHasTopLevelAwait(call.Callee))
+                {
+                    return true;
+                }
+
+                foreach (var arg in call.Arguments)
+                {
+                    if (ExprHasTopLevelAwait(arg))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             case NewExpression ne:
-                if (ExprHasTopLevelAwait(ne.Callee)) return true;
-                foreach (var arg in ne.Arguments) if (ExprHasTopLevelAwait(arg)) return true;
+                if (ExprHasTopLevelAwait(ne.Callee))
+                {
+                    return true;
+                }
+
+                foreach (var arg in ne.Arguments)
+                {
+                    if (ExprHasTopLevelAwait(arg))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             case SpreadElement sp: return ExprHasTopLevelAwait(sp.Argument);
             case ArrayExpression arr:
-                foreach (var el in arr.Elements) if (el is not null && ExprHasTopLevelAwait(el)) return true;
+                foreach (var el in arr.Elements)
+                {
+                    if (el is not null && ExprHasTopLevelAwait(el))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             case ObjectExpression obj:
                 foreach (var p in obj.Properties)
                 {
-                    if (p.Computed && ExprHasTopLevelAwait(p.Key)) return true;
-                    if (ExprHasTopLevelAwait(p.Value)) return true;
+                    if (p.Computed && ExprHasTopLevelAwait(p.Key))
+                    {
+                        return true;
+                    }
+
+                    if (ExprHasTopLevelAwait(p.Value))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             case TemplateLiteral tl:
-                foreach (var x in tl.Expressions) if (ExprHasTopLevelAwait(x)) return true;
+                foreach (var x in tl.Expressions)
+                {
+                    if (ExprHasTopLevelAwait(x))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             case TaggedTemplateExpression tte:
-                if (ExprHasTopLevelAwait(tte.Tag)) return true;
-                foreach (var x in tte.Quasi.Expressions) if (ExprHasTopLevelAwait(x)) return true;
+                if (ExprHasTopLevelAwait(tte.Tag))
+                {
+                    return true;
+                }
+
+                foreach (var x in tte.Quasi.Expressions)
+                {
+                    if (ExprHasTopLevelAwait(x))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             case SuperPropertyExpression sup:
                 return sup.Computed && ExprHasTopLevelAwait(sup.Property);
             case SuperCallExpression sc:
-                foreach (var arg in sc.Arguments) if (ExprHasTopLevelAwait(arg)) return true;
+                foreach (var arg in sc.Arguments)
+                {
+                    if (ExprHasTopLevelAwait(arg))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
 
             // Literals, identifiers, this, private-name refs, yield (not legal at
@@ -321,12 +420,32 @@ public sealed partial class JsCompiler
     /// bodies and field initializers run in their own context and are excluded.</summary>
     private static bool ClassHasTopLevelAwait(Expression? baseClass, ClassBody body)
     {
-        if (baseClass is not null && ExprHasTopLevelAwait(baseClass)) return true;
-        if (body.Constructor is { Computed: true } ctor && ExprHasTopLevelAwait(ctor.Key)) return true;
+        if (baseClass is not null && ExprHasTopLevelAwait(baseClass))
+        {
+            return true;
+        }
+
+        if (body.Constructor is { Computed: true } ctor && ExprHasTopLevelAwait(ctor.Key))
+        {
+            return true;
+        }
+
         foreach (var m in body.Methods)
-            if (m.Computed && ExprHasTopLevelAwait(m.Key)) return true;
+        {
+            if (m.Computed && ExprHasTopLevelAwait(m.Key))
+            {
+                return true;
+            }
+        }
+
         foreach (var f in body.Fields)
-            if (f.Computed && ExprHasTopLevelAwait(f.Key)) return true;
+        {
+            if (f.Computed && ExprHasTopLevelAwait(f.Key))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -337,15 +456,25 @@ public sealed partial class JsCompiler
         string name, bool isImport, List<ModuleBindingSlot> order,
         ModuleImportEntry? import = null, bool isLexical = false, bool isImmutable = false)
     {
-        if (_moduleBindingUpvalues!.ContainsKey(name)) return; // first binding wins
+        if (_moduleBindingUpvalues!.ContainsKey(name))
+        {
+            return; // first binding wins
+        }
+
         var idx = order.Count;
         _moduleBindingUpvalues[name] = idx;
         _upvalues.Add(new UpvalueRef(IsLocalCapture: false, Index: idx));
         _upvalueByName[name] = idx;
-        if (isLexical) _moduleLexicalBindings!.Add(name);
+        if (isLexical)
+        {
+            _moduleLexicalBindings!.Add(name);
+        }
         // An imported binding (§16.2.1.6.2) and a local `const` are immutable: an
         // assignment to either is a runtime TypeError.
-        if (isImport || isImmutable) _moduleImmutableBindings!.Add(name);
+        if (isImport || isImmutable)
+        {
+            _moduleImmutableBindings!.Add(name);
+        }
         // Only a local lexical (let/const/class) cell is seeded with the TDZ
         // sentinel by the loader; an imported binding aliases the source's cell
         // (which the source seeds), so it is lexical-for-reads but not sentinel-
@@ -362,7 +491,11 @@ public sealed partial class JsCompiler
     {
         foreach (var s in body)
         {
-            if (s is not ImportDeclaration imp) continue;
+            if (s is not ImportDeclaration imp)
+            {
+                continue;
+            }
+
             AddRequested(requested, imp.Source);
             foreach (var spec in imp.Specifiers)
             {
@@ -393,20 +526,31 @@ public sealed partial class JsCompiler
             {
                 case ExportLocalDeclaration local:
                     foreach (var nameOfLocal in DeclaredNames(local.Declaration))
+                    {
                         exports.Add(new ModuleExportEntry(nameOfLocal, null, null, nameOfLocal));
+                    }
+
                     break;
                 case ExportDefaultDeclaration:
                     exports.Add(new ModuleExportEntry("default", null, null, DefaultBindingName));
                     break;
                 case ExportNamedDeclaration named:
-                    if (named.Source is not null) AddRequested(requested, named.Source);
+                    if (named.Source is not null)
+                    {
+                        AddRequested(requested, named.Source);
+                    }
+
                     foreach (var spec in named.Specifiers)
                     {
                         var exportName = ModuleExportName(spec.Exported);
                         if (named.Source is null)
+                        {
                             exports.Add(new ModuleExportEntry(exportName, null, null, ModuleExportName(spec.Local)));
+                        }
                         else
+                        {
                             exports.Add(new ModuleExportEntry(exportName, named.Source, ModuleExportName(spec.Local), null));
+                        }
                     }
                     break;
                 case ExportAllDeclaration all:
@@ -423,7 +567,10 @@ public sealed partial class JsCompiler
 
     private static void AddRequested(List<string> requested, string spec)
     {
-        if (!requested.Contains(spec)) requested.Add(spec);
+        if (!requested.Contains(spec))
+        {
+            requested.Add(spec);
+        }
     }
 
     private static string ModuleExportName(Expression e) => e switch
@@ -441,7 +588,13 @@ public sealed partial class JsCompiler
         {
             case VariableDeclaration vd:
                 foreach (var d in vd.Declarations)
-                    foreach (var n in PatternNames(d.Id)) yield return n;
+                {
+                    foreach (var n in PatternNames(d.Id))
+                    {
+                        yield return n;
+                    }
+                }
+
                 break;
             case FunctionDeclaration fd: yield return fd.Name.Name; break;
             case ClassDeclaration cd: yield return cd.Name.Name; break;
@@ -454,7 +607,11 @@ public sealed partial class JsCompiler
         {
             case Identifier id: yield return id.Name; break;
             case AssignmentPattern a:
-                foreach (var n in PatternNames(a.Target)) yield return n;
+                foreach (var n in PatternNames(a.Target))
+                {
+                    yield return n;
+                }
+
                 break;
             case ArrayPattern arr:
                 foreach (var el in arr.Elements)
@@ -465,15 +622,34 @@ public sealed partial class JsCompiler
                         ArrayPatternRestElement r => r.Target,
                         _ => null,
                     };
-                    if (target is null) continue;
-                    foreach (var n in PatternNames(target)) yield return n;
+                    if (target is null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var n in PatternNames(target))
+                    {
+                        yield return n;
+                    }
                 }
                 break;
             case ObjectPattern obj:
                 foreach (var prop in obj.Properties)
-                    foreach (var n in PatternNames(prop.Target)) yield return n;
+                {
+                    foreach (var n in PatternNames(prop.Target))
+                    {
+                        yield return n;
+                    }
+                }
+
                 if (obj.Rest is not null)
-                    foreach (var n in PatternNames(obj.Rest.Argument)) yield return n;
+                {
+                    foreach (var n in PatternNames(obj.Rest.Argument))
+                    {
+                        yield return n;
+                    }
+                }
+
                 break;
         }
     }
@@ -485,7 +661,7 @@ public sealed partial class JsCompiler
         IReadOnlyList<Statement> body, List<string> names,
         HashSet<string> lexical, HashSet<string> immutableConst)
     {
-        void Add(string n) { if (!names.Contains(n)) names.Add(n); }
+        void Add(string n) { if (!names.Contains(n)) { names.Add(n); } }
         void AddLex(string n) { Add(n); lexical.Add(n); }
         void AddConst(string n) { AddLex(n); immutableConst.Add(n); }
 
@@ -500,8 +676,24 @@ public sealed partial class JsCompiler
                     var isConst = vd.Kind == "const";
                     var isLex = vd.Kind is "let" or "const";
                     foreach (var d in vd.Declarations)
+                    {
                         foreach (var n in PatternNames(d.Id))
-                            if (isConst) AddConst(n); else if (isLex) AddLex(n); else Add(n);
+                        {
+                            if (isConst)
+                            {
+                                AddConst(n);
+                            }
+                            else if (isLex)
+                            {
+                                AddLex(n);
+                            }
+                            else
+                            {
+                                Add(n);
+                            }
+                        }
+                    }
+
                     break;
                 case FunctionDeclaration fd: Add(fd.Name.Name); break;       // hoisted, not TDZ
                 case ClassDeclaration cd: AddLex(cd.Name.Name); break;       // lexical (TDZ)
@@ -549,7 +741,11 @@ public sealed partial class JsCompiler
                 ExportLocalDeclaration { Declaration: FunctionDeclaration f } => f,
                 _ => null,
             };
-            if (fd is null) continue;
+            if (fd is null)
+            {
+                continue;
+            }
+
             EmitModuleFunctionValue(fd);
             StoreModuleBinding(fd.Name.Name);
         }
@@ -572,7 +768,10 @@ public sealed partial class JsCompiler
     private void StoreModuleBinding(string name)
     {
         if (!_moduleBindingUpvalues!.TryGetValue(name, out var idx))
+        {
             throw new InvalidOperationException($"module binding '{name}' not reserved");
+        }
+
         _b.EmitUpvalue(Opcode.StoreUpvalue, idx);
     }
 
@@ -696,7 +895,11 @@ public sealed partial class JsCompiler
                 // the sentinel-seeded cell to its first value); _inLexicalDeclInit
                 // suppresses the StoreUpvalueChecked the leaves would otherwise use.
                 var prevInit = _inLexicalDeclInit;
-                if (isLexical) _inLexicalDeclInit = true;
+                if (isLexical)
+                {
+                    _inLexicalDeclInit = true;
+                }
+
                 try { EmitDestructuringFromStack(d.Id); }
                 finally { _inLexicalDeclInit = prevInit; }
             }

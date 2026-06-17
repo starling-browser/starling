@@ -122,7 +122,10 @@ public readonly struct JsToken
         {
             var digits = SourceSpan(_valueOffset, _valueLength);
             if (digits.IndexOf('_') < 0)
+            {
                 return digits.ToString();
+            }
+
             return RemoveSeparators(digits);
         }
     }
@@ -232,7 +235,9 @@ public readonly struct JsToken
         foreach (var ch in source)
         {
             if (ch != '_')
+            {
                 chars[count++] = ch;
+            }
         }
         return new string(chars, 0, count);
     }

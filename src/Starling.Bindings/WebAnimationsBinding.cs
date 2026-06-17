@@ -77,8 +77,16 @@ internal static class WebAnimationsBinding
             items = new List<JsValue>(reg.Items.Count);
             foreach (var s in reg.Items)
             {
-                if (s.Canceled) continue;
-                if (element is not null && !ReferenceEquals(s.Element, element)) continue;
+                if (s.Canceled)
+                {
+                    continue;
+                }
+
+                if (element is not null && !ReferenceEquals(s.Element, element))
+                {
+                    continue;
+                }
+
                 items.Add(JsValue.Object(s.Animation));
             }
         }
@@ -93,7 +101,10 @@ internal static class WebAnimationsBinding
 
     private static IReadOnlyList<AnimationKeyframeSpec> ParseKeyframes(JsRealm realm, JsValue value)
     {
-        if (!value.IsObject) return Array.Empty<AnimationKeyframeSpec>();
+        if (!value.IsObject)
+        {
+            return Array.Empty<AnimationKeyframeSpec>();
+        }
 
         // Array form: [{opacity:0, offset:0}, {opacity:1}].
         if (JsArray.IsArray(value))
@@ -103,15 +114,27 @@ internal static class WebAnimationsBinding
             for (var i = 0; i < arr.Length; i++)
             {
                 var item = arr[i];
-                if (!item.IsObject) continue;
+                if (!item.IsObject)
+                {
+                    continue;
+                }
+
                 var obj = item.AsObject;
                 double? offset = null;
                 var off = obj.Get("offset");
-                if (off.IsNumber) offset = off.AsNumber;
+                if (off.IsNumber)
+                {
+                    offset = off.AsNumber;
+                }
+
                 var decls = new List<KeyValuePair<string, string>>();
                 foreach (var key in obj.EnumerableKeys())
                 {
-                    if (key is "offset" or "easing" or "composite") continue;
+                    if (key is "offset" or "easing" or "composite")
+                    {
+                        continue;
+                    }
+
                     decls.Add(new(CamelToKebab(key), CssText(realm, obj.Get(key))));
                 }
                 frames.Add((offset, decls));
@@ -125,13 +148,20 @@ internal static class WebAnimationsBinding
         var maxLen = 0;
         foreach (var key in src.EnumerableKeys())
         {
-            if (key is "offset" or "easing" or "composite") continue;
+            if (key is "offset" or "easing" or "composite")
+            {
+                continue;
+            }
+
             var v = src.Get(key);
             var values = new List<string>();
             if (JsArray.IsArray(v))
             {
                 var a = (JsArray)v.AsObject;
-                for (var i = 0; i < a.Length; i++) values.Add(CssText(realm, a[i]));
+                for (var i = 0; i < a.Length; i++)
+                {
+                    values.Add(CssText(realm, a[i]));
+                }
             }
             else
             {
@@ -139,7 +169,10 @@ internal static class WebAnimationsBinding
             }
             if (values.Count > 0) { props.Add((CamelToKebab(key), values)); maxLen = Math.Max(maxLen, values.Count); }
         }
-        if (maxLen == 0) return Array.Empty<AnimationKeyframeSpec>();
+        if (maxLen == 0)
+        {
+            return Array.Empty<AnimationKeyframeSpec>();
+        }
 
         var result = new List<AnimationKeyframeSpec>(maxLen);
         for (var j = 0; j < maxLen; j++)
@@ -147,7 +180,10 @@ internal static class WebAnimationsBinding
             var offset = maxLen == 1 ? 1.0 : (double)j / (maxLen - 1);
             var decls = new List<KeyValuePair<string, string>>(props.Count);
             foreach (var (name, values) in props)
+            {
                 decls.Add(new(name, values[Math.Min(j, values.Count - 1)]));
+            }
+
             result.Add(new AnimationKeyframeSpec(offset, decls));
         }
         return result;
@@ -182,14 +218,37 @@ internal static class WebAnimationsBinding
         {
             var o = value.AsObject;
             var dur = o.Get("duration");
-            if (dur.IsNumber) duration = dur.AsNumber;
+            if (dur.IsNumber)
+            {
+                duration = dur.AsNumber;
+            }
+
             var del = o.Get("delay");
-            if (del.IsNumber) delay = del.AsNumber;
+            if (del.IsNumber)
+            {
+                delay = del.AsNumber;
+            }
+
             var iter = o.Get("iterations");
-            if (iter.IsNumber) iterations = iter.AsNumber;
-            var dir = o.Get("direction"); if (!dir.IsNullish) direction = JsValue.ToStringValue(dir);
-            var fl = o.Get("fill"); if (!fl.IsNullish) fill = JsValue.ToStringValue(fl);
-            var ea = o.Get("easing"); if (!ea.IsNullish) easing = JsValue.ToStringValue(ea);
+            if (iter.IsNumber)
+            {
+                iterations = iter.AsNumber;
+            }
+
+            var dir = o.Get("direction"); if (!dir.IsNullish)
+            {
+                direction = JsValue.ToStringValue(dir);
+            }
+
+            var fl = o.Get("fill"); if (!fl.IsNullish)
+            {
+                fill = JsValue.ToStringValue(fl);
+            }
+
+            var ea = o.Get("easing"); if (!ea.IsNullish)
+            {
+                easing = JsValue.ToStringValue(ea);
+            }
         }
 
         return new AnimationEffectTimingSpec(duration, delay, iterations, direction, fill, easing);
@@ -222,8 +281,15 @@ internal static class WebAnimationsBinding
             var was = state.Canceled;
             state.Canceled = true; // synchronous: getAnimations drops it immediately
             state.Finished = false;
-            if (host is not null) host.Cancel(id); // observer queues delivery on transition
-            else if (!was) QueueCancel(realm, state);
+            if (host is not null)
+            {
+                host.Cancel(id); // observer queues delivery on transition
+            }
+            else if (!was)
+            {
+                QueueCancel(realm, state);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, anim, "finish", (_, _) =>
@@ -232,13 +298,26 @@ internal static class WebAnimationsBinding
             // finite end time.
             var rate = host?.PlaybackRate(id) ?? state.Rate;
             if (rate == 0)
+            {
                 throw DomExceptionBinding.Throw(realm, "InvalidStateError",
                     "Cannot finish an Animation with a playbackRate of 0.");
+            }
+
             if (double.IsInfinity(timing.Iterations))
+            {
                 throw DomExceptionBinding.Throw(realm, "InvalidStateError",
                     "Cannot finish an Animation with an infinite target effect end.");
-            if (host is not null) host.Finish(id); // observer queues delivery on transition
-            else if (!state.Finished) QueueFinish(realm, state);
+            }
+
+            if (host is not null)
+            {
+                host.Finish(id); // observer queues delivery on transition
+            }
+            else if (!state.Finished)
+            {
+                QueueFinish(realm, state);
+            }
+
             state.Finished = true;
             return JsValue.Undefined;
         }, length: 0);
@@ -246,7 +325,7 @@ internal static class WebAnimationsBinding
 
         EventTargetBinding.DefineAccessor(realm, anim, "currentTime",
             (_, _) => JsValue.Number(host?.CurrentTime(id) ?? 0),
-            (_, a) => { if (host is not null && a.Length > 0 && a[0].IsNumber) host.SetCurrentTime(id, a[0].AsNumber); return JsValue.Undefined; });
+            (_, a) => { if (host is not null && a.Length > 0 && a[0].IsNumber) { host.SetCurrentTime(id, a[0].AsNumber); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, anim, "startTime", (_, _) => JsValue.Number(host?.TimelineNow ?? 0));
         EventTargetBinding.DefineAccessor(realm, anim, "playState", (_, _) => JsValue.String(
             host is not null ? host.PlayState(id)
@@ -259,13 +338,18 @@ internal static class WebAnimationsBinding
             {
                 var rate = JsValue.ToNumber(a.Length > 0 ? a[0] : JsValue.Undefined);
                 if (double.IsNaN(rate))
+                {
                     throw new JsThrow(realm.NewTypeError("playbackRate must be a number"));
+                }
                 // Reverse playback is not implemented — the engine sampler only
                 // advances forward — so negative rates throw instead of
                 // silently misbehaving.
                 if (rate < 0)
+                {
                     throw DomExceptionBinding.Throw(realm, "NotSupportedError",
                         "negative playbackRate is not supported");
+                }
+
                 state.Rate = rate;
                 host?.SetPlaybackRate(id, rate);
                 return JsValue.Undefined;
@@ -286,7 +370,9 @@ internal static class WebAnimationsBinding
         // the onfinish/oncancel handler properties; addEventListener-based
         // listeners are a follow-up.
         foreach (var m in new[] { "addEventListener", "removeEventListener" })
+        {
             EventTargetBinding.DefineMethod(realm, anim, m, (_, _) => JsValue.Undefined, length: 2);
+        }
 
         return anim;
     }
@@ -299,7 +385,11 @@ internal static class WebAnimationsBinding
     /// user code runs synchronously here.</summary>
     private static JsValue GetFinishedPromise(JsRealm realm, AnimationState state)
     {
-        if (!state.FinishedPromise.IsUndefined) return state.FinishedPromise;
+        if (!state.FinishedPromise.IsUndefined)
+        {
+            return state.FinishedPromise;
+        }
+
         state.FinishedPromise = FetchBinding.MakePromise(realm, (resolve, reject) =>
         {
             state.ResolveFinished = resolve;
@@ -328,8 +418,14 @@ internal static class WebAnimationsBinding
         var runtime = WindowBinding.RuntimeForRealm(realm);
         realm.Microtasks.Enqueue(() =>
         {
-            if (runtime is null) DeliverFinish(realm, state);
-            else runtime.WithActiveVm(() => DeliverFinish(realm, state));
+            if (runtime is null)
+            {
+                DeliverFinish(realm, state);
+            }
+            else
+            {
+                runtime.WithActiveVm(() => DeliverFinish(realm, state));
+            }
         });
     }
 
@@ -338,8 +434,14 @@ internal static class WebAnimationsBinding
         var runtime = WindowBinding.RuntimeForRealm(realm);
         realm.Microtasks.Enqueue(() =>
         {
-            if (runtime is null) DeliverCancel(realm, state);
-            else runtime.WithActiveVm(() => DeliverCancel(realm, state));
+            if (runtime is null)
+            {
+                DeliverCancel(realm, state);
+            }
+            else
+            {
+                runtime.WithActiveVm(() => DeliverCancel(realm, state));
+            }
         });
     }
 
@@ -354,13 +456,19 @@ internal static class WebAnimationsBinding
         }
         var handler = state.Animation.Get("onfinish");
         if (AbstractOperations.IsCallable(handler))
+        {
             AbstractOperations.Call(realm.ActiveVm, handler, JsValue.Object(state.Animation),
                 new[] { BuildPlaybackEvent(realm, state, "finish") });
+        }
     }
 
     private static void DeliverCancel(JsRealm realm, AnimationState state)
     {
-        if (state.CancelDelivered) return;
+        if (state.CancelDelivered)
+        {
+            return;
+        }
+
         state.CancelDelivered = true;
         state.Canceled = true;
         state.Finished = false;
@@ -372,8 +480,10 @@ internal static class WebAnimationsBinding
         }
         var handler = state.Animation.Get("oncancel");
         if (AbstractOperations.IsCallable(handler))
+        {
             AbstractOperations.Call(realm.ActiveVm, handler, JsValue.Object(state.Animation),
                 new[] { BuildPlaybackEvent(realm, state, "cancel") });
+        }
     }
 
     /// <summary>Minimal AnimationPlaybackEvent-shaped payload for the
@@ -403,7 +513,10 @@ internal static class WebAnimationsBinding
                 var o = new JsObject(realm.ObjectPrototype);
                 o.DefineOwnProperty("offset", PropertyDescriptor.Data(JsValue.Number(kf.Offset), writable: true, enumerable: true, configurable: true));
                 foreach (var d in kf.Declarations)
+                {
                     o.DefineOwnProperty(KebabToCamel(d.Key), PropertyDescriptor.Data(JsValue.String(d.Value), writable: true, enumerable: true, configurable: true));
+                }
+
                 items.Add(JsValue.Object(o));
             }
             return JsValue.Object(new JsArray(realm, items));
@@ -445,7 +558,9 @@ internal static class WebAnimationsBinding
         {
             var ts = v.AsObject.Get("toString");
             if (AbstractOperations.IsCallable(ts))
+            {
                 return JsValue.ToStringValue(AbstractOperations.Call(realm.ActiveVm, ts, v, Array.Empty<JsValue>())).Trim();
+            }
         }
         return JsValue.ToStringValue(v).Trim();
     }
@@ -456,15 +571,22 @@ internal static class WebAnimationsBinding
         for (var i = 0; i < s.Length; i++)
         {
             var c = s[i];
-            if (char.IsUpper(c)) { if (i > 0) sb.Append('-'); sb.Append(char.ToLowerInvariant(c)); }
-            else sb.Append(c);
+            if (char.IsUpper(c)) { if (i > 0) { sb.Append('-'); } sb.Append(char.ToLowerInvariant(c)); }
+            else
+            {
+                sb.Append(c);
+            }
         }
         return sb.ToString();
     }
 
     private static string KebabToCamel(string s)
     {
-        if (s.IndexOf('-') < 0) return s;
+        if (s.IndexOf('-') < 0)
+        {
+            return s;
+        }
+
         var sb = new System.Text.StringBuilder(s.Length);
         var upper = false;
         foreach (var c in s)

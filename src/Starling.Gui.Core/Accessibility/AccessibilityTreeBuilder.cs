@@ -29,7 +29,9 @@ public static class AccessibilityTreeBuilder
 
         var children = new List<AccessibilityNode>();
         foreach (var child in root.Children)
+        {
             Walk(child, root.Frame.X, root.Frame.Y, document, children);
+        }
 
         return new AccessibilityNode
         {
@@ -52,7 +54,9 @@ public static class AccessibilityTreeBuilder
         {
             var kids = new List<AccessibilityNode>();
             foreach (var child in box.Children)
+            {
                 Walk(child, frameX, frameY, document, kids);
+            }
 
             into.Add(new AccessibilityNode
             {
@@ -71,7 +75,9 @@ public static class AccessibilityTreeBuilder
         {
             // Non-semantic box: flatten — attach semantic descendants to this parent.
             foreach (var child in box.Children)
+            {
                 Walk(child, frameX, frameY, document, into);
+            }
         }
     }
 
@@ -185,10 +191,16 @@ public static class AccessibilityTreeBuilder
     {
         // aria-labelledby (references other elements' text) wins, then aria-label.
         var labelledBy = LabelledByText(element, document);
-        if (!string.IsNullOrWhiteSpace(labelledBy)) return Collapse(labelledBy);
+        if (!string.IsNullOrWhiteSpace(labelledBy))
+        {
+            return Collapse(labelledBy);
+        }
 
         var ariaLabel = element.GetAttribute("aria-label");
-        if (!string.IsNullOrWhiteSpace(ariaLabel)) return Collapse(ariaLabel);
+        if (!string.IsNullOrWhiteSpace(ariaLabel))
+        {
+            return Collapse(ariaLabel);
+        }
 
         switch (role)
         {
@@ -201,9 +213,17 @@ public static class AccessibilityTreeBuilder
             case AccessibilityRole.RadioButton:
             case AccessibilityRole.ComboBox:
                 var labelled = AssociatedLabel(element, document);
-                if (!string.IsNullOrWhiteSpace(labelled)) return Collapse(labelled);
+                if (!string.IsNullOrWhiteSpace(labelled))
+                {
+                    return Collapse(labelled);
+                }
+
                 var placeholder = element.GetAttribute("placeholder");
-                if (!string.IsNullOrWhiteSpace(placeholder)) return Collapse(placeholder);
+                if (!string.IsNullOrWhiteSpace(placeholder))
+                {
+                    return Collapse(placeholder);
+                }
+
                 return Collapse(element.GetAttribute("title") ?? "");
 
             case AccessibilityRole.Button:
@@ -211,14 +231,22 @@ public static class AccessibilityTreeBuilder
                 var btn = element.LocalName == "input"
                     ? element.GetAttribute("value") ?? ""
                     : element.TextContent;
-                if (!string.IsNullOrWhiteSpace(btn)) return Collapse(btn);
+                if (!string.IsNullOrWhiteSpace(btn))
+                {
+                    return Collapse(btn);
+                }
+
                 return Collapse(element.GetAttribute("title") ?? "");
 
             default:
                 // Headings, links, list items, paragraphs, landmarks: the element's
                 // text, falling back to title when it has none.
                 var text = element.TextContent;
-                if (!string.IsNullOrWhiteSpace(text)) return Collapse(text);
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    return Collapse(text);
+                }
+
                 return Collapse(element.GetAttribute("title") ?? "");
         }
     }
@@ -228,10 +256,16 @@ public static class AccessibilityTreeBuilder
     private static string LabelledByText(Element element, Document document)
     {
         var ids = element.GetAttribute("aria-labelledby");
-        if (string.IsNullOrWhiteSpace(ids)) return "";
+        if (string.IsNullOrWhiteSpace(ids))
+        {
+            return "";
+        }
 
         var wanted = ids.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (wanted.Length == 0) return "";
+        if (wanted.Length == 0)
+        {
+            return "";
+        }
 
         // One pass over the document, gathering each referenced element's text in
         // the order the attribute lists them.
@@ -240,12 +274,20 @@ public static class AccessibilityTreeBuilder
         {
             var id = el.Id;
             if (!string.IsNullOrEmpty(id) && Array.IndexOf(wanted, id) >= 0 && !byId.ContainsKey(id))
+            {
                 byId[id] = el.TextContent;
+            }
         }
 
         var parts = new List<string>(wanted.Length);
         foreach (var id in wanted)
-            if (byId.TryGetValue(id, out var t) && !string.IsNullOrWhiteSpace(t)) parts.Add(t.Trim());
+        {
+            if (byId.TryGetValue(id, out var t) && !string.IsNullOrWhiteSpace(t))
+            {
+                parts.Add(t.Trim());
+            }
+        }
+
         return string.Join(" ", parts);
     }
 
@@ -258,12 +300,18 @@ public static class AccessibilityTreeBuilder
     private static string AssociatedLabel(Element control, Document document)
     {
         var id = control.Id;
-        if (string.IsNullOrEmpty(id)) return "";
+        if (string.IsNullOrEmpty(id))
+        {
+            return "";
+        }
+
         foreach (var el in document.DescendantElements())
         {
             if (el.LocalName == "label"
                 && string.Equals(el.GetAttribute("for"), id, StringComparison.Ordinal))
+            {
                 return el.TextContent;
+            }
         }
         return "";
     }
@@ -272,7 +320,9 @@ public static class AccessibilityTreeBuilder
     {
         var n = element.LocalName;
         if (n.Length == 2 && n[0] == 'h' && n[1] is >= '1' and <= '6')
+        {
             return n[1] - '0';
+        }
         // role="heading" — honour aria-level when present.
         var level = element.GetAttribute("aria-level");
         return int.TryParse(level, out var l) && l is >= 1 and <= 6 ? l : 2;
@@ -281,21 +331,34 @@ public static class AccessibilityTreeBuilder
     private static string DocumentTitle(Document document)
     {
         foreach (var el in document.DescendantElements())
+        {
             if (el.LocalName == "title")
+            {
                 return Collapse(el.TextContent);
+            }
+        }
+
         return "";
     }
 
     /// <summary>Trims and collapses runs of whitespace, the way a name is announced.</summary>
     private static string Collapse(string text)
     {
-        if (string.IsNullOrEmpty(text)) return "";
+        if (string.IsNullOrEmpty(text))
+        {
+            return "";
+        }
+
         var sb = new System.Text.StringBuilder(text.Length);
         var inWs = false;
         foreach (var c in text)
         {
             if (char.IsWhiteSpace(c)) { inWs = true; continue; }
-            if (inWs && sb.Length > 0) sb.Append(' ');
+            if (inWs && sb.Length > 0)
+            {
+                sb.Append(' ');
+            }
+
             inWs = false;
             sb.Append(c);
         }

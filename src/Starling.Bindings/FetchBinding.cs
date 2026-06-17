@@ -55,7 +55,10 @@ public static class FetchBinding
         ArgumentNullException.ThrowIfNull(document);
 
         var realm = runtime.Realm;
-        if (realm.HeadersConstructor is not null) return;
+        if (realm.HeadersConstructor is not null)
+        {
+            return;
+        }
 
         InstallHeaders(realm);
         InstallAbort(realm);
@@ -133,7 +136,10 @@ public static class FetchBinding
         {
             var store = HeadersStore.Require(realm, thisV);
             if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
                 throw new JsThrow(realm.NewTypeError("Headers.forEach requires a callable"));
+            }
+
             var cb = args[0];
             var thisArg = args.Length > 1 ? args[1] : JsValue.Undefined;
             foreach (var (name, value) in store.Entries())
@@ -166,7 +172,10 @@ public static class FetchBinding
             var store = HeadersStore.Require(realm, thisV);
             var snapshot = new JsArray(realm);
             foreach (var (k, _) in store.Entries())
+            {
                 snapshot.Push(JsValue.String(k));
+            }
+
             return IteratorIntrinsics.CreateArrayIterator(realm, JsValue.Object(snapshot), ArrayIteratorKind.Value);
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, proto, "values", (thisV, _) =>
@@ -174,7 +183,10 @@ public static class FetchBinding
             var store = HeadersStore.Require(realm, thisV);
             var snapshot = new JsArray(realm);
             foreach (var (_, v) in store.Entries())
+            {
                 snapshot.Push(JsValue.String(v));
+            }
+
             return IteratorIntrinsics.CreateArrayIterator(realm, JsValue.Object(snapshot), ArrayIteratorKind.Value);
         }, length: 0);
 
@@ -182,7 +194,10 @@ public static class FetchBinding
         {
             var obj = new HeadersObject(proto);
             if (args.Length > 0 && !args[0].IsUndefined && !args[0].IsNull)
+            {
                 obj.Store.PopulateFromJs(realm, args[0]);
+            }
+
             return JsValue.Object(obj);
         }, isConstructor: true);
         ctor.DefineOwnProperty("prototype",
@@ -250,7 +265,11 @@ public static class FetchBinding
         {
             var s = NewSignal();
             var ms = args.Length > 0 ? JsValue.ToNumber(args[0]) : 0;
-            if (double.IsNaN(ms) || ms < 0) ms = 0;
+            if (double.IsNaN(ms) || ms < 0)
+            {
+                ms = 0;
+            }
+
             var setTimeout = realm.GlobalObject.Get("setTimeout");
             if (setTimeout.IsObject)
             {
@@ -285,7 +304,11 @@ public static class FetchBinding
         EventTargetBinding.DefineMethod(realm, signalProto, "throwIfAborted", (thisV, _) =>
         {
             var s = AbortSignalObject.Require(realm, thisV);
-            if (s.Aborted) throw new JsThrow(s.Reason);
+            if (s.Aborted)
+            {
+                throw new JsThrow(s.Reason);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
 
@@ -356,7 +379,10 @@ public static class FetchBinding
         var ctor = new JsNativeFunction(realm, "Request", 1, (_, args) =>
         {
             if (args.Length == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("Request requires at least 1 argument"));
+            }
+
             return JsValue.Object(BuildRequest(realm, args[0], args.Length > 1 ? args[1] : JsValue.Undefined, null));
         }, isConstructor: true);
         ctor.DefineOwnProperty("prototype",
@@ -405,10 +431,16 @@ public static class FetchBinding
         {
             var r = ResponseObject.Require(realm, thisV);
             if (r.BodyUsed)
+            {
                 throw new JsThrow(realm.NewTypeError("Body already consumed"));
+            }
+
             var headersClone = new HeadersObject(realm.HeadersPrototype);
             foreach (var (k, v) in r.Headers.Store.Entries())
+            {
                 headersClone.Store.Append(k, v);
+            }
+
             var clone = new ResponseObject(proto, r.Status, r.StatusText, headersClone,
                 r.BodyBytes, r.Url, r.Redirected);
             return JsValue.Object(clone);
@@ -426,15 +458,28 @@ public static class FetchBinding
             {
                 var initObj = init.AsObject;
                 var st = initObj.Get("status");
-                if (st.IsNumber) status = (int)st.AsNumber;
+                if (st.IsNumber)
+                {
+                    status = (int)st.AsNumber;
+                }
+
                 var stt = initObj.Get("statusText");
-                if (stt.IsString) statusText = stt.AsString;
+                if (stt.IsString)
+                {
+                    statusText = stt.AsString;
+                }
+
                 var hd = initObj.Get("headers");
                 if (!hd.IsUndefined && !hd.IsNull)
+                {
                     headers.Store.PopulateFromJs(realm, hd);
+                }
             }
             if (contentType is not null && !headers.Store.Has("content-type"))
+            {
                 headers.Store.Set("content-type", contentType);
+            }
+
             var resp = new ResponseObject(proto, status, statusText, headers, bytes, "", false);
             return JsValue.Object(resp);
         }, isConstructor: true);
@@ -452,7 +497,11 @@ public static class FetchBinding
         EventTargetBinding.DefineMethod(realm, proto, "text", (thisV, _) =>
         {
             var owner = resolve(thisV);
-            if (owner.BodyUsed) return RejectedPromise(realm, realm.NewTypeError("Body already consumed"));
+            if (owner.BodyUsed)
+            {
+                return RejectedPromise(realm, realm.NewTypeError("Body already consumed"));
+            }
+
             owner.BodyUsed = true;
             var s = Encoding.UTF8.GetString(owner.BodyBytes);
             return ResolvedPromise(realm, JsValue.String(s));
@@ -461,17 +510,28 @@ public static class FetchBinding
         EventTargetBinding.DefineMethod(realm, proto, "json", (thisV, _) =>
         {
             var owner = resolve(thisV);
-            if (owner.BodyUsed) return RejectedPromise(realm, realm.NewTypeError("Body already consumed"));
+            if (owner.BodyUsed)
+            {
+                return RejectedPromise(realm, realm.NewTypeError("Body already consumed"));
+            }
+
             owner.BodyUsed = true;
             var s = Encoding.UTF8.GetString(owner.BodyBytes);
             // Use the global JSON.parse so we honour the realm's implementation.
             try
             {
                 var json = realm.GlobalObject.Get("JSON");
-                if (!json.IsObject) return RejectedPromise(realm, realm.NewTypeError("JSON not installed"));
+                if (!json.IsObject)
+                {
+                    return RejectedPromise(realm, realm.NewTypeError("JSON not installed"));
+                }
+
                 var parse = json.AsObject.Get("parse");
                 if (!AbstractOperations.IsCallable(parse))
+                {
                     return RejectedPromise(realm, realm.NewTypeError("JSON.parse not callable"));
+                }
+
                 var value = AbstractOperations.Call(realm.ActiveVm, parse, json, new[] { JsValue.String(s) });
                 return ResolvedPromise(realm, value);
             }
@@ -484,7 +544,11 @@ public static class FetchBinding
         EventTargetBinding.DefineMethod(realm, proto, "arrayBuffer", (thisV, _) =>
         {
             var owner = resolve(thisV);
-            if (owner.BodyUsed) return RejectedPromise(realm, realm.NewTypeError("Body already consumed"));
+            if (owner.BodyUsed)
+            {
+                return RejectedPromise(realm, realm.NewTypeError("Body already consumed"));
+            }
+
             owner.BodyUsed = true;
             var buf = new JsArrayBuffer(realm.ArrayBufferPrototype, owner.BodyBytes.Length);
             owner.BodyBytes.CopyTo(buf.GetSpan());
@@ -494,7 +558,11 @@ public static class FetchBinding
         EventTargetBinding.DefineMethod(realm, proto, "blob", (thisV, _) =>
         {
             var owner = resolve(thisV);
-            if (owner.BodyUsed) return RejectedPromise(realm, realm.NewTypeError("Body already consumed"));
+            if (owner.BodyUsed)
+            {
+                return RejectedPromise(realm, realm.NewTypeError("Body already consumed"));
+            }
+
             owner.BodyUsed = true;
             var type = owner is ResponseObject response ? response.Headers.Store.Get("content-type") ?? "" : "";
             var blob = new BlobObject(realm.GlobalObject.Get("Blob").AsObject.Get("prototype").AsObject,
@@ -504,13 +572,23 @@ public static class FetchBinding
         EventTargetBinding.DefineMethod(realm, proto, "formData", (thisV, _) =>
         {
             var owner = resolve(thisV);
-            if (owner.BodyUsed) return RejectedPromise(realm, realm.NewTypeError("Body already consumed"));
+            if (owner.BodyUsed)
+            {
+                return RejectedPromise(realm, realm.NewTypeError("Body already consumed"));
+            }
+
             owner.BodyUsed = true;
             if (owner is not ResponseObject response)
+            {
                 return RejectedPromise(realm, realm.NewTypeError("formData is only supported on Response"));
+            }
+
             var type = response.Headers.Store.Get("content-type") ?? "";
             if (!type.StartsWith("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
+            {
                 return RejectedPromise(realm, realm.NewTypeError("Response.formData only supports URL-encoded bodies"));
+            }
+
             var protoObj = realm.GlobalObject.Get("FormData").AsObject.Get("prototype").AsObject;
             var form = CoreWebApiBinding.ParseUrlEncodedFormData(realm, protoObj, Encoding.UTF8.GetString(owner.BodyBytes));
             return ResolvedPromise(realm, JsValue.Object(form));
@@ -553,7 +631,9 @@ public static class FetchBinding
             req.BodyUsed = true; // sending consumes the body
 
             if (TryStartFileFetch(runtime, req, resolve, reject))
+            {
                 return;
+            }
 
             // Build wire request synchronously to surface URL errors as rejections.
             HttpRequest wire;
@@ -640,7 +720,9 @@ public static class FetchBinding
     {
         var realm = runtime.Realm;
         if (!Uri.TryCreate(req.Url, UriKind.Absolute, out var uri) || uri.Scheme != "file")
+        {
             return false;
+        }
 
         if (!req.Method.Equals("GET", StringComparison.OrdinalIgnoreCase)
             && !req.Method.Equals("HEAD", StringComparison.OrdinalIgnoreCase))
@@ -733,7 +815,11 @@ public static class FetchBinding
         {
             urlStr = existing.Url;
             method = existing.Method;
-            foreach (var (k, v) in existing.Headers.Store.Entries()) headers.Store.Append(k, v);
+            foreach (var (k, v) in existing.Headers.Store.Entries())
+            {
+                headers.Store.Append(k, v);
+            }
+
             body = existing.BodyBytes;
             redirect = existing.Redirect;
             mode = existing.Mode;
@@ -749,7 +835,11 @@ public static class FetchBinding
         {
             var obj = init.AsObject;
             var m = obj.Get("method");
-            if (m.IsString) method = m.AsString.ToUpperInvariant();
+            if (m.IsString)
+            {
+                method = m.AsString.ToUpperInvariant();
+            }
+
             var h = obj.Get("headers");
             if (!h.IsUndefined && !h.IsNull)
             {
@@ -761,16 +851,33 @@ public static class FetchBinding
             {
                 body = BodyToBytes(realm, b, out var contentType);
                 if (contentType is not null && !headers.Store.Has("content-type"))
+                {
                     headers.Store.Set("content-type", contentType);
+                }
             }
             var r = obj.Get("redirect");
-            if (r.IsString) redirect = r.AsString;
+            if (r.IsString)
+            {
+                redirect = r.AsString;
+            }
+
             var md = obj.Get("mode");
-            if (md.IsString) mode = md.AsString;
+            if (md.IsString)
+            {
+                mode = md.AsString;
+            }
+
             var cr = obj.Get("credentials");
-            if (cr.IsString) credentials = cr.AsString;
+            if (cr.IsString)
+            {
+                credentials = cr.AsString;
+            }
+
             var sig = obj.Get("signal");
-            if (sig.IsObject && sig.AsObject is AbortSignalObject so) signal = so;
+            if (sig.IsObject && sig.AsObject is AbortSignalObject so)
+            {
+                signal = so;
+            }
         }
 
         // Resolve URL relative to document base.
@@ -783,11 +890,17 @@ public static class FetchBinding
     private static string ResolveUrl(string input, Document? document)
     {
         // Try absolute first.
-        if (Uri.TryCreate(input, UriKind.Absolute, out var abs)) return abs.ToString();
+        if (Uri.TryCreate(input, UriKind.Absolute, out var abs))
+        {
+            return abs.ToString();
+        }
         // Document base.
         var baseUrl = document is null ? null : DocumentBaseUrl(document);
         if (baseUrl is not null && Uri.TryCreate(new Uri(baseUrl), input, out var combined))
+        {
             return combined.ToString();
+        }
+
         return input;
     }
 
@@ -801,7 +914,10 @@ public static class FetchBinding
     {
         var parsed = StarlingUrlParser.Parse(req.Url);
         if (parsed.IsErr)
+        {
             throw new JsThrow(realm.NewTypeError($"Invalid URL: {req.Url}"));
+        }
+
         var u = parsed.Value;
         var hdrs = new HttpHeaders();
         foreach (var (k, v) in req.Headers.Store.Entries())
@@ -818,7 +934,10 @@ public static class FetchBinding
     {
         var headers = new HeadersObject(realm.HeadersPrototype);
         foreach (var kv in wire.Headers)
+        {
             headers.Store.Append(kv.Key, kv.Value);
+        }
+
         var bytes = wire.Body.ToArray();
         return new ResponseObject(realm.ResponsePrototype, wire.StatusCode, wire.ReasonPhrase ?? "",
             headers, bytes, finalUrl, redirected: false);
@@ -830,14 +949,26 @@ public static class FetchBinding
     private static byte[] BodyToBytes(JsRealm realm, JsValue body, out string? contentType)
     {
         contentType = null;
-        if (body.IsUndefined || body.IsNull) return Array.Empty<byte>();
-        if (body.IsString) return Encoding.UTF8.GetBytes(body.AsString);
+        if (body.IsUndefined || body.IsNull)
+        {
+            return Array.Empty<byte>();
+        }
+
+        if (body.IsString)
+        {
+            return Encoding.UTF8.GetBytes(body.AsString);
+        }
+
         if (body.IsObject)
         {
             switch (body.AsObject)
             {
                 case BlobObject blob:
-                    if (blob.Type.Length > 0) contentType = blob.Type;
+                    if (blob.Type.Length > 0)
+                    {
+                        contentType = blob.Type;
+                    }
+
                     return blob.Bytes.ToArray();
                 case FormDataObject form:
                     return CoreWebApiBinding.SerializeFormDataMultipart(form, out contentType);
@@ -861,7 +992,9 @@ public static class FetchBinding
     internal static JsValue MakePromise(JsRealm realm, Action<JsValue, JsValue> executor)
     {
         if (realm.PromiseConstructor is null)
+        {
             throw new InvalidOperationException("Promise not installed");
+        }
         // Invoke the Promise constructor synchronously with a native executor
         // that captures resolve/reject. This routes through the existing
         // resolving-functions plumbing in PromiseCtor.
@@ -887,20 +1020,35 @@ public static class FetchBinding
     // Yield AbortSignal objects from an array-like value (AbortSignal.any).
     private static IEnumerable<AbortSignalObject> IterateSignals(JsRealm realm, JsValue iterable)
     {
-        if (!iterable.IsObject) yield break;
+        if (!iterable.IsObject)
+        {
+            yield break;
+        }
+
         var obj = iterable.AsObject;
         var lenVal = obj.Get("length");
-        if (!lenVal.IsNumber) yield break;
+        if (!lenVal.IsNumber)
+        {
+            yield break;
+        }
+
         var len = (int)JsValue.ToNumber(lenVal);
         for (var i = 0; i < len; i++)
+        {
             if (obj.Get(i.ToString(System.Globalization.CultureInfo.InvariantCulture)) is { IsObject: true } v
                 && v.AsObject is AbortSignalObject s)
+            {
                 yield return s;
+            }
+        }
     }
 
     internal static JsValue MakeAbortError(JsRealm realm, JsValue reason)
     {
-        if (!reason.IsUndefined) return reason;
+        if (!reason.IsUndefined)
+        {
+            return reason;
+        }
         // The default abort reason is a real "AbortError" DOMException, so
         // signal.reason.constructor resolves to the realm's DOMException.
         return DomExceptionBinding.Make(realm, "AbortError", "The operation was aborted.");
@@ -986,38 +1134,67 @@ internal sealed class HeadersStore
     {
         var lower = name.ToLowerInvariant();
         var matches = _entries.Where(e => e.Name == lower).Select(e => e.Value).ToList();
-        if (matches.Count == 0) return null;
+        if (matches.Count == 0)
+        {
+            return null;
+        }
+
         return string.Join(", ", matches);
     }
 
     public IEnumerable<string> GetAll(string name)
     {
         var lower = name.ToLowerInvariant();
-        foreach (var e in _entries) if (e.Name == lower) yield return e.Value;
+        foreach (var e in _entries)
+        {
+            if (e.Name == lower)
+            {
+                yield return e.Value;
+            }
+        }
     }
 
     public IEnumerable<(string Name, string Value)> Entries()
     {
         // Spec mandates sorted lexicographic order; tests don't rely on it but
         // emitting in insertion order is good enough for now.
-        foreach (var e in _entries) yield return e;
+        foreach (var e in _entries)
+        {
+            yield return e;
+        }
     }
 
     public static HeadersStore Require(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is HeadersObject ho) return ho.Store;
+        if (thisV.IsObject && thisV.AsObject is HeadersObject ho)
+        {
+            return ho.Store;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not a Headers instance"));
     }
 
     /// <summary>Populate from a JS init: Headers instance, array-of-pairs, or plain object.</summary>
     public void PopulateFromJs(JsRealm realm, JsValue init)
     {
-        if (init.IsUndefined || init.IsNull) return;
-        if (!init.IsObject) return;
+        if (init.IsUndefined || init.IsNull)
+        {
+            return;
+        }
+
+        if (!init.IsObject)
+        {
+            return;
+        }
+
         var obj = init.AsObject;
         if (obj is HeadersObject other)
         {
-            foreach (var (k, v) in other.Store.Entries()) Append(k, v);
+            foreach (var (k, v) in other.Store.Entries())
+            {
+                Append(k, v);
+            }
+
             return;
         }
         // Array-of-pairs?
@@ -1069,7 +1246,11 @@ internal sealed class RequestObject : JsObject, IBodyOwner
 
     public static RequestObject Require(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is RequestObject r) return r;
+        if (thisV.IsObject && thisV.AsObject is RequestObject r)
+        {
+            return r;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not a Request instance"));
     }
 }
@@ -1094,7 +1275,11 @@ internal sealed class ResponseObject : JsObject, IBodyOwner
 
     public static ResponseObject Require(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is ResponseObject r) return r;
+        if (thisV.IsObject && thisV.AsObject is ResponseObject r)
+        {
+            return r;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not a Response instance"));
     }
 }
@@ -1124,7 +1309,11 @@ internal sealed class AbortSignalObject : JsObject
         Action<JsValue>[] toFire;
         lock (_abortCallbacks)
         {
-            if (Aborted) return;
+            if (Aborted)
+            {
+                return;
+            }
+
             Aborted = true;
             Reason = reason;
             toFire = _abortCallbacks.ToArray();
@@ -1138,7 +1327,11 @@ internal sealed class AbortSignalObject : JsObject
 
     public static AbortSignalObject Require(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is AbortSignalObject s) return s;
+        if (thisV.IsObject && thisV.AsObject is AbortSignalObject s)
+        {
+            return s;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not an AbortSignal"));
     }
 }
@@ -1152,7 +1345,11 @@ internal sealed class AbortControllerObject : JsObject
 
     public static AbortControllerObject Require(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is AbortControllerObject c) return c;
+        if (thisV.IsObject && thisV.AsObject is AbortControllerObject c)
+        {
+            return c;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not an AbortController"));
     }
 }

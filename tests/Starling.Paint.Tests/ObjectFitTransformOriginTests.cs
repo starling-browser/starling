@@ -316,7 +316,13 @@ public sealed class ObjectFitTransformOriginTests
     private static PushTransform FirstPush(Starling.Paint.DisplayList.DisplayList dl)
     {
         foreach (var item in dl.Items)
-            if (item is PushTransform push) return push;
+        {
+            if (item is PushTransform push)
+            {
+                return push;
+            }
+        }
+
         throw new InvalidOperationException("display list has no PushTransform");
     }
 
@@ -350,9 +356,16 @@ public sealed class ObjectFitTransformOriginTests
     private static (int X, int Y) FirstMatch(RenderedBitmap bmp, Func<(byte R, byte G, byte B, byte A), bool> match)
     {
         for (var y = 0; y < bmp.Height; y++)
+        {
             for (var x = 0; x < bmp.Width; x++)
+            {
                 if (match(bmp.GetPixel(x, y)))
+                {
                     return (x, y);
+                }
+            }
+        }
+
         throw new InvalidOperationException("no matching pixel found");
     }
 
@@ -368,7 +381,10 @@ public sealed class ObjectFitTransformOriginTests
             for (var y = 0; y < rows.Height; y++)
             {
                 var row = rows.GetRowSpan(y);
-                for (var x = 0; x < row.Length; x++) row[x] = color;
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = color;
+                }
             }
         });
         return image;
@@ -383,7 +399,10 @@ public sealed class ObjectFitTransformOriginTests
             for (var y = 0; y < rows.Height; y++)
             {
                 var row = rows.GetRowSpan(y);
-                for (var x = 0; x < row.Length; x++) row[x] = x < w / 4 ? left : rest;
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = x < w / 4 ? left : rest;
+                }
             }
         });
         return image;
@@ -399,7 +418,10 @@ public sealed class ObjectFitTransformOriginTests
             {
                 var row = rows.GetRowSpan(y);
                 var color = y < h / 2 ? top : bottom;
-                for (var x = 0; x < row.Length; x++) row[x] = color;
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = color;
+                }
             }
         });
         return image;
@@ -408,7 +430,10 @@ public sealed class ObjectFitTransformOriginTests
     private static Element FindImg(Document document)
     {
         foreach (var img in document.GetElementsByTagName("img"))
+        {
             return img;
+        }
+
         throw new InvalidOperationException("no <img> in fixture");
     }
 

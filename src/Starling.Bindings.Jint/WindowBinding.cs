@@ -33,12 +33,19 @@ internal static class WindowBinding
         var global = engine.Global;
         var doc = ctx.Document;
 
-        if (ctx.Wrappers.WindowPrototype is not null) return; // idempotent
+        if (ctx.Wrappers.WindowPrototype is not null)
+        {
+            return; // idempotent
+        }
 
         // 1) WindowPrototype inherits EventTarget.prototype if populated, else
         //    it falls back to the default object proto.
         var windowProto = new JsObject(engine);
-        if (ctx.Wrappers.EventTargetPrototype is { } etp) windowProto.Prototype = etp;
+        if (ctx.Wrappers.EventTargetPrototype is { } etp)
+        {
+            windowProto.Prototype = etp;
+        }
+
         ctx.Wrappers.WindowPrototype = windowProto;
 
         // 2) Rewire the realm's global to the window prototype, and bind it to
@@ -96,7 +103,10 @@ internal static class WindowBinding
             {
                 var target = args.Length > 0 ? args[0].ToString() : "";
                 if (!HistoryBinding.NavigateSameDocument(ctx, target, replace: false))
+                {
                     WindowBindingLog.LocationAssignmentIgnored(jsLog, target);
+                }
+
                 return JsValue.Undefined;
             });
 
@@ -111,8 +121,11 @@ internal static class WindowBinding
         {
             var el = args.Length > 0 ? ctx.Wrappers.UnwrapElement(args[0]) : null;
             if (el is null)
+            {
                 throw new global::Jint.Runtime.JavaScriptException(engine.Intrinsics.TypeError,
                     "getComputedStyle requires an Element argument");
+            }
+
             return BuildComputedStyleDeclaration(ctx, el);
         }, length: 1);
 
@@ -143,7 +156,10 @@ internal static class WindowBinding
         // Legacy (addListener/removeListener) + modern EventTarget surface. All
         // inert: there is no media-change event source behind the seam.
         foreach (var m in new[] { "addListener", "removeListener", "addEventListener", "removeEventListener" })
+        {
             JintInterop.DefineMethod(engine, mql, m, (_, _) => JsValue.Undefined, length: 1);
+        }
+
         JintInterop.DefineMethod(engine, mql, "dispatchEvent", (_, _) => JsBoolean.False, length: 1);
         return mql;
     }
@@ -262,7 +278,10 @@ internal static class WindowBinding
             {
                 var target = args.Length > 0 ? args[0].ToString() : "";
                 if (!HistoryBinding.NavigateSameDocument(ctx, target, replace: false))
+                {
                     WindowBindingLog.LocationHrefAssignmentIgnored(jsLog, target);
+                }
+
                 return JsValue.Undefined;
             });
         JintInterop.DefineAccessor(engine, loc, "protocol", (_, _) => JintInterop.Str(ParsedPart(ctx, p => p.Scheme + ":")));
@@ -276,7 +295,11 @@ internal static class WindowBinding
             (_, args) =>
             {
                 var raw = args.Length > 0 ? args[0].ToString() : "";
-                if (raw.Length > 0 && raw[0] != '#') raw = "#" + raw;
+                if (raw.Length > 0 && raw[0] != '#')
+                {
+                    raw = "#" + raw;
+                }
+
                 HistoryBinding.NavigateSameDocument(ctx, raw, replace: false);
                 return JsValue.Undefined;
             });
@@ -287,14 +310,20 @@ internal static class WindowBinding
         {
             var target = args.Length > 0 ? args[0].ToString() : "";
             if (!HistoryBinding.NavigateSameDocument(ctx, target, replace: false))
+            {
                 WindowBindingLog.LocationAssignIgnored(jsLog, target);
+            }
+
             return JsValue.Undefined;
         }, length: 1);
         JintInterop.DefineMethod(engine, loc, "replace", (_, args) =>
         {
             var target = args.Length > 0 ? args[0].ToString() : "";
             if (!HistoryBinding.NavigateSameDocument(ctx, target, replace: true))
+            {
                 WindowBindingLog.LocationReplaceIgnored(jsLog, target);
+            }
+
             return JsValue.Undefined;
         }, length: 1);
         JintInterop.DefineMethod(engine, loc, "reload", (_, _) =>
@@ -312,14 +341,22 @@ internal static class WindowBinding
     internal static string UrlFor(JintBackendContext ctx)
     {
         var hist = HistoryBinding.CurrentUrlFor(ctx);
-        if (hist is not null) return hist;
+        if (hist is not null)
+        {
+            return hist;
+        }
+
         return ctx.BaseUrl?.ToString() ?? "about:blank";
     }
 
     private static string ParsedPart(JintBackendContext ctx, Func<Uri, string> select)
     {
         var url = UrlFor(ctx);
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return "";
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return "";
+        }
+
         try { return select(uri); } catch { return ""; }
     }
 
@@ -337,7 +374,11 @@ internal static class WindowBinding
         JintInterop.DefineMethod(engine, decl, "getPropertyValue", (_, args) =>
         {
             var name = args.Length > 0 ? args[0].ToString() : "";
-            if (string.IsNullOrEmpty(name) || host is null) return JintInterop.Str("");
+            if (string.IsNullOrEmpty(name) || host is null)
+            {
+                return JintInterop.Str("");
+            }
+
             return JintInterop.Str(host.GetComputedProperty(element, name));
         }, length: 1);
         // setProperty / removeProperty are no-ops on a computed-style declaration
@@ -357,8 +398,10 @@ internal static class WindowBinding
             JintInterop.DefineAccessor(engine, decl, camel,
                 (_, _) => host is null ? JintInterop.Str("") : JintInterop.Str(host.GetComputedProperty(element, capturedProp)));
             if (camel != prop)
+            {
                 JintInterop.DefineAccessor(engine, decl, prop,
                     (_, _) => host is null ? JintInterop.Str("") : JintInterop.Str(host.GetComputedProperty(element, capturedProp)));
+            }
         }
         return decl;
     }
@@ -379,7 +422,11 @@ internal static class WindowBinding
 
     private static string ToCamelCase(string kebab)
     {
-        if (kebab.IndexOf('-') < 0) return kebab;
+        if (kebab.IndexOf('-') < 0)
+        {
+            return kebab;
+        }
+
         var sb = new System.Text.StringBuilder(kebab.Length);
         var upper = false;
         foreach (var c in kebab)

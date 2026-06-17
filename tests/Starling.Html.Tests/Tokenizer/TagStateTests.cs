@@ -259,7 +259,11 @@ public class TagStateTests
         // across Feed() calls.
         var whole = Tokenize("<p class=\"hi\">x</p>");
         var t = new HtmlTokenizer();
-        foreach (var ch in "<p class=\"hi\">x</p>") t.Feed([ch]);
+        foreach (var ch in "<p class=\"hi\">x</p>")
+        {
+            t.Feed([ch]);
+        }
+
         t.EndOfInput();
         Drain(t).Should().Equal(whole);
     }
@@ -280,9 +284,16 @@ public class TagStateTests
         while (true)
         {
             var tok = t.ReadToken();
-            if (tok is null) return tokens;
+            if (tok is null)
+            {
+                return tokens;
+            }
+
             tokens.Add(tok);
-            if (tok is EndOfFileToken) return tokens;
+            if (tok is EndOfFileToken)
+            {
+                return tokens;
+            }
         }
     }
 

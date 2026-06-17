@@ -289,7 +289,10 @@ public sealed class CssomViewBindingTests
 
         public void SetScrollOffset(Element element, double x, double y)
         {
-            if (Scrollers.TryGetValue(element, out var s)) Clamp(s, x, y);
+            if (Scrollers.TryGetValue(element, out var s))
+            {
+                Clamp(s, x, y);
+            }
         }
 
         public void SetRootScrollOffset(double x, double y) => Clamp(Root, x, y);

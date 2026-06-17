@@ -141,7 +141,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         IReadOnlyList<FilterFunction> filters)
     {
         var unfiltered = Render(list, viewport, scale, opaqueBackground: false);
-        if (filters.Count == 0) return unfiltered;
+        if (filters.Count == 0)
+        {
+            return unfiltered;
+        }
 
         // Wrap the straight-RGBA pixels (no copy), run the chain at device
         // resolution, then read the result back out. ApplyFilterChain may return
@@ -157,13 +160,19 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         }
         finally
         {
-            if (!ReferenceEquals(filtered, layer)) filtered.Dispose();
+            if (!ReferenceEquals(filtered, layer))
+            {
+                filtered.Dispose();
+            }
         }
     }
 
     public RenderedBitmap FilterBitmap(RenderedBitmap source, IReadOnlyList<FilterFunction> filters, float scale)
     {
-        if (filters.Count == 0) return source;
+        if (filters.Count == 0)
+        {
+            return source;
+        }
 
         // Same shape as RenderFiltered's tail: wrap the straight-RGBA pixels
         // (no copy), run the chain at device resolution, read the result out.
@@ -177,7 +186,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         }
         finally
         {
-            if (!ReferenceEquals(filtered, layer)) filtered.Dispose();
+            if (!ReferenceEquals(filtered, layer))
+            {
+                filtered.Dispose();
+            }
         }
     }
 
@@ -311,7 +323,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
         Image<Rgba32> image;
         using (StarlingTelemetry.Span("paint", "raster.surface_alloc"))
+        {
             image = new Image<Rgba32>(width, height, opaqueBackground ? new Rgba32(255, 255, 255, 255) : new Rgba32(0, 0, 0, 0));
+        }
 
         using (image)
         {
@@ -364,7 +378,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
         WebGPURenderTarget target;
         using (StarlingTelemetry.Span("paint", "raster.context_init"))
+        {
             target = new WebGPURenderTarget(width, height);
+        }
 
         using (target)
         {
@@ -372,16 +388,20 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
             DrawingCanvas canvas;
             using (StarlingTelemetry.Span("paint", "raster.surface_alloc"))
+            {
                 canvas = target.CreateCanvas();
+            }
 
             using (canvas)
             using (StarlingTelemetry.Span("paint", "raster.command_record"))
+            {
                 // Flush seals queued commands into the canvas timeline so the GPU
                 // pipeline executes before ReadbackImage samples the texture.
                 // Without it, readback races the (un)submitted command buffer and
                 // returns the initial clear color.
                 ReplayList(canvas, list, width, height, scale, viewportTransform,
                     clearWhite: opaqueBackground, pendingImageSources, flush: true);
+            }
 
             byte[] pixels;
             using (StarlingTelemetry.Span("paint", "raster.readback"))
@@ -453,8 +473,15 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
             var end = idx + 1;
             while (end < items.Count && depth > 0)
             {
-                if (items[end] is PushMask) depth++;
-                else if (items[end] is PopMask) depth--;
+                if (items[end] is PushMask)
+                {
+                    depth++;
+                }
+                else if (items[end] is PopMask)
+                {
+                    depth--;
+                }
+
                 end++;
             }
             // end now points past the PopMask (or at items.Count if unbalanced).
@@ -470,8 +497,15 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
             var end = idx + 1;
             while (end < items.Count && depth > 0)
             {
-                if (items[end] is PushFilter) depth++;
-                else if (items[end] is PopFilter) depth--;
+                if (items[end] is PushFilter)
+                {
+                    depth++;
+                }
+                else if (items[end] is PopFilter)
+                {
+                    depth--;
+                }
+
                 end++;
             }
             // Render the bracketed slice into an offscreen layer, run the
@@ -496,11 +530,17 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         PushMask pushMask, float scale, DisposableBag pendingImageSources, Stack<Matrix2D> transforms, LayoutRect target)
     {
         var bounds = pushMask.Bounds;
-        if (bounds.Width <= 0 || bounds.Height <= 0) return;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
 
         var px = Math.Max(1, (int)Math.Ceiling(bounds.Width * scale));
         var py = Math.Max(1, (int)Math.Ceiling(bounds.Height * scale));
-        if ((long)px * py > 64L * 1024 * 1024) return;
+        if ((long)px * py > 64L * 1024 * 1024)
+        {
+            return;
+        }
 
         // Render the bracketed items into a transparent offscreen layer.
         // The layer uses a local coordinate system where (bounds.X, bounds.Y) maps
@@ -565,7 +605,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                     {
                         var brush = BuildGradientBrush(maskGrad, device);
                         if (brush is not null)
+                        {
                             c.Fill(brush, new RectanglePolygon(device));
+                        }
                     }));
                 }
             }
@@ -582,9 +624,13 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
             }
 
             if (pushMask.Mode == MaskModeKind.Luminance)
+            {
                 MultiplyAlphaByLuminanceMask(contentLayer, maskLayer);
+            }
             else
+            {
                 MultiplyAlphaByMask(contentLayer, maskLayer);
+            }
         }
 
         // Corner-radius clipping.
@@ -644,7 +690,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                 canvas.Restore();
                 break;
             case FillRect fill:
-                if (fill.Bounds.Width <= 0 || fill.Bounds.Height <= 0) return;
+                if (fill.Bounds.Width <= 0 || fill.Bounds.Height <= 0)
+                {
+                    return;
+                }
+
                 var rectPath = fill.PixelAlignment == FillRectPixelAlignment.SnapToDevicePixels
                     ? ToSnappedLayoutRectPath(fill.Bounds, scale)
                     : ToRectPath(fill.Bounds);
@@ -660,7 +710,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                 }
                 break;
             case StrokeSegments segments:
-                if (segments.Width <= 0 || segments.Color.A == 0) return;
+                if (segments.Width <= 0 || segments.Color.A == 0)
+                {
+                    return;
+                }
                 {
                     // Form-control glyph stroke (checkbox check / select
                     // chevron): a three-point open polyline drawn with a solid
@@ -673,14 +726,20 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                 }
                 break;
             case FillRoundedRect roundFill:
-                if (roundFill.Bounds.Width <= 0 || roundFill.Bounds.Height <= 0) return;
+                if (roundFill.Bounds.Width <= 0 || roundFill.Bounds.Height <= 0)
+                {
+                    return;
+                }
                 {
                     var path = BuildRoundedRectPath(roundFill.Bounds, roundFill.Radii);
                     canvas.Fill(Brushes.Solid(ToColor(roundFill.Color)), path);
                 }
                 break;
             case StrokeRoundedRect roundStroke:
-                if (roundStroke.Bounds.Width <= 0 || roundStroke.Bounds.Height <= 0 || roundStroke.Width <= 0) return;
+                if (roundStroke.Bounds.Width <= 0 || roundStroke.Bounds.Height <= 0 || roundStroke.Width <= 0)
+                {
+                    return;
+                }
                 {
                     var path = BuildRoundedRectPath(roundStroke.Bounds, roundStroke.Radii);
                     canvas.Draw(Pens.Solid(ToColor(roundStroke.Color), (float)roundStroke.Width), path);
@@ -690,7 +749,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                 DrawBorderSides(canvas, borderSides);
                 break;
             case DrawBoxShadow shadow:
-                if (!BoxShadowIntersectsTarget(shadow, transforms.Peek(), target)) return;
+                if (!BoxShadowIntersectsTarget(shadow, transforms.Peek(), target))
+                {
+                    return;
+                }
+
                 DrawBoxShadow(canvas, shadow, scale, transforms.Peek(), pendingImageSources);
                 break;
             case DrawText text:
@@ -824,7 +887,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     /// </summary>
     private static IPath? BuildBasicShapePath(CssClipPath clip, LayoutRect refBox)
     {
-        if (clip.IsNone || clip.IsUrl) return null;
+        if (clip.IsNone || clip.IsUrl)
+        {
+            return null;
+        }
 
         var bx = (float)refBox.X;
         var by = (float)refBox.Y;
@@ -836,7 +902,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         // resolved here (requires carrying the radii alongside the clip-path value).
         if (clip.Shape is null)
         {
-            if (bw <= 0 || bh <= 0) return null;
+            if (bw <= 0 || bh <= 0)
+            {
+                return null;
+            }
+
             return new RectanglePolygon(bx, by, bw, bh);
         }
 
@@ -858,8 +928,16 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     /// </summary>
     private static float ResolveLengthPct(CssLengthPercentage lp, float basis)
     {
-        if (lp.IsPercentage) return basis * (float)lp.Percentage / 100f;
-        if (lp.Length is { } l) return (float)Starling.Layout.Block.BlockLayout.ToPx(l);
+        if (lp.IsPercentage)
+        {
+            return basis * (float)lp.Percentage / 100f;
+        }
+
+        if (lp.Length is { } l)
+        {
+            return (float)Starling.Layout.Block.BlockLayout.ToPx(l);
+        }
+
         return 0f; // calc() fallback
     }
 
@@ -870,7 +948,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     /// </summary>
     private static EllipsePolygon? BuildCirclePath(CssCircleShape circle, float bx, float by, float bw, float bh)
     {
-        if (bw <= 0 || bh <= 0) return null;
+        if (bw <= 0 || bh <= 0)
+        {
+            return null;
+        }
+
         var cx = bx + ResolveLengthPct(circle.Position.X, bw);
         var cy = by + ResolveLengthPct(circle.Position.Y, bh);
 
@@ -892,7 +974,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                 : Math.Min(Math.Min(cx - bx, bx + bw - cx), Math.Min(cy - by, by + bh - cy));
         }
 
-        if (radius <= 0) return null;
+        if (radius <= 0)
+        {
+            return null;
+        }
         // ImageSharp EllipsePolygon is centered at (cx, cy) with half-axes rx, ry.
         return new EllipsePolygon(cx, cy, radius, radius);
     }
@@ -903,14 +988,22 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     /// </summary>
     private static EllipsePolygon? BuildEllipsePath(CssEllipseShape ellipse, float bx, float by, float bw, float bh)
     {
-        if (bw <= 0 || bh <= 0) return null;
+        if (bw <= 0 || bh <= 0)
+        {
+            return null;
+        }
+
         var cx = bx + ResolveLengthPct(ellipse.Position.X, bw);
         var cy = by + ResolveLengthPct(ellipse.Position.Y, bh);
 
         float rx = ResolveShapeRadius(ellipse.RadiusX, ellipse.RadiusXKeyword, cx - bx, bx + bw - cx);
         float ry = ResolveShapeRadius(ellipse.RadiusY, ellipse.RadiusYKeyword, cy - by, by + bh - cy);
 
-        if (rx <= 0 || ry <= 0) return null;
+        if (rx <= 0 || ry <= 0)
+        {
+            return null;
+        }
+
         return new EllipsePolygon(cx, cy, rx, ry);
     }
 
@@ -924,7 +1017,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         float distToNearEdge,
         float distToFarEdge)
     {
-        if (lp is not null) return ResolveLengthPct(lp, distToNearEdge + distToFarEdge);
+        if (lp is not null)
+        {
+            return ResolveLengthPct(lp, distToNearEdge + distToFarEdge);
+        }
+
         var kw = keyword ?? "closest-side";
         return kw.Equals("farthest-side", StringComparison.OrdinalIgnoreCase)
             ? Math.Max(distToNearEdge, distToFarEdge)
@@ -938,7 +1035,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     /// </summary>
     private static IPath? BuildInsetPath(CssInsetShape inset, float bx, float by, float bw, float bh)
     {
-        if (bw <= 0 || bh <= 0) return null;
+        if (bw <= 0 || bh <= 0)
+        {
+            return null;
+        }
+
         var top = ResolveLengthPct(inset.Top, bh);
         var right = ResolveLengthPct(inset.Right, bw);
         var bottom = ResolveLengthPct(inset.Bottom, bh);
@@ -948,10 +1049,15 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         var y = by + top;
         var w = bw - left - right;
         var h = bh - top - bottom;
-        if (w <= 0 || h <= 0) return null;
+        if (w <= 0 || h <= 0)
+        {
+            return null;
+        }
 
         if (inset.Radii is null || inset.Radii.Count == 0)
+        {
             return new RectanglePolygon(x, y, w, h);
+        }
 
         // Map the parsed CssRadiusPair list (TL, TR, BR, BL) to CornerRadii.
         // Per §4.1 the radii are also clamped to the inset box dimensions.
@@ -976,7 +1082,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     /// </summary>
     private static Polygon? BuildPolygonPath(CssPolygonShape polygon, float bx, float by, float bw, float bh)
     {
-        if (polygon.Vertices.Count < 3) return null;
+        if (polygon.Vertices.Count < 3)
+        {
+            return null;
+        }
+
         var pts = new PointF[polygon.Vertices.Count];
         for (var i = 0; i < polygon.Vertices.Count; i++)
         {
@@ -999,7 +1109,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     private void FillGradient(DrawingCanvas canvas, FillGradient item, float scale, DisposableBag pendingImageSources)
     {
         var bounds = item.Bounds;
-        if (bounds.Width <= 0 || bounds.Height <= 0) return;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
 
         if (item.Gradient.Kind == CssGradientKind.Conic)
         {
@@ -1016,7 +1129,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         }
 
         var brush = BuildGradientBrush(item.Gradient, ToRectF(bounds));
-        if (brush is null) return;
+        if (brush is null)
+        {
+            return;
+        }
+
         canvas.Fill(brush, ToRectPath(bounds));
     }
 
@@ -1029,7 +1146,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     private void FillGradientRounded(DrawingCanvas canvas, FillGradient item, float scale, DisposableBag pendingImageSources)
     {
         var bounds = item.Bounds;
-        if (bounds.Width <= 0 || bounds.Height <= 0) return;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
 
         // Fill the gradient brush straight into a rounded-rect path on the canvas
         // — the same direct-fill path the solid FillRoundedRect uses. The brush
@@ -1040,7 +1160,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         // so a rounded gradient inside a clipped box (the classic pill-shaped
         // progress-bar fill) vanished.
         var brush = BuildGradientBrush(item.Gradient, ToRectF(bounds));
-        if (brush is null) return;
+        if (brush is null)
+        {
+            return;
+        }
+
         canvas.Fill(brush, BuildRoundedRectPath(bounds, item.Radii));
     }
 
@@ -1059,13 +1183,19 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     private void FillConicGradient(DrawingCanvas canvas, FillGradient item, float scale, DisposableBag pendingImageSources)
     {
         var gradient = item.Gradient;
-        if (gradient.Stops.Count(s => !s.IsHint) < 2) return;
+        if (gradient.Stops.Count(s => !s.IsHint) < 2)
+        {
+            return;
+        }
 
         var bounds = item.Bounds;
         var pw = Math.Max(1, (int)Math.Ceiling(bounds.Width * scale));
         var ph = Math.Max(1, (int)Math.Ceiling(bounds.Height * scale));
         // Guard against pathological sizes that would allocate an enormous layer.
-        if ((long)pw * ph > 64L * 1024 * 1024) return;
+        if ((long)pw * ph > 64L * 1024 * 1024)
+        {
+            return;
+        }
 
         // Use the cache for the raw (unclipped) conic layer.
         var cacheKey = new ConicCacheKey(gradient, pw, ph);
@@ -1227,11 +1357,18 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         t -= Math.Floor(t); // normalize to [0,1)
 
         if (repeating && period > 0)
+        {
             t = firstRatio + (t - firstRatio - Math.Floor((t - firstRatio) / period) * period);
+        }
         else if (t <= firstRatio)
+        {
             t = firstRatio;
+        }
         else if (t >= lastRatio)
+        {
             t = lastRatio;
+        }
+
         return t;
     }
 
@@ -1254,12 +1391,22 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
         // Find the high-side real stop index (skip hints for bracketing).
         var hi = 1;
-        while (hi < n - 1 && ratios[hi] < t) hi++;
+        while (hi < n - 1 && ratios[hi] < t)
+        {
+            hi++;
+        }
         // Step hi past any hint to find the next real stop.
-        while (hi < n - 1 && stops[hi].IsHint) hi++;
+        while (hi < n - 1 && stops[hi].IsHint)
+        {
+            hi++;
+        }
+
         var lo = hi - 1;
         // Step lo back past any hint to the previous real stop.
-        while (lo > 0 && stops[lo].IsHint) lo--;
+        while (lo > 0 && stops[lo].IsHint)
+        {
+            lo--;
+        }
 
         var span = ratios[hi] - ratios[lo];
         var f = span > 0 ? (t - ratios[lo]) / span : 0.0;
@@ -1271,7 +1418,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         {
             for (var k = lo + 1; k < hi; k++)
             {
-                if (!stops[k].IsHint) continue;
+                if (!stops[k].IsHint)
+                {
+                    continue;
+                }
                 // The hint's normalized position within the [lo..hi] span.
                 var hintSpan = span > 0 ? (ratios[k] - ratios[lo]) / span : 0.5;
                 hintSpan = Math.Clamp(hintSpan, 0.0001, 0.9999);
@@ -1279,7 +1429,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                 // This passes through (0,0), (H,0.5), (1,1).
                 var logH = Math.Log(hintSpan);
                 if (Math.Abs(logH) > 1e-10)
+                {
                     f = Math.Pow(f, Math.Log(0.5) / logH);
+                }
+
                 break; // only one hint per interval
             }
         }
@@ -1351,7 +1504,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     {
         var n = ratios.Length;
         var hi = 1;
-        while (hi < n - 1 && ratios[hi] < t) hi++;
+        while (hi < n - 1 && ratios[hi] < t)
+        {
+            hi++;
+        }
+
         var lo = hi - 1;
 
         var span = ratios[hi] - ratios[lo];
@@ -1385,14 +1542,23 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     /// </summary>
     private static Brush? BuildGradientBrush(CssGradient gradient, RectangleF bounds)
     {
-        if (gradient.Stops.Count < 2) return null;
+        if (gradient.Stops.Count < 2)
+        {
+            return null;
+        }
         // Conic gradients have no ImageSharp brush; they are rasterized directly
         // in FillConicGradient. Callers that can only use a brush (e.g.
         // background-clip: text) get null and fall back to the solid color.
-        if (gradient.Kind == CssGradientKind.Conic) return null;
+        if (gradient.Kind == CssGradientKind.Conic)
+        {
+            return null;
+        }
 
         var stops = ResolveColorStops(gradient, Math.Max(bounds.Width, bounds.Height));
-        if (stops.Length < 2) return null;
+        if (stops.Length < 2)
+        {
+            return null;
+        }
 
         var repetition = gradient.Repeating
             ? GradientRepetitionMode.Repeat
@@ -1409,7 +1575,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
             var cx = x + (float)(pos.FractionX * w);
             var cy = y + (float)(pos.FractionY * h);
             var radius = RadialRadius(gradient, pos, w, h);
-            if (radius <= 0) return null;
+            if (radius <= 0)
+            {
+                return null;
+            }
+
             return new RadialGradientBrush(new PointF(cx, cy), radius, repetition, stops);
         }
 
@@ -1451,14 +1621,20 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     private void FillBackgroundTextClip(DrawingCanvas canvas, FillBackgroundTextClip clip, float scale, DisposableBag pendingImageSources)
     {
         var bounds = clip.Bounds;
-        if (bounds.Width <= 0 || bounds.Height <= 0 || clip.Glyphs.Count == 0) return;
+        if (bounds.Width <= 0 || bounds.Height <= 0 || clip.Glyphs.Count == 0)
+        {
+            return;
+        }
 
         // Render the offscreen layers at device resolution for crisp glyph
         // edges; DrawImage blits them back through the canvas transform.
         var px = Math.Max(1, (int)Math.Ceiling(bounds.Width * scale));
         var py = Math.Max(1, (int)Math.Ceiling(bounds.Height * scale));
         // Guard against pathological sizes that would allocate an enormous layer.
-        if ((long)px * py > 64L * 1024 * 1024) return;
+        if ((long)px * py > 64L * 1024 * 1024)
+        {
+            return;
+        }
 
         var device = new RectangleF(0, 0, px, py);
         var originX = (float)bounds.X;
@@ -1511,7 +1687,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         }
         else
         {
-            if (clip.Color.A == 0) return;
+            if (clip.Color.A == 0)
+            {
+                return;
+            }
+
             fillLayer.Mutate(ctx => ctx.Paint(c =>
                 c.Fill(Brushes.Solid(ToColor(clip.Color)), new RectanglePolygon(device))));
         }
@@ -1526,7 +1706,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
             c.Save(new DrawingOptions { Transform = scaleMatrix });
             foreach (var run in clip.Glyphs)
             {
-                if (string.IsNullOrEmpty(run.Text)) continue;
+                if (string.IsNullOrEmpty(run.Text))
+                {
+                    continue;
+                }
+
                 var spec = new FontSpec(run.FontFamilies, run.Bold, run.Italic);
                 var size = (float)run.FontSize;
                 var probe = FirstCodepoint(run.Text);
@@ -1564,13 +1748,22 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     private void FillMaskedBackground(DrawingCanvas canvas, FillMaskedBackground item, float scale, DisposableBag pendingImageSources)
     {
         var bounds = item.Bounds;
-        if (bounds.Width <= 0 || bounds.Height <= 0) return;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
         // Must have exactly one mask source.
-        if (item.Mask is null && item.MaskGradient is null) return;
+        if (item.Mask is null && item.MaskGradient is null)
+        {
+            return;
+        }
 
         var px = Math.Max(1, (int)Math.Ceiling(bounds.Width * scale));
         var py = Math.Max(1, (int)Math.Ceiling(bounds.Height * scale));
-        if ((long)px * py > 64L * 1024 * 1024) return;
+        if ((long)px * py > 64L * 1024 * 1024)
+        {
+            return;
+        }
 
         var device = new RectangleF(0, 0, px, py);
 
@@ -1583,7 +1776,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         fillLayer.Mutate(ctx => ctx.Paint(c =>
         {
             if (item.Color.A > 0)
+            {
                 c.Fill(Brushes.Solid(ToColor(item.Color)), new RectanglePolygon(device));
+            }
 
             if (item.BackgroundImage is { Width: > 0, Height: > 0 } bg)
             {
@@ -1617,7 +1812,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                 {
                     var brush = BuildGradientBrush(gradient, device);
                     if (brush is not null)
+                    {
                         c.Fill(brush, new RectanglePolygon(device));
+                    }
                 }
             }
         }));
@@ -1625,7 +1822,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         // Mask layer (device resolution): render the mask source into it.
         var tileW = item.MaskRenderWidth * scale;
         var tileH = item.MaskRenderHeight * scale;
-        if (tileW <= 0 || tileH <= 0) return;
+        if (tileW <= 0 || tileH <= 0)
+        {
+            return;
+        }
 
         var maskLayer = new Image<Rgba32>(px, py, new Rgba32(0, 0, 0, 0));
         pendingImageSources.Add(maskLayer);
@@ -1644,7 +1844,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                 {
                     var brush = BuildGradientBrush(maskGrad, device);
                     if (brush is not null)
+                    {
                         c.Fill(brush, new RectanglePolygon(device));
+                    }
                 }));
             }
         }
@@ -1666,9 +1868,13 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         // each pixel's linear luminance to the mask value (match-source == alpha
         // for decoded raster images).
         if (item.Mode == MaskModeKind.Luminance)
+        {
             MultiplyAlphaByLuminanceMask(fillLayer, maskLayer);
+        }
         else
+        {
             MultiplyAlphaByMask(fillLayer, maskLayer);
+        }
 
         // CSS Backgrounds 3 §5 — clip the masked result to the box's corner
         // radii so descendants respect border-radius clipping.
@@ -1718,12 +1924,15 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                     var gapX = countX > 1 ? (canvasW - countX * tileW) / (countX - 1) : 0;
                     var gapY = countY > 1 ? (canvasH - countY * tileH) / (countY - 1) : 0;
                     for (var iy = 0; iy < countY; iy++)
+                    {
                         for (var ix = 0; ix < countX; ix++)
                         {
                             var tx = (float)(ix * (tileW + gapX));
                             var ty = (float)(iy * (tileH + gapY));
                             canvas.DrawImage(src, srcRect, new RectangleF(tx, ty, (float)tileW, (float)tileH), _resampler);
                         }
+                    }
+
                     break;
                 }
             case MaskRepeatMode.Round:
@@ -1735,46 +1944,88 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                     var stretchW = (float)(canvasW / (double)countX);
                     var stretchH = (float)(canvasH / (double)countY);
                     for (var iy = 0; iy < countY; iy++)
+                    {
                         for (var ix = 0; ix < countX; ix++)
+                        {
                             canvas.DrawImage(src, srcRect, new RectangleF(ix * stretchW, iy * stretchH, stretchW, stretchH), _resampler);
+                        }
+                    }
+
                     break;
                 }
             case MaskRepeatMode.RepeatX:
                 {
                     var dy = (float)offsetY;
                     var tilesX = (long)Math.Ceiling(canvasW / tileW) + 2;
-                    if (tilesX > 1_000_000) break;
+                    if (tilesX > 1_000_000)
+                    {
+                        break;
+                    }
+
                     var startX = offsetX % tileW;
-                    if (startX > 0) startX -= tileW;
+                    if (startX > 0)
+                    {
+                        startX -= tileW;
+                    }
+
                     for (var tx = startX; tx < canvasW; tx += tileW)
+                    {
                         canvas.DrawImage(src, srcRect, new RectangleF((float)tx, dy, (float)tileW, (float)tileH), _resampler);
+                    }
+
                     break;
                 }
             case MaskRepeatMode.RepeatY:
                 {
                     var dx = (float)offsetX;
                     var tilesY = (long)Math.Ceiling(canvasH / tileH) + 2;
-                    if (tilesY > 1_000_000) break;
+                    if (tilesY > 1_000_000)
+                    {
+                        break;
+                    }
+
                     var startY = offsetY % tileH;
-                    if (startY > 0) startY -= tileH;
+                    if (startY > 0)
+                    {
+                        startY -= tileH;
+                    }
+
                     for (var ty = startY; ty < canvasH; ty += tileH)
+                    {
                         canvas.DrawImage(src, srcRect, new RectangleF(dx, (float)ty, (float)tileW, (float)tileH), _resampler);
+                    }
+
                     break;
                 }
             default: // Repeat
                 {
                     var tilesX = (long)Math.Ceiling(canvasW / tileW) + 2;
                     var tilesY = (long)Math.Ceiling(canvasH / tileH) + 2;
-                    if (tilesX * tilesY > 1_000_000) break;
+                    if (tilesX * tilesY > 1_000_000)
+                    {
+                        break;
+                    }
 
                     var startX = offsetX % tileW;
-                    if (startX > 0) startX -= tileW;
+                    if (startX > 0)
+                    {
+                        startX -= tileW;
+                    }
+
                     var startY = offsetY % tileH;
-                    if (startY > 0) startY -= tileH;
+                    if (startY > 0)
+                    {
+                        startY -= tileH;
+                    }
 
                     for (var ty = startY; ty < canvasH; ty += tileH)
+                    {
                         for (var tx = startX; tx < canvasW; tx += tileW)
+                        {
                             canvas.DrawImage(src, srcRect, new RectangleF((float)tx, (float)ty, (float)tileW, (float)tileH), _resampler);
+                        }
+                    }
+
                     break;
                 }
         }
@@ -1906,7 +2157,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         var ri = 0;
         for (var i = 0; i < src.Count; i++)
         {
-            if (src[i].IsHint) continue;
+            if (src[i].IsHint)
+            {
+                continue;
+            }
+
             var c = src[i].Color.ToSrgb();
             result[ri++] = new ColorStop((float)ratios[i], Color.FromPixel(new Rgba32(c.R, c.G, c.B, c.A)));
         }
@@ -1929,7 +2184,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         for (var i = 0; i < src.Count; i++)
         {
             if (src[i].Position is { } p)
+            {
                 ratios[i] = Math.Clamp(p.ResolveFraction(lineLengthPx), 0.0, 1.0);
+            }
         }
 
         // For first/last defaults, skip hints (first/last real stops default to 0/1).
@@ -1937,10 +2194,17 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         var lastReal = -1;
         for (var i = 0; i < src.Count; i++)
         {
-            if (!src[i].IsHint) { if (firstReal < 0) firstReal = i; lastReal = i; }
+            if (!src[i].IsHint) { if (firstReal < 0) { firstReal = i; } lastReal = i; }
         }
-        if (firstReal >= 0) ratios[firstReal] ??= 0.0;
-        if (lastReal >= 0) ratios[lastReal] ??= 1.0;
+        if (firstReal >= 0)
+        {
+            ratios[firstReal] ??= 0.0;
+        }
+
+        if (lastReal >= 0)
+        {
+            ratios[lastReal] ??= 1.0;
+        }
 
         // Enforce non-decreasing positions (CSS Images 3: a stop's position is
         // clamped to be >= the previous stop's).
@@ -1949,7 +2213,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         {
             if (ratios[i] is { } r)
             {
-                if (r < lastKnown) r = lastKnown;
+                if (r < lastKnown)
+                {
+                    r = lastKnown;
+                }
+
                 ratios[i] = r;
                 lastKnown = r;
             }
@@ -1963,19 +2231,29 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
             if (ratios[idx] is not null) { idx++; continue; }
             var startKnown = idx - 1;            // always >= 0 because [firstReal] is set
             var end = idx;
-            while (end < ratios.Length && ratios[end] is null) end++;
+            while (end < ratios.Length && ratios[end] is null)
+            {
+                end++;
+            }
+
             var endKnown = end;                  // ratios[end] is set (lastReal is set)
             var startVal = ratios[startKnown]!.Value;
             var endVal = ratios[endKnown]!.Value;
             var gap = endKnown - startKnown;
             for (var k = idx; k < end; k++)
+            {
                 ratios[k] = startVal + (endVal - startVal) * (k - startKnown) / gap;
+            }
+
             idx = end;
         }
 
         var result = new double[src.Count];
         for (var i = 0; i < src.Count; i++)
+        {
             result[i] = ratios[i]!.Value;
+        }
+
         return result;
     }
 
@@ -2011,7 +2289,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
     private void DrawText(DrawingCanvas canvas, DrawText text)
     {
-        if (string.IsNullOrEmpty(text.Text)) return;
+        if (string.IsNullOrEmpty(text.Text))
+        {
+            return;
+        }
 
         var spec = FontSpecFromDrawText(text);
         var size = (float)text.FontSize;
@@ -2044,7 +2325,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
     private void DrawTextDecoration(DrawingCanvas canvas, DrawTextDecoration d)
     {
-        if (d.Width <= 0 || d.Lines == TextDecorationLines.None) return;
+        if (d.Width <= 0 || d.Lines == TextDecorationLines.None)
+        {
+            return;
+        }
 
         var spec = new FontSpec(d.FontFamilies, d.Bold, d.Italic);
         var size = (float)d.FontSize;
@@ -2159,7 +2443,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
     private void DrawTextShadow(DrawingCanvas canvas, DrawTextShadow s, DisposableBag pendingImageSources)
     {
-        if (string.IsNullOrEmpty(s.Text)) return;
+        if (string.IsNullOrEmpty(s.Text))
+        {
+            return;
+        }
 
         var spec = new FontSpec(s.FontFamilies, s.Bold, s.Italic);
         var size = (float)s.FontSize;
@@ -2200,7 +2487,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         var pad = (int)Math.Ceiling(s.Blur * 3) + 2;
         var width = (int)Math.Ceiling(advance.Width) + 2 * pad;
         var height = (int)Math.Ceiling(ascent + descent) + 2 * pad;
-        if (width <= 0 || height <= 0) return;
+        if (width <= 0 || height <= 0)
+        {
+            return;
+        }
 
         var glyphLayer = new Image<Rgba32>(width, height, new Rgba32(0, 0, 0, 0));
         // canvas.DrawImage records a command and rasterizes lazily when the
@@ -2224,9 +2514,16 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
     private void DrawImage(DrawingCanvas canvas, DrawImage item, DisposableBag pendingImageSources)
     {
-        if (item.Bounds.Width <= 0 || item.Bounds.Height <= 0) return;
+        if (item.Bounds.Width <= 0 || item.Bounds.Height <= 0)
+        {
+            return;
+        }
+
         var decoded = item.Source;
-        if (decoded is null || decoded.Width <= 0 || decoded.Height <= 0) return;
+        if (decoded is null || decoded.Width <= 0 || decoded.Height <= 0)
+        {
+            return;
+        }
 
         // ImageSharp's LoadPixelData<TPixel> wants a ReadOnlySpan<byte> of the
         // exact byte length; DecodedImage's buffer is straight-alpha RGBA8888
@@ -2246,7 +2543,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
             var y = Math.Clamp((int)Math.Round(sr.Y), 0, decoded.Height);
             var w = Math.Clamp((int)Math.Round(sr.Width), 0, decoded.Width - x);
             var h = Math.Clamp((int)Math.Round(sr.Height), 0, decoded.Height - y);
-            if (w <= 0 || h <= 0) return;
+            if (w <= 0 || h <= 0)
+            {
+                return;
+            }
+
             sourceRect = new Rectangle(x, y, w, h);
         }
         else
@@ -2266,7 +2567,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     private static int FirstCodepoint(string text)
     {
         foreach (var codePoint in text.EnumerateCodePoints())
+        {
             return codePoint.Value;
+        }
 
         return 0;
     }
@@ -2275,7 +2578,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     {
         var key = new FontCacheKey(spec, size, probeCodepoint);
         if (_fontCache.TryGetValue(key, out var cached))
+        {
             return cached;
+        }
 
         var font = _fontCache.GetOrAdd(key, k => CreateFont(k.Spec, k.Size));
         return font;
@@ -2367,38 +2672,47 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         pb.LineTo(new PointF(right - trx, y));
         // Top-right corner.
         if (trx > 0 || tryy > 0)
+        {
             pb.AddCubicBezier(
                 new PointF(right - trx, y),
                 new PointF(right - trx + trx * ArcBezierK, y),
                 new PointF(right, y + tryy - tryy * ArcBezierK),
                 new PointF(right, y + tryy));
+        }
         // Right edge.
         pb.LineTo(new PointF(right, bottom - bry));
         // Bottom-right corner.
         if (brx > 0 || bry > 0)
+        {
             pb.AddCubicBezier(
                 new PointF(right, bottom - bry),
                 new PointF(right, bottom - bry + bry * ArcBezierK),
                 new PointF(right - brx + brx * ArcBezierK, bottom),
                 new PointF(right - brx, bottom));
+        }
         // Bottom edge.
         pb.LineTo(new PointF(x + blx, bottom));
         // Bottom-left corner.
         if (blx > 0 || bly > 0)
+        {
             pb.AddCubicBezier(
                 new PointF(x + blx, bottom),
                 new PointF(x + blx - blx * ArcBezierK, bottom),
                 new PointF(x, bottom - bly + bly * ArcBezierK),
                 new PointF(x, bottom - bly));
+        }
         // Left edge.
         pb.LineTo(new PointF(x, y + tly));
         // Top-left corner.
         if (tlx > 0 || tly > 0)
+        {
             pb.AddCubicBezier(
                 new PointF(x, y + tly),
                 new PointF(x, y + tly - tly * ArcBezierK),
                 new PointF(x + tlx - tlx * ArcBezierK, y),
                 new PointF(x + tlx, y));
+        }
+
         pb.CloseFigure();
         return pb.Build();
     }
@@ -2431,7 +2745,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         var fast = IsTranslationOnly(current);
         var rasterScale = fast && scale > 0 ? scale : 1f;
         var scaled = rasterScale == 1f ? shadow : ScaleShadow(shadow, rasterScale);
-        if (!TryGetBoxShadowRasterGeometry(scaled, out var geometry)) return;
+        if (!TryGetBoxShadowRasterGeometry(scaled, out var geometry))
+        {
+            return;
+        }
 
         var key = BoxShadowCacheKey.From(scaled, geometry, rasterScale);
         if (!_boxShadowCache.TryGet(key, out var shadowImage))
@@ -2537,7 +2854,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         var shadowImage = new Image<Rgba32>(geometry.ImageWidth, geometry.ImageHeight, new Rgba32(0, 0, 0, 0));
         shadowImage.Mutate(ctx => ctx.Paint(c => c.Fill(Brushes.Solid(ToColor(shadow.Color)), shape)));
         if (shadow.Blur > 0)
+        {
             shadowImage.Mutate(ctx => ctx.GaussianBlur(sigma));
+        }
 
         return shadowImage;
     }
@@ -2557,7 +2876,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     /// </summary>
     private void DrawInsetBoxShadow(DrawingCanvas canvas, DrawBoxShadow shadow, float scale, Matrix2D current, DisposableBag pendingImageSources)
     {
-        if (shadow.Color.A == 0) return;
+        if (shadow.Color.A == 0)
+        {
+            return;
+        }
 
         // Same device-scale fast path as the outer shadow: under a pure
         // translation the ring is rasterized at device resolution and blitted
@@ -2568,13 +2890,19 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
         var padW = scaled.Bounds.Width;
         var padH = scaled.Bounds.Height;
-        if (padW <= 0 || padH <= 0) return;
+        if (padW <= 0 || padH <= 0)
+        {
+            return;
+        }
 
         var blur = Math.Max(0, scaled.Blur);
         var margin = (int)Math.Ceiling(blur * 1.5) + 2;
         var imgW = (int)Math.Ceiling(padW) + 2 * margin;
         var imgH = (int)Math.Ceiling(padH) + 2 * margin;
-        if ((long)imgW * imgH > 64_000_000L) return;
+        if ((long)imgW * imgH > 64_000_000L)
+        {
+            return;
+        }
 
         var key = BoxShadowCacheKey.FromInset(scaled, imgW, imgH, margin, rasterScale);
         if (!_boxShadowCache.TryGet(key, out var shadowImage))
@@ -2622,7 +2950,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         }
 
         if (shadow.Blur > 0)
+        {
             shadowImage.Mutate(ctx => ctx.GaussianBlur((float)(Math.Max(0, shadow.Blur) / 2d)));
+        }
 
         // Clip to the (rounded) padding box — this also clears the bleed
         // margins, so the blit never paints outside the padding edge.
@@ -2671,19 +3001,32 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     private static bool TryGetBoxShadowRasterGeometry(DrawBoxShadow shadow, out BoxShadowRasterGeometry geometry)
     {
         geometry = default;
-        if (shadow.Inset) return false; // inner shadows deferred
-        if (shadow.Color.A == 0) return false;
+        if (shadow.Inset)
+        {
+            return false; // inner shadows deferred
+        }
+
+        if (shadow.Color.A == 0)
+        {
+            return false;
+        }
 
         var spread = shadow.Spread;
         var silhouetteW = shadow.Bounds.Width + 2 * spread;
         var silhouetteH = shadow.Bounds.Height + 2 * spread;
-        if (silhouetteW <= 0 || silhouetteH <= 0) return false;
+        if (silhouetteW <= 0 || silhouetteH <= 0)
+        {
+            return false;
+        }
 
         var blur = Math.Max(0, shadow.Blur);
         var margin = (int)Math.Ceiling(blur * 1.5) + 2;
         var imgW = (int)Math.Ceiling(silhouetteW) + 2 * margin;
         var imgH = (int)Math.Ceiling(silhouetteH) + 2 * margin;
-        if (imgW <= 0 || imgH <= 0 || (long)imgW * imgH > 64_000_000L) return false;
+        if (imgW <= 0 || imgH <= 0 || (long)imgW * imgH > 64_000_000L)
+        {
+            return false;
+        }
 
         var destX = shadow.Bounds.X - spread + shadow.OffsetX - margin;
         var destY = shadow.Bounds.Y - spread + shadow.OffsetY - margin;
@@ -2707,7 +3050,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
     private static LayoutRect TransformedAabb(LayoutRect r, Matrix2D m)
     {
-        if (m.IsIdentity) return r;
+        if (m.IsIdentity)
+        {
+            return r;
+        }
+
         var (x0, y0) = m.Transform(r.X, r.Y);
         var (x1, y1) = m.Transform(r.X + r.Width, r.Y);
         var (x2, y2) = m.Transform(r.X + r.Width, r.Y + r.Height);
@@ -2750,7 +3097,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         var y = (float)b.Bounds.Y;
         var w = (float)b.Bounds.Width;
         var h = (float)b.Bounds.Height;
-        if (w <= 0 || h <= 0) return;
+        if (w <= 0 || h <= 0)
+        {
+            return;
+        }
+
         var right = x + w;
         var bottom = y + h;
 
@@ -2803,13 +3154,24 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         // curve). The arc takes the adjacent horizontal side’s color when
         // that side paints, else the vertical side’s.
         if (tlx > 0 || tly > 0)
+        {
             DrawSolidCornerArc(canvas, x + tlx, y + tly, tlx, tly, sx: -1f, sy: -1f, paintTop, paintLeft, topW, leftW, b.TopColor, b.LeftColor);
+        }
+
         if (trx > 0 || tryy > 0)
+        {
             DrawSolidCornerArc(canvas, right - trx, y + tryy, trx, tryy, sx: 1f, sy: -1f, paintTop, paintRight, topW, rightW, b.TopColor, b.RightColor);
+        }
+
         if (brx > 0 || bry > 0)
+        {
             DrawSolidCornerArc(canvas, right - brx, bottom - bry, brx, bry, sx: 1f, sy: 1f, paintBottom, paintRight, bottomW, rightW, b.BottomColor, b.RightColor);
+        }
+
         if (blx > 0 || bly > 0)
+        {
             DrawSolidCornerArc(canvas, x + blx, bottom - bly, blx, bly, sx: -1f, sy: 1f, paintBottom, paintLeft, bottomW, leftW, b.BottomColor, b.LeftColor);
+        }
     }
 
     /// <summary>
@@ -2828,7 +3190,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     private static void DrawBorderSideRun(DrawingCanvas canvas, bool horizontal, float a0, float a1, float edge, float inward, float thickness, Color color, BorderSideStyle style)
     {
         var run = a1 - a0;
-        if (run <= 0 || thickness <= 0) return;
+        if (run <= 0 || thickness <= 0)
+        {
+            return;
+        }
+
         var near = inward > 0 ? edge : edge - thickness;
         var pb = new PathBuilder();
         switch (style)
@@ -2934,16 +3300,27 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     /// </summary>
     private static void DrawSolidCornerArc(DrawingCanvas canvas, float cx, float cy, float rx, float ry, float sx, float sy, bool hPainted, bool vPainted, float hW, float vW, CssColor hColor, CssColor vColor)
     {
-        if (!hPainted && !vPainted) return;
+        if (!hPainted && !vPainted)
+        {
+            return;
+        }
+
         var penW = Math.Max(hPainted ? hW : 0f, vPainted ? vW : 0f);
-        if (penW <= 0) return;
+        if (penW <= 0)
+        {
+            return;
+        }
+
         var color = hPainted ? hColor : vColor;
 
         // Centre-line radii: the outer radius pulled in by half the adjacent
         // side’s width on each axis.
         var rcx = Math.Max(0f, rx - (vPainted ? vW : penW) / 2f);
         var rcy = Math.Max(0f, ry - (hPainted ? hW : penW) / 2f);
-        if (rcx <= 0 && rcy <= 0) return;
+        if (rcx <= 0 && rcy <= 0)
+        {
+            return;
+        }
 
         // S sits on the horizontal side’s centre line, E on the vertical’s.
         var s = new PointF(cx, cy + sy * rcy);
@@ -2997,7 +3374,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
             // bracketed items inline so the content still paints.
             var j = start;
             while (j < end)
+            {
                 j = ApplyAt(canvas, items, j, scale, pendingImageSources, transforms, target);
+            }
+
             return;
         }
 
@@ -3020,13 +3400,18 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
             c.Save(new DrawingOptions { Transform = ToCanvasMatrix(layerViewportTransform, scale) });
             var i = start;
             while (i < end)
+            {
                 i = ApplyAt(c, items, i, scale, pendingImageSources, layerTransforms, target);
+            }
+
             c.Restore();
         }));
 
         var filtered = ApplyFilterChain(contentLayer, filters, scale);
         if (!ReferenceEquals(filtered, contentLayer))
+        {
             pendingImageSources.Add(filtered); // canvas.DrawImage rasterizes lazily
+        }
 
         canvas.DrawImage(filtered, new Rectangle(0, 0, px, py),
             new RectangleF((float)bounds.X, (float)bounds.Y, (float)bounds.Width, (float)bounds.Height),
@@ -3057,10 +3442,18 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                     transform = transform.Multiply(p.Matrix);
                     continue;
                 case DisplayList.PopTransform:
-                    if (stack is { Count: > 0 }) transform = stack.Pop();
+                    if (stack is { Count: > 0 })
+                    {
+                        transform = stack.Pop();
+                    }
+
                     continue;
             }
-            if (!DisplayItemBounds.TryGet(item, out var local)) continue;
+            if (!DisplayItemBounds.TryGet(item, out var local))
+            {
+                continue;
+            }
+
             var aabb = TransformedAabb(local, transform);
             minX = Math.Min(minX, aabb.X);
             minY = Math.Min(minY, aabb.Y);
@@ -3093,7 +3486,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                     {
                         var sigma = (float)(FilterFunction.BlurSigma(f.Amount) * scale);
                         if (sigma > 0)
+                        {
                             layer.Mutate(ctx => ctx.GaussianBlur(sigma));
+                        }
+
                         break;
                     }
                 case FilterFunctionKind.Brightness:
@@ -3118,21 +3514,30 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                     {
                         var amount = (float)Math.Clamp(f.Amount, 0, 1);
                         if (amount > 0)
+                        {
                             layer.Mutate(ctx => ctx.Grayscale(amount));
+                        }
+
                         break;
                     }
                 case FilterFunctionKind.Sepia:
                     {
                         var amount = (float)Math.Clamp(f.Amount, 0, 1);
                         if (amount > 0)
+                        {
                             layer.Mutate(ctx => ctx.Sepia(amount));
+                        }
+
                         break;
                     }
                 case FilterFunctionKind.HueRotate:
                     {
                         var degrees = (float)f.Amount;
                         if (degrees != 0)
+                        {
                             layer.Mutate(ctx => ctx.Hue(degrees));
+                        }
+
                         break;
                     }
                 case FilterFunctionKind.Invert:
@@ -3160,14 +3565,20 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                     {
                         var a = (float)Math.Clamp(f.Amount, 0, 1);
                         if (a < 1)
+                        {
                             layer.Mutate(ctx => ctx.Opacity(a));
+                        }
+
                         break;
                     }
                 case FilterFunctionKind.DropShadow:
                     {
                         var next = ApplyDropShadowFilter(layer, f, scale);
                         if (!ReferenceEquals(layer, original))
+                        {
                             layer.Dispose(); // intermediate from a previous drop-shadow
+                        }
+
                         layer = next;
                         break;
                     }
@@ -3206,7 +3617,9 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
 
         var sigma = (float)(FilterFunction.ShadowSigma(f.Amount) * scale);
         if (sigma > 0)
+        {
             shadow.Mutate(ctx => ctx.GaussianBlur(sigma));
+        }
 
         var dx = (int)Math.Round(f.OffsetX * scale);
         var dy = (int)Math.Round(f.OffsetY * scale);
@@ -3236,7 +3649,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                     groupDepth++;
                     break;
                 case PopMask or PopFilter:
-                    if (groupDepth > 0) groupDepth--;
+                    if (groupDepth > 0)
+                    {
+                        groupDepth--;
+                    }
+
                     break;
                 case DrawBackdropFilter when groupDepth == 0:
                     return true;
@@ -3293,7 +3710,11 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                     groupDepth++;
                     break;
                 case PopMask or PopFilter:
-                    if (groupDepth > 0) groupDepth--;
+                    if (groupDepth > 0)
+                    {
+                        groupDepth--;
+                    }
+
                     break;
             }
             i++;
@@ -3311,12 +3732,18 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         float scale, Matrix2D viewportTransform, DisposableBag pendingImageSources,
         Stack<Matrix2D> transforms, List<(DisplayItem Item, Matrix2D Matrix)> openBrackets, LayoutRect target)
     {
-        if (start >= end) return;
+        if (start >= end)
+        {
+            return;
+        }
+
         image.Mutate(x => x.Paint(canvas =>
         {
             canvas.Save(new DrawingOptions { Transform = ToCanvasMatrix(viewportTransform, scale) });
             for (var b = 0; b < openBrackets.Count; b++)
+            {
                 ReopenBracket(canvas, openBrackets[b].Item, openBrackets[b].Matrix, scale);
+            }
 
             var i = start;
             while (i < end)
@@ -3332,7 +3759,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
                         break;
                     case DisplayList.PopTransform or DisplayList.PopClip or DisplayList.PopClipPath:
                         if (openBrackets.Count > 0)
+                        {
                             openBrackets.RemoveAt(openBrackets.Count - 1);
+                        }
+
                         break;
                 }
                 i = next;
@@ -3341,7 +3771,10 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
             // Balance this Paint scope's Save stack: one Restore per bracket
             // still open, plus the viewport Save.
             for (var b = 0; b < openBrackets.Count; b++)
+            {
                 canvas.Restore();
+            }
+
             canvas.Restore();
         }));
     }
@@ -3374,8 +3807,15 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
     /// </summary>
     private static void ApplyBackdropFilterCpu(Image<Rgba32> image, DrawBackdropFilter backdrop, Matrix2D current, float scale)
     {
-        if (backdrop.Filters.Count == 0) return;
-        if (backdrop.Bounds.Width <= 0 || backdrop.Bounds.Height <= 0) return;
+        if (backdrop.Filters.Count == 0)
+        {
+            return;
+        }
+
+        if (backdrop.Bounds.Width <= 0 || backdrop.Bounds.Height <= 0)
+        {
+            return;
+        }
 
         // Device-space AABB of the border box under the current transform,
         // padded by the blur halo, clamped to the canvas.
@@ -3385,13 +3825,18 @@ internal sealed partial class ImageSharpBackend : IPaintBackend, IGpuTexturePain
         var y0 = Math.Max(0, (int)Math.Floor((aabb.Y - pad) * scale));
         var x1 = Math.Min(image.Width, (int)Math.Ceiling((aabb.Right + pad) * scale));
         var y1 = Math.Min(image.Height, (int)Math.Ceiling((aabb.Bottom + pad) * scale));
-        if (x1 <= x0 || y1 <= y0) return;
+        if (x1 <= x0 || y1 <= y0)
+        {
+            return;
+        }
 
         var region = new Rectangle(x0, y0, x1 - x0, y1 - y0);
         var patch = image.Clone(ctx => ctx.Crop(region));
         var filtered = ApplyFilterChain(patch, backdrop.Filters, scale);
         if (!ReferenceEquals(filtered, patch))
+        {
             patch.Dispose();
+        }
 
         // Keep only the pixels inside the (rounded) border box: transform the
         // CSS-px path to device pixels, shift it into patch-local coords, and

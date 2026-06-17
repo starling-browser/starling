@@ -25,16 +25,27 @@ internal sealed partial class SvgStyleSheet
     /// <summary>Parse and accumulate the rules in one <c>&lt;style&gt;</c> body.</summary>
     public void AddCss(string? css)
     {
-        if (string.IsNullOrWhiteSpace(css)) return;
+        if (string.IsNullOrWhiteSpace(css))
+        {
+            return;
+        }
+
         css = CommentRegex().Replace(css, " ");
 
         int i = 0;
         while (i < css.Length)
         {
             int brace = css.IndexOf('{', i);
-            if (brace < 0) break;
+            if (brace < 0)
+            {
+                break;
+            }
+
             int end = css.IndexOf('}', brace + 1);
-            if (end < 0) break;
+            if (end < 0)
+            {
+                break;
+            }
 
             var selectors = css[i..brace];
             var body = css[(brace + 1)..end];
@@ -47,9 +58,13 @@ internal sealed partial class SvgStyleSheet
                 // which is a deliberate, documented approximation.
                 var token = LastSimpleToken(sel);
                 if (token.StartsWith('.'))
+                {
                     Append(_byClass, token[1..], decls);
+                }
                 else if (token.Length > 0 && (char.IsLetter(token[0])))
+                {
                     Append(_byElement, token, decls);
+                }
             }
 
             i = end + 1;
@@ -64,16 +79,24 @@ internal sealed partial class SvgStyleSheet
     public void Apply(SvgStyle style, string elementName, string? classAttr)
     {
         if (_byElement.TryGetValue(elementName, out var elemDecls))
+        {
             foreach (var (p, v) in elemDecls)
+            {
                 style.ApplyDeclaration(p, v);
+            }
+        }
 
         if (!string.IsNullOrWhiteSpace(classAttr))
         {
             foreach (var cls in classAttr.Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
             {
                 if (_byClass.TryGetValue(cls, out var clsDecls))
+                {
                     foreach (var (p, v) in clsDecls)
+                    {
                         style.ApplyDeclaration(p, v);
+                    }
+                }
             }
         }
     }
@@ -92,7 +115,11 @@ internal sealed partial class SvgStyleSheet
         foreach (var decl in body.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             int colon = decl.IndexOf(':');
-            if (colon <= 0) continue;
+            if (colon <= 0)
+            {
+                continue;
+            }
+
             list.Add((decl[..colon].Trim(), decl[(colon + 1)..].Trim()));
         }
         return list;
@@ -102,7 +129,10 @@ internal sealed partial class SvgStyleSheet
         Dictionary<string, List<(string, string)>> map, string key, List<(string, string)> decls)
     {
         if (!map.TryGetValue(key, out var list))
+        {
             map[key] = list = [];
+        }
+
         list.AddRange(decls);
     }
 }

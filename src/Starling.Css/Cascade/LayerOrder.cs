@@ -11,9 +11,14 @@ public sealed class LayerOrder
     public int RegisterLayer(string? dottedPath)
     {
         if (string.IsNullOrEmpty(dottedPath))
+        {
             return UnlayeredIndex;
+        }
+
         if (_paths.TryGetValue(dottedPath, out var existing))
+        {
             return existing;
+        }
 
         // Register each ancestor so `a.b` after `c` keeps `a` before `c` and `a.b` after `a`.
         var segments = dottedPath.Split('.');
@@ -34,7 +39,10 @@ public sealed class LayerOrder
     public int GetIndex(string? dottedPath)
     {
         if (string.IsNullOrEmpty(dottedPath))
+        {
             return UnlayeredIndex;
+        }
+
         return _paths.TryGetValue(dottedPath, out var idx) ? idx : UnlayeredIndex;
     }
 
@@ -51,13 +59,30 @@ public sealed class LayerOrder
     // correct for sibling / unrelated layers.
     public static int Compare(string? aPath, int aIndex, string? bPath, int bIndex)
     {
-        if (aIndex == bIndex) return 0;
+        if (aIndex == bIndex)
+        {
+            return 0;
+        }
         // Unlayered (-1) wins over any layered rule.
-        if (aIndex == UnlayeredIndex) return 1;
-        if (bIndex == UnlayeredIndex) return -1;
+        if (aIndex == UnlayeredIndex)
+        {
+            return 1;
+        }
+
+        if (bIndex == UnlayeredIndex)
+        {
+            return -1;
+        }
         // Ancestor's direct rules beat its descendant sub-layers (§6.4.2).
-        if (IsAncestor(aPath, bPath)) return 1;
-        if (IsAncestor(bPath, aPath)) return -1;
+        if (IsAncestor(aPath, bPath))
+        {
+            return 1;
+        }
+
+        if (IsAncestor(bPath, aPath))
+        {
+            return -1;
+        }
         // Sibling / unrelated layers: later declared (higher index) wins.
         return aIndex.CompareTo(bIndex);
     }

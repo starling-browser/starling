@@ -29,7 +29,9 @@ public class EngineLiveHttpsTests
     public async Task Render_example_com_matches_golden_via_ssim()
     {
         if (Environment.GetEnvironmentVariable("STARLING_ALLOW_NETWORK") != "1")
+        {
             return;
+        }
 
         var repoRoot = LocateRepoRoot();
         var goldenPath = Path.Combine(repoRoot, "testdata", "golden", "live", "example.com.png");
@@ -66,7 +68,10 @@ public class EngineLiveHttpsTests
         }
         finally
         {
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -74,9 +79,15 @@ public class EngineLiveHttpsTests
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx")))
+        {
             dir = dir.Parent;
+        }
+
         if (dir is null)
+        {
             throw new InvalidOperationException("Could not locate Starling.slnx walking up from the test binary.");
+        }
+
         return dir.FullName;
     }
 }

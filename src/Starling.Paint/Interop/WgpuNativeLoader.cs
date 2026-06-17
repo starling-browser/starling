@@ -54,7 +54,10 @@ internal static class WgpuNativeLoader
 
     private static void Note(string evt)
     {
-        lock (_eventsLock) _events.Add(evt);
+        lock (_eventsLock)
+        {
+            _events.Add(evt);
+        }
     }
 
     /// <summary>Returns a snapshot of the loader's decision log for inclusion in diagnostics.</summary>
@@ -107,13 +110,18 @@ internal static class WgpuNativeLoader
             Note($"preload: probe '{candidate}' -> file exists but NativeLibrary.TryLoad failed.");
         }
         if (!preloaded)
+        {
             Note("preload: no candidate resolved; relying on Silk.NET's default loader.");
+        }
 
         // Still register a SetDllImportResolver in case Silk.NET ever switches
         // back to [DllImport] semantics (or a future Silk.NET version exposes
         // a [DllImport] surface). Free safety net.
         foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        {
             TryRegister(asm, "sweep");
+        }
+
         AppDomain.CurrentDomain.AssemblyLoad += static (_, e) => TryRegister(e.LoadedAssembly, "AssemblyLoad");
     }
 #pragma warning restore CA2255
@@ -122,7 +130,9 @@ internal static class WgpuNativeLoader
     {
         var name = assembly.GetName().Name;
         if (name is null || !name.StartsWith(SilkAssemblyPrefix, StringComparison.Ordinal))
+        {
             return;
+        }
 
         // SetDllImportResolver throws if called twice for the same assembly;
         // guard with a try/catch since the assembly-load event can race with
@@ -224,8 +234,16 @@ internal static class WgpuNativeLoader
 
     private static string NativeFileName()
     {
-        if (OperatingSystem.IsWindows()) return $"{LibraryName}.dll";
-        if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst()) return $"lib{LibraryName}.dylib";
+        if (OperatingSystem.IsWindows())
+        {
+            return $"{LibraryName}.dll";
+        }
+
+        if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst())
+        {
+            return $"lib{LibraryName}.dylib";
+        }
+
         return $"lib{LibraryName}.so";
     }
 }

@@ -17,8 +17,15 @@ public sealed class SurfaceOverlayScene
         IReadOnlyList<SurfaceOverlayCommand> commands)
     {
         ArgumentNullException.ThrowIfNull(commands);
-        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
-        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+        if (width <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(width));
+        }
+
+        if (height <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(height));
+        }
 
         Width = width;
         Height = height;

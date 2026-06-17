@@ -46,15 +46,19 @@ public sealed class ResvgCorpusTests
     public static IEnumerable<object[]> Corpus()
     {
         if (!Directory.Exists(CorpusRoot))
+        {
             throw new DirectoryNotFoundException(
                 $"resvg corpus not found at '{CorpusRoot}'. Ensure testdata/spec/resvg is copied to output.");
+        }
 
         foreach (var f in Directory.EnumerateFiles(CorpusRoot, "*.svg", SearchOption.AllDirectories)
                      .OrderBy(p => p, StringComparer.Ordinal))
         {
             var id = RelId(f);
             if (!KnownGaps.Contains(id))
+            {
                 yield return new object[] { id };
+            }
         }
     }
 

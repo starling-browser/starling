@@ -57,9 +57,15 @@ public static class PromiseCtor
         {
             // §27.2.3.1 step 1: Promise requires `new` (or a derived super()).
             if (!IntrinsicHelpers.IsConstructInvocation(newTarget))
+            {
                 throw new JsThrow(realm.NewTypeError("Constructor Promise requires 'new'"));
+            }
+
             if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
                 throw new JsThrow(realm.NewTypeError("Promise resolver is not a function"));
+            }
+
             var executor = args[0];
 
             // §27.2.3.1 step 3: OrdinaryCreateFromConstructor — prototype from
@@ -150,7 +156,11 @@ public static class PromiseCtor
 
         var resolve = new JsNativeFunction("", (thisV, args) =>
         {
-            if (alreadyResolved[0]) return JsValue.Undefined;
+            if (alreadyResolved[0])
+            {
+                return JsValue.Undefined;
+            }
+
             alreadyResolved[0] = true;
             var value = args.Length > 0 ? args[0] : JsValue.Undefined;
             ResolvePromise(realm, promise, value);
@@ -159,7 +169,11 @@ public static class PromiseCtor
 
         var reject = new JsNativeFunction("", (thisV, args) =>
         {
-            if (alreadyResolved[0]) return JsValue.Undefined;
+            if (alreadyResolved[0])
+            {
+                return JsValue.Undefined;
+            }
+
             alreadyResolved[0] = true;
             var reason = args.Length > 0 ? args[0] : JsValue.Undefined;
             RejectPromise(realm, promise, reason);
@@ -239,12 +253,18 @@ public static class PromiseCtor
     /// fulfillment reactions to the microtask queue.</summary>
     private static void FulfillPromise(JsRealm realm, JsPromise promise, JsValue value)
     {
-        if (!promise.Fulfill(value)) return;
+        if (!promise.Fulfill(value))
+        {
+            return;
+        }
+
         var reactions = promise.FulfillReactions.ToArray();
         promise.FulfillReactions.Clear();
         promise.RejectReactions.Clear();
         foreach (var reaction in reactions)
+        {
             EnqueueReactionJob(realm, reaction, value);
+        }
     }
 
     /// <summary>§27.2.1.7 RejectPromise — symmetric to fulfill. Step 7:
@@ -252,14 +272,23 @@ public static class PromiseCtor
     /// so the host can report the rejection if no handler arrives.</summary>
     private static void RejectPromise(JsRealm realm, JsPromise promise, JsValue reason)
     {
-        if (!promise.Reject(reason)) return;
+        if (!promise.Reject(reason))
+        {
+            return;
+        }
+
         var reactions = promise.RejectReactions.ToArray();
         promise.FulfillReactions.Clear();
         promise.RejectReactions.Clear();
         if (!promise.IsHandled)
+        {
             realm.OnUnhandledRejection?.Invoke(promise);
+        }
+
         foreach (var reaction in reactions)
+        {
             EnqueueReactionJob(realm, reaction, reason);
+        }
     }
 
     /// <summary>§27.2.2.1 NewPromiseReactionJob — schedules a single
@@ -298,9 +327,13 @@ public static class PromiseCtor
             }
 
             if (isThrow)
+            {
                 AbstractOperations.Call(realm.ActiveVm, cap.Reject, JsValue.Undefined, new[] { handlerResult });
+            }
             else
+            {
                 AbstractOperations.Call(realm.ActiveVm, cap.Resolve, JsValue.Undefined, new[] { handlerResult });
+            }
         });
     }
 
@@ -312,7 +345,9 @@ public static class PromiseCtor
     private static JsValue Then(JsRealm realm, JsValue thisV, JsValue onFulfilled, JsValue onRejected)
     {
         if (!thisV.IsObject || thisV.AsObject is not JsPromise self)
+        {
             throw new JsThrow(realm.NewTypeError("Promise.prototype.then called on non-Promise"));
+        }
 
         var capability = NewPromiseCapability(realm);
         var fulfillHandler = AbstractOperations.IsCallable(onFulfilled) ? onFulfilled : JsValue.Undefined;
@@ -334,7 +369,10 @@ public static class PromiseCtor
                 // HostPromiseRejectionTracker(promise, "handle") — a late
                 // handler retracts a queued unhandled-rejection report.
                 if (!self.IsHandled)
+                {
                     realm.OnRejectionHandled?.Invoke(self);
+                }
+
                 EnqueueReactionJob(realm, rejectReaction, self.Result);
                 break;
         }
@@ -358,10 +396,14 @@ public static class PromiseCtor
     private static JsValue Finally(JsRealm realm, JsValue thisV, JsValue onFinally)
     {
         if (!thisV.IsObject || thisV.AsObject is not JsPromise)
+        {
             throw new JsThrow(realm.NewTypeError("Promise.prototype.finally called on non-Promise"));
+        }
 
         if (!AbstractOperations.IsCallable(onFinally))
+        {
             return Then(realm, thisV, onFinally, onFinally);
+        }
 
         // Build the two thunks the spec uses. Each invokes onFinally, then
         // adopts a then-chained promise that forwards the original outcome.
@@ -398,7 +440,10 @@ public static class PromiseCtor
     private static JsValue ResolveStatic(JsRealm realm, JsValue value)
     {
         if (value.IsObject && value.AsObject is JsPromise existing)
+        {
             return JsValue.Object(existing);
+        }
+
         var p = new JsPromise(realm.PromisePrototype);
         ResolvePromise(realm, p, value);
         return JsValue.Object(p);
@@ -419,7 +464,10 @@ public static class PromiseCtor
     {
         var capability = NewPromiseCapability(realm);
         if (!TryArrayLikeToList(realm, iterable, capability, out var items))
+        {
             return JsValue.Object(capability.Promise);
+        }
+
         if (items.Count == 0)
         {
             var emptyArr = MakeArrayLike(realm, Array.Empty<JsValue>());
@@ -454,7 +502,10 @@ public static class PromiseCtor
     {
         var capability = NewPromiseCapability(realm);
         if (!TryArrayLikeToList(realm, iterable, capability, out var items))
+        {
             return JsValue.Object(capability.Promise);
+        }
+
         if (items.Count == 0)
         {
             var emptyArr = MakeArrayLike(realm, Array.Empty<JsValue>());
@@ -467,7 +518,11 @@ public static class PromiseCtor
 
         void TryFinalize()
         {
-            if (--remaining[0] != 0) return;
+            if (--remaining[0] != 0)
+            {
+                return;
+            }
+
             var arr = MakeArrayLike(realm, results);
             AbstractOperations.Call(realm.ActiveVm, capability.Resolve, JsValue.Undefined, new[] { arr });
         }
@@ -510,7 +565,10 @@ public static class PromiseCtor
     {
         var capability = NewPromiseCapability(realm);
         if (!TryArrayLikeToList(realm, iterable, capability, out var items))
+        {
             return JsValue.Object(capability.Promise);
+        }
+
         if (items.Count == 0)
         {
             // Empty iterable → immediate AggregateError, per §27.2.4.3.
@@ -546,7 +604,10 @@ public static class PromiseCtor
     {
         var capability = NewPromiseCapability(realm);
         if (!TryArrayLikeToList(realm, iterable, capability, out var items))
+        {
             return JsValue.Object(capability.Promise);
+        }
+
         for (var i = 0; i < items.Count; i++)
         {
             var item = ResolveStatic(realm, items[i]);
@@ -589,7 +650,11 @@ public static class PromiseCtor
     /// thenable adoption via <see cref="ResolvePromise"/>).</summary>
     private static JsPromise AdoptAsPromise(JsRealm realm, JsValue value)
     {
-        if (value.IsObject && value.AsObject is JsPromise p) return p;
+        if (value.IsObject && value.AsObject is JsPromise p)
+        {
+            return p;
+        }
+
         var fresh = new JsPromise(realm.PromisePrototype);
         ResolvePromise(realm, fresh, value);
         return fresh;
@@ -619,15 +684,24 @@ public static class PromiseCtor
     private static List<JsValue> ArrayLikeToList(JsRealm realm, JsValue iterable)
     {
         if (!iterable.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Promise iterable must be an object"));
+        }
+
         var obj = iterable.AsObject;
         var lengthV = obj.Get("length");
         if (!lengthV.IsNumber)
+        {
             throw new JsThrow(realm.NewTypeError("Promise iterable has no length"));
+        }
+
         var len = (int)lengthV.AsNumber;
         var items = new List<JsValue>(len);
         for (var i = 0; i < len; i++)
+        {
             items.Add(obj.Get(i.ToString(CultureInfo.InvariantCulture)));
+        }
+
         return items;
     }
 

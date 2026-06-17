@@ -37,9 +37,14 @@ public sealed class CountingTextMeasurer : ITextMeasurer, IDisposable
     {
         _shapeCalls++;
         if (_seen.Add((text, fontSize, spec)))
+        {
             _shapeMisses++;
+        }
         else
+        {
             _shapeHits++;
+        }
+
         return _inner.Shape(text, fontSize, spec);
     }
 

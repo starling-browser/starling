@@ -34,9 +34,14 @@ internal sealed class Compositor
     {
         ArgumentNullException.ThrowIfNull(root);
         if (viewport.Width <= 0 || viewport.Height <= 0)
+        {
             throw new ArgumentException("Viewport must have positive dimensions.", nameof(viewport));
+        }
+
         if (!(scale > 0f))
+        {
             throw new ArgumentException("Scale must be positive.", nameof(scale));
+        }
 
         var gpu = GpuLayerCompositor.Shared
             ?? throw new InvalidOperationException("WebGPU composite blend is unavailable for the selected paint backend.");
@@ -74,9 +79,14 @@ internal sealed class Compositor
         ArgumentNullException.ThrowIfNull(root);
         ArgumentNullException.ThrowIfNull(presenter);
         if (viewport.Width <= 0 || viewport.Height <= 0)
+        {
             throw new ArgumentException("Viewport must have positive dimensions.", nameof(viewport));
+        }
+
         if (!(scale > 0f))
+        {
             throw new ArgumentException("Scale must be positive.", nameof(scale));
+        }
 
         var width = (int)Math.Ceiling(viewport.Width * scale);
         var height = (int)Math.Ceiling(viewport.Height * scale);
@@ -91,7 +101,9 @@ internal sealed class Compositor
 
         var presented = presenter.PresentOps(width, height, ops, gpuOverlayLayers);
         if (!presented)
+        {
             throw new InvalidOperationException("GPU surface presenter did not present the frame.");
+        }
 
         EmitTileFrameMetrics();
         return presented;
@@ -179,7 +191,11 @@ internal sealed class Compositor
 
     private static Rect? IntersectDeviceRect(Rect a, Rect? b)
     {
-        if (b is not { } r) return a;
+        if (b is not { } r)
+        {
+            return a;
+        }
+
         var x = Math.Max(a.X, r.X);
         var y = Math.Max(a.Y, r.Y);
         var right = Math.Min(a.Right, r.Right);
@@ -295,7 +311,9 @@ internal sealed class Compositor
         if (manyTiles && effectiveTransform.IsIdentity
             && !TryVisibleTileRange(layerLocalToDevice, outW, outH, layerDevW, layerDevH,
                 out col0, out col1, out row0, out row1))
+        {
             return; // layer entirely outside the viewport
+        }
 
         // Pre-walk the slice once so each tile can be keyed by the content that
         // actually paints into IT (not the whole layer). This is the fix for the
@@ -441,7 +459,9 @@ internal sealed class Compositor
         var outW = (int)Math.Ceiling(viewport.Width * s);
         var outH = (int)Math.Ceiling(viewport.Height * s);
         if (devAabb.Right < 0 || devAabb.Bottom < 0 || devAabb.X > outW || devAabb.Y > outH)
+        {
             return;
+        }
 
         Rect? clipDev = effectiveClip is { } cp
             ? TransformedAabb(new Rect(cp.X, cp.Y, cp.Width, cp.Height), pageToDevice)
@@ -515,7 +535,9 @@ internal sealed class Compositor
 
         var bounds = layer.BackdropBounds;
         if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
             return;
+        }
 
         var s = (double)scale;
         var pageToDevice = Matrix2D.Translate(-viewport.X * s, -viewport.Y * s).Multiply(Matrix2D.Scale(s, s));
@@ -532,13 +554,20 @@ internal sealed class Compositor
         var x1 = Math.Min(outW, (int)Math.Ceiling(devRect.Right + pad));
         var y1 = Math.Min(outH, (int)Math.Ceiling(devRect.Bottom + pad));
         if (x1 <= x0 || y1 <= y0)
+        {
             return;
+        }
 
         Rect? clipDev = devRect;
         if (effectiveClip is { } cp)
+        {
             clipDev = IntersectDeviceRect(devRect, TransformedAabb(new Rect(cp.X, cp.Y, cp.Width, cp.Height), pageToDevice));
+        }
+
         if (clipDev is { Width: <= 0 } or { Height: <= 0 })
+        {
             return;
+        }
 
         var layerKey = layer.LayerId != 0 ? layer.LayerId : layer.ContentHash;
         ops.Add(LayerBlend.BackdropFilter(x1 - x0, y1 - y0,
@@ -586,7 +615,10 @@ internal sealed class Compositor
         items.Add(new DisplayList.PushFilter(bracketBounds, filters));
         var slice = layer.Items.Items;
         for (var i = 0; i < slice.Count; i++)
+        {
             items.Add(slice[i]);
+        }
+
         items.Add(DisplayList.PopFilter.Instance);
         return new CompositorLayer(items, paddedBounds, layer.Transform, layer.Opacity, layer.Clip,
             [], layer.ContentHash, layer.LayerId,
@@ -608,7 +640,11 @@ internal sealed class Compositor
     private void EmitTileFrameMetrics()
     {
         var total = _frameTileHits + _frameTileMisses;
-        if (total == 0) return;
+        if (total == 0)
+        {
+            return;
+        }
+
         StarlingTelemetry.Gauge(RenderMetrics.TileMissRatio, (double)_frameTileMisses / total);
         StarlingTelemetry.Counter(RenderMetrics.TileRastersPerFrame, _frameTileMisses);
     }
@@ -631,7 +667,9 @@ internal sealed class Compositor
     {
         col0 = col1 = row0 = row1 = 0;
         if (!TryInvert(layerLocalToDevice, out var inv))
+        {
             return false;
+        }
 
         // Inverse-map the output rect corners into layer-local device space, take AABB.
         var (ax, ay) = inv.Transform(0, 0);
@@ -642,7 +680,10 @@ internal sealed class Compositor
         var minY = Math.Max(0d, Math.Min(Math.Min(ay, by), Math.Min(cy, dy)));
         var maxX = Math.Min((double)layerDevW, Math.Max(Math.Max(ax, bx), Math.Max(cx, dx)));
         var maxY = Math.Min((double)layerDevH, Math.Max(Math.Max(ay, by), Math.Max(cy, dy)));
-        if (maxX <= minX || maxY <= minY) return false;
+        if (maxX <= minX || maxY <= minY)
+        {
+            return false;
+        }
 
         const int TW = TileGrid.TileWidthDevice;
         const int TH = TileGrid.TileHeightDevice;
@@ -658,13 +699,23 @@ internal sealed class Compositor
     private static void FillWhite(byte[] buf)
     {
         for (var i = 0; i < buf.Length; i++)
+        {
             buf[i] = 255;
+        }
     }
 
     private static Rect? IntersectClip(Rect? a, Rect? b)
     {
-        if (a is null) return b;
-        if (b is null) return a;
+        if (a is null)
+        {
+            return b;
+        }
+
+        if (b is null)
+        {
+            return a;
+        }
+
         var x = Math.Max(a.Value.X, b.Value.X);
         var y = Math.Max(a.Value.Y, b.Value.Y);
         var right = Math.Min(a.Value.Right, b.Value.Right);

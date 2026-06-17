@@ -54,8 +54,15 @@ public sealed class FontFaceRegistry : IDisposable
         // Key on the canonical family name: surrounding quotes/whitespace are
         // CSS syntax, not part of the name, and must not split the key space.
         family = FontFamilyKey.Normalize(family);
-        if (family.Length == 0) return false;
-        if (fontBytes.Length == 0) return false;
+        if (family.Length == 0)
+        {
+            return false;
+        }
+
+        if (fontBytes.Length == 0)
+        {
+            return false;
+        }
 
         var bytes = fontBytes.ToArray();
         try
@@ -99,7 +106,10 @@ public sealed class FontFaceRegistry : IDisposable
     internal IReadOnlyDictionary<string, IReadOnlyList<FontFamily>> AddTo(FontCollection collection)
     {
         var aliases = new Dictionary<string, IReadOnlyList<FontFamily>>(StringComparer.OrdinalIgnoreCase);
-        if (_disposed) return aliases;
+        if (_disposed)
+        {
+            return aliases;
+        }
 
         foreach (var (declaredFamily, faces) in _byFamily)
         {
@@ -110,7 +120,9 @@ public sealed class FontFaceRegistry : IDisposable
                 (loaded ??= []).Add(collection.Add(stream));
             }
             if (loaded is { Count: > 0 })
+            {
                 aliases[declaredFamily] = loaded;
+            }
         }
         return aliases;
     }
@@ -141,10 +153,16 @@ public sealed class FontFaceRegistry : IDisposable
             foreach (var f in group)
             {
                 if (f.UnicodeRange is null) { unrestricted = f; break; }
-                if (latin is null && f.UnicodeRange.Contains(LatinProbe)) latin = f;
+                if (latin is null && f.UnicodeRange.Contains(LatinProbe))
+                {
+                    latin = f;
+                }
             }
 
-            if ((unrestricted ?? latin) is { } pick) yield return pick;
+            if ((unrestricted ?? latin) is { } pick)
+            {
+                yield return pick;
+            }
         }
     }
 
@@ -168,7 +186,10 @@ public sealed class FontFaceRegistry : IDisposable
         foreach (var f in faces)
         {
             if (probeCodepoint is int cp && f.UnicodeRange is { } range && !range.Contains(cp))
+            {
                 continue;
+            }
+
             firstCovering ??= f;
             if (f.Bold == bold && f.Italic == italic)
             {
@@ -193,7 +214,11 @@ public sealed class FontFaceRegistry : IDisposable
     /// </summary>
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         _byFamily.Clear();
     }

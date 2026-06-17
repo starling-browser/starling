@@ -89,12 +89,17 @@ public static class BoxHitTester
             var fr = fixedRoots[i];
             var hit = FindDeepest(fr.Root, x, y, fr.OriginX, fr.OriginY, viewportX, viewportY, scrollOffsets, stickyShifts);
             if (hit is not null)
+            {
                 return new HitResult(hit, FindLinkAnchor(hit));
+            }
         }
 
         var inflowHit = FindDeepest(root, x, y, originX: 0, originY: 0, viewportX, viewportY, scrollOffsets, stickyShifts);
         if (inflowHit is null)
+        {
             return new HitResult(null, null);
+        }
+
         return new HitResult(inflowHit, FindLinkAnchor(inflowHit));
     }
 
@@ -107,14 +112,18 @@ public static class BoxHitTester
     private static void CollectFixedRoots(Box box, double originX, double originY, List<(Box Root, double OriginX, double OriginY)> sink)
     {
         if (IsFixedPositioned(box))
+        {
             sink.Add((box, originX, originY));
+        }
 
         var frameX = originX + box.Frame.X;
         var frameY = originY + box.Frame.Y;
         var contentX = frameX + box.Border.Left + box.Padding.Left;
         var contentY = frameY + box.Border.Top + box.Padding.Top;
         foreach (var child in box.Children)
+        {
             CollectFixedRoots(child, contentX, contentY, sink);
+        }
     }
 
     private static Box? FindDeepest(Box box, double x, double y, double originX, double originY, double viewportX, double viewportY, Func<DomElement, (double X, double Y)>? scrollOffsets, Func<DomElement, (double X, double Y)>? stickyShifts)
@@ -155,11 +164,17 @@ public static class BoxHitTester
             // covers the inter-word gaps instead of skipping over them.
             foreach (var frag in tb.Fragments)
             {
-                if (frag.Width <= 0) continue;
+                if (frag.Width <= 0)
+                {
+                    continue;
+                }
+
                 var fx = frameX + frag.X;
                 var fy = frameY + frag.Y;
                 if (x >= fx && x < fx + frag.Width && y >= fy && y < fy + frag.Height)
+                {
                     return box;
+                }
             }
             return insideSelf ? box : null;
         }
@@ -186,19 +201,31 @@ public static class BoxHitTester
             for (var i = box.Children.Count - 1; i >= 0; i--)
             {
                 var child = box.Children[i];
-                if (child.Element is null || !IsStickyPositioned(child)) continue;
+                if (child.Element is null || !IsStickyPositioned(child))
+                {
+                    continue;
+                }
+
                 var stickyHit = FindDeepest(child, x, y, contentX, contentY, viewportX, viewportY, scrollOffsets, stickyShifts);
                 if (stickyHit is not null)
+                {
                     return stickyHit;
+                }
             }
         }
         for (var i = box.Children.Count - 1; i >= 0; i--)
         {
             var child = box.Children[i];
-            if (stickyShifts is not null && child.Element is not null && IsStickyPositioned(child)) continue;
+            if (stickyShifts is not null && child.Element is not null && IsStickyPositioned(child))
+            {
+                continue;
+            }
+
             var childHit = FindDeepest(child, x, y, contentX, contentY, viewportX, viewportY, scrollOffsets, stickyShifts);
             if (childHit is not null)
+            {
                 return childHit;
+            }
         }
 
         return insideSelf ? box : null;
@@ -235,9 +262,14 @@ public static class BoxHitTester
         for (var node = (Box?)box; node is not null; node = node.Parent)
         {
             if (node is InlineBox ib && ib.Element is DomElement { LocalName: "a" } a)
+            {
                 return a;
+            }
+
             if (node.Element is DomElement { LocalName: "a" } el)
+            {
                 return el;
+            }
         }
         return null;
     }
@@ -258,7 +290,10 @@ public static class BoxHitTester
     /// </summary>
     public static string ResolveCursor(HitResult hit)
     {
-        if (hit.Box is null) return "default";
+        if (hit.Box is null)
+        {
+            return "default";
+        }
 
         // 1) Author-supplied cursor wins. Walk up the box chain (which also
         //    follows the DOM ancestor chain for non-anonymous boxes) and stop
@@ -274,8 +309,15 @@ public static class BoxHitTester
 
         // 2) Element-semantic defaults. Anchors with hrefs are pointers; a
         //    direct text-content hit is the I-beam; otherwise the arrow.
-        if (hit.LinkAnchor is not null) return "pointer";
-        if (hit.Box is TextBox) return "text";
+        if (hit.LinkAnchor is not null)
+        {
+            return "pointer";
+        }
+
+        if (hit.Box is TextBox)
+        {
+            return "text";
+        }
 
         // Form controls in the DOM ancestor chain pick up their conventional
         // shape (button → default arrow, input/select → text/arrow based on
@@ -283,12 +325,19 @@ public static class BoxHitTester
         // immediate element is anonymous wrapper content.
         for (var n = (DomNode?)hit.Box.Element; n is not null; n = n.ParentNode)
         {
-            if (n is not DomElement el) continue;
+            if (n is not DomElement el)
+            {
+                continue;
+            }
+
             switch (el.LocalName)
             {
                 case "a":
                     if (!string.IsNullOrEmpty(el.GetAttribute("href")))
+                    {
                         return "pointer";
+                    }
+
                     break;
                 case "button":
                 case "select":
@@ -333,7 +382,11 @@ public static class BoxHitTester
             // would be wrong (copied-text join, find index).
             foreach (var frag in tb.Fragments)
             {
-                if (frag.Width <= 0) continue;
+                if (frag.Width <= 0)
+                {
+                    continue;
+                }
+
                 sink.Add(new PlacedFragment(
                     frameX + frag.X, frameY + frag.Y, frag.Width, frag.Height, frag.Text, frag.Shaped));
             }
@@ -343,6 +396,8 @@ public static class BoxHitTester
         var contentX = frameX + box.Border.Left + box.Padding.Left;
         var contentY = frameY + box.Border.Top + box.Padding.Top;
         foreach (var child in box.Children)
+        {
             Collect(child, contentX, contentY, sink);
+        }
     }
 }

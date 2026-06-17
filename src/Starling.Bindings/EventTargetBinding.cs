@@ -59,7 +59,10 @@ public static class EventTargetBinding
     public static void Install(JsRealm realm)
     {
         ArgumentNullException.ThrowIfNull(realm);
-        if (realm.EventTargetPrototype is not null) return; // idempotent
+        if (realm.EventTargetPrototype is not null)
+        {
+            return; // idempotent
+        }
 
         // ----- EventTarget.prototype
         var etProto = new JsObject(realm.ObjectPrototype);
@@ -116,27 +119,44 @@ public static class EventTargetBinding
         DefineMethod(realm, evProto, "composedPath", (thisV, _) =>
         {
             if (!TryGetHostEvent(thisV, out var e) || e.ComposedPath.Count == 0)
+            {
                 return JsValue.Object(new JsArray(realm));
+            }
 
             var items = new JsValue[e.ComposedPath.Count];
             for (var i = 0; i < e.ComposedPath.Count; i++)
+            {
                 items[i] = JsValue.Object(DomWrappers.Wrap(realm, e.ComposedPath[i]));
+            }
+
             return JsValue.Object(new JsArray(realm, items));
         }, length: 0);
 
         DefineMethod(realm, evProto, "preventDefault", (thisV, _) =>
         {
-            if (TryGetHostEvent(thisV, out var e)) e.PreventDefault();
+            if (TryGetHostEvent(thisV, out var e))
+            {
+                e.PreventDefault();
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         DefineMethod(realm, evProto, "stopPropagation", (thisV, _) =>
         {
-            if (TryGetHostEvent(thisV, out var e)) e.StopPropagation();
+            if (TryGetHostEvent(thisV, out var e))
+            {
+                e.StopPropagation();
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         DefineMethod(realm, evProto, "stopImmediatePropagation", (thisV, _) =>
         {
-            if (TryGetHostEvent(thisV, out var e)) e.StopImmediatePropagation();
+            if (TryGetHostEvent(thisV, out var e))
+            {
+                e.StopImmediatePropagation();
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         // DOM §2.2 — cancelBubble: getter returns stopPropagation state;
@@ -146,7 +166,13 @@ public static class EventTargetBinding
             (thisV, args) =>
             {
                 if (args.Length > 0 && JsValue.ToBoolean(args[0]))
-                    if (TryGetHostEvent(thisV, out var e)) e.StopPropagation();
+                {
+                    if (TryGetHostEvent(thisV, out var e))
+                    {
+                        e.StopPropagation();
+                    }
+                }
+
                 return JsValue.Undefined;
             });
         // DOM §2.2 — returnValue: legacy alias for !defaultPrevented (setter = preventDefault if false).
@@ -155,7 +181,13 @@ public static class EventTargetBinding
             (thisV, args) =>
             {
                 if (args.Length > 0 && !JsValue.ToBoolean(args[0]))
-                    if (TryGetHostEvent(thisV, out var e)) e.PreventDefault();
+                {
+                    if (TryGetHostEvent(thisV, out var e))
+                    {
+                        e.PreventDefault();
+                    }
+                }
+
                 return JsValue.Undefined;
             });
         // Legacy Event.initEvent (DOM §2.9) — used with document.createEvent.
@@ -164,19 +196,28 @@ public static class EventTargetBinding
         DefineMethod(realm, evProto, "initEvent", (thisV, args) =>
         {
             if (args.Length == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("initEvent requires a type argument"));
+            }
+
             if (TryGetHostEvent(thisV, out var e))
+            {
                 e.InitEvent(
                     JsValue.ToStringValue(args[0]),
                     args.Length > 1 && JsValue.ToBoolean(args[1]),
                     args.Length > 2 && JsValue.ToBoolean(args[2]));
+            }
+
             return JsValue.Undefined;
         }, length: 3);
 
         var evCtor = new JsNativeFunction(realm, "Event", 1, (thisV, args) =>
         {
             if (args.Length == 0 || args[0].IsUndefined)
+            {
                 throw new JsThrow(realm.NewTypeError("Event constructor requires a type"));
+            }
+
             var type = JsValue.ToStringValue(args[0]);
             var init = default(EventInit);
             if (args.Length > 1 && args[1].IsObject)
@@ -213,7 +254,11 @@ public static class EventTargetBinding
         realm.CustomEventPrototype = customEvProto;
         DefineAccessor(realm, customEvProto, "detail", (thisV, _) =>
         {
-            if (thisV.IsObject && thisV.AsObject is JsCustomEventWrapper cw) return cw.Detail;
+            if (thisV.IsObject && thisV.AsObject is JsCustomEventWrapper cw)
+            {
+                return cw.Detail;
+            }
+
             return JsValue.Null;
         });
         // Legacy CustomEvent.initCustomEvent (DOM §2.3) — used with createEvent.
@@ -221,7 +266,10 @@ public static class EventTargetBinding
         DefineMethod(realm, customEvProto, "initCustomEvent", (thisV, args) =>
         {
             if (args.Length == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("initCustomEvent requires a type argument"));
+            }
+
             if (TryGetHostEvent(thisV, out var e))
             {
                 e.InitEvent(
@@ -229,7 +277,9 @@ public static class EventTargetBinding
                     args.Length > 1 && JsValue.ToBoolean(args[1]),
                     args.Length > 2 && JsValue.ToBoolean(args[2]));
                 if (thisV.AsObject is JsCustomEventWrapper cw)
+                {
                     cw.Detail = args.Length > 3 ? args[3] : JsValue.Null;
+                }
             }
             return JsValue.Undefined;
         }, length: 4);
@@ -237,7 +287,10 @@ public static class EventTargetBinding
         var customEvCtor = new JsNativeFunction(realm, "CustomEvent", 1, (_, args) =>
         {
             if (args.Length == 0 || args[0].IsUndefined)
+            {
                 throw new JsThrow(realm.NewTypeError("CustomEvent constructor requires a type"));
+            }
+
             var type = JsValue.ToStringValue(args[0]);
             var init = default(EventInit);
             var detail = JsValue.Null;
@@ -249,7 +302,10 @@ public static class EventTargetBinding
                     Cancelable: JsValue.ToBoolean(initObj.Get("cancelable")),
                     Composed: JsValue.ToBoolean(initObj.Get("composed")));
                 var d = initObj.Get("detail");
-                if (!d.IsUndefined) detail = d;
+                if (!d.IsUndefined)
+                {
+                    detail = d;
+                }
             }
             var host = new CustomEvent(type, init);
             CacheCustomEventDetail(host, detail);
@@ -466,7 +522,10 @@ public static class EventTargetBinding
         if (thisV.IsObject && thisV.AsObject is JsEventWrapper w && w.InitDict.IsObject)
         {
             var v = w.InitDict.AsObject.Get(key);
-            if (!v.IsUndefined) return v;
+            if (!v.IsUndefined)
+            {
+                return v;
+            }
         }
         return fallback;
     }
@@ -483,7 +542,10 @@ public static class EventTargetBinding
         var ctor = new JsNativeFunction(realm, name, 1, (_, args) =>
         {
             if (args.Length == 0 || args[0].IsUndefined)
+            {
                 throw new JsThrow(realm.NewTypeError($"{name} constructor requires a type"));
+            }
+
             var init = args.Length > 1 ? args[1] : JsValue.Undefined;
             // UIEvents §3.5 — `view` must be a Window (a Window wrapper) or null.
             // A primitive like a Number is a TypeError per WebIDL interface coercion.
@@ -491,7 +553,9 @@ public static class EventTargetBinding
             {
                 var view = init.AsObject.Get("view");
                 if (!view.IsUndefined && !view.IsNull && !view.IsObject)
+                {
                     throw new JsThrow(realm.NewTypeError($"{name}: 'view' member is not a Window"));
+                }
             }
             return JsValue.Object(Track(new JsEventWrapper(proto, build(JsValue.ToStringValue(args[0]), init), init)));
         }, isConstructor: true);
@@ -581,7 +645,11 @@ public static class EventTargetBinding
     /// wrapped for the first time, and by Window install.</summary>
     public static void BindWrapper(JsObject wrapper, EventTarget host)
     {
-        if (WrapperToTarget.TryGetValue(wrapper, out _)) return;
+        if (WrapperToTarget.TryGetValue(wrapper, out _))
+        {
+            return;
+        }
+
         WrapperToTarget.Add(wrapper, host);
     }
 
@@ -594,21 +662,32 @@ public static class EventTargetBinding
     private static JsValue AddListener(JsRealm realm, JsValue thisV, JsValue[] args)
     {
         var host = ResolveHost(thisV);
-        if (host is null || args.Length < 2) return JsValue.Undefined;
+        if (host is null || args.Length < 2)
+        {
+            return JsValue.Undefined;
+        }
+
         var type = JsValue.ToStringValue(args[0]);
         // DOM §addEventListener: flatten the options first (so a `capture` getter
         // runs) even if the callback is null. The listener may be a callable
         // (a function) OR any object with a callable `handleEvent` method; a null
         // or non-object callback adds nothing.
         var (capture, once, passiveOpt) = ParseListenerOptions(args.Length > 2 ? args[2] : JsValue.Undefined);
-        if (!args[1].IsObject) return JsValue.Undefined;
+        if (!args[1].IsObject)
+        {
+            return JsValue.Undefined;
+        }
+
         var passive = passiveOpt ?? DefaultPassiveValue(host, type);
         var listenerObj = args[1].AsObject;
 
         var registry = Registries.GetValue(host, _ => new ListenerRegistry());
         var key = (type, capture);
         var byListener = registry.GetOrCreate(key);
-        if (byListener.ContainsKey(listenerObj)) return JsValue.Undefined;
+        if (byListener.ContainsKey(listenerObj))
+        {
+            return JsValue.Undefined;
+        }
 
         // Create a delegate that re-enters the JS engine on dispatch. When
         // `once` is set, the host auto-removes its own entry; we clean up the
@@ -617,7 +696,11 @@ public static class EventTargetBinding
         EventListener wrapper = null!;
         wrapper = ev =>
         {
-            if (once) byListener.Remove(listenerObj);
+            if (once)
+            {
+                byListener.Remove(listenerObj);
+            }
+
             InvokeJsListener(realm, listenerObj, ev);
         };
         byListener[listenerObj] = wrapper;
@@ -628,19 +711,39 @@ public static class EventTargetBinding
     private static JsValue RemoveListener(JsRealm realm, JsValue thisV, JsValue[] args)
     {
         var host = ResolveHost(thisV);
-        if (host is null || args.Length < 2) return JsValue.Undefined;
+        if (host is null || args.Length < 2)
+        {
+            return JsValue.Undefined;
+        }
+
         var type = JsValue.ToStringValue(args[0]);
         // Flatten options (running any `capture` getter) before bailing on a
         // null/non-object callback, matching addEventListener.
         var (capture, _, _) = ParseListenerOptions(args.Length > 2 ? args[2] : JsValue.Undefined);
-        if (!args[1].IsObject) return JsValue.Undefined;
+        if (!args[1].IsObject)
+        {
+            return JsValue.Undefined;
+        }
+
         var listenerObj = args[1].AsObject;
 
-        if (!Registries.TryGetValue(host, out var registry)) return JsValue.Undefined;
+        if (!Registries.TryGetValue(host, out var registry))
+        {
+            return JsValue.Undefined;
+        }
+
         var key = (type, capture);
         var byListener = registry.TryGet(key);
-        if (byListener is null) return JsValue.Undefined;
-        if (!byListener.TryGetValue(listenerObj, out var wrapper)) return JsValue.Undefined;
+        if (byListener is null)
+        {
+            return JsValue.Undefined;
+        }
+
+        if (!byListener.TryGetValue(listenerObj, out var wrapper))
+        {
+            return JsValue.Undefined;
+        }
+
         byListener.Remove(listenerObj);
         host.RemoveEventListener(type, wrapper, new RemoveEventListenerOptions(capture));
         return JsValue.Undefined;
@@ -658,18 +761,30 @@ public static class EventTargetBinding
     private static JsValue DispatchEvent(JsRealm realm, JsValue thisV, JsValue[] args)
     {
         var host = ResolveHost(thisV);
-        if (host is null) return JsValue.False;
+        if (host is null)
+        {
+            return JsValue.False;
+        }
+
         if (args.Length == 0 || !args[0].IsObject || args[0].AsObject is not JsEventWrapper wrapper)
+        {
             throw new JsThrow(realm.NewTypeError("dispatchEvent requires an Event instance"));
+        }
+
         var ev = wrapper.HostEvent;
         // DOM §2.7 step 1: "If event's dispatch flag is set … throw InvalidStateError"
         if (ev.IsBeingDispatched)
+        {
             throw DomExceptionBinding.Throw(realm, "InvalidStateError",
                 "The event is already being dispatched.");
+        }
         // DOM §2.7 step 2: "If event's initialized flag is not set … throw InvalidStateError"
         if (!ev.Initialized)
+        {
             throw DomExceptionBinding.Throw(realm, "InvalidStateError",
                 "The event has not been initialized (call initEvent first).");
+        }
+
         try
         {
             return JsValue.Boolean(host.DispatchEvent(ev));
@@ -716,7 +831,9 @@ public static class EventTargetBinding
                 // runs (and re-runs on every dispatch), per the DOM invoke step.
                 var handle = AbstractOperations.Get(vm, listener, "handleEvent");
                 if (AbstractOperations.IsCallable(handle))
+                {
                     AbstractOperations.Call(vm, handle, JsValue.Object(listener), new[] { jsEvent });
+                }
             }
         }
         catch (JsThrow jt)
@@ -776,7 +893,10 @@ public static class EventTargetBinding
         // Return the canonical wrapper if this host event already has one (e.g.
         // a JS-constructed event passed to dispatchEvent) so listeners and
         // window.event observe the same object identity.
-        if (EventWrappers.TryGetValue(ev, out var existing)) return existing;
+        if (EventWrappers.TryGetValue(ev, out var existing))
+        {
+            return existing;
+        }
 
         // When the host event is a CustomEvent that originated from JS (and
         // was therefore a JsCustomEventWrapper), we need to preserve the JS
@@ -817,7 +937,10 @@ public static class EventTargetBinding
         if (customEvCtor.IsObject)
         {
             var proto = customEvCtor.AsObject.Get("prototype");
-            if (proto.IsObject) return proto.AsObject;
+            if (proto.IsObject)
+            {
+                return proto.AsObject;
+            }
         }
         return null;
     }
@@ -860,7 +983,11 @@ public static class EventTargetBinding
                 JsValue.ToBoolean(o.Get("once")),
                 passiveVal.IsUndefined ? null : JsValue.ToBoolean(passiveVal));
         }
-        if (opt.IsUndefined || opt.IsNull) return (false, false, null);
+        if (opt.IsUndefined || opt.IsNull)
+        {
+            return (false, false, null);
+        }
+
         return (JsValue.ToBoolean(opt), false, null);
     }
 
@@ -870,14 +997,27 @@ public static class EventTargetBinding
     private static bool DefaultPassiveValue(EventTarget host, string type)
     {
         if (type is not ("touchstart" or "touchmove" or "wheel" or "mousewheel"))
+        {
             return false;
-        if (WindowTargets.TryGetValue(host, out _)) return true;
-        if (host is Document) return true;
+        }
+
+        if (WindowTargets.TryGetValue(host, out _))
+        {
+            return true;
+        }
+
+        if (host is Document)
+        {
+            return true;
+        }
+
         if (host is Node node)
         {
             var doc = node.OwnerDocument;
             if (doc is not null && (ReferenceEquals(doc.DocumentElement, node) || ReferenceEquals(doc.Body, node)))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -896,7 +1036,10 @@ public static class EventTargetBinding
         var get = new JsNativeFunction(realm, $"get {name}", 0, getter, isConstructor: false);
         JsObject? set = null;
         if (setter is not null)
+        {
             set = new JsNativeFunction(realm, $"set {name}", 1, setter, isConstructor: false);
+        }
+
         target.DefineOwnProperty(name,
             PropertyDescriptor.Accessor(get, set, enumerable: true, configurable: true));
     }
@@ -934,7 +1077,11 @@ public static class EventTargetBinding
                     : JsValue.Null,
             setter: (thisV, args) =>
             {
-                if (!thisV.IsObject) return JsValue.Undefined;
+                if (!thisV.IsObject)
+                {
+                    return JsValue.Undefined;
+                }
+
                 var wrapper = thisV.AsObject;
                 var value = args.Length > 0 ? args[0] : JsValue.Undefined;
                 var slots = HandlerSlots.GetValue(wrapper, _ => new EventHandlerSlots());
@@ -946,7 +1093,10 @@ public static class EventTargetBinding
                 }
 
                 slots.Values[type] = value;
-                if (!slots.Registered.Add(type)) return JsValue.Undefined;
+                if (!slots.Registered.Add(type))
+                {
+                    return JsValue.Undefined;
+                }
 
                 var host = ResolveHost(thisV);
                 if (host is null)

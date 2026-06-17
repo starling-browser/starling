@@ -21,9 +21,15 @@ public static class CssTransformParser
         // interpolation, which the cascade stores back as the property value)
         // passes straight through. Without this, re-parsing it would fall through
         // the function-value path below and yield None — dropping the transform.
-        if (value is CssTransform already) return already;
+        if (value is CssTransform already)
+        {
+            return already;
+        }
+
         if (value is CssKeyword { Name: var kw } && kw.Equals("none", StringComparison.OrdinalIgnoreCase))
+        {
             return CssTransform.None;
+        }
 
         var functions = value switch
         {
@@ -35,9 +41,15 @@ public static class CssTransformParser
         foreach (var item in functions)
         {
             if (item is not CssFunctionValue fn)
+            {
                 return CssTransform.None;
+            }
+
             if (!TryParseFunction(fn, out var transformFn))
+            {
                 return CssTransform.None;
+            }
+
             result.Add(transformFn);
         }
         return new CssTransform(result);
@@ -50,61 +62,133 @@ public static class CssTransformParser
         switch (fn.Name.ToLowerInvariant())
         {
             case "translate":
-                if (args.Count is < 1 or > 2) return false;
-                if (!TryLengthOrPercent(args[0], out var tx)) return false;
+                if (args.Count is < 1 or > 2)
+                {
+                    return false;
+                }
+
+                if (!TryLengthOrPercent(args[0], out var tx))
+                {
+                    return false;
+                }
+
                 var ty = new CssLengthOrPercent(0, false);
-                if (args.Count == 2 && !TryLengthOrPercent(args[1], out ty)) return false;
+                if (args.Count == 2 && !TryLengthOrPercent(args[1], out ty))
+                {
+                    return false;
+                }
+
                 result = new CssTranslate(tx, ty);
                 return true;
             case "translatex":
-                if (args.Count != 1 || !TryLengthOrPercent(args[0], out var tlx)) return false;
+                if (args.Count != 1 || !TryLengthOrPercent(args[0], out var tlx))
+                {
+                    return false;
+                }
+
                 result = new CssTranslate(tlx, new CssLengthOrPercent(0, false));
                 return true;
             case "translatey":
-                if (args.Count != 1 || !TryLengthOrPercent(args[0], out var tly)) return false;
+                if (args.Count != 1 || !TryLengthOrPercent(args[0], out var tly))
+                {
+                    return false;
+                }
+
                 result = new CssTranslate(new CssLengthOrPercent(0, false), tly);
                 return true;
             case "scale":
-                if (args.Count is < 1 or > 2) return false;
-                if (!TryNumber(args[0], out var sx)) return false;
+                if (args.Count is < 1 or > 2)
+                {
+                    return false;
+                }
+
+                if (!TryNumber(args[0], out var sx))
+                {
+                    return false;
+                }
+
                 var sy = sx;
-                if (args.Count == 2 && !TryNumber(args[1], out sy)) return false;
+                if (args.Count == 2 && !TryNumber(args[1], out sy))
+                {
+                    return false;
+                }
+
                 result = new CssScale(sx, sy);
                 return true;
             case "scalex":
-                if (args.Count != 1 || !TryNumber(args[0], out var sxOnly)) return false;
+                if (args.Count != 1 || !TryNumber(args[0], out var sxOnly))
+                {
+                    return false;
+                }
+
                 result = new CssScale(sxOnly, 1);
                 return true;
             case "scaley":
-                if (args.Count != 1 || !TryNumber(args[0], out var syOnly)) return false;
+                if (args.Count != 1 || !TryNumber(args[0], out var syOnly))
+                {
+                    return false;
+                }
+
                 result = new CssScale(1, syOnly);
                 return true;
             case "rotate":
             case "rotatez":
-                if (args.Count != 1 || !TryAngleRadians(args[0], out var rad)) return false;
+                if (args.Count != 1 || !TryAngleRadians(args[0], out var rad))
+                {
+                    return false;
+                }
+
                 result = new CssRotate(rad);
                 return true;
             case "skew":
-                if (args.Count is < 1 or > 2) return false;
-                if (!TryAngleRadians(args[0], out var ax)) return false;
+                if (args.Count is < 1 or > 2)
+                {
+                    return false;
+                }
+
+                if (!TryAngleRadians(args[0], out var ax))
+                {
+                    return false;
+                }
+
                 var ay = 0d;
-                if (args.Count == 2 && !TryAngleRadians(args[1], out ay)) return false;
+                if (args.Count == 2 && !TryAngleRadians(args[1], out ay))
+                {
+                    return false;
+                }
+
                 result = new CssSkew(ax, ay);
                 return true;
             case "skewx":
-                if (args.Count != 1 || !TryAngleRadians(args[0], out var skx)) return false;
+                if (args.Count != 1 || !TryAngleRadians(args[0], out var skx))
+                {
+                    return false;
+                }
+
                 result = new CssSkew(skx, 0);
                 return true;
             case "skewy":
-                if (args.Count != 1 || !TryAngleRadians(args[0], out var sky)) return false;
+                if (args.Count != 1 || !TryAngleRadians(args[0], out var sky))
+                {
+                    return false;
+                }
+
                 result = new CssSkew(0, sky);
                 return true;
             case "matrix":
-                if (args.Count != 6) return false;
+                if (args.Count != 6)
+                {
+                    return false;
+                }
+
                 Span<double> mvals = stackalloc double[6];
                 for (var i = 0; i < 6; i++)
                 {
-                    if (!TryNumber(args[i], out var v)) return false;
+                    if (!TryNumber(args[i], out var v))
+                    {
+                        return false;
+                    }
+
                     mvals[i] = v;
                 }
                 result = new CssMatrix(new Matrix2D(mvals[0], mvals[1], mvals[2], mvals[3], mvals[4], mvals[5]));

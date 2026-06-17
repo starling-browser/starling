@@ -40,7 +40,9 @@ public class JsLexerTests
         // EN QUAD through HAIR SPACE: the whole Zs sub-range the old lexer
         // rejected with "unexpected character".
         for (char c = '\u2000'; c <= '\u200A'; c++)
+        {
             AssertWhitespaceSeparates(c.ToString());
+        }
     }
 
     [Spec("ecma262", "https://tc39.es/ecma262/#sec-white-space", "12.2 White Space")]

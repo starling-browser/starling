@@ -552,7 +552,11 @@ public class PromiseTests
         // — but we still need an active VM scope so JS callbacks resolve. A
         // fresh `Run(empty)` reasserts ActiveVm and drains in one step.
         rt.SetMicrotaskScheduler(null);
-        foreach (var job in captured) rt.Realm.Microtasks.Enqueue(job);
+        foreach (var job in captured)
+        {
+            rt.Realm.Microtasks.Enqueue(job);
+        }
+
         captured.Clear();
         var empty = JsCompiler.CompileForEval(new JsParser("0;").ParseProgram());
         new JsVm(rt).Run(empty);

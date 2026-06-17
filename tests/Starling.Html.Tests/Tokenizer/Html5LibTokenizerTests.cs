@@ -41,7 +41,9 @@ public class Html5LibTokenizerTests
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(path));
             if (!doc.RootElement.TryGetProperty("tests", out var tests))
+            {
                 continue;
+            }
 
             foreach (var test in tests.EnumerateArray())
             {
@@ -133,9 +135,14 @@ public class Html5LibTokenizerTests
             if (token is CharacterToken character)
             {
                 if (character.CodePoint <= 0xFFFF)
+                {
                     characterBuffer.Add((char)character.CodePoint);
+                }
                 else
+                {
                     characterBuffer.AddRange(char.ConvertFromUtf32(character.CodePoint));
+                }
+
                 continue;
             }
 
@@ -156,7 +163,9 @@ public class Html5LibTokenizerTests
         void FlushCharacters()
         {
             if (characterBuffer.Count == 0)
+            {
                 return;
+            }
 
             collapsed.Add($"Character:{new string(characterBuffer.ToArray())}");
             characterBuffer.Clear();
@@ -176,7 +185,10 @@ public class Html5LibTokenizerTests
     {
         var tokens = new List<HtmlToken>();
         while (tokenizer.ReadToken() is { } token)
+        {
             tokens.Add(token);
+        }
+
         return tokens;
     }
 

@@ -169,7 +169,9 @@ public sealed record CssGradientLine
     public double ToDegrees(double boxWidth, double boxHeight)
     {
         if (AngleDegrees is { } a)
+        {
             return a;
+        }
 
         // Pure sides.
         if (SideX == CssGradientSideX.None)

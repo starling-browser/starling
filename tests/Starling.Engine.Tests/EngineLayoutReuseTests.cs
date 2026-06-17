@@ -247,7 +247,11 @@ public sealed class EngineLayoutReuseTests
 
     private static void TryDelete(string path)
     {
-        try { if (File.Exists(path)) File.Delete(path); }
+        try { if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
         catch { /* best-effort */ }
     }
 
@@ -272,7 +276,9 @@ public sealed class EngineLayoutReuseTests
                 ActivityStarted = a =>
                 {
                     if (a.OperationName == "paint.layout")
+                    {
                         Interlocked.Increment(ref _layoutSpanCount);
+                    }
                 },
             };
             ActivitySource.AddActivityListener(_al);
@@ -281,7 +287,9 @@ public sealed class EngineLayoutReuseTests
             _ml.InstrumentPublished = (inst, lst) =>
             {
                 if (inst.Meter.Name == StarlingTelemetry.SourceName)
+                {
                     lst.EnableMeasurementEvents(inst);
+                }
             };
             _ml.SetMeasurementEventCallback<double>((inst, m, _, _) =>
                 _counters.AddOrUpdate(inst.Name, m, (_, prev) => prev + m));

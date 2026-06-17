@@ -73,7 +73,10 @@ public sealed class JsTypedArray : JsObject
     public override JsValue Get(string name)
     {
         if (TryIndex(name, out var index))
+        {
             return index >= 0 && index < Length ? GetElement(index) : JsValue.Undefined;
+        }
+
         return base.Get(name);
     }
 
@@ -81,7 +84,11 @@ public sealed class JsTypedArray : JsObject
     {
         if (TryIndex(name, out var index))
         {
-            if (index >= 0 && index < Length) SetElement(index, value);
+            if (index >= 0 && index < Length)
+            {
+                SetElement(index, value);
+            }
+
             return;
         }
         base.Set(name, value);
@@ -157,7 +164,11 @@ public sealed class JsTypedArray : JsObject
 
     private int CheckedOffset(int index)
     {
-        if ((uint)index >= (uint)Length) throw new ArgumentOutOfRangeException(nameof(index));
+        if ((uint)index >= (uint)Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index));
+        }
+
         return ByteOffset + index * BytesPerElement;
     }
 
@@ -175,7 +186,11 @@ public sealed class JsTypedArray : JsObject
     {
         try
         {
-            if (!value.IsObject) return JsValue.ToNumber(value);
+            if (!value.IsObject)
+            {
+                return JsValue.ToNumber(value);
+            }
+
             return JsValue.ToNumber(AbstractOperations.ToPrimitive(value, "number"));
         }
         catch (InvalidOperationException ex) when (realm is not null)
@@ -187,7 +202,10 @@ public sealed class JsTypedArray : JsObject
     private static BigInteger ToBigInt(JsValue value, JsRealm? realm)
     {
         if (value.IsObject)
+        {
             value = AbstractOperations.ToPrimitive(value, "number");
+        }
+
         return value.Kind switch
         {
             JsValueKind.BigInt => value.AsBigInt,
@@ -217,7 +235,11 @@ public sealed class JsTypedArray : JsObject
     // ECMA-262 §7.1.6 ToInt32: truncate, modulo 2^32, reinterpret signed.
     private static int ToInt32(double n)
     {
-        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0) return 0;
+        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0)
+        {
+            return 0;
+        }
+
         var int32bit = n < 0
             ? 4294967296d - (Math.Abs(Math.Truncate(n)) % 4294967296d)
             : Math.Truncate(n) % 4294967296d;
@@ -227,7 +249,11 @@ public sealed class JsTypedArray : JsObject
     // ECMA-262 §7.1.7 ToUint32: truncate and wrap modulo 2^32.
     private static uint ToUint32(double n)
     {
-        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0) return 0;
+        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0)
+        {
+            return 0;
+        }
+
         var int32bit = n < 0
             ? 4294967296d - (Math.Abs(Math.Truncate(n)) % 4294967296d)
             : Math.Truncate(n) % 4294967296d;
@@ -237,11 +263,27 @@ public sealed class JsTypedArray : JsObject
     // ECMA-262 §7.1.12 ToUint8Clamp: clamp, then round half to even.
     private static byte ToUint8Clamp(double n)
     {
-        if (double.IsNaN(n) || n <= 0) return 0;
-        if (n >= 255) return 255;
+        if (double.IsNaN(n) || n <= 0)
+        {
+            return 0;
+        }
+
+        if (n >= 255)
+        {
+            return 255;
+        }
+
         var f = Math.Floor(n);
-        if (n < f + 0.5) return (byte)f;
-        if (n > f + 0.5) return (byte)(f + 1);
+        if (n < f + 0.5)
+        {
+            return (byte)f;
+        }
+
+        if (n > f + 0.5)
+        {
+            return (byte)(f + 1);
+        }
+
         return (byte)(((int)f % 2) == 0 ? f : f + 1);
     }
 

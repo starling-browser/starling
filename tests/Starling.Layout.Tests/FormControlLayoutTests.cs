@@ -151,11 +151,18 @@ public sealed class FormControlLayoutTests
 
     private static Box.Box? FindBox(Box.Box root, string localName)
     {
-        if (root.Element?.LocalName == localName) return root;
+        if (root.Element?.LocalName == localName)
+        {
+            return root;
+        }
+
         foreach (var child in root.Children)
         {
             var hit = FindBox(child, localName);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }
@@ -164,15 +171,23 @@ public sealed class FormControlLayoutTests
     {
         yield return root;
         foreach (var child in root.Children)
+        {
             foreach (var b in AllBoxes(child))
+            {
                 yield return b;
+            }
+        }
     }
 
     private static IEnumerable<TextBox> FlattenTextBoxes(Box.Box box)
     {
         if (box is TextBox tb) { yield return tb; yield break; }
         foreach (var child in box.Children)
+        {
             foreach (var inner in FlattenTextBoxes(child))
+            {
                 yield return inner;
+            }
+        }
     }
 }

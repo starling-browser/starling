@@ -42,18 +42,32 @@ public sealed class ScopedRefreshLayerReuseTests
 
     private static Box? FindBoxFor(Box box, Element el)
     {
-        if (ReferenceEquals(box.Element, el)) return box;
+        if (ReferenceEquals(box.Element, el))
+        {
+            return box;
+        }
+
         foreach (var child in box.Children)
+        {
             if (FindBoxFor(child, el) is { } found)
+            {
                 return found;
+            }
+        }
+
         return null;
     }
 
     private static bool SliceMentions(PaintList slice, string needle)
     {
         foreach (var item in slice.Items)
+        {
             if (item is Starling.Paint.DisplayList.DrawText t && t.Text.Contains(needle, StringComparison.Ordinal))
+            {
                 return true;
+            }
+        }
+
         return false;
     }
 

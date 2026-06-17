@@ -119,7 +119,10 @@ public static class IntlObj
         var ctor = new JsNativeFunction(realm, "Locale", 1, (newTarget, args) =>
         {
             if (!IntrinsicHelpers.IsConstructInvocation(newTarget))
+            {
                 throw new JsThrow(realm.NewTypeError("Intl.Locale requires 'new'"));
+            }
+
             var state = CreateLocaleState(
                 realm,
                 args.Length > 0 ? args[0] : JsValue.Undefined,
@@ -213,7 +216,11 @@ public static class IntlObj
         var minDefault = style == "currency" ? 2 : 0;
         var minFraction = GetNumberOption(realm, options, "minimumFractionDigits", 0, 20, minDefault);
         var maxFraction = GetNumberOption(realm, options, "maximumFractionDigits", 0, 20, defaultDigits);
-        if (maxFraction < minFraction) maxFraction = minFraction;
+        if (maxFraction < minFraction)
+        {
+            maxFraction = minFraction;
+        }
+
         var currency = GetStringOption(realm, options, "currency") ?? "USD";
         var useGrouping = GetBooleanOption(realm, options, "useGrouping") ?? true;
         return new IntlNumberFormatState(locale, style, currency.ToUpperInvariant(), minFraction, maxFraction, useGrouping);
@@ -271,7 +278,11 @@ public static class IntlObj
     private static JsValue MakeStringArray(JsRealm realm, IReadOnlyList<string> values)
     {
         var arr = new JsArray(realm);
-        for (var i = 0; i < values.Count; i++) arr.Push(JsValue.String(values[i]));
+        for (var i = 0; i < values.Count; i++)
+        {
+            arr.Push(JsValue.String(values[i]));
+        }
+
         return JsValue.Object(arr);
     }
 
@@ -279,19 +290,31 @@ public static class IntlObj
     {
         var result = new List<string>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (value.IsUndefined) return result;
+        if (value.IsUndefined)
+        {
+            return result;
+        }
+
         if (value.IsString)
         {
             AddSupportedLocale(value.AsString, result, seen);
             return result;
         }
-        if (!value.IsObject) return result;
+        if (!value.IsObject)
+        {
+            return result;
+        }
+
         var obj = value.AsObject;
         var length = ToLength(AbstractOperations.Get(realm.ActiveVm, obj, "length"));
         for (var i = 0; i < length; i++)
         {
             var item = AbstractOperations.Get(realm.ActiveVm, obj, i.ToString(CultureInfo.InvariantCulture));
-            if (item.IsUndefined) continue;
+            if (item.IsUndefined)
+            {
+                continue;
+            }
+
             AddSupportedLocale(AbstractOperations.ToStringJs(realm.ActiveVm, item), result, seen);
         }
         return result;
@@ -299,14 +322,25 @@ public static class IntlObj
 
     private static void AddSupportedLocale(string requested, List<string> result, HashSet<string> seen)
     {
-        if (!TryCreateLocale(requested, out var locale)) return;
-        if (seen.Add(locale.Name)) result.Add(locale.Name);
+        if (!TryCreateLocale(requested, out var locale))
+        {
+            return;
+        }
+
+        if (seen.Add(locale.Name))
+        {
+            result.Add(locale.Name);
+        }
     }
 
     private static IntlLocale ResolveLocale(JsRealm realm, JsValue value)
     {
         var requested = ReadRequestedLocales(realm, value);
-        if (requested.Count > 0 && TryCreateLocale(requested[0], out var locale)) return locale;
+        if (requested.Count > 0 && TryCreateLocale(requested[0], out var locale))
+        {
+            return locale;
+        }
+
         return TryCreateLocale(DefaultLocale, out var defaultLocale)
             ? defaultLocale
             : new IntlLocale(DefaultLocale, CultureInfo.InvariantCulture);
@@ -316,7 +350,11 @@ public static class IntlObj
     {
         result = new IntlLocale(DefaultLocale, CultureInfo.InvariantCulture);
         var normalized = CanonicalLocaleName(NormalizeLocale(locale));
-        if (normalized.Length == 0) return false;
+        if (normalized.Length == 0)
+        {
+            return false;
+        }
+
         try
         {
             var culture = CultureInfo.GetCultureInfo(normalized);
@@ -326,7 +364,11 @@ public static class IntlObj
         }
         catch (CultureNotFoundException)
         {
-            if (!IsKnownFallbackLocale(normalized)) return false;
+            if (!IsKnownFallbackLocale(normalized))
+            {
+                return false;
+            }
+
             result = new IntlLocale(normalized, CultureInfo.InvariantCulture);
             return true;
         }
@@ -336,13 +378,21 @@ public static class IntlObj
     {
         var trimmed = locale.Trim().Replace('_', '-');
         var extension = trimmed.IndexOf("-u-", StringComparison.OrdinalIgnoreCase);
-        if (extension >= 0) trimmed = trimmed[..extension];
+        if (extension >= 0)
+        {
+            trimmed = trimmed[..extension];
+        }
+
         return trimmed;
     }
 
     private static string CanonicalLocaleName(string locale)
     {
-        if (locale.Length == 0) return string.Empty;
+        if (locale.Length == 0)
+        {
+            return string.Empty;
+        }
+
         var parts = locale.Split('-', StringSplitOptions.RemoveEmptyEntries);
         for (var i = 0; i < parts.Length; i++)
         {
@@ -363,11 +413,15 @@ public static class IntlObj
     private static IntlLocaleState ParseLocaleState(JsRealm realm, string tag)
     {
         if (tag.Length == 0 || tag.AsSpan().IndexOfAny([' ', '\t', '\r', '\n']) >= 0)
+        {
             throw new JsThrow(realm.NewRangeError("invalid locale tag"));
+        }
 
         var parts = tag.Replace('_', '-').Split('-', StringSplitOptions.None);
         if (parts.Length == 0 || parts[0].Length is < 2 or > 8 || !IsAsciiLetters(parts[0]))
+        {
             throw new JsThrow(realm.NewRangeError("invalid locale tag"));
+        }
 
         var language = parts[0].ToLowerInvariant();
         string? script = null;
@@ -390,31 +444,60 @@ public static class IntlObj
         }
 
         var baseParts = new List<string> { language };
-        if (script is not null) baseParts.Add(script);
-        if (region is not null) baseParts.Add(region);
+        if (script is not null)
+        {
+            baseParts.Add(script);
+        }
+
+        if (region is not null)
+        {
+            baseParts.Add(region);
+        }
+
         var baseName = string.Join('-', baseParts);
 
         for (; i < parts.Length; i++)
         {
-            if (!string.Equals(parts[i], "u", StringComparison.OrdinalIgnoreCase)) continue;
+            if (!string.Equals(parts[i], "u", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             i++;
             while (i < parts.Length)
             {
                 var key = parts[i].ToLowerInvariant();
-                if (key.Length != 2) break;
+                if (key.Length != 2)
+                {
+                    break;
+                }
+
                 i++;
                 var values = new List<string>();
                 while (i < parts.Length && parts[i].Length != 2)
                 {
-                    if (parts[i].Length == 0) throw new JsThrow(realm.NewRangeError("invalid locale tag"));
+                    if (parts[i].Length == 0)
+                    {
+                        throw new JsThrow(realm.NewRangeError("invalid locale tag"));
+                    }
+
                     values.Add(parts[i].ToLowerInvariant());
                     i++;
                 }
 
                 var value = values.Count == 0 ? string.Empty : string.Join('-', values);
-                if (key == "ca" && value.Length > 0) calendar = value;
-                else if (key == "hc" && value is "h11" or "h12" or "h23" or "h24") hourCycle = value;
-                else if (key == "kn") numeric = value.Length == 0 || value == "true";
+                if (key == "ca" && value.Length > 0)
+                {
+                    calendar = value;
+                }
+                else if (key == "hc" && value is "h11" or "h12" or "h23" or "h24")
+                {
+                    hourCycle = value;
+                }
+                else if (key == "kn")
+                {
+                    numeric = value.Length == 0 || value == "true";
+                }
             }
             break;
         }
@@ -433,9 +516,21 @@ public static class IntlObj
     private static string BuildLocaleName(string baseName, string? calendar, string? hourCycle, bool numeric)
     {
         var extensions = new List<string>();
-        if (calendar is not null) extensions.Add("ca-" + calendar);
-        if (hourCycle is not null) extensions.Add("hc-" + hourCycle);
-        if (numeric) extensions.Add("kn");
+        if (calendar is not null)
+        {
+            extensions.Add("ca-" + calendar);
+        }
+
+        if (hourCycle is not null)
+        {
+            extensions.Add("hc-" + hourCycle);
+        }
+
+        if (numeric)
+        {
+            extensions.Add("kn");
+        }
+
         return extensions.Count == 0 ? baseName : baseName + "-u-" + string.Join('-', extensions);
     }
 
@@ -447,7 +542,10 @@ public static class IntlObj
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
-            if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))) return false;
+            if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')))
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -457,37 +555,74 @@ public static class IntlObj
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
-            if (c < '0' || c > '9') return false;
+            if (c < '0' || c > '9')
+            {
+                return false;
+            }
         }
         return true;
     }
 
     private static string? GetStringOption(JsRealm realm, JsObject? options, string name, params string[] allowed)
     {
-        if (options is null) return null;
+        if (options is null)
+        {
+            return null;
+        }
+
         var value = AbstractOperations.Get(realm.ActiveVm, options, name);
-        if (value.IsUndefined) return null;
+        if (value.IsUndefined)
+        {
+            return null;
+        }
+
         var text = AbstractOperations.ToStringJs(realm.ActiveVm, value);
-        if (allowed.Length == 0) return text;
+        if (allowed.Length == 0)
+        {
+            return text;
+        }
+
         for (var i = 0; i < allowed.Length; i++)
-            if (string.Equals(text, allowed[i], StringComparison.Ordinal)) return text;
+        {
+            if (string.Equals(text, allowed[i], StringComparison.Ordinal))
+            {
+                return text;
+            }
+        }
+
         return null;
     }
 
     private static bool? GetBooleanOption(JsRealm realm, JsObject? options, string name)
     {
-        if (options is null) return null;
+        if (options is null)
+        {
+            return null;
+        }
+
         var value = AbstractOperations.Get(realm.ActiveVm, options, name);
         return value.IsUndefined ? null : JsValue.ToBoolean(value);
     }
 
     private static int GetNumberOption(JsRealm realm, JsObject? options, string name, int min, int max, int fallback)
     {
-        if (options is null) return fallback;
+        if (options is null)
+        {
+            return fallback;
+        }
+
         var value = AbstractOperations.Get(realm.ActiveVm, options, name);
-        if (value.IsUndefined) return fallback;
+        if (value.IsUndefined)
+        {
+            return fallback;
+        }
+
         var number = NumberCtor.ToNumber(value);
-        if (double.IsNaN(number)) return fallback;
+        if (double.IsNaN(number))
+        {
+            return fallback;
+        }
+
         var integer = (int)Math.Truncate(number);
         return Math.Clamp(integer, min, max);
     }
@@ -495,32 +630,56 @@ public static class IntlObj
     private static long ToLength(JsValue value)
     {
         var number = NumberCtor.ToNumber(value);
-        if (double.IsNaN(number) || number <= 0) return 0;
-        if (number >= int.MaxValue) return int.MaxValue;
+        if (double.IsNaN(number) || number <= 0)
+        {
+            return 0;
+        }
+
+        if (number >= int.MaxValue)
+        {
+            return int.MaxValue;
+        }
+
         return (long)Math.Truncate(number);
     }
 
     private static IntlDateTimeFormatObject RequireDateTimeFormat(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is IntlDateTimeFormatObject obj) return obj;
+        if (thisV.IsObject && thisV.AsObject is IntlDateTimeFormatObject obj)
+        {
+            return obj;
+        }
+
         throw new JsThrow(realm.NewTypeError("Intl.DateTimeFormat method called on incompatible receiver"));
     }
 
     private static IntlNumberFormatObject RequireNumberFormat(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is IntlNumberFormatObject obj) return obj;
+        if (thisV.IsObject && thisV.AsObject is IntlNumberFormatObject obj)
+        {
+            return obj;
+        }
+
         throw new JsThrow(realm.NewTypeError("Intl.NumberFormat method called on incompatible receiver"));
     }
 
     private static IntlCollatorObject RequireCollator(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is IntlCollatorObject obj) return obj;
+        if (thisV.IsObject && thisV.AsObject is IntlCollatorObject obj)
+        {
+            return obj;
+        }
+
         throw new JsThrow(realm.NewTypeError("Intl.Collator method called on incompatible receiver"));
     }
 
     private static IntlLocaleObject RequireLocale(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is IntlLocaleObject obj) return obj;
+        if (thisV.IsObject && thisV.AsObject is IntlLocaleObject obj)
+        {
+            return obj;
+        }
+
         throw new JsThrow(realm.NewTypeError("Intl.Locale method called on incompatible receiver"));
     }
 
@@ -576,7 +735,10 @@ public static class IntlObj
         {
             var ms = DateMilliseconds(value);
             if (double.IsNaN(ms) || double.IsInfinity(ms))
+            {
                 throw new JsThrow(realm.NewRangeError("Invalid time value"));
+            }
+
             try
             {
                 var date = DateTimeOffset.FromUnixTimeMilliseconds((long)ms).UtcDateTime;
@@ -596,24 +758,52 @@ public static class IntlObj
             obj.Set("calendar", JsValue.String(DefaultCalendar));
             obj.Set("numberingSystem", JsValue.String(DefaultNumberingSystem));
             obj.Set("timeZone", JsValue.String(DefaultTimeZone));
-            if (state.Year is not null) obj.Set("year", JsValue.String(state.Year));
-            if (state.Month is not null) obj.Set("month", JsValue.String(state.Month));
-            if (state.Day is not null) obj.Set("day", JsValue.String(state.Day));
+            if (state.Year is not null)
+            {
+                obj.Set("year", JsValue.String(state.Year));
+            }
+
+            if (state.Month is not null)
+            {
+                obj.Set("month", JsValue.String(state.Month));
+            }
+
+            if (state.Day is not null)
+            {
+                obj.Set("day", JsValue.String(state.Day));
+            }
+
             if (state.Hour is not null)
             {
                 obj.Set("hour", JsValue.String(state.Hour));
                 obj.Set("hourCycle", JsValue.String(state.Hour12 ? "h12" : "h23"));
                 obj.Set("hour12", JsValue.Boolean(state.Hour12));
             }
-            if (state.Minute is not null) obj.Set("minute", JsValue.String(state.Minute));
-            if (state.Second is not null) obj.Set("second", JsValue.String(state.Second));
+            if (state.Minute is not null)
+            {
+                obj.Set("minute", JsValue.String(state.Minute));
+            }
+
+            if (state.Second is not null)
+            {
+                obj.Set("second", JsValue.String(state.Second));
+            }
+
             return JsValue.Object(obj);
         }
 
         private static double DateMilliseconds(JsValue value)
         {
-            if (value.IsUndefined) return 0;
-            if (value.IsObject && value.AsObject is JsDate date) return date.TimeValueMs;
+            if (value.IsUndefined)
+            {
+                return 0;
+            }
+
+            if (value.IsObject && value.AsObject is JsDate date)
+            {
+                return date.TimeValueMs;
+            }
+
             return NumberCtor.ToNumber(value);
         }
 
@@ -621,9 +811,21 @@ public static class IntlObj
         {
             var hasDate = state.Year is not null || state.Month is not null || state.Day is not null;
             var hasTime = state.Hour is not null || state.Minute is not null || state.Second is not null;
-            if (hasDate && !hasTime) return DatePattern(state);
-            if (hasTime && !hasDate) return TimePattern(state);
-            if (hasDate && hasTime) return DatePattern(state) + ", " + TimePattern(state);
+            if (hasDate && !hasTime)
+            {
+                return DatePattern(state);
+            }
+
+            if (hasTime && !hasDate)
+            {
+                return TimePattern(state);
+            }
+
+            if (hasDate && hasTime)
+            {
+                return DatePattern(state) + ", " + TimePattern(state);
+            }
+
             return ShortDatePattern(state.Locale);
         }
 
@@ -638,24 +840,48 @@ public static class IntlObj
         private static string DatePattern(IntlDateTimeFormatState state)
         {
             var parts = new List<string>(3);
-            if (state.Month is not null) parts.Add(state.Month switch
+            if (state.Month is not null)
+            {
+                parts.Add(state.Month switch
             {
                 "2-digit" => "MM",
                 "short" => "MMM",
                 "long" => "MMMM",
                 _ => "M",
             });
-            if (state.Day is not null) parts.Add(state.Day == "2-digit" ? "dd" : "d");
-            if (state.Year is not null) parts.Add(state.Year == "2-digit" ? "yy" : "yyyy");
+            }
+
+            if (state.Day is not null)
+            {
+                parts.Add(state.Day == "2-digit" ? "dd" : "d");
+            }
+
+            if (state.Year is not null)
+            {
+                parts.Add(state.Year == "2-digit" ? "yy" : "yyyy");
+            }
+
             return parts.Count == 0 ? ShortDatePattern(state.Locale) : string.Join("/", parts);
         }
 
         private static string TimePattern(IntlDateTimeFormatState state)
         {
             var parts = new List<string>(3);
-            if (state.Hour is not null) parts.Add(state.Hour12 ? (state.Hour == "2-digit" ? "hh" : "h") : (state.Hour == "2-digit" ? "HH" : "H"));
-            if (state.Minute is not null) parts.Add(state.Minute == "2-digit" ? "mm" : "m");
-            if (state.Second is not null) parts.Add(state.Second == "2-digit" ? "ss" : "s");
+            if (state.Hour is not null)
+            {
+                parts.Add(state.Hour12 ? (state.Hour == "2-digit" ? "hh" : "h") : (state.Hour == "2-digit" ? "HH" : "H"));
+            }
+
+            if (state.Minute is not null)
+            {
+                parts.Add(state.Minute == "2-digit" ? "mm" : "m");
+            }
+
+            if (state.Second is not null)
+            {
+                parts.Add(state.Second == "2-digit" ? "ss" : "s");
+            }
+
             var pattern = parts.Count == 0 ? "HH:mm:ss" : string.Join(":", parts);
             return state.Hour12 ? pattern + " tt" : pattern;
         }
@@ -666,9 +892,20 @@ public static class IntlObj
         public string Format(JsValue value)
         {
             var number = value.IsUndefined ? double.NaN : NumberCtor.ToNumber(value);
-            if (double.IsNaN(number)) return "NaN";
-            if (double.IsPositiveInfinity(number)) return "∞";
-            if (double.IsNegativeInfinity(number)) return "-∞";
+            if (double.IsNaN(number))
+            {
+                return "NaN";
+            }
+
+            if (double.IsPositiveInfinity(number))
+            {
+                return "∞";
+            }
+
+            if (double.IsNegativeInfinity(number))
+            {
+                return "-∞";
+            }
 
             var nfi = (NumberFormatInfo)state.Locale.Culture.NumberFormat.Clone();
             if (!state.UseGrouping)
@@ -716,10 +953,17 @@ public static class IntlObj
         private string NumberPattern()
         {
             var pattern = state.UseGrouping ? "#,0" : "0";
-            if (state.MaximumFractionDigits == 0) return pattern;
+            if (state.MaximumFractionDigits == 0)
+            {
+                return pattern;
+            }
+
             pattern += "." + new string('0', state.MinimumFractionDigits);
             if (state.MaximumFractionDigits > state.MinimumFractionDigits)
+            {
                 pattern += new string('#', state.MaximumFractionDigits - state.MinimumFractionDigits);
+            }
+
             return pattern;
         }
 

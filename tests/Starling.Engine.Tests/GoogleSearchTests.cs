@@ -165,7 +165,10 @@ public sealed class GoogleSearchTests
         var errors = new List<string>();
         runtime.ConsoleSink = (level, message) =>
         {
-            if (level == "error") errors.Add(message);
+            if (level == "error")
+            {
+                errors.Add(message);
+            }
         };
 
         using var http = new StarlingHttpClient();
@@ -231,7 +234,9 @@ public sealed class GoogleSearchTests
     public async Task Live_google_home_renders_offline_baseline_strings()
     {
         if (Environment.GetEnvironmentVariable("STARLING_ALLOW_NETWORK") != "1")
+        {
             return;
+        }
 
         var repoRoot = LocateRepoRoot();
         var homeFixture = Path.Combine(repoRoot, "testdata", "sites", "google-home.html");
@@ -306,15 +311,25 @@ public sealed class GoogleSearchTests
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx")))
+        {
             dir = dir.Parent;
+        }
+
         if (dir is null)
+        {
             throw new InvalidOperationException("Could not locate Starling.slnx walking up from the test binary.");
+        }
+
         return dir.FullName;
     }
 
     private static void TryDelete(string path)
     {
-        try { if (File.Exists(path)) File.Delete(path); }
+        try { if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
         catch { /* best-effort cleanup */ }
     }
 
@@ -334,7 +349,11 @@ public sealed class GoogleSearchTests
         while (!predicate() && sw.ElapsedMilliseconds < timeoutMs)
         {
             new JsVm(runtime).Run(drainChunk);
-            if (predicate()) return;
+            if (predicate())
+            {
+                return;
+            }
+
             await Task.Delay(20).ConfigureAwait(false);
         }
         new JsVm(runtime).Run(drainChunk);
@@ -405,9 +424,16 @@ public sealed class GoogleSearchTests
                     while (pos < buf.Length)
                     {
                         var n = await stream.ReadAsync(buf.AsMemory(pos), _cts.Token);
-                        if (n == 0) break;
+                        if (n == 0)
+                        {
+                            break;
+                        }
+
                         pos += n;
-                        if (ContainsCrLfCrLf(buf.AsSpan(0, pos))) break;
+                        if (ContainsCrLfCrLf(buf.AsSpan(0, pos)))
+                        {
+                            break;
+                        }
                     }
 
                     var req = Encoding.ASCII.GetString(buf, 0, pos);
@@ -417,7 +443,10 @@ public sealed class GoogleSearchTests
                     // string only to decide which page to serve).
                     var routeKey = path;
                     var qIdx = routeKey.IndexOf('?', StringComparison.Ordinal);
-                    if (qIdx >= 0) routeKey = routeKey[..qIdx];
+                    if (qIdx >= 0)
+                    {
+                        routeKey = routeKey[..qIdx];
+                    }
 
                     string body;
                     int status;
@@ -445,7 +474,10 @@ public sealed class GoogleSearchTests
                         "Connection: close\r\n\r\n");
                     await stream.WriteAsync(head, _cts.Token);
                     if (bodyBytes.Length > 0)
+                    {
                         await stream.WriteAsync(bodyBytes, _cts.Token);
+                    }
+
                     await stream.FlushAsync(_cts.Token);
                 }
             }
@@ -456,9 +488,17 @@ public sealed class GoogleSearchTests
         private static string? ParseRequestPath(string request)
         {
             var sp1 = request.IndexOf(' ', StringComparison.Ordinal);
-            if (sp1 < 0) return null;
+            if (sp1 < 0)
+            {
+                return null;
+            }
+
             var sp2 = request.IndexOf(' ', sp1 + 1);
-            if (sp2 < 0) return null;
+            if (sp2 < 0)
+            {
+                return null;
+            }
+
             return request.Substring(sp1 + 1, sp2 - sp1 - 1);
         }
 
@@ -467,7 +507,9 @@ public sealed class GoogleSearchTests
             for (var i = 0; i + 3 < data.Length; i++)
             {
                 if (data[i] == 0x0D && data[i + 1] == 0x0A && data[i + 2] == 0x0D && data[i + 3] == 0x0A)
+                {
                     return true;
+                }
             }
             return false;
         }

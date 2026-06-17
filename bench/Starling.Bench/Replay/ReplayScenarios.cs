@@ -57,7 +57,9 @@ public static class ReplayScenarios
             MutateForFrame = frame =>
             {
                 if (status is not null)
+                {
                     status.Data = frame % 2 == 0 ? "running 16 ms" : "running 32 ms";
+                }
             },
         };
     }
@@ -77,7 +79,9 @@ public static class ReplayScenarios
             MutateForFrame = frame =>
             {
                 if (text is not null)
+                {
                     text.Data = "Item 0 frame " + (frame % 100);
+                }
             },
         };
     }
@@ -130,7 +134,10 @@ public static class ReplayScenarios
                 // spin (its slice is upright, so its content hash stays stable and
                 // it re-blits from cache).
                 if (status is not null)
+                {
                     status.Data = frame % 2 == 0 ? "running 16 ms" : "running 32 ms";
+                }
+
                 spin?.SetAttribute("style", spinBase + $"transform:rotate({frame * 12 % 360}deg)");
             },
         };
@@ -147,9 +154,19 @@ public static class ReplayScenarios
 
     private static Text? FindFirstText(Element? element)
     {
-        if (element is null) return null;
+        if (element is null)
+        {
+            return null;
+        }
+
         for (var child = element.FirstChild; child is not null; child = child.NextSibling)
-            if (child is Text t) return t;
+        {
+            if (child is Text t)
+            {
+                return t;
+            }
+        }
+
         return null;
     }
 }

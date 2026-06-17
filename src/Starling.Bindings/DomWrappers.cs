@@ -36,7 +36,10 @@ public static class DomWrappers
     {
         ArgumentNullException.ThrowIfNull(realm);
         ArgumentNullException.ThrowIfNull(target);
-        if (target is Node node) return WrapNode(realm, node);
+        if (target is Node node)
+        {
+            return WrapNode(realm, node);
+        }
         // Fallback: return a fresh wrapper bound to the host. Not cached.
         var proto = realm.EventTargetPrototype ?? realm.ObjectPrototype;
         var fresh = new JsObject(proto);
@@ -47,7 +50,10 @@ public static class DomWrappers
     private static JsObject WrapNode(JsRealm realm, Node node)
     {
         var cache = NodeCachesPerRealm.GetValue(realm, _ => new ConditionalWeakTable<Node, JsObject>());
-        if (cache.TryGetValue(node, out var existing)) return existing;
+        if (cache.TryGetValue(node, out var existing))
+        {
+            return existing;
+        }
 
         // CharacterData subtypes (Text, Comment, CData, PI) get their own
         // prototype so `instanceof Text` / `instanceof Comment` work.
@@ -90,7 +96,11 @@ public static class DomWrappers
         ArgumentNullException.ThrowIfNull(node);
         ArgumentNullException.ThrowIfNull(proto);
         var cache = NodeCachesPerRealm.GetValue(realm, _ => new ConditionalWeakTable<Node, JsObject>());
-        if (cache.TryGetValue(node, out var existing)) return existing;
+        if (cache.TryGetValue(node, out var existing))
+        {
+            return existing;
+        }
+
         var wrapper = new JsObject(proto);
         EventTargetBinding.BindWrapper(wrapper, node);
         cache.Add(node, wrapper);
@@ -129,9 +139,14 @@ public static class DomWrappers
         o.Set("prefix", prefix is null ? JsValue.Null : JsValue.String(prefix));
         o.Set("specified", JsValue.True);
         if (ownerElement is not null)
+        {
             o.Set("ownerElement", JsValue.Object(DomWrappers.Wrap(realm, ownerElement)));
+        }
         else
+        {
             o.Set("ownerElement", JsValue.Null);
+        }
+
         return o;
     }
 }
@@ -207,15 +222,21 @@ internal sealed class JsNamedNodeMapObject : JsObject
     {
         // Check explicitly installed own properties first (e.g. "length" accessor).
         var own = base.GetOwnPropertyDescriptor(name);
-        if (own is not null) return own;
+        if (own is not null)
+        {
+            return own;
+        }
 
         // Indexed integer properties → attributes[i]
         if (uint.TryParse(name, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var idx))
         {
             var indexed = GetItem((int)idx);
             if (indexed is not null)
+            {
                 return PropertyDescriptor.Data(JsValue.Object(DomWrappers.WrapAttr(_realm, indexed)),
                     writable: false, enumerable: true, configurable: true);
+            }
+
             return null;
         }
 
@@ -229,12 +250,17 @@ internal sealed class JsNamedNodeMapObject : JsObject
         // Exception: we explicitly do NOT return descriptors for prototype method
         // names so that method identity holds (map.item === NamedNodeMap.prototype.item).
         // Check the prototype first.
-        if (IsOnPrototype(name)) return null;
+        if (IsOnPrototype(name))
+        {
+            return null;
+        }
 
         var attr = _element.Attributes.GetNamedItem(name);
         if (attr is not null)
+        {
             return PropertyDescriptor.Data(JsValue.Object(DomWrappers.WrapAttr(_realm, attr)),
                 writable: false, enumerable: true, configurable: true);
+        }
 
         return null;
     }
@@ -244,25 +270,53 @@ internal sealed class JsNamedNodeMapObject : JsObject
     private bool IsOnPrototype(string name)
     {
         for (var p = Prototype; p is not null; p = p.Prototype)
-            if (p.GetOwnPropertyDescriptor(name) is not null) return true;
+        {
+            if (p.GetOwnPropertyDescriptor(name) is not null)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
     public override bool Has(string name)
     {
-        if (base.Has(name)) return true;
+        if (base.Has(name))
+        {
+            return true;
+        }
+
         if (uint.TryParse(name, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var idx))
+        {
             return (int)idx < _element.Attributes.Count;
-        if (IsOnPrototype(name)) return true;
+        }
+
+        if (IsOnPrototype(name))
+        {
+            return true;
+        }
+
         return _element.Attributes.GetNamedItem(name) is not null;
     }
 
     public override bool HasOwn(string name)
     {
-        if (base.HasOwn(name)) return true;
+        if (base.HasOwn(name))
+        {
+            return true;
+        }
+
         if (uint.TryParse(name, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var idx))
+        {
             return (int)idx < _element.Attributes.Count;
-        if (IsOnPrototype(name)) return false;
+        }
+
+        if (IsOnPrototype(name))
+        {
+            return false;
+        }
+
         return _element.Attributes.GetNamedItem(name) is not null;
     }
 
@@ -270,12 +324,22 @@ internal sealed class JsNamedNodeMapObject : JsObject
     {
         // Indexed attribute positions
         for (var i = 0; i < _element.Attributes.Count; i++)
+        {
             yield return i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
         // Named attribute keys (non-shadowed by prototype)
         foreach (var attr in _element.Attributes)
-            if (!IsOnPrototype(attr.Name)) yield return attr.Name;
+        {
+            if (!IsOnPrototype(attr.Name))
+            {
+                yield return attr.Name;
+            }
+        }
         // Own non-attr enumerable keys (e.g. nothing extra currently)
-        foreach (var k in base.EnumerableKeys()) yield return k;
+        foreach (var k in base.EnumerableKeys())
+        {
+            yield return k;
+        }
     }
 
     public override IEnumerable<Starling.Js.Runtime.JsPropertyKey> OwnPropertyKeys
@@ -283,11 +347,22 @@ internal sealed class JsNamedNodeMapObject : JsObject
         get
         {
             for (var i = 0; i < _element.Attributes.Count; i++)
+            {
                 yield return Starling.Js.Runtime.JsPropertyKey.String(i.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+
             foreach (var attr in _element.Attributes)
+            {
                 if (!IsOnPrototype(attr.Name))
+                {
                     yield return Starling.Js.Runtime.JsPropertyKey.String(attr.Name);
-            foreach (var k in base.OwnPropertyKeys) yield return k;
+                }
+            }
+
+            foreach (var k in base.OwnPropertyKeys)
+            {
+                yield return k;
+            }
         }
     }
 
@@ -301,12 +376,22 @@ internal sealed class JsNamedNodeMapObject : JsObject
         {
             // Indexed keys
             for (var i = 0; i < _element.Attributes.Count; i++)
+            {
                 yield return i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
             // Named attribute keys (if not shadowed by prototype methods)
             foreach (var attr in _element.Attributes)
-                if (!IsOnPrototype(attr.Name)) yield return attr.Name;
+            {
+                if (!IsOnPrototype(attr.Name))
+                {
+                    yield return attr.Name;
+                }
+            }
             // Any explicitly installed own props (currently none for this exotic object)
-            foreach (var k in base.Keys) yield return k;
+            foreach (var k in base.Keys)
+            {
+                yield return k;
+            }
         }
     }
 }
@@ -347,11 +432,20 @@ internal sealed class JsDocumentWrapper : JsObject
     private List<Element> NamedElements(string name)
     {
         var result = new List<Element>();
-        if (string.IsNullOrEmpty(name)) return result;
+        if (string.IsNullOrEmpty(name))
+        {
+            return result;
+        }
+
         foreach (var e in _doc.DescendantElements())
+        {
             if ((NameAccessible(e) && e.GetAttribute("name") == name)
                 || (IdAccessible(e) && e.GetAttribute("id") == name))
+            {
                 result.Add(e);
+            }
+        }
+
         return result;
     }
 
@@ -361,7 +455,10 @@ internal sealed class JsDocumentWrapper : JsObject
         {
             var el = matches[0];
             if (el.LocalName == "iframe" && el.Namespace == Element.HtmlNamespace)
+            {
                 return JsValue.Object(IFrameBinding.EnsureContentWindow(_realm, IFrameBinding.EnsureContext(el)));
+            }
+
             return JsValue.Object(DomWrappers.Wrap(_realm, el));
         }
         // Several matches → a live HTMLCollection re-evaluated on access, keyed by
@@ -374,7 +471,13 @@ internal sealed class JsDocumentWrapper : JsObject
     private bool ShadowedByPrototype(string name)
     {
         for (var p = GetPrototypeOf(); p is not null; p = p.GetPrototypeOf())
-            if (p.HasOwn(name)) return true;
+        {
+            if (p.HasOwn(name))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -384,10 +487,22 @@ internal sealed class JsDocumentWrapper : JsObject
     // shadowed by anything on the prototype chain (no [LegacyOverrideBuiltins]).
     public override PropertyDescriptor? GetOwnPropertyDescriptor(string name)
     {
-        if (base.GetOwnPropertyDescriptor(name) is { } own) return own;
-        if (ShadowedByPrototype(name)) return null;
+        if (base.GetOwnPropertyDescriptor(name) is { } own)
+        {
+            return own;
+        }
+
+        if (ShadowedByPrototype(name))
+        {
+            return null;
+        }
+
         var matches = NamedElements(name);
-        if (matches.Count == 0) return null;
+        if (matches.Count == 0)
+        {
+            return null;
+        }
+
         return PropertyDescriptor.Data(NamedValue(name, matches), writable: true, enumerable: true, configurable: true);
     }
 
@@ -396,15 +511,26 @@ internal sealed class JsDocumentWrapper : JsObject
         // An own property (expando) wins even when its value is undefined — decide
         // ownership via HasOwn, not the returned value, so `document.foo = undefined`
         // is not later overridden by a named element called "foo".
-        if (base.HasOwn(name)) return base.Get(name);
+        if (base.HasOwn(name))
+        {
+            return base.Get(name);
+        }
+
         if (!ShadowedByPrototype(name) && NamedElements(name) is { Count: > 0 } matches)
+        {
             return NamedValue(name, matches);
+        }
+
         return base.Get(name); // prototype / built-ins (getElementById, …) resolve here
     }
 
     public override bool HasOwn(string name)
     {
-        if (base.HasOwn(name)) return true;
+        if (base.HasOwn(name))
+        {
+            return true;
+        }
+
         return !ShadowedByPrototype(name) && NamedElements(name).Count > 0;
     }
 
@@ -420,9 +546,16 @@ internal sealed class JsDocumentWrapper : JsObject
         foreach (var e in _doc.DescendantElements())
         {
             if (NameAccessible(e) && e.GetAttribute("name") is { Length: > 0 } n
-                && !base.HasOwn(n) && !ShadowedByPrototype(n) && seen.Add(n)) yield return n;
+                && !base.HasOwn(n) && !ShadowedByPrototype(n) && seen.Add(n))
+            {
+                yield return n;
+            }
+
             if (IdAccessible(e) && e.GetAttribute("id") is { Length: > 0 } id
-                && !base.HasOwn(id) && !ShadowedByPrototype(id) && seen.Add(id)) yield return id;
+                && !base.HasOwn(id) && !ShadowedByPrototype(id) && seen.Add(id))
+            {
+                yield return id;
+            }
         }
     }
 
@@ -432,8 +565,15 @@ internal sealed class JsDocumentWrapper : JsObject
     {
         get
         {
-            foreach (var n in SupportedNames()) yield return n;
-            foreach (var k in base.Keys) yield return k;
+            foreach (var n in SupportedNames())
+            {
+                yield return n;
+            }
+
+            foreach (var k in base.Keys)
+            {
+                yield return k;
+            }
         }
     }
 
@@ -442,8 +582,14 @@ internal sealed class JsDocumentWrapper : JsObject
         get
         {
             foreach (var n in SupportedNames())
+            {
                 yield return Starling.Js.Runtime.JsPropertyKey.String(n);
-            foreach (var k in base.OwnPropertyKeys) yield return k;
+            }
+
+            foreach (var k in base.OwnPropertyKeys)
+            {
+                yield return k;
+            }
         }
     }
 }
@@ -469,7 +615,10 @@ internal sealed class JsDatasetObject : JsObject
         foreach (var c in name)
         {
             if (char.IsUpper(c)) { sb.Append('-'); sb.Append(char.ToLowerInvariant(c)); }
-            else sb.Append(c);
+            else
+            {
+                sb.Append(c);
+            }
         }
         return sb.ToString();
     }
@@ -478,7 +627,11 @@ internal sealed class JsDatasetObject : JsObject
     private static string AttrToProp(string attr)
     {
         // Strip "data-" prefix
-        if (!attr.StartsWith("data-", StringComparison.OrdinalIgnoreCase)) return attr;
+        if (!attr.StartsWith("data-", StringComparison.OrdinalIgnoreCase))
+        {
+            return attr;
+        }
+
         var kebab = attr[5..];
         var sb = new System.Text.StringBuilder(kebab.Length);
         var upper = false;
@@ -504,7 +657,11 @@ internal sealed class JsDatasetObject : JsObject
 
     public override bool DefineOwnProperty(string name, PropertyDescriptor desc)
     {
-        if (desc.IsAccessor) return base.DefineOwnProperty(name, desc);
+        if (desc.IsAccessor)
+        {
+            return base.DefineOwnProperty(name, desc);
+        }
+
         _element.SetAttribute(PropToAttr(name), JsValue.ToStringValue(desc.Value));
         return true;
     }
@@ -513,19 +670,30 @@ internal sealed class JsDatasetObject : JsObject
     {
         var attr = _element.GetAttribute(PropToAttr(name));
         if (attr is not null)
+        {
             return PropertyDescriptor.Data(JsValue.String(attr), writable: true, enumerable: true, configurable: true);
+        }
+
         return base.GetOwnPropertyDescriptor(name);
     }
 
     public override bool Has(string name)
     {
-        if (_element.HasAttribute(PropToAttr(name))) return true;
+        if (_element.HasAttribute(PropToAttr(name)))
+        {
+            return true;
+        }
+
         return base.Has(name);
     }
 
     public override bool HasOwn(string name)
     {
-        if (_element.HasAttribute(PropToAttr(name))) return true;
+        if (_element.HasAttribute(PropToAttr(name)))
+        {
+            return true;
+        }
+
         return base.HasOwn(name);
     }
 
@@ -544,7 +712,9 @@ internal sealed class JsDatasetObject : JsObject
         foreach (var attr in _element.Attributes)
         {
             if (attr.Name.StartsWith("data-", StringComparison.OrdinalIgnoreCase))
+            {
                 yield return AttrToProp(attr.Name);
+            }
         }
     }
 

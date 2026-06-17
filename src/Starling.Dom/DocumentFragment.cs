@@ -12,7 +12,13 @@ public sealed class DocumentFragment : Node
     {
         ArgumentNullException.ThrowIfNull(elementId);
         foreach (var node in Descendants())
-            if (node is Element element && element.Id == elementId) return element;
+        {
+            if (node is Element element && element.Id == elementId)
+            {
+                return element;
+            }
+        }
+
         return null;
     }
 }

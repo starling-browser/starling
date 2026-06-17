@@ -18,7 +18,10 @@ internal static class HpackInteger
         ReadOnlySpan<byte> buf, ref int offset, int prefixBits, out int value)
     {
         value = 0;
-        if (offset >= buf.Length) return false;
+        if (offset >= buf.Length)
+        {
+            return false;
+        }
 
         var max = (1 << prefixBits) - 1;
         var prefix = buf[offset] & max;
@@ -34,13 +37,28 @@ internal static class HpackInteger
         var shift = 0;
         while (true)
         {
-            if (offset >= buf.Length) return false;
+            if (offset >= buf.Length)
+            {
+                return false;
+            }
+
             var b = buf[offset++];
             result += (long)(b & 0x7f) << shift;
-            if (result > int.MaxValue) return false; // guard against overflow / DoS
-            if ((b & 0x80) == 0) break;
+            if (result > int.MaxValue)
+            {
+                return false; // guard against overflow / DoS
+            }
+
+            if ((b & 0x80) == 0)
+            {
+                break;
+            }
+
             shift += 7;
-            if (shift >= 32) return false;
+            if (shift >= 32)
+            {
+                return false;
+            }
         }
 
         value = (int)result;

@@ -136,10 +136,18 @@ internal sealed class SvgStyle
 
     private static Color? Apply(Color? c, float alphaScale)
     {
-        if (c is null) return null;
+        if (c is null)
+        {
+            return null;
+        }
+
         var px = c.Value.ToPixel<SixLabors.ImageSharp.PixelFormats.Rgba32>();
         float a = px.A / 255f * Math.Clamp(alphaScale, 0f, 1f);
-        if (a <= 0f) return null;
+        if (a <= 0f)
+        {
+            return null;
+        }
+
         px.A = (byte)Math.Clamp((int)Math.Round(a * 255f), 0, 255);
         return Color.FromPixel(px);
     }
@@ -163,9 +171,13 @@ internal sealed class SvgStyle
                     FillRef = fillId;
                     if (fillFallbackStr is not null
                         && SvgColor.TryParse(fillFallbackStr, CurrentColor, out var fb, out var fbNone))
+                    {
                         FillFallback = fbNone ? null : fb;
+                    }
                     else
+                    {
                         FillFallback = null;
+                    }
                 }
                 else if (SvgColor.TryParse(value, CurrentColor, out var f, out var fNone))
                 {
@@ -186,7 +198,11 @@ internal sealed class SvgStyle
                 }
                 break;
             case "stroke-width":
-                if (TryLength(value, out var sw)) StrokeWidth = sw;
+                if (TryLength(value, out var sw))
+                {
+                    StrokeWidth = sw;
+                }
+
                 break;
             case "fill-rule":
                 FillEvenOdd = value.Equals("evenodd", StringComparison.OrdinalIgnoreCase);
@@ -200,20 +216,35 @@ internal sealed class SvgStyle
                 }
                 break;
             case "fill-opacity":
-                if (TryNumber(value, out var fo)) FillOpacity = Math.Clamp(fo, 0f, 1f);
+                if (TryNumber(value, out var fo))
+                {
+                    FillOpacity = Math.Clamp(fo, 0f, 1f);
+                }
+
                 break;
             case "stroke-opacity":
-                if (TryNumber(value, out var so)) StrokeOpacity = Math.Clamp(so, 0f, 1f);
+                if (TryNumber(value, out var so))
+                {
+                    StrokeOpacity = Math.Clamp(so, 0f, 1f);
+                }
+
                 break;
             case "color":
                 if (SvgColor.TryParse(value, CurrentColor, out var cc, out var ccNone) && !ccNone)
+                {
                     CurrentColor = cc;
+                }
+
                 break;
             case "stroke-dasharray":
                 StrokeDashArray = ParseDashArray(value);
                 break;
             case "stroke-dashoffset":
-                if (TryLength(value, out var sdo)) StrokeDashOffset = sdo;
+                if (TryLength(value, out var sdo))
+                {
+                    StrokeDashOffset = sdo;
+                }
+
                 break;
             case "stroke-linecap":
                 StrokeLineCap = value.Trim().ToLowerInvariant() switch
@@ -232,7 +263,11 @@ internal sealed class SvgStyle
                 };
                 break;
             case "stroke-miterlimit":
-                if (TryNumber(value, out var ml)) StrokeMiterLimit = Math.Max(1.0, ml);
+                if (TryNumber(value, out var ml))
+                {
+                    StrokeMiterLimit = Math.Max(1.0, ml);
+                }
+
                 break;
             case "display":
                 // Any 'none' hides the subtree; every other value (inline, block,
@@ -242,9 +277,14 @@ internal sealed class SvgStyle
             case "visibility":
                 if (value.Equals("hidden", StringComparison.OrdinalIgnoreCase)
                     || value.Equals("collapse", StringComparison.OrdinalIgnoreCase))
+                {
                     Visible = false;
+                }
                 else if (value.Equals("visible", StringComparison.OrdinalIgnoreCase))
+                {
                     Visible = true;
+                }
+
                 break;
             case "marker-start":
                 MarkerStart = MarkerRef(value);
@@ -297,21 +337,36 @@ internal sealed class SvgStyle
         fallback = null;
         var v = value.TrimStart();
         if (!v.StartsWith("url(", StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
+
         int close = v.IndexOf(')');
         if (close < 0)
+        {
             return false;
+        }
+
         var inner = v[4..close].Trim().Trim('"', '\'').Trim();
         if (!inner.StartsWith('#'))
+        {
             return false;
+        }
+
         inner = inner[1..].Trim();
         if (inner.Length == 0)
+        {
             return false;
+        }
+
         id = inner;
         // Anything after the closing ')' is the optional fallback.
         var tail = v[(close + 1)..].Trim();
         if (tail.Length > 0)
+        {
             fallback = tail;
+        }
+
         return true;
     }
 
@@ -323,7 +378,11 @@ internal sealed class SvgStyle
     private static bool TryLength(string v, out float value)
     {
         v = v.Trim();
-        if (v.EndsWith("px", StringComparison.OrdinalIgnoreCase)) v = v[..^2].Trim();
+        if (v.EndsWith("px", StringComparison.OrdinalIgnoreCase))
+        {
+            v = v[..^2].Trim();
+        }
+
         return TryNumber(v, out value);
     }
 
@@ -336,27 +395,43 @@ internal sealed class SvgStyle
     {
         v = v.Trim();
         if (v.Equals("none", StringComparison.OrdinalIgnoreCase))
+        {
             return null;
+        }
+
         var parts = v.Split([' ', '\t', '\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries);
         var vals = new List<float>(parts.Length);
         foreach (var p in parts)
         {
             var t = p.Trim();
-            if (t.EndsWith('%')) continue; // skip percentage dash lengths
+            if (t.EndsWith('%'))
+            {
+                continue; // skip percentage dash lengths
+            }
             // Strip trailing unit.
             int end = t.Length;
-            while (end > 0 && char.IsLetter(t[end - 1])) end--;
+            while (end > 0 && char.IsLetter(t[end - 1]))
+            {
+                end--;
+            }
+
             if (float.TryParse(t.AsSpan(0, end), NumberStyles.Float, CultureInfo.InvariantCulture, out var f) && f >= 0)
+            {
                 vals.Add(f);
+            }
         }
         if (vals.Count == 0)
+        {
             return null;
+        }
         // Duplicate odd-length list.
         if (vals.Count % 2 != 0)
         {
             int n = vals.Count;
             for (int i = 0; i < n; i++)
+            {
                 vals.Add(vals[i]);
+            }
         }
         return vals.ToArray();
     }
@@ -366,11 +441,19 @@ internal sealed class SvgStyle
     /// </summary>
     public void ApplyStyleString(string? style)
     {
-        if (string.IsNullOrWhiteSpace(style)) return;
+        if (string.IsNullOrWhiteSpace(style))
+        {
+            return;
+        }
+
         foreach (var decl in style.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             int colon = decl.IndexOf(':');
-            if (colon <= 0) continue;
+            if (colon <= 0)
+            {
+                continue;
+            }
+
             ApplyDeclaration(decl[..colon], decl[(colon + 1)..]);
         }
     }

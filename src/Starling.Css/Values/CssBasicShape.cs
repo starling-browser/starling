@@ -205,16 +205,22 @@ public static class CssBasicShapeParser
     public static CssClipPath? TryParseClipPath(IReadOnlyList<CssValue> values)
     {
         if (values.Count == 0)
+        {
             return null;
+        }
 
         // none
         if (values.Count == 1 && values[0] is CssKeyword { Name: "none" })
+        {
             return CssClipPath.None;
+        }
 
         // geometry-box keyword alone
         if (values.Count == 1 && values[0] is CssKeyword kw
             && GeometryBoxKeywords.TryGetValue(kw.Name, out var boxOnly))
+        {
             return CssClipPath.FromBox(boxOnly);
+        }
 
         // url(#frag) or url(frag)
         if (values.Count == 1 && values[0] is CssUrl url)
@@ -240,12 +246,16 @@ public static class CssBasicShapeParser
         }
 
         if (shape is not null)
+        {
             return box != CssGeometryBox.None
                 ? CssClipPath.FromShapeAndBox(shape, box)
                 : CssClipPath.FromShape(shape);
+        }
 
         if (box != CssGeometryBox.None)
+        {
             return CssClipPath.FromBox(box);
+        }
 
         return null;
     }
@@ -272,9 +282,13 @@ public static class CssBasicShapeParser
         foreach (var v in args)
         {
             if (v is CssValueList list)
+            {
                 flat.AddRange(list.Values);
+            }
             else
+            {
                 flat.Add(v);
+            }
         }
         return flat;
     }
@@ -365,24 +379,35 @@ public static class CssBasicShapeParser
     {
         var flat = args.Where(v => v is not CssKeyword { Name: "" }).ToList();
         if (flat.Count == 0)
+        {
             return null;
+        }
 
         // Collect offsets up to 4 <length-percentage> values, stopping at "round".
         var offsets = new List<CssLengthPercentage>(4);
         var i = 0;
         while (i < flat.Count && offsets.Count < 4)
         {
-            if (flat[i] is CssKeyword { Name: "round" }) break;
+            if (flat[i] is CssKeyword { Name: "round" })
+            {
+                break;
+            }
+
             if (TryParseLengthPercentage(flat[i], out var lp))
             {
                 offsets.Add(lp);
                 i++;
             }
-            else break;
+            else
+            {
+                break;
+            }
         }
 
         if (offsets.Count == 0)
+        {
             return null;
+        }
 
         // Box model: 1→top=right=bottom=left, 2→top+bottom / right+left, etc.
         var top = offsets[0];
@@ -415,7 +440,9 @@ public static class CssBasicShapeParser
         //   • a flat CssValue (e.g. when there is no whitespace between values).
         // We process argument groups one by one.
         if (args.Count == 0)
+        {
             return null;
+        }
 
         var fillRule = CssFillRule.Nonzero;
         var vertices = new List<CssPolygonVertex>();
@@ -453,7 +480,9 @@ public static class CssBasicShapeParser
         }
 
         if (vertices.Count == 0)
+        {
             return null;
+        }
 
         return new CssPolygonShape(fillRule, vertices);
     }
@@ -521,26 +550,49 @@ public static class CssBasicShapeParser
             if (v is CssKeyword kw)
             {
                 var mapped = MapPositionKeyword(kw.Name);
-                if (mapped is null) break;
+                if (mapped is null)
+                {
+                    break;
+                }
                 // Assign to axis implied by the keyword or left-to-right order.
                 if (kw.Name is "left" or "right")
+                {
                     x ??= mapped;
+                }
                 else if (kw.Name is "top" or "bottom")
+                {
                     y ??= mapped;
+                }
                 else // center
                 {
-                    if (x is null) x = mapped;
-                    else y = mapped;
+                    if (x is null)
+                    {
+                        x = mapped;
+                    }
+                    else
+                    {
+                        y = mapped;
+                    }
                 }
                 i++;
             }
             else if (TryParseLengthPercentage(v, out var lp))
             {
-                if (x is null) x = lp;
-                else y = lp;
+                if (x is null)
+                {
+                    x = lp;
+                }
+                else
+                {
+                    y = lp;
+                }
+
                 i++;
             }
-            else break;
+            else
+            {
+                break;
+            }
         }
 
         var cx = CssLengthPercentage.FromPercentage(50);
@@ -579,14 +631,27 @@ public static class CssBasicShapeParser
             if (flat[i] is CssKeyword { Name: "/" }) { sawSlash = true; i++; continue; }
             if (TryParseLengthPercentage(flat[i], out var lp))
             {
-                if (!sawSlash) hVals.Add(lp);
-                else vVals.Add(lp);
+                if (!sawSlash)
+                {
+                    hVals.Add(lp);
+                }
+                else
+                {
+                    vVals.Add(lp);
+                }
+
                 i++;
             }
-            else break;
+            else
+            {
+                break;
+            }
         }
 
-        if (hVals.Count == 0) return [];
+        if (hVals.Count == 0)
+        {
+            return [];
+        }
 
         // Expand box model shorthand (same 1/2/3/4 pattern as padding).
         var h = ExpandBox(hVals);

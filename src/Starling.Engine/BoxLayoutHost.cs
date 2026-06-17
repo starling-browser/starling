@@ -206,7 +206,11 @@ internal sealed class BoxLayoutHost : ILayoutHost
     /// </summary>
     private void EnsureFresh(string trigger)
     {
-        if (_relayout is null) return; // static snapshot — indexed at construction
+        if (_relayout is null)
+        {
+            return; // static snapshot — indexed at construction
+        }
+
         if (_laidOut && (_document is null || _document.LayoutInvalidationVersion == _laidOutVersion))
         {
             FreshHits++;
@@ -235,7 +239,11 @@ internal sealed class BoxLayoutHost : ILayoutHost
     /// </summary>
     private void EnsureCascadeFresh(string trigger)
     {
-        if (_relayout is null) return; // static snapshot — indexed at construction
+        if (_relayout is null)
+        {
+            return; // static snapshot — indexed at construction
+        }
+
         var current = _document?.LayoutInvalidationVersion ?? 0;
         // Already have a fresh cascade for this mutation version (either from
         // a previous layout or a previous cascade-only build).
@@ -259,8 +267,15 @@ internal sealed class BoxLayoutHost : ILayoutHost
 
     private void Index(Box box)
     {
-        if (box.Element is { } e) _boxByElement[e] = box;
-        foreach (var child in box.Children) Index(child);
+        if (box.Element is { } e)
+        {
+            _boxByElement[e] = box;
+        }
+
+        foreach (var child in box.Children)
+        {
+            Index(child);
+        }
     }
 
     public bool TryGetBoundingClientRect(Element element, out LayoutRect rect)
@@ -371,7 +386,11 @@ internal sealed class BoxLayoutHost : ILayoutHost
 
     public ScrollMetrics GetRootScrollMetrics()
     {
-        if (_scrollState is null) return default;
+        if (_scrollState is null)
+        {
+            return default;
+        }
+
         EnsureFresh("scroll-metrics");
         var s = _scrollState.Root;
         return new ScrollMetrics(
@@ -392,7 +411,11 @@ internal sealed class BoxLayoutHost : ILayoutHost
     /// pending-event flag (drained by the shells' frame pump, WP2/WP4).</summary>
     public void SetScrollOffset(Element element, double x, double y)
     {
-        if (_scrollState is null) return;
+        if (_scrollState is null)
+        {
+            return;
+        }
+
         EnsureFresh("scroll-write");
         _scrollState.Write(element, x, y);
     }
@@ -401,32 +424,56 @@ internal sealed class BoxLayoutHost : ILayoutHost
     /// (window.scrollTo / scrollBy, root-element scrollTop/scrollLeft).</summary>
     public void SetRootScrollOffset(double x, double y)
     {
-        if (_scrollState is null) return;
+        if (_scrollState is null)
+        {
+            return;
+        }
+
         EnsureFresh("scroll-write");
         _scrollState.WriteRoot(x, y);
     }
 
     public bool MatchMedia(string query)
     {
-        if (string.IsNullOrEmpty(query)) return false;
+        if (string.IsNullOrEmpty(query))
+        {
+            return false;
+        }
+
         EnsureFresh("matchMedia");
-        if (_style is null) return false;
+        if (_style is null)
+        {
+            return false;
+        }
+
         try { return _style.MatchMedia(query); }
         catch { return false; }
     }
 
     public string GetComputedProperty(Element element, string propertyName)
     {
-        if (string.IsNullOrEmpty(propertyName)) return string.Empty;
+        if (string.IsNullOrEmpty(propertyName))
+        {
+            return string.Empty;
+        }
         // Include the requested property in the trigger so the tag distinguishes
         // a getComputedStyle(...).visibility read (cascade-only, cheap) from a
         // .width read (layout-forcing, the one we care about).
         var trigger = "getComputedStyle:" + propertyName;
         if (s_cascadeOnlyProperties.Contains(propertyName))
+        {
             EnsureCascadeFresh(trigger);
+        }
         else
+        {
             EnsureFresh(trigger);
-        if (_style is null) return string.Empty;
+        }
+
+        if (_style is null)
+        {
+            return string.Empty;
+        }
+
         try
         {
             // Pass the host's CascadeCache so repeated reads on the same

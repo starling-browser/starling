@@ -26,11 +26,19 @@ public sealed class UnicodeRangeSet
         {
             var start = Math.Max(0, r.Start);
             var end = Math.Min(0x10FFFF, r.End);
-            if (start > end) continue;
+            if (start > end)
+            {
+                continue;
+            }
+
             if (merged.Count > 0 && start <= merged[^1].End + 1)
+            {
                 merged[^1] = (merged[^1].Start, Math.Max(merged[^1].End, end));
+            }
             else
+            {
                 merged.Add((start, end));
+            }
         }
         _ranges = merged.ToArray();
     }
@@ -46,9 +54,18 @@ public sealed class UnicodeRangeSet
         {
             var mid = (lo + hi) >>> 1;
             var r = _ranges[mid];
-            if (codepoint < r.Start) hi = mid - 1;
-            else if (codepoint > r.End) lo = mid + 1;
-            else return true;
+            if (codepoint < r.Start)
+            {
+                hi = mid - 1;
+            }
+            else if (codepoint > r.End)
+            {
+                lo = mid + 1;
+            }
+            else
+            {
+                return true;
+            }
         }
         return false;
     }
@@ -74,7 +91,10 @@ public sealed class UnicodeRangeSet
                 cp = text[i];
                 i++;
             }
-            if (!Contains(cp)) return false;
+            if (!Contains(cp))
+            {
+                return false;
+            }
         }
         return true;
     }

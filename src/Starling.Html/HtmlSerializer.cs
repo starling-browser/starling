@@ -27,7 +27,10 @@ public static class HtmlSerializer
         ArgumentNullException.ThrowIfNull(node);
         var sb = new StringBuilder();
         for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+        {
             SerializeNode(child, node, sb);
+        }
+
         return sb.ToString();
     }
 
@@ -66,7 +69,10 @@ public static class HtmlSerializer
             default:
                 // Document / DocumentFragment: serialize the children only.
                 for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+                {
                     SerializeNode(child, node, sb);
+                }
+
                 break;
         }
     }
@@ -84,18 +90,27 @@ public static class HtmlSerializer
         sb.Append('>');
 
         if (IsVoidElement(tag))
+        {
             return; // §13.3: void elements have no end tag and no children.
+        }
 
         if (IsRawTextElement(tag))
         {
             // §13.3: raw-text / RCDATA element contents are emitted literally.
             for (var child = element.FirstChild; child is not null; child = child.NextSibling)
-                if (child is Text t) sb.Append(t.Data);
+            {
+                if (child is Text t)
+                {
+                    sb.Append(t.Data);
+                }
+            }
         }
         else
         {
             for (var child = element.FirstChild; child is not null; child = child.NextSibling)
+            {
                 SerializeNode(child, element, sb);
+            }
         }
 
         sb.Append("</").Append(tag).Append('>');

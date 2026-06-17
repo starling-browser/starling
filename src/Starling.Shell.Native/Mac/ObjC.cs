@@ -82,7 +82,11 @@ internal static partial class ObjC
     internal static nint New(string className)
     {
         var cls = GetClass(className);
-        if (cls == 0) return 0;
+        if (cls == 0)
+        {
+            return 0;
+        }
+
         var obj = Send(cls, Sel("alloc"));
         return obj == 0 ? 0 : Send(obj, Sel("init"));
     }
@@ -99,11 +103,18 @@ internal static partial class ObjC
     /// attributed string to its plain string first.</summary>
     internal static string? StringFromAny(nint obj)
     {
-        if (obj == 0) return null;
+        if (obj == 0)
+        {
+            return null;
+        }
+
         var src = obj;
         if (!SendBoolSel(obj, Sel("respondsToSelector:"), Sel("UTF8String"))
             && SendBoolSel(obj, Sel("respondsToSelector:"), Sel("string")))
+        {
             src = Send(obj, Sel("string"));
+        }
+
         var cstr = Send(src, Sel("UTF8String"));
         return cstr == 0 ? null : Marshal.PtrToStringUTF8(cstr);
     }

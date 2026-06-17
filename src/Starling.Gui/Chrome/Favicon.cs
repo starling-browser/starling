@@ -43,7 +43,11 @@ public static class Favicon
 
     private static string InitialOf(string? host)
     {
-        if (string.IsNullOrEmpty(host)) return "?";
+        if (string.IsNullOrEmpty(host))
+        {
+            return "?";
+        }
+
         var h = host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? host[4..] : host;
         return h.Length == 0 ? "?" : char.ToUpperInvariant(h[0]).ToString();
     }
@@ -51,8 +55,16 @@ public static class Favicon
     private static int HostHue(string? host)
     {
         var h = 0;
-        if (host is null) return 0;
-        foreach (var ch in host) h = (h * 31 + ch) % 360;
+        if (host is null)
+        {
+            return 0;
+        }
+
+        foreach (var ch in host)
+        {
+            h = (h * 31 + ch) % 360;
+        }
+
         return h;
     }
 

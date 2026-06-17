@@ -47,11 +47,18 @@ public sealed class Document : Node
 
     internal void RecordLayoutMutation(Node target, LayoutChangeKind kind)
     {
-        if (!RecordLayoutMutations) return;
+        if (!RecordLayoutMutations)
+        {
+            return;
+        }
         // Only batch mutations on the live tree. Edits to a detached subtree
         // (built before insertion) are subsumed when its connected ancestor is
         // reconciled, and recording them would name unmapped nodes.
-        if (!target.IsConnectedToDocument) return;
+        if (!target.IsConnectedToDocument)
+        {
+            return;
+        }
+
         (_layoutMutations ??= new List<LayoutMutation>()).Add(new LayoutMutation(target, kind));
         NoteRecentlyMutated(target);
     }
@@ -71,14 +78,24 @@ public sealed class Document : Node
     private void NoteRecentlyMutated(Node target)
     {
         var el = target as Element ?? NearestElement(target);
-        if (el is null) return;
+        if (el is null)
+        {
+            return;
+        }
+
         (_recentlyMutated ??= new Dictionary<Element, int>())[el] = RecentMutationFrames;
     }
 
     private static Element? NearestElement(Node node)
     {
         for (var n = node.ParentNode; n is not null; n = n.ParentNode)
-            if (n is Element e) return e;
+        {
+            if (n is Element e)
+            {
+                return e;
+            }
+        }
+
         return null;
     }
 
@@ -94,13 +111,23 @@ public sealed class Document : Node
     /// this once per painted frame.</summary>
     public void DecayRecentMutations()
     {
-        if (_recentlyMutated is not { Count: > 0 } m) return;
+        if (_recentlyMutated is not { Count: > 0 } m)
+        {
+            return;
+        }
+
         var keys = new List<Element>(m.Keys);
         foreach (var el in keys)
         {
             var ttl = m[el] - 1;
-            if (ttl <= 0) m.Remove(el);
-            else m[el] = ttl;
+            if (ttl <= 0)
+            {
+                m.Remove(el);
+            }
+            else
+            {
+                m[el] = ttl;
+            }
         }
     }
 
@@ -119,8 +146,15 @@ public sealed class Document : Node
     /// own their own layer in the cached tree.</summary>
     public void CollectRecentlyMutated(ISet<Element> into)
     {
-        if (_recentlyMutated is not { Count: > 0 } m) return;
-        foreach (var el in m.Keys) into.Add(el);
+        if (_recentlyMutated is not { Count: > 0 } m)
+        {
+            return;
+        }
+
+        foreach (var el in m.Keys)
+        {
+            into.Add(el);
+        }
     }
 
     /// <summary>Removes and returns the mutations recorded since the last drain.
@@ -128,7 +162,10 @@ public sealed class Document : Node
     public IReadOnlyList<LayoutMutation> DrainLayoutMutations()
     {
         if (_layoutMutations is null || _layoutMutations.Count == 0)
+        {
             return Array.Empty<LayoutMutation>();
+        }
+
         var snapshot = _layoutMutations.ToArray();
         _layoutMutations.Clear();
         return snapshot;
@@ -188,15 +225,29 @@ public sealed class Document : Node
     /// </remarks>
     public static bool IsLayoutRelevantAttribute(string attrName)
     {
-        if (string.IsNullOrEmpty(attrName)) return true;
-        if (attrName.StartsWith("data-", StringComparison.OrdinalIgnoreCase)) return false;
-        if (attrName.StartsWith("aria-", StringComparison.OrdinalIgnoreCase)) return false;
+        if (string.IsNullOrEmpty(attrName))
+        {
+            return true;
+        }
+
+        if (attrName.StartsWith("data-", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (attrName.StartsWith("aria-", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
         // js* covers Google's framework attributes (jsname, jscontroller,
         // jsaction, jsslot, jsl, etc.) — present on most modern Google pages
         // and never targeted by built-in styles.
         if (attrName.StartsWith("js", StringComparison.OrdinalIgnoreCase)
             && attrName.Length > 2 && char.IsLower(attrName[2]))
+        {
             return false;
+        }
+
         return attrName switch
         {
             "role" or "tabindex" or "title" or "alt"
@@ -225,7 +276,11 @@ public sealed class Document : Node
 
     public IReadOnlyList<string> GetAutocompleteValues(string fieldName)
     {
-        if (string.IsNullOrWhiteSpace(fieldName)) return Array.Empty<string>();
+        if (string.IsNullOrWhiteSpace(fieldName))
+        {
+            return Array.Empty<string>();
+        }
+
         return _autocompleteValues.TryGetValue(fieldName, out var values)
             ? values.ToArray()
             : Array.Empty<string>();
@@ -233,14 +288,20 @@ public sealed class Document : Node
 
     internal void RecordAutocompleteValue(string fieldName, string value)
     {
-        if (string.IsNullOrWhiteSpace(fieldName) || string.IsNullOrEmpty(value)) return;
+        if (string.IsNullOrWhiteSpace(fieldName) || string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
         if (!_autocompleteValues.TryGetValue(fieldName, out var values))
         {
             values = new List<string>();
             _autocompleteValues[fieldName] = values;
         }
         if (!values.Contains(value, StringComparer.Ordinal))
+        {
             values.Add(value);
+        }
     }
 
     /// <summary>
@@ -279,7 +340,13 @@ public sealed class Document : Node
         get
         {
             for (var child = FirstChild; child is not null; child = child.NextSibling)
-                if (child is DocumentType type) return type;
+            {
+                if (child is DocumentType type)
+                {
+                    return type;
+                }
+            }
+
             return null;
         }
     }
@@ -381,7 +448,13 @@ public sealed class Document : Node
         get
         {
             for (var child = FirstChild; child is not null; child = child.NextSibling)
-                if (child is Element element) return element;
+            {
+                if (child is Element element)
+                {
+                    return element;
+                }
+            }
+
             return null;
         }
     }
@@ -391,7 +464,13 @@ public sealed class Document : Node
         get
         {
             foreach (var node in Descendants())
-                if (node is Element { LocalName: "head" } element) return element;
+            {
+                if (node is Element { LocalName: "head" } element)
+                {
+                    return element;
+                }
+            }
+
             return null;
         }
     }
@@ -401,7 +480,13 @@ public sealed class Document : Node
         get
         {
             foreach (var node in Descendants())
-                if (node is Element { LocalName: "body" } element) return element;
+            {
+                if (node is Element { LocalName: "body" } element)
+                {
+                    return element;
+                }
+            }
+
             return null;
         }
     }
@@ -410,7 +495,13 @@ public sealed class Document : Node
     {
         ArgumentNullException.ThrowIfNull(id);
         foreach (var node in Descendants())
-            if (node is Element element && element.Id == id) return element;
+        {
+            if (node is Element element && element.Id == id)
+            {
+                return element;
+            }
+        }
+
         return null;
     }
 
@@ -420,7 +511,13 @@ public sealed class Document : Node
         get
         {
             for (var n = FirstChild; n is not null; n = n.NextSibling)
-                if (n is DocumentType dt) return dt;
+            {
+                if (n is DocumentType dt)
+                {
+                    return dt;
+                }
+            }
+
             return null;
         }
     }

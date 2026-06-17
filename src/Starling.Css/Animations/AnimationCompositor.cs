@@ -69,10 +69,16 @@ public sealed class AnimationCompositor
         if (transitioned.Count > 0)
         {
             if (!_snapshots.TryGetValue(element, out var snap))
+            {
                 _snapshots[element] = snap = new Dictionary<PropertyId, CssValue>();
+            }
+
             foreach (var prop in transitioned)
             {
-                if (!staticStyle.TryGet(prop, out var newVal)) continue;
+                if (!staticStyle.TryGet(prop, out var newVal))
+                {
+                    continue;
+                }
                 // Only feed the TransitionEngine when the *static* cascade
                 // value actually changed since we last saw it. The engine's
                 // own _lastEffective gets mutated by Tick (it stores the
@@ -80,7 +86,10 @@ public sealed class AnimationCompositor
                 // value would look like a change and restart the
                 // transition every frame.
                 if (snap.TryGetValue(prop, out var lastStatic) && Equals(lastStatic, newVal))
+                {
                     continue;
+                }
+
                 _transitions.OnComputedValueChanged(element, prop, newVal, p =>
                     staticStyle.TryGet(p, out var v) ? v : null);
                 snap[prop] = newVal;
@@ -96,14 +105,22 @@ public sealed class AnimationCompositor
         foreach (var prop in _animations.ActiveProperties(element))
         {
             var animVal = _animations.GetEffective(element, prop);
-            if (animVal is null) continue;
+            if (animVal is null)
+            {
+                continue;
+            }
+
             (overrides ??= new Dictionary<PropertyId, CssValue>())[prop] = animVal;
         }
 
         foreach (var prop in _transitions.ActiveProperties(element))
         {
             var transVal = _transitions.GetEffective(element, prop);
-            if (transVal is null) continue;
+            if (transVal is null)
+            {
+                continue;
+            }
+
             (overrides ??= new Dictionary<PropertyId, CssValue>())[prop] = transVal;
         }
 
@@ -134,14 +151,22 @@ public sealed class AnimationCompositor
         foreach (var prop in _animations.ActiveProperties(element))
         {
             var animVal = _animations.GetEffective(element, prop);
-            if (animVal is null) continue;
+            if (animVal is null)
+            {
+                continue;
+            }
+
             (overrides ??= new Dictionary<PropertyId, CssValue>())[prop] = animVal;
         }
 
         foreach (var prop in _transitions.ActiveProperties(element))
         {
             var transVal = _transitions.GetEffective(element, prop);
-            if (transVal is null) continue;
+            if (transVal is null)
+            {
+                continue;
+            }
+
             (overrides ??= new Dictionary<PropertyId, CssValue>())[prop] = transVal;
         }
 
@@ -175,7 +200,9 @@ public sealed class AnimationCompositor
     {
         var names = AsList(style.Get(PropertyId.AnimationName));
         if (names.Count == 0)
+        {
             return Array.Empty<AnimationDeclaration>();
+        }
 
         var durations = AsList(style.Get(PropertyId.AnimationDuration));
         var delays = AsList(style.Get(PropertyId.AnimationDelay));
@@ -190,7 +217,10 @@ public sealed class AnimationCompositor
         {
             var name = NameOf(names[i]);
             if (name is null or "none")
+            {
                 continue;
+            }
+
             result.Add(new AnimationDeclaration(
                 name,
                 TimeMs(Pick(durations, i)),
@@ -207,14 +237,29 @@ public sealed class AnimationCompositor
     private static IReadOnlyList<PropertyId> ParseTransitionProperty(ComputedStyle style)
     {
         if (!style.TryGet(PropertyId.TransitionProperty, out var raw))
+        {
             return Array.Empty<PropertyId>();
+        }
+
         var values = AsList(raw);
-        if (values.Count == 0) return Array.Empty<PropertyId>();
+        if (values.Count == 0)
+        {
+            return Array.Empty<PropertyId>();
+        }
+
         var result = new List<PropertyId>(values.Count);
         foreach (var v in values)
         {
-            if (v is not CssKeyword k) continue;
-            if (k.Name is "none" or "") continue;
+            if (v is not CssKeyword k)
+            {
+                continue;
+            }
+
+            if (k.Name is "none" or "")
+            {
+                continue;
+            }
+
             if (k.Name is "all" or "initial")
             {
                 // "all" expands to every animatable property; we can't
@@ -224,16 +269,28 @@ public sealed class AnimationCompositor
                 continue;
             }
             if (PropertyRegistry.TryGetPropertyId(k.Name, out var id))
+            {
                 result.Add(id);
+            }
         }
         return result;
     }
 
     private static bool DeclsEqual(IReadOnlyList<AnimationDeclaration> a, IReadOnlyList<AnimationDeclaration> b)
     {
-        if (a.Count != b.Count) return false;
+        if (a.Count != b.Count)
+        {
+            return false;
+        }
+
         for (var i = 0; i < a.Count; i++)
-            if (!a[i].Equals(b[i])) return false;
+        {
+            if (!a[i].Equals(b[i]))
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 

@@ -44,11 +44,30 @@ public sealed class FormControlChromeTests
             for (var xPos = 0; xPos < bmp.Width; xPos++)
             {
                 var i = (yPos * bmp.Width + xPos) * 4;
-                if (!IsRed(rgba[i], rgba[i + 1], rgba[i + 2])) continue;
-                if (xPos < minX) minX = xPos;
-                if (yPos < minY) minY = yPos;
-                if (xPos > maxX) maxX = xPos;
-                if (yPos > maxY) maxY = yPos;
+                if (!IsRed(rgba[i], rgba[i + 1], rgba[i + 2]))
+                {
+                    continue;
+                }
+
+                if (xPos < minX)
+                {
+                    minX = xPos;
+                }
+
+                if (yPos < minY)
+                {
+                    minY = yPos;
+                }
+
+                if (xPos > maxX)
+                {
+                    maxX = xPos;
+                }
+
+                if (yPos > maxY)
+                {
+                    maxY = yPos;
+                }
             }
         }
         return maxX < 0 ? null : (minX, minY, maxX, maxY);

@@ -39,7 +39,10 @@ internal static class TraversalBinding
     internal static void RegisterIterator(Document doc, HostNodeIterator iter)
     {
         var list = LiveIterators.GetValue(doc, _ => new List<WeakReference<HostNodeIterator>>());
-        lock (list) list.Add(new WeakReference<HostNodeIterator>(iter));
+        lock (list)
+        {
+            list.Add(new WeakReference<HostNodeIterator>(iter));
+        }
     }
 
     /// <summary>DOM §6.3.3 — NodeIterator pre-removal steps. Called from
@@ -48,14 +51,20 @@ internal static class TraversalBinding
     /// referenceNode / pointerBeforeReferenceNode.</summary>
     public static void NotifyNodeRemoval(Document doc, Node nodeBeingRemoved)
     {
-        if (!LiveIterators.TryGetValue(doc, out var list)) return;
+        if (!LiveIterators.TryGetValue(doc, out var list))
+        {
+            return;
+        }
+
         lock (list)
         {
             list.RemoveAll(wr => !wr.TryGetTarget(out _)); // prune dead refs
             foreach (var wr in list)
             {
                 if (wr.TryGetTarget(out var iter))
+                {
                     iter.NodeRemoved(nodeBeingRemoved);
+                }
             }
         }
     }
@@ -76,7 +85,9 @@ internal static class TraversalBinding
         // is a no-op because += adds a delegate — but we use a null check then
         // assignment to avoid duplicate subscriptions across multiple realms).
         if (Node.NodeRemovedHook is null)
+        {
             Node.NodeRemovedHook = NotifyNodeRemoval;
+        }
 
         InstallNodeFilter(realm);
         InstallTreeWalker(realm);
@@ -87,7 +98,9 @@ internal static class TraversalBinding
         {
             var root = args.Length > 0 ? DomWrappers.UnwrapNode(args[0]) : null;
             if (root is null)
+            {
                 throw new JsThrow(realm.NewTypeError("createTreeWalker: root must be a Node"));
+            }
 
             // whatToShow: undefined → 0xFFFFFFFF; null → 0; number → truncated
             var whatToShow = args.Length < 2 || args[1].IsUndefined
@@ -106,7 +119,9 @@ internal static class TraversalBinding
         {
             var root = args.Length > 0 ? DomWrappers.UnwrapNode(args[0]) : null;
             if (root is null)
+            {
                 throw new JsThrow(realm.NewTypeError("createNodeIterator: root must be a Node"));
+            }
 
             var whatToShow = args.Length < 2 || args[1].IsUndefined
                 ? 0xFFFF_FFFFu
@@ -117,7 +132,11 @@ internal static class TraversalBinding
             var iter = new HostNodeIterator(root, whatToShow, filterVal);
             // Register with the document so removal steps can update it.
             var doc = root.OwnerDocument ?? root as Document;
-            if (doc is not null) RegisterIterator(doc, iter);
+            if (doc is not null)
+            {
+                RegisterIterator(doc, iter);
+            }
+
             return JsValue.Object(WrapNodeIterator(realm, iter));
         }, length: 1);
     }
@@ -186,7 +205,10 @@ internal static class TraversalBinding
 
     private static JsObject GetOrBuildTreeWalkerProto(JsRealm realm)
     {
-        if (TreeWalkerProtos.TryGetValue(realm, out var proto)) return proto;
+        if (TreeWalkerProtos.TryGetValue(realm, out var proto))
+        {
+            return proto;
+        }
 
         proto = new JsObject(realm.ObjectPrototype);
 
@@ -215,10 +237,17 @@ internal static class TraversalBinding
                 : JsValue.Undefined,
             (thisV, args) =>
             {
-                if (GetWalker(thisV) is not { } w) return JsValue.Undefined;
+                if (GetWalker(thisV) is not { } w)
+                {
+                    return JsValue.Undefined;
+                }
+
                 var node = args.Length > 0 ? DomWrappers.UnwrapNode(args[0]) : null;
                 if (node is null)
+                {
                     throw new JsThrow(realm.NewTypeError("TreeWalker.currentNode must be set to a Node"));
+                }
+
                 w.CurrentNode = node;
                 return JsValue.Undefined;
             });
@@ -261,7 +290,11 @@ internal static class TraversalBinding
     private static JsValue WalkerTraverse(JsRealm realm, JsValue thisV,
         Func<HostTreeWalker, JsVm, Node?> method)
     {
-        if (GetWalker(thisV) is not { } w) return JsValue.Null;
+        if (GetWalker(thisV) is not { } w)
+        {
+            return JsValue.Null;
+        }
+
         var vm = GetOrCreateVm(realm);
         var result = method(w, vm);
         return result is null ? JsValue.Null : JsValue.Object(DomWrappers.Wrap(realm, result));
@@ -275,7 +308,10 @@ internal static class TraversalBinding
 
     private static JsObject GetOrBuildNodeIteratorProto(JsRealm realm)
     {
-        if (NodeIteratorProtos.TryGetValue(realm, out var proto)) return proto;
+        if (NodeIteratorProtos.TryGetValue(realm, out var proto))
+        {
+            return proto;
+        }
 
         proto = new JsObject(realm.ObjectPrototype);
 
@@ -334,7 +370,11 @@ internal static class TraversalBinding
 
     private static JsValue IterTraverse(JsRealm realm, JsValue thisV, bool next)
     {
-        if (GetIter(thisV) is not { } it) return JsValue.Null;
+        if (GetIter(thisV) is not { } it)
+        {
+            return JsValue.Null;
+        }
+
         var vm = GetOrCreateVm(realm);
         var result = next ? it.NextNode(vm) : it.PreviousNode(vm);
         return result is null ? JsValue.Null : JsValue.Object(DomWrappers.Wrap(realm, result));
@@ -357,11 +397,16 @@ internal static class TraversalBinding
     /// Propagates any exception thrown by the filter callback.</summary>
     internal static uint InvokeFilter(JsRealm realm, JsVm vm, JsValue filterVal, Node node, ref bool activeFlag)
     {
-        if (filterVal.IsNullish) return NodeFilter.Accept;
+        if (filterVal.IsNullish)
+        {
+            return NodeFilter.Accept;
+        }
 
         if (activeFlag)
+        {
             throw DomExceptionBinding.Throw(realm, "InvalidStateError",
                 "NodeFilter is already active (recursive filter call)");
+        }
 
         activeFlag = true;
         try
@@ -382,8 +427,11 @@ internal static class TraversalBinding
                 // every traversal step (spec requires this).
                 var fn = AbstractOperations.Get(vm, filterVal.AsObject, "acceptNode", filterVal);
                 if (!AbstractOperations.IsCallable(fn))
+                {
                     throw new JsThrow(realm.NewTypeError(
                         "NodeFilter object must have a callable 'acceptNode' property"));
+                }
+
                 result = AbstractOperations.Call(vm, fn, filterVal, new[] { nodeJs });
             }
             else
@@ -408,7 +456,10 @@ internal static class TraversalBinding
     {
         // Bit position = nodeType - 1.
         var bit = 1u << ((int)NodeTypeOf(node) - 1);
-        if ((whatToShow & bit) == 0) return NodeFilter.Skip;
+        if ((whatToShow & bit) == 0)
+        {
+            return NodeFilter.Skip;
+        }
 
         return filterVal.IsNullish
             ? NodeFilter.Accept
@@ -437,10 +488,17 @@ internal static class TraversalBinding
     /// (depth-first pre-order). null when none.</summary>
     internal static Node? NextNodeInTree(Node node)
     {
-        if (node.FirstChild is not null) return node.FirstChild;
+        if (node.FirstChild is not null)
+        {
+            return node.FirstChild;
+        }
+
         for (var n = node; n is not null; n = n.ParentNode)
         {
-            if (n.NextSibling is not null) return n.NextSibling;
+            if (n.NextSibling is not null)
+            {
+                return n.NextSibling;
+            }
         }
         return null;
     }
@@ -452,7 +510,11 @@ internal static class TraversalBinding
         if (node.PreviousSibling is not null)
         {
             var n = node.PreviousSibling;
-            while (n.LastChild is not null) n = n.LastChild;
+            while (n.LastChild is not null)
+            {
+                n = n.LastChild;
+            }
+
             return n;
         }
         return node.ParentNode;
@@ -461,7 +523,13 @@ internal static class TraversalBinding
     internal static bool IsInclusiveDescendant(Node node, Node root)
     {
         for (var n = node; n is not null; n = n.ParentNode)
-            if (ReferenceEquals(n, root)) return true;
+        {
+            if (ReferenceEquals(n, root))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -539,7 +607,10 @@ internal sealed class HostTreeWalker
                 if (sibling is not null) { node = sibling; break; }
                 var parent = node.ParentNode;
                 if (parent is null || ReferenceEquals(parent, Root) || ReferenceEquals(parent, CurrentNode))
+                {
                     return null;
+                }
+
                 node = parent;
             }
         }
@@ -551,7 +622,10 @@ internal sealed class HostTreeWalker
     private Node? TraverseSiblings(JsRealm realm, JsVm vm, bool next)
     {
         var node = CurrentNode;
-        if (ReferenceEquals(node, Root)) return null;
+        if (ReferenceEquals(node, Root))
+        {
+            return null;
+        }
 
         while (true)
         {
@@ -567,12 +641,21 @@ internal sealed class HostTreeWalker
                 }
                 sibling = (result != NodeFilter.Reject) ? (next ? node.FirstChild : node.LastChild) : null;
                 if (sibling is null)
+                {
                     sibling = next ? node.NextSibling : node.PreviousSibling;
+                }
             }
 
             node = node.ParentNode!;
-            if (node is null || ReferenceEquals(node, Root)) return null;
-            if (ApplyFilter(realm, vm, node) == NodeFilter.Accept) return null;
+            if (node is null || ReferenceEquals(node, Root))
+            {
+                return null;
+            }
+
+            if (ApplyFilter(realm, vm, node) == NodeFilter.Accept)
+            {
+                return null;
+            }
         }
     }
 
@@ -588,7 +671,11 @@ internal sealed class HostTreeWalker
         while (!ReferenceEquals(node, Root))
         {
             node = node.ParentNode!;
-            if (node is null) return null;
+            if (node is null)
+            {
+                return null;
+            }
+
             if (ApplyFilter(realm, vm, node) == NodeFilter.Accept)
             {
                 CurrentNode = node;
@@ -623,10 +710,18 @@ internal sealed class HostTreeWalker
             Node? next = null;
             for (var tmp = node; tmp is not null; tmp = tmp.ParentNode)
             {
-                if (ReferenceEquals(tmp, Root)) return null;
+                if (ReferenceEquals(tmp, Root))
+                {
+                    return null;
+                }
+
                 if (tmp.NextSibling is not null) { next = tmp.NextSibling; break; }
             }
-            if (next is null) return null;
+            if (next is null)
+            {
+                return null;
+            }
+
             node = next;
             result = ApplyFilter(realm, vm, node);
             if (result == NodeFilter.Accept)
@@ -660,9 +755,17 @@ internal sealed class HostTreeWalker
                 }
                 sibling = node.PreviousSibling;
             }
-            if (ReferenceEquals(node, Root)) return null;
+            if (ReferenceEquals(node, Root))
+            {
+                return null;
+            }
+
             node = node.ParentNode!;
-            if (node is null) return null;
+            if (node is null)
+            {
+                return null;
+            }
+
             if (ApplyFilter(realm, vm, node) == NodeFilter.Accept)
             {
                 CurrentNode = node;
@@ -723,7 +826,9 @@ internal sealed class HostNodeIterator
                 {
                     node = TraversalBinding.NextNodeInTree(node);
                     if (node is null || !TraversalBinding.IsInclusiveDescendant(node, Root))
+                    {
                         return null;
+                    }
                 }
                 else
                 {
@@ -736,7 +841,9 @@ internal sealed class HostNodeIterator
                 {
                     node = TraversalBinding.PreviousNodeInTree(node);
                     if (node is null || !TraversalBinding.IsInclusiveDescendant(node, Root))
+                    {
                         return null;
+                    }
                 }
                 else
                 {
@@ -768,8 +875,15 @@ internal sealed class HostNodeIterator
     {
         // §6.3.3: "If the node is root or is not an inclusive ancestor of
         // referenceNode, terminate these steps."
-        if (ReferenceEquals(nodeBeingRemoved, Root)) return;
-        if (!TraversalBinding.IsInclusiveAncestor(nodeBeingRemoved, ReferenceNode)) return;
+        if (ReferenceEquals(nodeBeingRemoved, Root))
+        {
+            return;
+        }
+
+        if (!TraversalBinding.IsInclusiveAncestor(nodeBeingRemoved, ReferenceNode))
+        {
+            return;
+        }
 
         if (PointerBeforeReferenceNode)
         {
@@ -798,7 +912,9 @@ internal sealed class HostNodeIterator
             // that is being removed, and terminate these steps."
             var prev = TraversalBinding.PreviousNodeInTree(nodeBeingRemoved);
             if (prev is not null)
+            {
                 ReferenceNode = prev;
+            }
         }
     }
 
@@ -809,7 +925,10 @@ internal sealed class HostNodeIterator
     {
         for (var n = node; n is not null; n = n.ParentNode)
         {
-            if (n.NextSibling is not null) return n.NextSibling;
+            if (n.NextSibling is not null)
+            {
+                return n.NextSibling;
+            }
         }
         return null;
     }

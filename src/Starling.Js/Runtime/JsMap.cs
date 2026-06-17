@@ -70,7 +70,11 @@ public sealed class JsMap : JsObject
     public bool Delete(JsValue key)
     {
         var k = NormalizeKey(key);
-        if (!_lookup.TryGetValue(k, out var i)) return false;
+        if (!_lookup.TryGetValue(k, out var i))
+        {
+            return false;
+        }
+
         _entries[i] = new Slot(JsValue.Undefined, JsValue.Undefined, alive: false);
         _lookup.Remove(k);
         _holes++;
@@ -94,7 +98,10 @@ public sealed class JsMap : JsObject
         for (var i = 0; i < _entries.Count; i++)
         {
             var slot = _entries[i];
-            if (slot.Alive) yield return (slot.Key, slot.Value);
+            if (slot.Alive)
+            {
+                yield return (slot.Key, slot.Value);
+            }
         }
     }
 
@@ -103,21 +110,35 @@ public sealed class JsMap : JsObject
     private static JsValue NormalizeKey(JsValue key)
     {
         if (key.Kind == JsValueKind.Number && key.AsNumber == 0.0)
+        {
             return JsValue.Zero;
+        }
+
         return key;
     }
 
     private void MaybeCompact()
     {
-        if (_holes < CompactMinHoles) return;
-        if ((double)_holes / Math.Max(1, _entries.Count) < CompactRatio) return;
+        if (_holes < CompactMinHoles)
+        {
+            return;
+        }
+
+        if ((double)_holes / Math.Max(1, _entries.Count) < CompactRatio)
+        {
+            return;
+        }
 
         var live = new List<Slot>(_entries.Count - _holes);
         _lookup.Clear();
         for (var i = 0; i < _entries.Count; i++)
         {
             var slot = _entries[i];
-            if (!slot.Alive) continue;
+            if (!slot.Alive)
+            {
+                continue;
+            }
+
             _lookup[slot.Key] = live.Count;
             live.Add(slot);
         }

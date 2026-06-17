@@ -16,7 +16,9 @@ public abstract class CharacterData : Node
         {
             var normalized = value ?? string.Empty;
             if (_data == normalized)
+            {
                 return;
+            }
 
             var oldData = _data;
             _data = normalized;
@@ -50,8 +52,11 @@ public abstract class CharacterData : Node
     public string SubstringData(uint offset, uint count)
     {
         if (offset > (uint)_data.Length)
+        {
             throw DomException.Create("IndexSizeError",
                 $"substringData: offset {offset} is past the data length {_data.Length}.");
+        }
+
         uint available = (uint)_data.Length - offset;
         uint take = count > available ? available : count;
         return _data.Substring((int)offset, (int)take);
@@ -75,8 +80,11 @@ public abstract class CharacterData : Node
     public void ReplaceData(uint offset, uint count, string data)
     {
         if (offset > (uint)_data.Length)
+        {
             throw DomException.Create("IndexSizeError",
                 $"replaceData: offset {offset} is past the data length {_data.Length}.");
+        }
+
         uint available = (uint)_data.Length - offset;
         uint remove = count > available ? available : count;
         Data = string.Concat(
@@ -107,11 +115,17 @@ public sealed class Text : CharacterData
         get
         {
             Node start = this;
-            while (start.PreviousSibling is Text prev) start = prev;
+            while (start.PreviousSibling is Text prev)
+            {
+                start = prev;
+            }
 
             var sb = new System.Text.StringBuilder();
             for (Node? n = start; n is Text t; n = n.NextSibling)
+            {
                 sb.Append(t.Data);
+            }
+
             return sb.ToString();
         }
     }
@@ -125,8 +139,10 @@ public sealed class Text : CharacterData
     public Text SplitText(uint offset)
     {
         if (offset > (uint)Length)
+        {
             throw DomException.Create("IndexSizeError",
                 $"splitText: offset {offset} is past the data length {Length}.");
+        }
 
         uint count = (uint)Length - offset;
         var newNode = new Text(SubstringData(offset, count)) { OwnerDocument = OwnerDocument };

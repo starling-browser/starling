@@ -52,12 +52,12 @@ internal static unsafe class SpikeProgram
             Console.WriteLine("spike: surface created from native window");
 
             var adapterOpts = new RequestAdapterOptions { CompatibleSurface = surface, PowerPreference = PowerPreference.HighPerformance };
-            var aCb = PfnRequestAdapterCallback.From((status, a, _, _) => { if (status == RequestAdapterStatus.Success) adapter = a; });
+            var aCb = PfnRequestAdapterCallback.From((status, a, _, _) => { if (status == RequestAdapterStatus.Success) { adapter = a; } });
             wgpu.InstanceRequestAdapter(instance, in adapterOpts, aCb, null);
             if (adapter == null) { Console.Error.WriteLine("spike: no adapter"); return 1; }
 
             var devDesc = default(DeviceDescriptor);
-            var dCb = PfnRequestDeviceCallback.From((status, d, _, _) => { if (status == RequestDeviceStatus.Success) device = d; });
+            var dCb = PfnRequestDeviceCallback.From((status, d, _, _) => { if (status == RequestDeviceStatus.Success) { device = d; } });
             wgpu.AdapterRequestDevice(adapter, in devDesc, dCb, null);
             if (device == null) { Console.Error.WriteLine("spike: no device"); return 1; }
             queue = wgpu.DeviceGetQueue(device);
@@ -70,7 +70,9 @@ internal static unsafe class SpikeProgram
                 SurfaceTexture st = default;
                 wgpu.SurfaceGetCurrentTexture(surface, ref st);
                 if (st.Status != SurfaceGetCurrentTextureStatus.Success)
+                {
                     return;
+                }
 
                 var view = wgpu.TextureCreateView(st.Texture, (TextureViewDescriptor*)null);
                 // Cycle the clear color so successive frames are visibly distinct.
@@ -93,7 +95,9 @@ internal static unsafe class SpikeProgram
 
                 presented++;
                 if (presented >= 30)
+                {
                     window!.Close();
+                }
             };
 
             window.Run();
@@ -109,10 +113,26 @@ internal static unsafe class SpikeProgram
         finally
         {
             if (surface != null) { wgpu.SurfaceRelease(surface); }
-            if (queue != null) wgpu.QueueRelease(queue);
-            if (device != null) wgpu.DeviceRelease(device);
-            if (adapter != null) wgpu.AdapterRelease(adapter);
-            if (instance != null) wgpu.InstanceRelease(instance);
+            if (queue != null)
+            {
+                wgpu.QueueRelease(queue);
+            }
+
+            if (device != null)
+            {
+                wgpu.DeviceRelease(device);
+            }
+
+            if (adapter != null)
+            {
+                wgpu.AdapterRelease(adapter);
+            }
+
+            if (instance != null)
+            {
+                wgpu.InstanceRelease(instance);
+            }
+
             window?.Dispose();
         }
     }

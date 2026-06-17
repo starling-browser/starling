@@ -30,7 +30,9 @@ public class SsimBench
         Array.Copy(_a, _noisy, size);
         // Inject 1% noise so the SSIM scoring path runs meaningfully.
         for (var i = 0; i < size; i += 100)
+        {
             _noisy[i] = (byte)(_a[i] ^ 0x40);
+        }
     }
 
     [Benchmark]

@@ -153,8 +153,11 @@ public sealed class NativeViewportRenderer : IDisposable
             var compositor = new Compositor(_backend, _tiles);
             var ok = compositor.RenderToSurface(tree, region, scale, presenter, drawingOverlays);
             if (sw.ElapsedMilliseconds > 100)
+            {
                 NativeViewportRendererLog.PresentCold(_log,
                     sw.ElapsedMilliseconds, tBuild, sw.ElapsedMilliseconds - tBuild);
+            }
+
             return ok;
         }
         catch (Exception ex)
@@ -254,12 +257,14 @@ public sealed class NativeViewportRenderer : IDisposable
 
         // Sidebar: left strip, full height.
         if (leftChromeTree is not null)
+        {
             compositor.AppendSurfaceOps(
                 leftChromeTree,
                 new LayoutRect(0, 0, leftChromeCss, logicalH),
                 scale, destOriginXDevice: 0, destOriginYDevice: 0,
                 regionClipDevice: new LayoutRect(0, 0, leftDevW, surfaceHeight),
                 ops, presenter);
+        }
 
         // Top chrome: to the right of the sidebar.
         compositor.AppendSurfaceOps(
@@ -280,22 +285,26 @@ public sealed class NativeViewportRenderer : IDisposable
 
         // Overlay: same region/offset as the page so it tracks scroll.
         if (overlayTree is not null)
+        {
             compositor.AppendSurfaceOps(
                 overlayTree, pageRegion,
                 scale, destOriginXDevice: leftDevW, destOriginYDevice: chromeDevH,
                 regionClipDevice: pageClip,
                 ops, presenter);
+        }
 
         // Bottom chrome (status bar): the strip below the page, same width as the
         // page region, fixed at the window bottom. Drawn after the page so it sits
         // over any page content that would otherwise bleed into the strip.
         if (bottomChromeTree is not null && bottomChromeRightTree is null)
+        {
             compositor.AppendSurfaceOps(
                 bottomChromeTree,
                 new LayoutRect(0, 0, pageLogicalW, bottomChromeCss),
                 scale, destOriginXDevice: leftDevW, destOriginYDevice: surfaceHeight - bottomDevH,
                 regionClipDevice: new LayoutRect(leftDevW, surfaceHeight - bottomDevH, contentDevW, bottomDevH),
                 ops, presenter);
+        }
         else if (bottomChromeTree is not null || bottomChromeRightTree is not null)
         {
             var leftCss = bottomChromeLeftWidthCss <= 0
@@ -307,30 +316,36 @@ public sealed class NativeViewportRenderer : IDisposable
             var bottomDevY = surfaceHeight - bottomDevH;
 
             if (bottomChromeTree is not null)
+            {
                 compositor.AppendSurfaceOps(
                     bottomChromeTree,
                     new LayoutRect(0, 0, leftCss, bottomChromeCss),
                     scale, destOriginXDevice: leftDevW, destOriginYDevice: bottomDevY,
                     regionClipDevice: new LayoutRect(leftDevW, bottomDevY, leftDev, bottomDevH),
                     ops, presenter);
+            }
 
             if (bottomChromeRightTree is not null)
+            {
                 compositor.AppendSurfaceOps(
                     bottomChromeRightTree,
                     new LayoutRect(0, 0, rightCss, bottomChromeCss),
                     scale, destOriginXDevice: leftDevW + leftDev, destOriginYDevice: bottomDevY,
                     regionClipDevice: new LayoutRect(leftDevW + leftDev, bottomDevY, rightDev, bottomDevH),
                     ops, presenter);
+            }
         }
 
         // Screen overlay: whole window, no scroll, on top of everything.
         if (screenOverlayTree is not null)
+        {
             compositor.AppendSurfaceOps(
                 screenOverlayTree,
                 new LayoutRect(0, 0, logicalW, logicalH),
                 scale, destOriginXDevice: 0, destOriginYDevice: 0,
                 regionClipDevice: new LayoutRect(0, 0, surfaceWidth, surfaceHeight),
                 ops, presenter);
+        }
 
         // Emit this frame's tile miss-ratio / rasters-per-frame. The multi-doc
         // path has no single Render exit to hook, so flush after the last

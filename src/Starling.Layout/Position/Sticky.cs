@@ -54,7 +54,9 @@ internal static class StickyLayout
         {
             var minTop = cb.Y + t;
             if (rect.Y < minTop)
+            {
                 rect = rect.Translate(0, minTop - rect.Y);
+            }
         }
         // `bottom` enforces a maximum extent to CB.Bottom - bottom. If both
         // are set and the element is shorter than the resulting band, `top`
@@ -64,7 +66,9 @@ internal static class StickyLayout
         {
             var maxBottom = cb.Bottom - b;
             if (rect.Bottom > maxBottom)
+            {
                 rect = rect.Translate(0, maxBottom - rect.Bottom);
+            }
         }
 
         // ---- Horizontal (mirror of vertical) --------------------------
@@ -72,13 +76,17 @@ internal static class StickyLayout
         {
             var minLeft = cb.X + l;
             if (rect.X < minLeft)
+            {
                 rect = rect.Translate(minLeft - rect.X, 0);
+            }
         }
         if (rightPx is { } r)
         {
             var maxRight = cb.Right - r;
             if (rect.Right > maxRight)
+            {
                 rect = rect.Translate(maxRight - rect.Right, 0);
+            }
         }
 
         // ---- Clamp to containing-block content rect -------------------
@@ -98,8 +106,14 @@ internal static class StickyLayout
         // Clamp horizontally.
         if (rect.Width <= cb.Width)
         {
-            if (x < cb.X) x = cb.X;
-            else if (x + rect.Width > cb.Right) x = cb.Right - rect.Width;
+            if (x < cb.X)
+            {
+                x = cb.X;
+            }
+            else if (x + rect.Width > cb.Right)
+            {
+                x = cb.Right - rect.Width;
+            }
         }
         else
         {
@@ -110,8 +124,14 @@ internal static class StickyLayout
         // Clamp vertically.
         if (rect.Height <= cb.Height)
         {
-            if (y < cb.Y) y = cb.Y;
-            else if (y + rect.Height > cb.Bottom) y = cb.Bottom - rect.Height;
+            if (y < cb.Y)
+            {
+                y = cb.Y;
+            }
+            else if (y + rect.Height > cb.Bottom)
+            {
+                y = cb.Bottom - rect.Height;
+            }
         }
         else
         {

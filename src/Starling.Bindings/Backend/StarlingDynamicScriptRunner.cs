@@ -65,7 +65,11 @@ internal sealed class StarlingDynamicScriptRunner
     /// synchronously on the JS thread, so it only enqueues.</summary>
     public void OnSrcSet(Element script)
     {
-        if (_started.TryGetValue(script, out _)) return;
+        if (_started.TryGetValue(script, out _))
+        {
+            return;
+        }
+
         _started.AddOrUpdate(script, Marker);
         _pending.Enqueue(script);
     }

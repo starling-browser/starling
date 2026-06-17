@@ -47,10 +47,17 @@ internal sealed class SameValueZeroComparer : IEqualityComparer<JsValue>
     private static int HashNumber(double n)
     {
         // All NaNs collapse to one bucket so Map/Set treat NaN-keys as equal.
-        if (double.IsNaN(n)) return HashCode.Combine(JsValueKind.Number, "NaN");
+        if (double.IsNaN(n))
+        {
+            return HashCode.Combine(JsValueKind.Number, "NaN");
+        }
         // +0 and -0 must hash equally per SameValueZero. Comparing to 0.0
         // returns true for both, so reuse a fixed bucket.
-        if (n == 0.0) return HashCode.Combine(JsValueKind.Number, 0.0);
+        if (n == 0.0)
+        {
+            return HashCode.Combine(JsValueKind.Number, 0.0);
+        }
+
         return HashCode.Combine(JsValueKind.Number, n);
     }
 }

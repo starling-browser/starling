@@ -123,21 +123,35 @@ public sealed class LayoutSession
                 // full measure ran with the invalidation hooks (sink) on.
                 var scoped = scroll is not null && cachesWereCoherent;
                 using (StarlingTelemetry.Span("layout", "incremental.relayout"))
+                {
                     RunLayout(measurer, viewport, abort, incremental: true,
                         scrollSink: scoped ? _relaidScrollers : null);
+                }
+
                 StarlingTelemetry.Counter("layout.incremental.relayout", 1);
                 if (VerifyAgainstFullRebuild)
+                {
                     Verify(document, viewport, measurer, nowMs, abort);
+                }
+
                 if (scoped)
+                {
                     MeasureScrollScoped(scroll!, viewport);
+                }
                 else
+                {
                     MeasureScroll(scroll, viewport);
+                }
+
                 _scrollCachesCoherent = scroll is not null;
                 return _root;
             }
 
             using (StarlingTelemetry.Span("layout", "incremental.full_rebuild"))
+            {
                 FullBuild(document, viewport, measurer, nowMs, abort);
+            }
+
             StarlingTelemetry.Counter("layout.incremental.full_rebuild", 1);
             MeasureScroll(scroll, viewport);
             _scrollCachesCoherent = scroll is not null;
@@ -155,7 +169,11 @@ public sealed class LayoutSession
     /// without a store.</summary>
     private void MeasureScroll(Scroll.ScrollStateStore? scroll, Size viewport)
     {
-        if (scroll is null) return;
+        if (scroll is null)
+        {
+            return;
+        }
+
         Scroll.ScrollOverflowMeasurer.Measure(_root!, viewport, scroll);
         scroll.ReconcileAfterLayout();
     }
@@ -206,8 +224,13 @@ public sealed class LayoutSession
     private bool IsAttached(Box.Box box)
     {
         for (Box.Box? b = box; b is not null; b = b.Parent)
+        {
             if (ReferenceEquals(b, _root))
+            {
                 return true;
+            }
+        }
+
         return false;
     }
 
@@ -217,7 +240,10 @@ public sealed class LayoutSession
     private void ResetScrollQueue()
     {
         foreach (var b in _relaidScrollers)
+        {
             b.ScrollMeasureQueued = false;
+        }
+
         _relaidScrollers.Clear();
     }
 
@@ -289,7 +315,10 @@ public sealed class LayoutSession
                 case LayoutChangeKind.TextChanged:
                     if (m.Target is not Starling.Dom.Text text
                         || !_textMap.TryGetValue(text, out var textBox))
+                    {
                         return false;
+                    }
+
                     textBox.Text = text.Data;
                     textBox.Fragments.Clear(); // force the inline pass to re-shape
                     MarkDirtyPath(textBox);
@@ -297,7 +326,10 @@ public sealed class LayoutSession
 
                 case LayoutChangeKind.LayoutRelevantAttr:
                     if (m.Target is not Element attrEl || !RebuildAndSplice(attrEl, nowMs))
+                    {
                         return false;
+                    }
+
                     break;
 
                 // A child was inserted/removed under the target. Splice the one
@@ -308,9 +340,16 @@ public sealed class LayoutSession
                 // parent, or when the parent isn't a mapped element.
                 case LayoutChangeKind.ChildInserted:
                 case LayoutChangeKind.ChildRemoved:
-                    if (_style.StructuralChangeNeedsFullRebuild) return false;
-                    if (m.Target is not Element parent || !SpliceChildren(parent, nowMs))
+                    if (_style.StructuralChangeNeedsFullRebuild)
+                    {
                         return false;
+                    }
+
+                    if (m.Target is not Element parent || !SpliceChildren(parent, nowMs))
+                    {
+                        return false;
+                    }
+
                     break;
             }
         }
@@ -332,11 +371,20 @@ public sealed class LayoutSession
         if (nowMs is not null)
         {
             foreach (var el in _style.AnimationEngine.ActiveElements)
+            {
                 if (_style.AnimationEngine.HasLayoutAffectingProperty(el) && !MarkAnimated(el, nowMs))
+                {
                     return false;
+                }
+            }
+
             foreach (var el in _style.TransitionEngine.ActiveElements)
+            {
                 if (_style.TransitionEngine.HasLayoutAffectingProperty(el) && !MarkAnimated(el, nowMs))
+                {
                     return false;
+                }
+            }
         }
 
         return true;
@@ -344,16 +392,28 @@ public sealed class LayoutSession
 
     private bool SpliceChildren(Element parent, double? nowMs)
     {
-        if (!_elementMap.TryGetValue(parent, out var parentBox)) return false;
+        if (!_elementMap.TryGetValue(parent, out var parentBox))
+        {
+            return false;
+        }
+
         var builder = new BoxTreeBuilder(_style, _images, nowMs, _elementMap, _textMap);
-        if (!builder.SpliceChildren(parent, parentBox)) return false;
+        if (!builder.SpliceChildren(parent, parentBox))
+        {
+            return false;
+        }
+
         MarkDirtyPath(parentBox);
         return true;
     }
 
     private bool MarkAnimated(Element el, double? nowMs)
     {
-        if (!_elementMap.TryGetValue(el, out _)) return true; // no box (display:none) — nothing to do
+        if (!_elementMap.TryGetValue(el, out _))
+        {
+            return true; // no box (display:none) — nothing to do
+        }
+
         return RebuildAndSplice(el, nowMs);
     }
 
@@ -367,19 +427,32 @@ public sealed class LayoutSession
     /// </summary>
     private bool RebuildAndSplice(Element element, double? nowMs)
     {
-        if (!_elementMap.TryGetValue(element, out var oldBox)) return false;
+        if (!_elementMap.TryGetValue(element, out var oldBox))
+        {
+            return false;
+        }
+
         var slot = oldBox.Parent;
-        if (slot is null) return false; // the root element — full rebuild is simpler
+        if (slot is null)
+        {
+            return false; // the root element — full rebuild is simpler
+        }
 
         var index = slot.Children.IndexOf(oldBox);
-        if (index < 0) return false;
+        if (index < 0)
+        {
+            return false;
+        }
 
         // Reproduce the old box's block/inline level so the parent's anonymous
         // wrapping is unchanged; a level flip would re-bucket siblings.
         var blockifyParent = oldBox.Kind != BoxKind.Inline;
         var builder = new BoxTreeBuilder(_style, _images, nowMs, _elementMap, _textMap);
         var newBox = builder.RebuildElementSubtree(element, slot.Style, blockifyParent);
-        if (newBox is null || newBox.Kind != oldBox.Kind) return false;
+        if (newBox is null || newBox.Kind != oldBox.Kind)
+        {
+            return false;
+        }
 
         newBox.Parent = slot;
         slot.Children[index] = newBox;
@@ -394,7 +467,9 @@ public sealed class LayoutSession
     private static void MarkDirtyPath(Box.Box box)
     {
         for (Box.Box? b = box; b is not null; b = b.Parent)
+        {
             b.SubtreeDirty = true;
+        }
     }
 }
 

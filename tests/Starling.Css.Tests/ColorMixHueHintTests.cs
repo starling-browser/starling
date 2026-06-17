@@ -86,6 +86,8 @@ public class ColorMixHueHintTests
         var v = CssValueParser.Parse(decl.Value);
         // Either no CssColor produced (fallback to a function/list value) or transparent.
         if (v is CssColor c)
+        {
             c.Should().Be(CssColor.Transparent);
+        }
     }
 }

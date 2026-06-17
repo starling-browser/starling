@@ -45,9 +45,21 @@ public readonly struct PropertyDescriptor : IEquatable<PropertyDescriptor>
     public static PropertyDescriptor Data(JsValue value, bool writable, bool enumerable, bool configurable)
     {
         var flags = Bits.None;
-        if (writable) flags |= Bits.Writable;
-        if (enumerable) flags |= Bits.Enumerable;
-        if (configurable) flags |= Bits.Configurable;
+        if (writable)
+        {
+            flags |= Bits.Writable;
+        }
+
+        if (enumerable)
+        {
+            flags |= Bits.Enumerable;
+        }
+
+        if (configurable)
+        {
+            flags |= Bits.Configurable;
+        }
+
         return new PropertyDescriptor(value, null, null, flags);
     }
 
@@ -55,8 +67,16 @@ public readonly struct PropertyDescriptor : IEquatable<PropertyDescriptor>
     public static PropertyDescriptor Accessor(JsObject? getter, JsObject? setter, bool enumerable = false, bool configurable = true)
     {
         var flags = Bits.Accessor;
-        if (enumerable) flags |= Bits.Enumerable;
-        if (configurable) flags |= Bits.Configurable;
+        if (enumerable)
+        {
+            flags |= Bits.Enumerable;
+        }
+
+        if (configurable)
+        {
+            flags |= Bits.Configurable;
+        }
+
         return new PropertyDescriptor(JsValue.Undefined, getter, setter, flags);
     }
 

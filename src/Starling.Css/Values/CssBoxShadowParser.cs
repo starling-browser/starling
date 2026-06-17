@@ -22,9 +22,14 @@ public static class CssBoxShadowParser
         // Idempotent: the animation interpolator emits typed CssBoxShadow
         // intermediates; pass them straight through.
         if (value is CssBoxShadow typed)
+        {
             return typed;
+        }
+
         if (value is CssKeyword { Name: var kw } && kw.Equals("none", StringComparison.OrdinalIgnoreCase))
+        {
             return CssBoxShadow.None;
+        }
 
         var components = value switch
         {
@@ -39,7 +44,10 @@ public static class CssBoxShadowParser
             if (IsCommaSeparator(component))
             {
                 if (!TryParseLayer(current, out var parsed))
+                {
                     return CssBoxShadow.None;
+                }
+
                 layers.Add(parsed);
                 current = [];
                 continue;
@@ -49,7 +57,10 @@ public static class CssBoxShadowParser
         }
 
         if (!TryParseLayer(current, out var last))
+        {
             return CssBoxShadow.None;
+        }
+
         layers.Add(last);
 
         return new CssBoxShadow(layers);
@@ -73,24 +84,44 @@ public static class CssBoxShadowParser
             switch (part)
             {
                 case CssKeyword { Name: var name } when name.Equals("inset", StringComparison.OrdinalIgnoreCase):
-                    if (inset) return false; // duplicate inset
+                    if (inset)
+                    {
+                        return false; // duplicate inset
+                    }
+
                     inset = true;
                     break;
                 case CssKeyword { Name: var name } when name.Equals("currentcolor", StringComparison.OrdinalIgnoreCase):
-                    if (color is not null) return false;
+                    if (color is not null)
+                    {
+                        return false;
+                    }
+
                     color = null; // sentinel: resolved against the element's color at paint
                     break;
                 case CssColor c:
-                    if (color is not null) return false;
+                    if (color is not null)
+                    {
+                        return false;
+                    }
+
                     color = c;
                     break;
                 case CssLength len:
-                    if (lengths.Count == 4) return false;
+                    if (lengths.Count == 4)
+                    {
+                        return false;
+                    }
+
                     lengths.Add(len);
                     break;
                 case CssNumber { Value: 0 }:
                     // Unit-less zero is a valid <length>.
-                    if (lengths.Count == 4) return false;
+                    if (lengths.Count == 4)
+                    {
+                        return false;
+                    }
+
                     lengths.Add(CssLength.Zero);
                     break;
                 default:
@@ -99,7 +130,10 @@ public static class CssBoxShadowParser
         }
 
         // Need at least offset-x and offset-y.
-        if (lengths.Count < 2) return false;
+        if (lengths.Count < 2)
+        {
+            return false;
+        }
 
         var offsetX = lengths[0];
         var offsetY = lengths[1];
@@ -107,7 +141,10 @@ public static class CssBoxShadowParser
         var spread = lengths.Count > 3 ? lengths[3] : CssLength.Zero;
 
         // Blur radius must be non-negative per spec.
-        if (blur.Value < 0) return false;
+        if (blur.Value < 0)
+        {
+            return false;
+        }
 
         shadow = new CssShadow(offsetX, offsetY, blur, spread, color, inset);
         return true;

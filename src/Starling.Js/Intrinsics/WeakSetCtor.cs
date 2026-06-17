@@ -14,7 +14,10 @@ public static class WeakSetCtor
             (newTarget, args) =>
             {
                 if (!IntrinsicHelpers.IsConstructInvocation(newTarget))
+                {
                     throw new JsThrow(realm.NewTypeError("Constructor WeakSet requires 'new'"));
+                }
+
                 var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, proto);
                 return JsValue.Object(Construct(realm, instProto, args));
             },
@@ -31,7 +34,10 @@ public static class WeakSetCtor
         {
             var s = ThisWeakSet(realm, thisV);
             if (args.Length == 0 || !args[0].IsObject)
+            {
                 throw new JsThrow(realm.NewTypeError("WeakSet value must be an object"));
+            }
+
             s.Add(args[0].AsObject);
             return thisV;
         });
@@ -39,14 +45,22 @@ public static class WeakSetCtor
         IntrinsicHelpers.DefineMethod(realm, proto, "has", 1, (thisV, args) =>
         {
             var s = ThisWeakSet(realm, thisV);
-            if (args.Length == 0 || !args[0].IsObject) return JsValue.False;
+            if (args.Length == 0 || !args[0].IsObject)
+            {
+                return JsValue.False;
+            }
+
             return JsValue.Boolean(s.Has(args[0].AsObject));
         });
 
         IntrinsicHelpers.DefineMethod(realm, proto, "delete", 1, (thisV, args) =>
         {
             var s = ThisWeakSet(realm, thisV);
-            if (args.Length == 0 || !args[0].IsObject) return JsValue.False;
+            if (args.Length == 0 || !args[0].IsObject)
+            {
+                return JsValue.False;
+            }
+
             return JsValue.Boolean(s.Delete(args[0].AsObject));
         });
 
@@ -58,18 +72,32 @@ public static class WeakSetCtor
     private static JsWeakSet Construct(JsRealm realm, JsObject instProto, JsValue[] args)
     {
         var s = new JsWeakSet(realm);
-        if (!ReferenceEquals(instProto, realm.WeakSetPrototype)) s.SetPrototypeOf(instProto);
-        if (args.Length == 0 || args[0].IsNullish) return s;
+        if (!ReferenceEquals(instProto, realm.WeakSetPrototype))
+        {
+            s.SetPrototypeOf(instProto);
+        }
+
+        if (args.Length == 0 || args[0].IsNullish)
+        {
+            return s;
+        }
 
         var adder = AbstractOperations.Get(realm.ActiveVm, s, "add");
         if (!AbstractOperations.IsCallable(adder))
+        {
             throw new JsThrow(realm.NewTypeError("WeakSet constructor add method is not callable"));
+        }
+
         var iterable = args[0];
         var record = AbstractOperations.GetIterator(realm, realm.ActiveVm, iterable);
         while (true)
         {
             var next = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-            if (next is null) break;
+            if (next is null)
+            {
+                break;
+            }
+
             try
             {
                 var value = AbstractOperations.IteratorValue(realm.ActiveVm, next.Value);
@@ -86,7 +114,11 @@ public static class WeakSetCtor
 
     private static JsWeakSet ThisWeakSet(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is JsWeakSet s) return s;
+        if (thisV.IsObject && thisV.AsObject is JsWeakSet s)
+        {
+            return s;
+        }
+
         throw new JsThrow(realm.NewTypeError("WeakSet.prototype method called on incompatible receiver"));
     }
 }

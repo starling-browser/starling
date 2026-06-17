@@ -44,11 +44,18 @@ internal static class CaptureAnalysis
         // The current function's lexical scope owns its params + declared
         // names; we don't seed those into `captured` here — the caller
         // intersects with its actual declarations to find which slots to box.
-        foreach (var s in body) WalkStatementInOuter(s, captured);
+        foreach (var s in body)
+        {
+            WalkStatementInOuter(s, captured);
+        }
         // Parameter destructuring defaults can themselves contain nested
         // functions whose free names should capture this function's other
         // parameters; walk those too.
-        foreach (var p in parameters) WalkExpressionInOuter(p, captured);
+        foreach (var p in parameters)
+        {
+            WalkExpressionInOuter(p, captured);
+        }
+
         return captured;
     }
 
@@ -65,9 +72,21 @@ internal static class CaptureAnalysis
         IReadOnlyList<Statement> body)
     {
         foreach (var p in parameters)
-            if (ArgRefExpr(p)) return true;
+        {
+            if (ArgRefExpr(p))
+            {
+                return true;
+            }
+        }
+
         foreach (var s in body)
-            if (ArgRefStmt(s)) return true;
+        {
+            if (ArgRefStmt(s))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -92,13 +111,23 @@ internal static class CaptureAnalysis
     public static bool ContainsArgumentsInEvalBody(IReadOnlyList<Statement> statements)
     {
         foreach (var s in statements)
-            if (EvalCAStmt(s)) return true;
+        {
+            if (EvalCAStmt(s))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
     private static bool EvalCAStmt(Statement? s)
     {
-        if (s is null) return false;
+        if (s is null)
+        {
+            return false;
+        }
+
         switch (s)
         {
             case BlockStatement b: return b.Body.Any(EvalCAStmt);
@@ -110,33 +139,79 @@ internal static class CaptureAnalysis
             case WhileStatement w: return EvalCAExpr(w.Test) || EvalCAStmt(w.Body);
             case DoWhileStatement dw: return EvalCAStmt(dw.Body) || EvalCAExpr(dw.Test);
             case ForStatement f:
-                if (f.Init is Statement fis && EvalCAStmt(fis)) return true;
-                if (f.Init is Expression fie && EvalCAExpr(fie)) return true;
+                if (f.Init is Statement fis && EvalCAStmt(fis))
+                {
+                    return true;
+                }
+
+                if (f.Init is Expression fie && EvalCAExpr(fie))
+                {
+                    return true;
+                }
+
                 return EvalCAExpr(f.Test) || EvalCAExpr(f.Update) || EvalCAStmt(f.Body);
             case ForInStatement fi:
-                if (fi.Left is Statement fil && EvalCAStmt(fil)) return true;
-                if (fi.Left is Expression file && EvalCAExpr(file)) return true;
+                if (fi.Left is Statement fil && EvalCAStmt(fil))
+                {
+                    return true;
+                }
+
+                if (fi.Left is Expression file && EvalCAExpr(file))
+                {
+                    return true;
+                }
+
                 return EvalCAExpr(fi.Right) || EvalCAStmt(fi.Body);
             case ForOfStatement fo:
-                if (fo.Left is Statement fol && EvalCAStmt(fol)) return true;
-                if (fo.Left is Expression foe && EvalCAExpr(foe)) return true;
+                if (fo.Left is Statement fol && EvalCAStmt(fol))
+                {
+                    return true;
+                }
+
+                if (fo.Left is Expression foe && EvalCAExpr(foe))
+                {
+                    return true;
+                }
+
                 return EvalCAExpr(fo.Right) || EvalCAStmt(fo.Body);
             case SwitchStatement sw:
-                if (EvalCAExpr(sw.Discriminant)) return true;
+                if (EvalCAExpr(sw.Discriminant))
+                {
+                    return true;
+                }
+
                 foreach (var c in sw.Cases)
                 {
-                    if (EvalCAExpr(c.Test)) return true;
-                    if (c.Consequent.Any(EvalCAStmt)) return true;
+                    if (EvalCAExpr(c.Test))
+                    {
+                        return true;
+                    }
+
+                    if (c.Consequent.Any(EvalCAStmt))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             case TryStatement tr:
-                if (EvalCAStmt(tr.Block)) return true;
+                if (EvalCAStmt(tr.Block))
+                {
+                    return true;
+                }
+
                 if (tr.Handler is not null)
                 {
                     // Catch binding: the catch parameter is a BindingIdentifier (or
                     // pattern containing one) — `catch (arguments)` counts.
-                    if (tr.Handler.Param is not null && EvalCABindingTarget(tr.Handler.Param)) return true;
-                    if (tr.Handler.Body.Body.Any(EvalCAStmt)) return true;
+                    if (tr.Handler.Param is not null && EvalCABindingTarget(tr.Handler.Param))
+                    {
+                        return true;
+                    }
+
+                    if (tr.Handler.Body.Body.Any(EvalCAStmt))
+                    {
+                        return true;
+                    }
                 }
                 return tr.Finalizer is not null && EvalCAStmt(tr.Finalizer);
             case LabeledStatement ls: return EvalCAStmt(ls.Body);
@@ -145,8 +220,15 @@ internal static class CaptureAnalysis
                 // BindingIdentifiers in the declaration list count.
                 foreach (var d in vd.Declarations)
                 {
-                    if (EvalCABindingTarget(d.Id)) return true;
-                    if (EvalCAExpr(d.Init)) return true;
+                    if (EvalCABindingTarget(d.Id))
+                    {
+                        return true;
+                    }
+
+                    if (EvalCAExpr(d.Init))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             // §15.7.1 — a nested ORDINARY function declaration establishes its own
@@ -155,8 +237,15 @@ internal static class CaptureAnalysis
             case FunctionDeclaration fd:
                 return fd.Name.Name == "arguments";
             case ClassDeclaration cd:
-                if (cd.Name.Name == "arguments") return true;
-                if (EvalCAExpr(cd.BaseClass)) return true;
+                if (cd.Name.Name == "arguments")
+                {
+                    return true;
+                }
+
+                if (EvalCAExpr(cd.BaseClass))
+                {
+                    return true;
+                }
                 // Class body methods are non-arrow and have their own `arguments`,
                 // so do NOT descend into method params/bodies. Class field
                 // initializers run with no own `arguments` and arrow propagation,
@@ -176,7 +265,11 @@ internal static class CaptureAnalysis
 
     private static bool EvalCAExpr(Expression? e)
     {
-        if (e is null) return false;
+        if (e is null)
+        {
+            return false;
+        }
+
         switch (e)
         {
             // IdentifierReference at this position.
@@ -205,8 +298,15 @@ internal static class CaptureAnalysis
                     // Only a COMPUTED key is an expression that might reference
                     // `arguments`; a non-computed key is a PropertyName, not a
                     // reference, so do not descend.
-                    if (prop.Computed && EvalCAExpr(prop.Key)) return true;
-                    if (EvalCAExpr(prop.Value)) return true;
+                    if (prop.Computed && EvalCAExpr(prop.Key))
+                    {
+                        return true;
+                    }
+
+                    if (EvalCAExpr(prop.Value))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             case SequenceExpression seq: return seq.Expressions.Any(EvalCAExpr);
@@ -217,7 +317,13 @@ internal static class CaptureAnalysis
             // params can also introduce BindingIdentifiers named `arguments`.
             case ArrowFunctionExpression arrow:
                 foreach (var p in arrow.Params)
-                    if (EvalCABindingTarget(p) || EvalCAExpr(p)) return true;
+                {
+                    if (EvalCABindingTarget(p) || EvalCAExpr(p))
+                    {
+                        return true;
+                    }
+                }
+
                 return arrow.Body switch
                 {
                     BlockStatement block => block.Body.Any(EvalCAStmt),
@@ -231,7 +337,11 @@ internal static class CaptureAnalysis
             case FunctionExpression fe:
                 return fe.Name is { Name: "arguments" };
             case ClassExpression cls:
-                if (cls.Name is { Name: "arguments" }) return true;
+                if (cls.Name is { Name: "arguments" })
+                {
+                    return true;
+                }
+
                 return EvalCAExpr(cls.BaseClass);
             // Binding patterns appearing in expression position (e.g. destructuring
             // assignment targets) — descend through both targets (which may be
@@ -242,13 +352,33 @@ internal static class CaptureAnalysis
                     switch (el)
                     {
                         case ArrayPatternBindingElement binding:
-                            if (EvalCABindingTarget(binding.Target)) return true;
-                            if (EvalCAExpr(binding.Target)) return true;
-                            if (EvalCAExpr(binding.Default)) return true;
+                            if (EvalCABindingTarget(binding.Target))
+                            {
+                                return true;
+                            }
+
+                            if (EvalCAExpr(binding.Target))
+                            {
+                                return true;
+                            }
+
+                            if (EvalCAExpr(binding.Default))
+                            {
+                                return true;
+                            }
+
                             break;
                         case ArrayPatternRestElement r:
-                            if (EvalCABindingTarget(r.Target)) return true;
-                            if (EvalCAExpr(r.Target)) return true;
+                            if (EvalCABindingTarget(r.Target))
+                            {
+                                return true;
+                            }
+
+                            if (EvalCAExpr(r.Target))
+                            {
+                                return true;
+                            }
+
                             break;
                     }
                 }
@@ -256,15 +386,37 @@ internal static class CaptureAnalysis
             case ObjectPattern op:
                 foreach (var prop in op.Properties)
                 {
-                    if (prop.Computed && EvalCAExpr(prop.Key)) return true;
-                    if (EvalCABindingTarget(prop.Target)) return true;
-                    if (EvalCAExpr(prop.Target)) return true;
-                    if (EvalCAExpr(prop.Default)) return true;
+                    if (prop.Computed && EvalCAExpr(prop.Key))
+                    {
+                        return true;
+                    }
+
+                    if (EvalCABindingTarget(prop.Target))
+                    {
+                        return true;
+                    }
+
+                    if (EvalCAExpr(prop.Target))
+                    {
+                        return true;
+                    }
+
+                    if (EvalCAExpr(prop.Default))
+                    {
+                        return true;
+                    }
                 }
                 if (op.Rest is not null)
                 {
-                    if (EvalCABindingTarget(op.Rest.Argument)) return true;
-                    if (EvalCAExpr(op.Rest.Argument)) return true;
+                    if (EvalCABindingTarget(op.Rest.Argument))
+                    {
+                        return true;
+                    }
+
+                    if (EvalCAExpr(op.Rest.Argument))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             case SuperPropertyExpression sp2: return sp2.Computed && EvalCAExpr(sp2.Property);
@@ -277,7 +429,11 @@ internal static class CaptureAnalysis
     // BindingIdentifier named "arguments" anywhere within it.
     private static bool EvalCABindingTarget(Expression? p)
     {
-        if (p is null) return false;
+        if (p is null)
+        {
+            return false;
+        }
+
         switch (p)
         {
             case Identifier id: return id.Name == "arguments";
@@ -291,17 +447,31 @@ internal static class CaptureAnalysis
                     switch (el)
                     {
                         case ArrayPatternBindingElement b:
-                            if (EvalCABindingTarget(b.Target)) return true;
+                            if (EvalCABindingTarget(b.Target))
+                            {
+                                return true;
+                            }
+
                             break;
                         case ArrayPatternRestElement r:
-                            if (EvalCABindingTarget(r.Target)) return true;
+                            if (EvalCABindingTarget(r.Target))
+                            {
+                                return true;
+                            }
+
                             break;
                     }
                 }
                 return false;
             case ObjectPattern obj:
                 foreach (var prop in obj.Properties)
-                    if (EvalCABindingTarget(prop.Target)) return true;
+                {
+                    if (EvalCABindingTarget(prop.Target))
+                    {
+                        return true;
+                    }
+                }
+
                 return obj.Rest is not null && EvalCABindingTarget(obj.Rest.Argument);
             default:
                 return false;
@@ -324,9 +494,21 @@ internal static class CaptureAnalysis
         IReadOnlyList<Statement> body)
     {
         foreach (var p in parameters)
-            if (FindArrowThisExpr(p)) return true;
+        {
+            if (FindArrowThisExpr(p))
+            {
+                return true;
+            }
+        }
+
         foreach (var s in body)
-            if (FindArrowThisStmt(s)) return true;
+        {
+            if (FindArrowThisStmt(s))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -336,7 +518,11 @@ internal static class CaptureAnalysis
     // `this`, so we do NOT descend into them.
     private static bool FindArrowThisStmt(Statement? s)
     {
-        if (s is null) return false;
+        if (s is null)
+        {
+            return false;
+        }
+
         switch (s)
         {
             case BlockStatement b: return b.Body.Any(FindArrowThisStmt);
@@ -348,28 +534,71 @@ internal static class CaptureAnalysis
             case WhileStatement w: return FindArrowThisExpr(w.Test) || FindArrowThisStmt(w.Body);
             case DoWhileStatement dw: return FindArrowThisStmt(dw.Body) || FindArrowThisExpr(dw.Test);
             case ForStatement f:
-                if (f.Init is Statement fis && FindArrowThisStmt(fis)) return true;
-                if (f.Init is Expression fie && FindArrowThisExpr(fie)) return true;
+                if (f.Init is Statement fis && FindArrowThisStmt(fis))
+                {
+                    return true;
+                }
+
+                if (f.Init is Expression fie && FindArrowThisExpr(fie))
+                {
+                    return true;
+                }
+
                 return FindArrowThisExpr(f.Test) || FindArrowThisExpr(f.Update) || FindArrowThisStmt(f.Body);
             case ForInStatement fi:
-                if (fi.Left is Statement fil && FindArrowThisStmt(fil)) return true;
-                if (fi.Left is Expression file && FindArrowThisExpr(file)) return true;
+                if (fi.Left is Statement fil && FindArrowThisStmt(fil))
+                {
+                    return true;
+                }
+
+                if (fi.Left is Expression file && FindArrowThisExpr(file))
+                {
+                    return true;
+                }
+
                 return FindArrowThisExpr(fi.Right) || FindArrowThisStmt(fi.Body);
             case ForOfStatement fo:
-                if (fo.Left is Statement fol && FindArrowThisStmt(fol)) return true;
-                if (fo.Left is Expression foe && FindArrowThisExpr(foe)) return true;
+                if (fo.Left is Statement fol && FindArrowThisStmt(fol))
+                {
+                    return true;
+                }
+
+                if (fo.Left is Expression foe && FindArrowThisExpr(foe))
+                {
+                    return true;
+                }
+
                 return FindArrowThisExpr(fo.Right) || FindArrowThisStmt(fo.Body);
             case SwitchStatement sw:
-                if (FindArrowThisExpr(sw.Discriminant)) return true;
+                if (FindArrowThisExpr(sw.Discriminant))
+                {
+                    return true;
+                }
+
                 foreach (var c in sw.Cases)
                 {
-                    if (FindArrowThisExpr(c.Test)) return true;
-                    if (c.Consequent.Any(FindArrowThisStmt)) return true;
+                    if (FindArrowThisExpr(c.Test))
+                    {
+                        return true;
+                    }
+
+                    if (c.Consequent.Any(FindArrowThisStmt))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             case TryStatement tr:
-                if (FindArrowThisStmt(tr.Block)) return true;
-                if (tr.Handler is not null && tr.Handler.Body.Body.Any(FindArrowThisStmt)) return true;
+                if (FindArrowThisStmt(tr.Block))
+                {
+                    return true;
+                }
+
+                if (tr.Handler is not null && tr.Handler.Body.Body.Any(FindArrowThisStmt))
+                {
+                    return true;
+                }
+
                 return tr.Finalizer is not null && FindArrowThisStmt(tr.Finalizer);
             case LabeledStatement ls: return FindArrowThisStmt(ls.Body);
             case WithStatement ws: return FindArrowThisExpr(ws.Object) || FindArrowThisStmt(ws.Body);
@@ -384,12 +613,20 @@ internal static class CaptureAnalysis
 
     private static bool FindArrowThisExpr(Expression? e)
     {
-        if (e is null) return false;
+        if (e is null)
+        {
+            return false;
+        }
+
         switch (e)
         {
             // Found an arrow: count if its body references `this` lexically.
             case ArrowFunctionExpression arrow:
-                if (arrow.Params.Any(ThisRefExpr)) return true;
+                if (arrow.Params.Any(ThisRefExpr))
+                {
+                    return true;
+                }
+
                 return arrow.Body switch
                 {
                     BlockStatement block => block.Body.Any(ThisRefStmt),
@@ -415,8 +652,15 @@ internal static class CaptureAnalysis
             case ObjectExpression oe:
                 foreach (var prop in oe.Properties)
                 {
-                    if (prop.Computed && FindArrowThisExpr(prop.Key)) return true;
-                    if (FindArrowThisExpr(prop.Value)) return true;
+                    if (prop.Computed && FindArrowThisExpr(prop.Key))
+                    {
+                        return true;
+                    }
+
+                    if (FindArrowThisExpr(prop.Value))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             case SequenceExpression seq: return seq.Expressions.Any(FindArrowThisExpr);
@@ -437,7 +681,11 @@ internal static class CaptureAnalysis
     // with `this` (not the `arguments` identifier) as the leaf.
     private static bool ThisRefStmt(Statement? s)
     {
-        if (s is null) return false;
+        if (s is null)
+        {
+            return false;
+        }
+
         switch (s)
         {
             case BlockStatement b: return b.Body.Any(ThisRefStmt);
@@ -449,28 +697,71 @@ internal static class CaptureAnalysis
             case WhileStatement w: return ThisRefExpr(w.Test) || ThisRefStmt(w.Body);
             case DoWhileStatement dw: return ThisRefStmt(dw.Body) || ThisRefExpr(dw.Test);
             case ForStatement f:
-                if (f.Init is Statement fis && ThisRefStmt(fis)) return true;
-                if (f.Init is Expression fie && ThisRefExpr(fie)) return true;
+                if (f.Init is Statement fis && ThisRefStmt(fis))
+                {
+                    return true;
+                }
+
+                if (f.Init is Expression fie && ThisRefExpr(fie))
+                {
+                    return true;
+                }
+
                 return ThisRefExpr(f.Test) || ThisRefExpr(f.Update) || ThisRefStmt(f.Body);
             case ForInStatement fi:
-                if (fi.Left is Statement fil && ThisRefStmt(fil)) return true;
-                if (fi.Left is Expression file && ThisRefExpr(file)) return true;
+                if (fi.Left is Statement fil && ThisRefStmt(fil))
+                {
+                    return true;
+                }
+
+                if (fi.Left is Expression file && ThisRefExpr(file))
+                {
+                    return true;
+                }
+
                 return ThisRefExpr(fi.Right) || ThisRefStmt(fi.Body);
             case ForOfStatement fo:
-                if (fo.Left is Statement fol && ThisRefStmt(fol)) return true;
-                if (fo.Left is Expression foe && ThisRefExpr(foe)) return true;
+                if (fo.Left is Statement fol && ThisRefStmt(fol))
+                {
+                    return true;
+                }
+
+                if (fo.Left is Expression foe && ThisRefExpr(foe))
+                {
+                    return true;
+                }
+
                 return ThisRefExpr(fo.Right) || ThisRefStmt(fo.Body);
             case SwitchStatement sw:
-                if (ThisRefExpr(sw.Discriminant)) return true;
+                if (ThisRefExpr(sw.Discriminant))
+                {
+                    return true;
+                }
+
                 foreach (var c in sw.Cases)
                 {
-                    if (ThisRefExpr(c.Test)) return true;
-                    if (c.Consequent.Any(ThisRefStmt)) return true;
+                    if (ThisRefExpr(c.Test))
+                    {
+                        return true;
+                    }
+
+                    if (c.Consequent.Any(ThisRefStmt))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             case TryStatement tr:
-                if (ThisRefStmt(tr.Block)) return true;
-                if (tr.Handler is not null && tr.Handler.Body.Body.Any(ThisRefStmt)) return true;
+                if (ThisRefStmt(tr.Block))
+                {
+                    return true;
+                }
+
+                if (tr.Handler is not null && tr.Handler.Body.Body.Any(ThisRefStmt))
+                {
+                    return true;
+                }
+
                 return tr.Finalizer is not null && ThisRefStmt(tr.Finalizer);
             case LabeledStatement ls: return ThisRefStmt(ls.Body);
             case WithStatement ws: return ThisRefExpr(ws.Object) || ThisRefStmt(ws.Body);
@@ -485,7 +776,11 @@ internal static class CaptureAnalysis
 
     private static bool ThisRefExpr(Expression? e)
     {
-        if (e is null) return false;
+        if (e is null)
+        {
+            return false;
+        }
+
         switch (e)
         {
             case ThisExpression: return true;
@@ -508,8 +803,15 @@ internal static class CaptureAnalysis
             case ObjectExpression oe:
                 foreach (var prop in oe.Properties)
                 {
-                    if (prop.Computed && ThisRefExpr(prop.Key)) return true;
-                    if (ThisRefExpr(prop.Value)) return true;
+                    if (prop.Computed && ThisRefExpr(prop.Key))
+                    {
+                        return true;
+                    }
+
+                    if (ThisRefExpr(prop.Value))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             case SequenceExpression seq: return seq.Expressions.Any(ThisRefExpr);
@@ -518,7 +820,11 @@ internal static class CaptureAnalysis
             case SpreadElement sp: return ThisRefExpr(sp.Argument);
             // A nested arrow still inherits the same lexical `this`.
             case ArrowFunctionExpression arrow:
-                if (arrow.Params.Any(ThisRefExpr)) return true;
+                if (arrow.Params.Any(ThisRefExpr))
+                {
+                    return true;
+                }
+
                 return arrow.Body switch
                 {
                     BlockStatement block => block.Body.Any(ThisRefStmt),
@@ -538,7 +844,11 @@ internal static class CaptureAnalysis
 
     private static bool ArgRefStmt(Statement? s)
     {
-        if (s is null) return false;
+        if (s is null)
+        {
+            return false;
+        }
+
         switch (s)
         {
             case BlockStatement b: return b.Body.Any(ArgRefStmt);
@@ -550,28 +860,71 @@ internal static class CaptureAnalysis
             case WhileStatement w: return ArgRefExpr(w.Test) || ArgRefStmt(w.Body);
             case DoWhileStatement dw: return ArgRefStmt(dw.Body) || ArgRefExpr(dw.Test);
             case ForStatement f:
-                if (f.Init is Statement fis && ArgRefStmt(fis)) return true;
-                if (f.Init is Expression fie && ArgRefExpr(fie)) return true;
+                if (f.Init is Statement fis && ArgRefStmt(fis))
+                {
+                    return true;
+                }
+
+                if (f.Init is Expression fie && ArgRefExpr(fie))
+                {
+                    return true;
+                }
+
                 return ArgRefExpr(f.Test) || ArgRefExpr(f.Update) || ArgRefStmt(f.Body);
             case ForInStatement fi:
-                if (fi.Left is Statement fil && ArgRefStmt(fil)) return true;
-                if (fi.Left is Expression file && ArgRefExpr(file)) return true;
+                if (fi.Left is Statement fil && ArgRefStmt(fil))
+                {
+                    return true;
+                }
+
+                if (fi.Left is Expression file && ArgRefExpr(file))
+                {
+                    return true;
+                }
+
                 return ArgRefExpr(fi.Right) || ArgRefStmt(fi.Body);
             case ForOfStatement fo:
-                if (fo.Left is Statement fol && ArgRefStmt(fol)) return true;
-                if (fo.Left is Expression foe && ArgRefExpr(foe)) return true;
+                if (fo.Left is Statement fol && ArgRefStmt(fol))
+                {
+                    return true;
+                }
+
+                if (fo.Left is Expression foe && ArgRefExpr(foe))
+                {
+                    return true;
+                }
+
                 return ArgRefExpr(fo.Right) || ArgRefStmt(fo.Body);
             case SwitchStatement sw:
-                if (ArgRefExpr(sw.Discriminant)) return true;
+                if (ArgRefExpr(sw.Discriminant))
+                {
+                    return true;
+                }
+
                 foreach (var c in sw.Cases)
                 {
-                    if (ArgRefExpr(c.Test)) return true;
-                    if (c.Consequent.Any(ArgRefStmt)) return true;
+                    if (ArgRefExpr(c.Test))
+                    {
+                        return true;
+                    }
+
+                    if (c.Consequent.Any(ArgRefStmt))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             case TryStatement tr:
-                if (ArgRefStmt(tr.Block)) return true;
-                if (tr.Handler is not null && tr.Handler.Body.Body.Any(ArgRefStmt)) return true;
+                if (ArgRefStmt(tr.Block))
+                {
+                    return true;
+                }
+
+                if (tr.Handler is not null && tr.Handler.Body.Body.Any(ArgRefStmt))
+                {
+                    return true;
+                }
+
                 return tr.Finalizer is not null && ArgRefStmt(tr.Finalizer);
             case LabeledStatement ls: return ArgRefStmt(ls.Body);
             case WithStatement ws: return ArgRefExpr(ws.Object) || ArgRefStmt(ws.Body);
@@ -587,7 +940,11 @@ internal static class CaptureAnalysis
 
     private static bool ArgRefExpr(Expression? e)
     {
-        if (e is null) return false;
+        if (e is null)
+        {
+            return false;
+        }
+
         switch (e)
         {
             case Identifier id: return id.Name == "arguments";
@@ -610,8 +967,15 @@ internal static class CaptureAnalysis
             case ObjectExpression oe:
                 foreach (var prop in oe.Properties)
                 {
-                    if (prop.Computed && ArgRefExpr(prop.Key)) return true;
-                    if (ArgRefExpr(prop.Value)) return true;
+                    if (prop.Computed && ArgRefExpr(prop.Key))
+                    {
+                        return true;
+                    }
+
+                    if (ArgRefExpr(prop.Value))
+                    {
+                        return true;
+                    }
                 }
                 return false;
             case SequenceExpression seq: return seq.Expressions.Any(ArgRefExpr);
@@ -620,7 +984,11 @@ internal static class CaptureAnalysis
             case SpreadElement sp: return ArgRefExpr(sp.Argument);
             // Arrows inherit the enclosing `arguments` — descend into them.
             case ArrowFunctionExpression arrow:
-                if (arrow.Params.Any(ArgRefExpr)) return true;
+                if (arrow.Params.Any(ArgRefExpr))
+                {
+                    return true;
+                }
+
                 return arrow.Body switch
                 {
                     BlockStatement block => block.Body.Any(ArgRefStmt),
@@ -636,10 +1004,18 @@ internal static class CaptureAnalysis
                     switch (el)
                     {
                         case ArrayPatternBindingElement binding:
-                            if (ArgRefExpr(binding.Target) || ArgRefExpr(binding.Default)) return true;
+                            if (ArgRefExpr(binding.Target) || ArgRefExpr(binding.Default))
+                            {
+                                return true;
+                            }
+
                             break;
                         case ArrayPatternRestElement r:
-                            if (ArgRefExpr(r.Target)) return true;
+                            if (ArgRefExpr(r.Target))
+                            {
+                                return true;
+                            }
+
                             break;
                     }
                 }
@@ -647,8 +1023,15 @@ internal static class CaptureAnalysis
             case ObjectPattern op:
                 foreach (var prop in op.Properties)
                 {
-                    if (prop.Computed && ArgRefExpr(prop.Key)) return true;
-                    if (ArgRefExpr(prop.Target) || ArgRefExpr(prop.Default)) return true;
+                    if (prop.Computed && ArgRefExpr(prop.Key))
+                    {
+                        return true;
+                    }
+
+                    if (ArgRefExpr(prop.Target) || ArgRefExpr(prop.Default))
+                    {
+                        return true;
+                    }
                 }
                 return op.Rest is not null && ArgRefExpr(op.Rest.Argument);
             case SuperPropertyExpression sp2: return sp2.Computed && ArgRefExpr(sp2.Property);
@@ -666,12 +1049,16 @@ internal static class CaptureAnalysis
 
     private static void WalkStatementInOuter(Statement? s, HashSet<string> captured)
     {
-        if (s is null) return;
+        if (s is null)
+        {
+            return;
+        }
+
         switch (s)
         {
-            case BlockStatement b: foreach (var x in b.Body) WalkStatementInOuter(x, captured); return;
+            case BlockStatement b: foreach (var x in b.Body) { WalkStatementInOuter(x, captured); } return;
             case ExpressionStatement es: WalkExpressionInOuter(es.Expression, captured); return;
-            case ReturnStatement r: if (r.Argument is not null) WalkExpressionInOuter(r.Argument, captured); return;
+            case ReturnStatement r: if (r.Argument is not null) { WalkExpressionInOuter(r.Argument, captured); } return;
             case ThrowStatement t: WalkExpressionInOuter(t.Argument, captured); return;
             case IfStatement i:
                 WalkExpressionInOuter(i.Test, captured);
@@ -687,21 +1074,50 @@ internal static class CaptureAnalysis
                 WalkExpressionInOuter(dw.Test, captured);
                 return;
             case ForStatement f:
-                if (f.Init is Statement initS) WalkStatementInOuter(initS, captured);
-                else if (f.Init is Expression initE) WalkExpressionInOuter(initE, captured);
-                if (f.Test is not null) WalkExpressionInOuter(f.Test, captured);
-                if (f.Update is not null) WalkExpressionInOuter(f.Update, captured);
+                if (f.Init is Statement initS)
+                {
+                    WalkStatementInOuter(initS, captured);
+                }
+                else if (f.Init is Expression initE)
+                {
+                    WalkExpressionInOuter(initE, captured);
+                }
+
+                if (f.Test is not null)
+                {
+                    WalkExpressionInOuter(f.Test, captured);
+                }
+
+                if (f.Update is not null)
+                {
+                    WalkExpressionInOuter(f.Update, captured);
+                }
+
                 WalkStatementInOuter(f.Body, captured);
                 return;
             case ForInStatement fi:
-                if (fi.Left is Statement leftS) WalkStatementInOuter(leftS, captured);
-                else if (fi.Left is Expression leftE) WalkExpressionInOuter(leftE, captured);
+                if (fi.Left is Statement leftS)
+                {
+                    WalkStatementInOuter(leftS, captured);
+                }
+                else if (fi.Left is Expression leftE)
+                {
+                    WalkExpressionInOuter(leftE, captured);
+                }
+
                 WalkExpressionInOuter(fi.Right, captured);
                 WalkStatementInOuter(fi.Body, captured);
                 return;
             case ForOfStatement fo:
-                if (fo.Left is Statement leftS2) WalkStatementInOuter(leftS2, captured);
-                else if (fo.Left is Expression leftE2) WalkExpressionInOuter(leftE2, captured);
+                if (fo.Left is Statement leftS2)
+                {
+                    WalkStatementInOuter(leftS2, captured);
+                }
+                else if (fo.Left is Expression leftE2)
+                {
+                    WalkExpressionInOuter(leftE2, captured);
+                }
+
                 WalkExpressionInOuter(fo.Right, captured);
                 WalkStatementInOuter(fo.Body, captured);
                 return;
@@ -709,8 +1125,15 @@ internal static class CaptureAnalysis
                 WalkExpressionInOuter(sw.Discriminant, captured);
                 foreach (var c in sw.Cases)
                 {
-                    if (c.Test is not null) WalkExpressionInOuter(c.Test, captured);
-                    foreach (var s2 in c.Consequent) WalkStatementInOuter(s2, captured);
+                    if (c.Test is not null)
+                    {
+                        WalkExpressionInOuter(c.Test, captured);
+                    }
+
+                    foreach (var s2 in c.Consequent)
+                    {
+                        WalkStatementInOuter(s2, captured);
+                    }
                 }
                 return;
             case TryStatement tr:
@@ -720,9 +1143,16 @@ internal static class CaptureAnalysis
                     // The catch-binding shadows for the catch body — but we're
                     // not in a nested function, so we don't need to remove it
                     // from the outer's captured set. Just walk the body.
-                    foreach (var s2 in tr.Handler.Body.Body) WalkStatementInOuter(s2, captured);
+                    foreach (var s2 in tr.Handler.Body.Body)
+                    {
+                        WalkStatementInOuter(s2, captured);
+                    }
                 }
-                if (tr.Finalizer is not null) WalkStatementInOuter(tr.Finalizer, captured);
+                if (tr.Finalizer is not null)
+                {
+                    WalkStatementInOuter(tr.Finalizer, captured);
+                }
+
                 return;
             case LabeledStatement ls: WalkStatementInOuter(ls.Body, captured); return;
             case WithStatement ws:
@@ -732,7 +1162,10 @@ internal static class CaptureAnalysis
             case VariableDeclaration vd:
                 foreach (var d in vd.Declarations)
                 {
-                    if (d.Init is not null) WalkExpressionInOuter(d.Init, captured);
+                    if (d.Init is not null)
+                    {
+                        WalkExpressionInOuter(d.Init, captured);
+                    }
                 }
                 return;
             case FunctionDeclaration fd:
@@ -741,7 +1174,11 @@ internal static class CaptureAnalysis
                 AddFreeNames(fd.Params, fd.Body.Body, captured);
                 return;
             case ClassDeclaration cd:
-                if (cd.BaseClass is not null) WalkExpressionInOuter(cd.BaseClass, captured);
+                if (cd.BaseClass is not null)
+                {
+                    WalkExpressionInOuter(cd.BaseClass, captured);
+                }
+
                 AddClassBodyFreeNames(cd.Body, captured);
                 return;
             case EmptyStatement:
@@ -754,7 +1191,11 @@ internal static class CaptureAnalysis
 
     private static void WalkExpressionInOuter(Expression? e, HashSet<string> captured)
     {
-        if (e is null) return;
+        if (e is null)
+        {
+            return;
+        }
+
         switch (e)
         {
             case Identifier:
@@ -782,14 +1223,22 @@ internal static class CaptureAnalysis
                 WalkExpressionInOuter(c.Consequent, captured);
                 WalkExpressionInOuter(c.Alternate, captured);
                 return;
-            case MemberExpression m: WalkExpressionInOuter(m.Object, captured); if (m.Computed) WalkExpressionInOuter(m.Property, captured); return;
+            case MemberExpression m: WalkExpressionInOuter(m.Object, captured); if (m.Computed) { WalkExpressionInOuter(m.Property, captured); } return;
             case CallExpression call:
                 WalkExpressionInOuter(call.Callee, captured);
-                foreach (var arg in call.Arguments) WalkExpressionInOuter(arg, captured);
+                foreach (var arg in call.Arguments)
+                {
+                    WalkExpressionInOuter(arg, captured);
+                }
+
                 return;
             case NewExpression ne:
                 WalkExpressionInOuter(ne.Callee, captured);
-                foreach (var arg in ne.Arguments) WalkExpressionInOuter(arg, captured);
+                foreach (var arg in ne.Arguments)
+                {
+                    WalkExpressionInOuter(arg, captured);
+                }
+
                 return;
             case ArrayPattern ap:
                 foreach (var el in ap.Elements)
@@ -809,27 +1258,51 @@ internal static class CaptureAnalysis
             case ObjectPattern op:
                 foreach (var prop in op.Properties)
                 {
-                    if (prop.Computed) WalkExpressionInOuter(prop.Key, captured);
+                    if (prop.Computed)
+                    {
+                        WalkExpressionInOuter(prop.Key, captured);
+                    }
+
                     WalkExpressionInOuter(prop.Target, captured);
                     WalkExpressionInOuter(prop.Default, captured);
                 }
-                if (op.Rest is not null) WalkExpressionInOuter(op.Rest.Argument, captured);
+                if (op.Rest is not null)
+                {
+                    WalkExpressionInOuter(op.Rest.Argument, captured);
+                }
+
                 return;
             case ArrayExpression ae:
-                foreach (var el in ae.Elements) WalkExpressionInOuter(el, captured);
+                foreach (var el in ae.Elements)
+                {
+                    WalkExpressionInOuter(el, captured);
+                }
+
                 return;
             case ObjectExpression oe:
                 foreach (var prop in oe.Properties)
                 {
-                    if (prop.Computed) WalkExpressionInOuter(prop.Key, captured);
+                    if (prop.Computed)
+                    {
+                        WalkExpressionInOuter(prop.Key, captured);
+                    }
+
                     WalkExpressionInOuter(prop.Value, captured);
                 }
                 return;
             case SequenceExpression seq:
-                foreach (var x in seq.Expressions) WalkExpressionInOuter(x, captured);
+                foreach (var x in seq.Expressions)
+                {
+                    WalkExpressionInOuter(x, captured);
+                }
+
                 return;
             case TemplateLiteral tpl:
-                foreach (var x in tpl.Expressions) WalkExpressionInOuter(x, captured);
+                foreach (var x in tpl.Expressions)
+                {
+                    WalkExpressionInOuter(x, captured);
+                }
+
                 return;
             case TaggedTemplateExpression tte:
                 WalkExpressionInOuter(tte.Tag, captured);
@@ -855,14 +1328,26 @@ internal static class CaptureAnalysis
                 }
                 return;
             case ClassExpression cls:
-                if (cls.BaseClass is not null) WalkExpressionInOuter(cls.BaseClass, captured);
+                if (cls.BaseClass is not null)
+                {
+                    WalkExpressionInOuter(cls.BaseClass, captured);
+                }
+
                 AddClassBodyFreeNames(cls.Body, captured);
                 return;
             case SuperPropertyExpression sp2:
-                if (sp2.Computed) WalkExpressionInOuter(sp2.Property, captured);
+                if (sp2.Computed)
+                {
+                    WalkExpressionInOuter(sp2.Property, captured);
+                }
+
                 return;
             case SuperCallExpression sc:
-                foreach (var arg in sc.Arguments) WalkExpressionInOuter(arg, captured);
+                foreach (var arg in sc.Arguments)
+                {
+                    WalkExpressionInOuter(arg, captured);
+                }
+
                 return;
         }
     }
@@ -883,16 +1368,31 @@ internal static class CaptureAnalysis
         scopes.Push(new HashSet<string>(StringComparer.Ordinal));
         // Declare parameter bindings + hoisted function decls + var decls at
         // function-top scope. let/const get added per-block.
-        foreach (var p in parameters) AddBindingNames(p, scopes.Peek());
+        foreach (var p in parameters)
+        {
+            AddBindingNames(p, scopes.Peek());
+        }
         // Hoisted function declarations are bound at function-top scope per §14.1.18.
         foreach (var s in body)
-            if (s is FunctionDeclaration fd) scopes.Peek().Add(fd.Name.Name);
+        {
+            if (s is FunctionDeclaration fd)
+            {
+                scopes.Peek().Add(fd.Name.Name);
+            }
+        }
         // var-hoisting: visit body and collect var names into function-top scope.
-        foreach (var s in body) CollectVarHoistedBindings(s, scopes.Peek());
+        foreach (var s in body)
+        {
+            CollectVarHoistedBindings(s, scopes.Peek());
+        }
 
         // Walk inner body: any free identifier whose name isn't covered by
         // any active scope frame goes into outerCaptured.
-        foreach (var s in body) InnerStatement(s, scopes, outerCaptured);
+        foreach (var s in body)
+        {
+            InnerStatement(s, scopes, outerCaptured);
+        }
+
         foreach (var p in parameters)
         {
             // Walk default-value expressions for params (the param identifier
@@ -905,12 +1405,22 @@ internal static class CaptureAnalysis
     private static void AddClassBodyFreeNames(ClassBody body, HashSet<string> outerCaptured)
     {
         if (body.Constructor is not null)
+        {
             AddFreeNames(body.Constructor.Params, body.Constructor.Body.Body, outerCaptured);
+        }
+
         foreach (var m in body.Methods)
+        {
             AddFreeNames(m.Params, m.Body.Body, outerCaptured);
+        }
+
         foreach (var f in body.Fields)
         {
-            if (f.Computed) WalkExpressionInOuter(f.Key, outerCaptured);
+            if (f.Computed)
+            {
+                WalkExpressionInOuter(f.Key, outerCaptured);
+            }
+
             if (f.Initializer is not null)
             {
                 // Field initializer runs as a one-arg closure (`this` is the
@@ -920,12 +1430,18 @@ internal static class CaptureAnalysis
             }
         }
         foreach (var sb in body.StaticBlocks)
+        {
             AddFreeNames(Array.Empty<Expression>(), sb.Body, outerCaptured);
+        }
     }
 
     private static void CollectVarHoistedBindings(Statement? s, HashSet<string> scope)
     {
-        if (s is null) return;
+        if (s is null)
+        {
+            return;
+        }
+
         switch (s)
         {
             case VariableDeclaration vd:
@@ -935,9 +1451,15 @@ internal static class CaptureAnalysis
                 // can only over-shadow (mark a name as NOT captured when it
                 // actually is in a stricter sense), so we restrict to "var".
                 if (vd.Kind == "var")
-                    foreach (var d in vd.Declarations) AddBindingNames(d.Id, scope);
+                {
+                    foreach (var d in vd.Declarations)
+                    {
+                        AddBindingNames(d.Id, scope);
+                    }
+                }
+
                 return;
-            case BlockStatement b: foreach (var x in b.Body) CollectVarHoistedBindings(x, scope); return;
+            case BlockStatement b: foreach (var x in b.Body) { CollectVarHoistedBindings(x, scope); } return;
             case IfStatement i:
                 CollectVarHoistedBindings(i.Consequent, scope);
                 CollectVarHoistedBindings(i.Alternate, scope);
@@ -946,28 +1468,62 @@ internal static class CaptureAnalysis
             case DoWhileStatement dw: CollectVarHoistedBindings(dw.Body, scope); return;
             case ForStatement f:
                 if (f.Init is VariableDeclaration fvd && fvd.Kind == "var")
-                    foreach (var d in fvd.Declarations) AddBindingNames(d.Id, scope);
+                {
+                    foreach (var d in fvd.Declarations)
+                    {
+                        AddBindingNames(d.Id, scope);
+                    }
+                }
+
                 CollectVarHoistedBindings(f.Body, scope);
                 return;
             case ForInStatement fi:
                 if (fi.Left is VariableDeclaration vdi && vdi.Kind == "var")
-                    foreach (var d in vdi.Declarations) AddBindingNames(d.Id, scope);
+                {
+                    foreach (var d in vdi.Declarations)
+                    {
+                        AddBindingNames(d.Id, scope);
+                    }
+                }
+
                 CollectVarHoistedBindings(fi.Body, scope);
                 return;
             case ForOfStatement fo:
                 if (fo.Left is VariableDeclaration vdo && vdo.Kind == "var")
-                    foreach (var d in vdo.Declarations) AddBindingNames(d.Id, scope);
+                {
+                    foreach (var d in vdo.Declarations)
+                    {
+                        AddBindingNames(d.Id, scope);
+                    }
+                }
+
                 CollectVarHoistedBindings(fo.Body, scope);
                 return;
             case SwitchStatement sw:
                 foreach (var c in sw.Cases)
-                    foreach (var s2 in c.Consequent) CollectVarHoistedBindings(s2, scope);
+                {
+                    foreach (var s2 in c.Consequent)
+                    {
+                        CollectVarHoistedBindings(s2, scope);
+                    }
+                }
+
                 return;
             case TryStatement tr:
                 CollectVarHoistedBindings(tr.Block, scope);
                 if (tr.Handler is not null)
-                    foreach (var s2 in tr.Handler.Body.Body) CollectVarHoistedBindings(s2, scope);
-                if (tr.Finalizer is not null) CollectVarHoistedBindings(tr.Finalizer, scope);
+                {
+                    foreach (var s2 in tr.Handler.Body.Body)
+                    {
+                        CollectVarHoistedBindings(s2, scope);
+                    }
+                }
+
+                if (tr.Finalizer is not null)
+                {
+                    CollectVarHoistedBindings(tr.Finalizer, scope);
+                }
+
                 return;
             case LabeledStatement ls: CollectVarHoistedBindings(ls.Body, scope); return;
             // §14.11 — `var` declarations inside a `with` body still hoist to
@@ -978,7 +1534,11 @@ internal static class CaptureAnalysis
 
     private static void AddBindingNames(Expression? pattern, HashSet<string> scope)
     {
-        if (pattern is null) return;
+        if (pattern is null)
+        {
+            return;
+        }
+
         switch (pattern)
         {
             case Identifier id: scope.Add(id.Name); return;
@@ -995,21 +1555,39 @@ internal static class CaptureAnalysis
                 }
                 return;
             case ObjectPattern obj:
-                foreach (var prop in obj.Properties) AddBindingNames(prop.Target, scope);
-                if (obj.Rest is not null) AddBindingNames(obj.Rest.Argument, scope);
+                foreach (var prop in obj.Properties)
+                {
+                    AddBindingNames(prop.Target, scope);
+                }
+
+                if (obj.Rest is not null)
+                {
+                    AddBindingNames(obj.Rest.Argument, scope);
+                }
+
                 return;
             case ArrayExpression arr:
                 foreach (var el in arr.Elements)
                 {
-                    if (el is null) continue;
+                    if (el is null)
+                    {
+                        continue;
+                    }
+
                     AddBindingNames(el is SpreadElement sp ? sp.Argument : el, scope);
                 }
                 return;
             case ObjectExpression obj:
                 foreach (var prop in obj.Properties)
                 {
-                    if (prop.Value is SpreadElement sp) AddBindingNames(sp.Argument, scope);
-                    else AddBindingNames(prop.Value, scope);
+                    if (prop.Value is SpreadElement sp)
+                    {
+                        AddBindingNames(sp.Argument, scope);
+                    }
+                    else
+                    {
+                        AddBindingNames(prop.Value, scope);
+                    }
                 }
                 return;
             case SpreadElement spread: AddBindingNames(spread.Argument, scope); return;
@@ -1018,7 +1596,11 @@ internal static class CaptureAnalysis
 
     private static void InnerStatement(Statement? s, Stack<HashSet<string>> scopes, HashSet<string> outerCaptured)
     {
-        if (s is null) return;
+        if (s is null)
+        {
+            return;
+        }
+
         switch (s)
         {
             case BlockStatement b:
@@ -1027,17 +1609,30 @@ internal static class CaptureAnalysis
                 foreach (var s2 in b.Body)
                 {
                     if (s2 is VariableDeclaration vd && (vd.Kind == "let" || vd.Kind == "const"))
-                        foreach (var d in vd.Declarations) AddBindingNames(d.Id, scopes.Peek());
+                    {
+                        foreach (var d in vd.Declarations)
+                        {
+                            AddBindingNames(d.Id, scopes.Peek());
+                        }
+                    }
                     else if (s2 is FunctionDeclaration fd2)
+                    {
                         scopes.Peek().Add(fd2.Name.Name);
+                    }
                     else if (s2 is ClassDeclaration cd2)
+                    {
                         scopes.Peek().Add(cd2.Name.Name);
+                    }
                 }
-                foreach (var x in b.Body) InnerStatement(x, scopes, outerCaptured);
+                foreach (var x in b.Body)
+                {
+                    InnerStatement(x, scopes, outerCaptured);
+                }
+
                 scopes.Pop();
                 return;
             case ExpressionStatement es: InnerExpression(es.Expression, scopes, outerCaptured); return;
-            case ReturnStatement r: if (r.Argument is not null) InnerExpression(r.Argument, scopes, outerCaptured); return;
+            case ReturnStatement r: if (r.Argument is not null) { InnerExpression(r.Argument, scopes, outerCaptured); } return;
             case ThrowStatement t: InnerExpression(t.Argument, scopes, outerCaptured); return;
             case IfStatement i:
                 InnerExpression(i.Test, scopes, outerCaptured);
@@ -1056,21 +1651,51 @@ internal static class CaptureAnalysis
                 scopes.Push(new HashSet<string>(StringComparer.Ordinal));
                 if (f.Init is VariableDeclaration fvd)
                 {
-                    foreach (var d in fvd.Declarations) AddBindingNames(d.Id, scopes.Peek());
                     foreach (var d in fvd.Declarations)
-                        if (d.Init is not null) InnerExpression(d.Init, scopes, outerCaptured);
+                    {
+                        AddBindingNames(d.Id, scopes.Peek());
+                    }
+
+                    foreach (var d in fvd.Declarations)
+                    {
+                        if (d.Init is not null)
+                        {
+                            InnerExpression(d.Init, scopes, outerCaptured);
+                        }
+                    }
                 }
-                else if (f.Init is Expression initE) InnerExpression(initE, scopes, outerCaptured);
-                if (f.Test is not null) InnerExpression(f.Test, scopes, outerCaptured);
-                if (f.Update is not null) InnerExpression(f.Update, scopes, outerCaptured);
+                else if (f.Init is Expression initE)
+                {
+                    InnerExpression(initE, scopes, outerCaptured);
+                }
+
+                if (f.Test is not null)
+                {
+                    InnerExpression(f.Test, scopes, outerCaptured);
+                }
+
+                if (f.Update is not null)
+                {
+                    InnerExpression(f.Update, scopes, outerCaptured);
+                }
+
                 InnerStatement(f.Body, scopes, outerCaptured);
                 scopes.Pop();
                 return;
             case ForInStatement fi:
                 scopes.Push(new HashSet<string>(StringComparer.Ordinal));
                 if (fi.Left is VariableDeclaration vdfi)
-                    foreach (var d in vdfi.Declarations) AddBindingNames(d.Id, scopes.Peek());
-                else if (fi.Left is Expression leftE) InnerExpression(leftE, scopes, outerCaptured);
+                {
+                    foreach (var d in vdfi.Declarations)
+                    {
+                        AddBindingNames(d.Id, scopes.Peek());
+                    }
+                }
+                else if (fi.Left is Expression leftE)
+                {
+                    InnerExpression(leftE, scopes, outerCaptured);
+                }
+
                 InnerExpression(fi.Right, scopes, outerCaptured);
                 InnerStatement(fi.Body, scopes, outerCaptured);
                 scopes.Pop();
@@ -1078,8 +1703,17 @@ internal static class CaptureAnalysis
             case ForOfStatement fo:
                 scopes.Push(new HashSet<string>(StringComparer.Ordinal));
                 if (fo.Left is VariableDeclaration vdfo)
-                    foreach (var d in vdfo.Declarations) AddBindingNames(d.Id, scopes.Peek());
-                else if (fo.Left is Expression leftE2) InnerExpression(leftE2, scopes, outerCaptured);
+                {
+                    foreach (var d in vdfo.Declarations)
+                    {
+                        AddBindingNames(d.Id, scopes.Peek());
+                    }
+                }
+                else if (fo.Left is Expression leftE2)
+                {
+                    InnerExpression(leftE2, scopes, outerCaptured);
+                }
+
                 InnerExpression(fo.Right, scopes, outerCaptured);
                 InnerStatement(fo.Body, scopes, outerCaptured);
                 scopes.Pop();
@@ -1088,8 +1722,15 @@ internal static class CaptureAnalysis
                 InnerExpression(sw.Discriminant, scopes, outerCaptured);
                 foreach (var c in sw.Cases)
                 {
-                    if (c.Test is not null) InnerExpression(c.Test, scopes, outerCaptured);
-                    foreach (var s2 in c.Consequent) InnerStatement(s2, scopes, outerCaptured);
+                    if (c.Test is not null)
+                    {
+                        InnerExpression(c.Test, scopes, outerCaptured);
+                    }
+
+                    foreach (var s2 in c.Consequent)
+                    {
+                        InnerStatement(s2, scopes, outerCaptured);
+                    }
                 }
                 return;
             case TryStatement tr:
@@ -1097,11 +1738,23 @@ internal static class CaptureAnalysis
                 if (tr.Handler is not null)
                 {
                     scopes.Push(new HashSet<string>(StringComparer.Ordinal));
-                    if (tr.Handler.Param is not null) AddBindingNames(tr.Handler.Param, scopes.Peek());
-                    foreach (var s2 in tr.Handler.Body.Body) InnerStatement(s2, scopes, outerCaptured);
+                    if (tr.Handler.Param is not null)
+                    {
+                        AddBindingNames(tr.Handler.Param, scopes.Peek());
+                    }
+
+                    foreach (var s2 in tr.Handler.Body.Body)
+                    {
+                        InnerStatement(s2, scopes, outerCaptured);
+                    }
+
                     scopes.Pop();
                 }
-                if (tr.Finalizer is not null) InnerStatement(tr.Finalizer, scopes, outerCaptured);
+                if (tr.Finalizer is not null)
+                {
+                    InnerStatement(tr.Finalizer, scopes, outerCaptured);
+                }
+
                 return;
             case LabeledStatement ls: InnerStatement(ls.Body, scopes, outerCaptured); return;
             case WithStatement ws:
@@ -1115,7 +1768,10 @@ internal static class CaptureAnalysis
                 foreach (var d in vd.Declarations)
                 {
                     AddBindingNames(d.Id, scopes.Peek());
-                    if (d.Init is not null) InnerExpression(d.Init, scopes, outerCaptured);
+                    if (d.Init is not null)
+                    {
+                        InnerExpression(d.Init, scopes, outerCaptured);
+                    }
                 }
                 return;
             case FunctionDeclaration fd:
@@ -1128,7 +1784,11 @@ internal static class CaptureAnalysis
                 return;
             case ClassDeclaration cd:
                 scopes.Peek().Add(cd.Name.Name);
-                if (cd.BaseClass is not null) InnerExpression(cd.BaseClass, scopes, outerCaptured);
+                if (cd.BaseClass is not null)
+                {
+                    InnerExpression(cd.BaseClass, scopes, outerCaptured);
+                }
+
                 InnerClassBody(cd.Body, scopes, outerCaptured);
                 return;
             case EmptyStatement:
@@ -1141,11 +1801,19 @@ internal static class CaptureAnalysis
 
     private static void InnerExpression(Expression? e, Stack<HashSet<string>> scopes, HashSet<string> outerCaptured)
     {
-        if (e is null) return;
+        if (e is null)
+        {
+            return;
+        }
+
         switch (e)
         {
             case Identifier id:
-                if (!IsBoundIn(scopes, id.Name)) outerCaptured.Add(id.Name);
+                if (!IsBoundIn(scopes, id.Name))
+                {
+                    outerCaptured.Add(id.Name);
+                }
+
                 return;
             case NumericLiteral:
             case StringLiteral:
@@ -1169,14 +1837,22 @@ internal static class CaptureAnalysis
                 InnerExpression(c.Consequent, scopes, outerCaptured);
                 InnerExpression(c.Alternate, scopes, outerCaptured);
                 return;
-            case MemberExpression m: InnerExpression(m.Object, scopes, outerCaptured); if (m.Computed) InnerExpression(m.Property, scopes, outerCaptured); return;
+            case MemberExpression m: InnerExpression(m.Object, scopes, outerCaptured); if (m.Computed) { InnerExpression(m.Property, scopes, outerCaptured); } return;
             case CallExpression call:
                 InnerExpression(call.Callee, scopes, outerCaptured);
-                foreach (var arg in call.Arguments) InnerExpression(arg, scopes, outerCaptured);
+                foreach (var arg in call.Arguments)
+                {
+                    InnerExpression(arg, scopes, outerCaptured);
+                }
+
                 return;
             case NewExpression ne:
                 InnerExpression(ne.Callee, scopes, outerCaptured);
-                foreach (var arg in ne.Arguments) InnerExpression(arg, scopes, outerCaptured);
+                foreach (var arg in ne.Arguments)
+                {
+                    InnerExpression(arg, scopes, outerCaptured);
+                }
+
                 return;
             case ArrayPattern ap:
                 foreach (var el in ap.Elements)
@@ -1196,11 +1872,19 @@ internal static class CaptureAnalysis
             case ObjectPattern op:
                 foreach (var prop in op.Properties)
                 {
-                    if (prop.Computed) InnerExpression(prop.Key, scopes, outerCaptured);
+                    if (prop.Computed)
+                    {
+                        InnerExpression(prop.Key, scopes, outerCaptured);
+                    }
+
                     InnerExpression(prop.Target, scopes, outerCaptured);
                     InnerExpression(prop.Default, scopes, outerCaptured);
                 }
-                if (op.Rest is not null) InnerExpression(op.Rest.Argument, scopes, outerCaptured);
+                if (op.Rest is not null)
+                {
+                    InnerExpression(op.Rest.Argument, scopes, outerCaptured);
+                }
+
                 return;
             case AssignmentPattern ap:
                 InnerExpression(ap.Target, scopes, outerCaptured);
@@ -1210,20 +1894,36 @@ internal static class CaptureAnalysis
                 InnerExpression(rest.Argument, scopes, outerCaptured);
                 return;
             case ArrayExpression ae:
-                foreach (var el in ae.Elements) InnerExpression(el, scopes, outerCaptured);
+                foreach (var el in ae.Elements)
+                {
+                    InnerExpression(el, scopes, outerCaptured);
+                }
+
                 return;
             case ObjectExpression oe:
                 foreach (var prop in oe.Properties)
                 {
-                    if (prop.Computed) InnerExpression(prop.Key, scopes, outerCaptured);
+                    if (prop.Computed)
+                    {
+                        InnerExpression(prop.Key, scopes, outerCaptured);
+                    }
+
                     InnerExpression(prop.Value, scopes, outerCaptured);
                 }
                 return;
             case SequenceExpression seq:
-                foreach (var x in seq.Expressions) InnerExpression(x, scopes, outerCaptured);
+                foreach (var x in seq.Expressions)
+                {
+                    InnerExpression(x, scopes, outerCaptured);
+                }
+
                 return;
             case TemplateLiteral tpl:
-                foreach (var x in tpl.Expressions) InnerExpression(x, scopes, outerCaptured);
+                foreach (var x in tpl.Expressions)
+                {
+                    InnerExpression(x, scopes, outerCaptured);
+                }
+
                 return;
             case TaggedTemplateExpression tte:
                 InnerExpression(tte.Tag, scopes, outerCaptured);
@@ -1236,22 +1936,43 @@ internal static class CaptureAnalysis
             case ArrowFunctionExpression arrow:
                 {
                     IReadOnlyList<Statement> body;
-                    if (arrow.Body is BlockStatement block) body = block.Body;
+                    if (arrow.Body is BlockStatement block)
+                    {
+                        body = block.Body;
+                    }
                     else if (arrow.Body is Expression expr)
+                    {
                         body = new[] { (Statement)new ReturnStatement(expr, arrow.Start, arrow.End) };
-                    else body = Array.Empty<Statement>();
+                    }
+                    else
+                    {
+                        body = Array.Empty<Statement>();
+                    }
+
                     InnerNestedFunctionFreeNames(arrow.Params, body, scopes, outerCaptured);
                 }
                 return;
             case ClassExpression cls:
-                if (cls.BaseClass is not null) InnerExpression(cls.BaseClass, scopes, outerCaptured);
+                if (cls.BaseClass is not null)
+                {
+                    InnerExpression(cls.BaseClass, scopes, outerCaptured);
+                }
+
                 InnerClassBody(cls.Body, scopes, outerCaptured);
                 return;
             case SuperPropertyExpression sp2:
-                if (sp2.Computed) InnerExpression(sp2.Property, scopes, outerCaptured);
+                if (sp2.Computed)
+                {
+                    InnerExpression(sp2.Property, scopes, outerCaptured);
+                }
+
                 return;
             case SuperCallExpression sc:
-                foreach (var arg in sc.Arguments) InnerExpression(arg, scopes, outerCaptured);
+                foreach (var arg in sc.Arguments)
+                {
+                    InnerExpression(arg, scopes, outerCaptured);
+                }
+
                 return;
         }
     }
@@ -1269,25 +1990,56 @@ internal static class CaptureAnalysis
         HashSet<string> outerCaptured)
     {
         scopes.Push(new HashSet<string>(StringComparer.Ordinal));
-        foreach (var p in parameters) AddBindingNames(p, scopes.Peek());
-        foreach (var s in body)
-            if (s is FunctionDeclaration fd) scopes.Peek().Add(fd.Name.Name);
-        foreach (var s in body) CollectVarHoistedBindings(s, scopes.Peek());
+        foreach (var p in parameters)
+        {
+            AddBindingNames(p, scopes.Peek());
+        }
 
-        foreach (var s in body) InnerStatement(s, scopes, outerCaptured);
-        foreach (var p in parameters) InnerExpression(p, scopes, outerCaptured);
+        foreach (var s in body)
+        {
+            if (s is FunctionDeclaration fd)
+            {
+                scopes.Peek().Add(fd.Name.Name);
+            }
+        }
+
+        foreach (var s in body)
+        {
+            CollectVarHoistedBindings(s, scopes.Peek());
+        }
+
+        foreach (var s in body)
+        {
+            InnerStatement(s, scopes, outerCaptured);
+        }
+
+        foreach (var p in parameters)
+        {
+            InnerExpression(p, scopes, outerCaptured);
+        }
+
         scopes.Pop();
     }
 
     private static void InnerClassBody(ClassBody body, Stack<HashSet<string>> scopes, HashSet<string> outerCaptured)
     {
         if (body.Constructor is not null)
+        {
             InnerNestedFunctionFreeNames(body.Constructor.Params, body.Constructor.Body.Body, scopes, outerCaptured);
+        }
+
         foreach (var m in body.Methods)
+        {
             InnerNestedFunctionFreeNames(m.Params, m.Body.Body, scopes, outerCaptured);
+        }
+
         foreach (var f in body.Fields)
         {
-            if (f.Computed) InnerExpression(f.Key, scopes, outerCaptured);
+            if (f.Computed)
+            {
+                InnerExpression(f.Key, scopes, outerCaptured);
+            }
+
             if (f.Initializer is not null)
             {
                 var fakeBody = new[] { (Statement)new ExpressionStatement(f.Initializer, f.Initializer.Start, f.Initializer.End) };
@@ -1295,13 +2047,21 @@ internal static class CaptureAnalysis
             }
         }
         foreach (var sb in body.StaticBlocks)
+        {
             InnerNestedFunctionFreeNames(Array.Empty<Expression>(), sb.Body, scopes, outerCaptured);
+        }
     }
 
     private static bool IsBoundIn(Stack<HashSet<string>> scopes, string name)
     {
         foreach (var frame in scopes)
-            if (frame.Contains(name)) return true;
+        {
+            if (frame.Contains(name))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 }

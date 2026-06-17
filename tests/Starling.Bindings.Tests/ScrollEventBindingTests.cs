@@ -55,7 +55,11 @@ public sealed class ScrollEventBindingTests
     private static int PumpScrollSteps(
         JsRuntime runtime, Document doc, ScrollStateStore store, List<Element> scratch)
     {
-        if (!store.HasPendingEvents) return 0;
+        if (!store.HasPendingEvents)
+        {
+            return 0;
+        }
+
         store.DrainPendingEventTargets(scratch, out var documentScrolled);
         return ScrollEventDispatcher.Dispatch(runtime.Realm, doc, scratch, documentScrolled);
     }
@@ -172,7 +176,10 @@ public sealed class ScrollEventBindingTests
         var rewrites = 0;
         el.AddEventListener("scroll", _ =>
         {
-            if (rewrites++ == 0) store.Write(el, 0, 99);
+            if (rewrites++ == 0)
+            {
+                store.Write(el, 0, 99);
+            }
         });
 
         var scratch = new List<Element>();

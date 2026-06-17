@@ -76,7 +76,11 @@ internal static class NativePresentDemo
         window.Render += _ =>
         {
             var fb = window.FramebufferSize;
-            if (fb.X <= 0 || fb.Y <= 0) return;
+            if (fb.X <= 0 || fb.Y <= 0)
+            {
+                return;
+            }
+
             if (fb != lastFb)
             {
                 dpr = window.Size.X > 0 ? (float)fb.X / window.Size.X : 1f;
@@ -93,10 +97,19 @@ internal static class NativePresentDemo
                 Viewport = new Rect(0, 0, logicalW, logicalH),
             }, target);
             var ok = frame.Presented;
-            if (ok) presented++; else failures++;
+            if (ok)
+            {
+                presented++;
+            }
+            else
+            {
+                failures++;
+            }
 
             if (maxFrames > 0 && presented >= maxFrames)
+            {
                 window.Close();
+            }
         };
 
         window.Run();

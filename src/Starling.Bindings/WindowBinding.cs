@@ -63,9 +63,14 @@ public static class WindowBinding
         RealmToDocument.AddOrUpdate(realm, document);
         DocMeta.AddOrUpdate(document, new DocumentMeta(options.DocumentUrl ?? "about:blank", options));
         if (options.LayoutHost is { } layoutHost)
+        {
             RealmToLayoutHost.AddOrUpdate(realm, layoutHost);
+        }
+
         if (options.AnimationHost is { } animationHost)
+        {
             RealmToAnimationHost.AddOrUpdate(realm, animationHost);
+        }
 
         // 1) EventTarget + Event + Node/Element/Document prototypes.
         EventTargetBinding.Install(realm);
@@ -130,8 +135,11 @@ public static class WindowBinding
             {
                 var target = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
                 if (!NavigateLocation(realm, document, target, replace: false))
+                {
                     realm.ConsoleSink(ConsoleLevel.Warn,
                         $"location assignment ignored (cross-document navigation not yet wired): {target}");
+                }
+
                 return JsValue.Undefined;
             });
         global.DefineOwnProperty("name",
@@ -265,7 +273,11 @@ public static class WindowBinding
     /// argument parsing lives in <see cref="NodeBindings.ParseScrollArgs"/>.</summary>
     private static JsValue WindowScroll(JsRealm realm, JsValue[] args, bool relative)
     {
-        if (LayoutHostForRealm(realm) is not { } host) return JsValue.Undefined;
+        if (LayoutHostForRealm(realm) is not { } host)
+        {
+            return JsValue.Undefined;
+        }
+
         var cur = host.GetRootScrollMetrics();
         NodeBindings.ParseScrollArgs(args, relative, cur.ScrollLeft, cur.ScrollTop, out var x, out var y);
         host.SetRootScrollOffset(x, y);
@@ -290,7 +302,10 @@ public static class WindowBinding
         {
             var element = args.Length > 0 ? DomWrappers.UnwrapElement(args[0]) : null;
             if (element is null)
+            {
                 throw new JsThrow(realm.NewTypeError("getComputedStyle requires an Element argument"));
+            }
+
             return JsValue.Object(BuildComputedStyleDeclaration(realm, element));
         }, isConstructor: false);
         global.DefineOwnProperty("getComputedStyle",
@@ -314,7 +329,10 @@ public static class WindowBinding
             mql.DefineOwnProperty("onchange",
                 PropertyDescriptor.Data(JsValue.Null, writable: true, enumerable: true, configurable: true));
             foreach (var m in new[] { "addListener", "removeListener", "addEventListener", "removeEventListener" })
+            {
                 EventTargetBinding.DefineMethod(realm, mql, m, (_, _) => JsValue.Undefined, length: 1);
+            }
+
             EventTargetBinding.DefineMethod(realm, mql, "dispatchEvent", (_, _) => JsValue.False, length: 1);
             return JsValue.Object(mql);
         }, length: 1);
@@ -328,7 +346,11 @@ public static class WindowBinding
         EventTargetBinding.DefineMethod(realm, decl, "getPropertyValue", (_, args) =>
         {
             var name = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
-            if (string.IsNullOrEmpty(name) || host is null) return JsValue.String("");
+            if (string.IsNullOrEmpty(name) || host is null)
+            {
+                return JsValue.String("");
+            }
+
             return JsValue.String(host.GetComputedProperty(element, name));
         }, length: 1);
         // setPropertyValue / removeProperty / cssText etc. are no-ops on a
@@ -381,7 +403,11 @@ public static class WindowBinding
 
     private static string ToCamelCase(string kebab)
     {
-        if (kebab.IndexOf('-') < 0) return kebab;
+        if (kebab.IndexOf('-') < 0)
+        {
+            return kebab;
+        }
+
         var sb = new System.Text.StringBuilder(kebab.Length);
         var upper = false;
         foreach (var c in kebab)
@@ -398,7 +424,11 @@ public static class WindowBinding
     /// <c>location === location</c> holds.</summary>
     internal static JsObject LocationObjectFor(JsRealm realm, Document doc)
     {
-        if (LocationCache.TryGetValue(doc, out var existing)) return existing;
+        if (LocationCache.TryGetValue(doc, out var existing))
+        {
+            return existing;
+        }
+
         var loc = new JsObject(realm.ObjectPrototype);
         EventTargetBinding.DefineAccessor(realm, loc, "href",
             (_, _) => JsValue.String(UrlFor(realm, doc)),
@@ -406,8 +436,11 @@ public static class WindowBinding
             {
                 var target = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
                 if (!NavigateLocation(realm, doc, target, replace: false))
+                {
                     realm.ConsoleSink(ConsoleLevel.Warn,
                         $"location.href assignment ignored (cross-document navigation not yet wired): {target}");
+                }
+
                 return JsValue.Undefined;
             });
         EventTargetBinding.DefineAccessor(realm, loc, "protocol", (_, _) => JsValue.String(ParsedPart(realm, doc, p => p.Scheme + ":")));
@@ -421,7 +454,11 @@ public static class WindowBinding
             (_, args) =>
             {
                 var raw = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
-                if (raw.Length > 0 && raw[0] != '#') raw = "#" + raw;
+                if (raw.Length > 0 && raw[0] != '#')
+                {
+                    raw = "#" + raw;
+                }
+
                 NavigateLocation(realm, doc, raw, replace: false);
                 return JsValue.Undefined;
             });
@@ -433,14 +470,20 @@ public static class WindowBinding
         {
             var target = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
             if (!NavigateLocation(realm, doc, target, replace: false))
+            {
                 realm.ConsoleSink(ConsoleLevel.Warn, $"location.assign ignored (cross-document navigation not yet wired): {target}");
+            }
+
             return JsValue.Undefined;
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, loc, "replace", (_, args) =>
         {
             var target = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
             if (!NavigateLocation(realm, doc, target, replace: true))
+            {
                 realm.ConsoleSink(ConsoleLevel.Warn, $"location.replace ignored (cross-document navigation not yet wired): {target}");
+            }
+
             return JsValue.Undefined;
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, loc, "reload",
@@ -460,8 +503,14 @@ public static class WindowBinding
         {
             if (RealmToDocument.TryGetValue(realm, out var main) && ReferenceEquals(main, doc)
                 && HistoryBinding.HistoryForRealm(realm) is { } hist)
+            {
                 return hist.CurrentUrl;
-            if (DocMeta.TryGetValue(doc, out var m)) return m.Url;
+            }
+
+            if (DocMeta.TryGetValue(doc, out var m))
+            {
+                return m.Url;
+            }
         }
         // createDocument / createHTMLDocument produce documents with no browsing
         // context — their URL is "about:blank".
@@ -479,16 +528,29 @@ public static class WindowBinding
     {
         var oldUrl = UrlFor(realm, doc);
         var newUrl = HistoryBinding.ResolveUrl(oldUrl, JsValue.String(target));
-        if (!IsSameDocumentUrl(oldUrl, newUrl)) return false;
+        if (!IsSameDocumentUrl(oldUrl, newUrl))
+        {
+            return false;
+        }
 
         var oldHash = ParsedFragment(oldUrl);
         var newHash = ParsedFragment(newUrl);
-        if (string.Equals(oldUrl, newUrl, StringComparison.Ordinal)) return true;
+        if (string.Equals(oldUrl, newUrl, StringComparison.Ordinal))
+        {
+            return true;
+        }
 
-        if (HistoryBinding.HistoryForRealm(realm) is not { } hist) return false;
+        if (HistoryBinding.HistoryForRealm(realm) is not { } hist)
+        {
+            return false;
+        }
+
         hist.Mutate(JsValue.Null, newUrl, replace);
         if (!string.Equals(oldHash, newHash, StringComparison.Ordinal))
+        {
             FireWindowEvent(realm, "hashchange", cancelable: false);
+        }
+
         return true;
     }
 
@@ -496,7 +558,9 @@ public static class WindowBinding
     {
         if (!Uri.TryCreate(oldUrl, UriKind.Absolute, out var oldUri)
             || !Uri.TryCreate(newUrl, UriKind.Absolute, out var newUri))
+        {
             return false;
+        }
 
         return string.Equals(oldUri.Scheme, newUri.Scheme, StringComparison.OrdinalIgnoreCase)
             && string.Equals(oldUri.Authority, newUri.Authority, StringComparison.OrdinalIgnoreCase)
@@ -516,7 +580,11 @@ public static class WindowBinding
     private static string ParsedPart(JsRealm realm, Document doc, Func<Uri, string> select)
     {
         var url = UrlFor(realm, doc);
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return "";
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return "";
+        }
+
         try { return select(uri); } catch { return ""; }
     }
 
@@ -546,9 +614,12 @@ public static class WindowBinding
         orientation.DefineOwnProperty("angle",
             PropertyDescriptor.Data(JsValue.Number(0), writable: false, enumerable: true, configurable: true));
         foreach (var m in new[] { "addEventListener", "removeEventListener" })
+        {
             orientation.DefineOwnProperty(m, PropertyDescriptor.Data(
                 JsValue.Object(new JsNativeFunction(realm, m, 2, (_, _) => JsValue.Undefined, isConstructor: false)),
                 writable: true, enumerable: false, configurable: true));
+        }
+
         screen.DefineOwnProperty("orientation",
             PropertyDescriptor.Data(JsValue.Object(orientation), writable: false, enumerable: true, configurable: true));
         return screen;
@@ -582,7 +653,10 @@ public static class WindowBinding
     public static void FireDomContentLoaded(JsRuntime runtime)
     {
         ArgumentNullException.ThrowIfNull(runtime);
-        if (!RealmToDocument.TryGetValue(runtime.Realm, out var doc)) return;
+        if (!RealmToDocument.TryGetValue(runtime.Realm, out var doc))
+        {
+            return;
+        }
         // Dispatch on the document so `document.addEventListener('DOMContentLoaded')`
         // fires (and bubbles through the DOM ancestor chain).
         doc.DispatchEvent(new Event("DOMContentLoaded", new EventInit(Bubbles: true, Cancelable: false)));
@@ -605,8 +679,12 @@ public static class WindowBinding
         if (doc.DocumentElement is { } root)
         {
             foreach (var el in root.DescendantElements().ToList())
+            {
                 if (IFrameBinding.IsFrameElement(el) && !string.IsNullOrEmpty(el.GetAttribute("src")))
+                {
                     IFrameBinding.LoadSubframeNow(runtime.Realm, el);
+                }
+            }
         }
     }
 
@@ -633,7 +711,11 @@ public static class WindowBinding
     private static void FireWindowEvent(JsRealm realm, string type, bool cancelable)
     {
         var hostTarget = EventTargetBinding.ResolveHost(JsValue.Object(realm.GlobalObject));
-        if (hostTarget is null) return;
+        if (hostTarget is null)
+        {
+            return;
+        }
+
         hostTarget.DispatchEvent(new Event(type, new EventInit(Bubbles: false, Cancelable: cancelable)));
     }
 
@@ -657,7 +739,11 @@ internal static class ConditionalWeakTableExtensions
     public static void AddOrUpdate<TKey, TValue>(this ConditionalWeakTable<TKey, TValue> table, TKey key, TValue value)
         where TKey : class where TValue : class
     {
-        if (table.TryGetValue(key, out _)) table.Remove(key);
+        if (table.TryGetValue(key, out _))
+        {
+            table.Remove(key);
+        }
+
         table.Add(key, value);
     }
 }

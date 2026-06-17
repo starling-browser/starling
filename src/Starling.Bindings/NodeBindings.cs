@@ -36,7 +36,11 @@ public static class NodeBindings
 
     internal static JsObject? CharDataProtoFor(JsRealm realm, Node node)
     {
-        if (!CharDataProtosPerRealm.TryGetValue(realm, out var p)) return null;
+        if (!CharDataProtosPerRealm.TryGetValue(realm, out var p))
+        {
+            return null;
+        }
+
         return node switch
         {
             Text => p.TextProto,
@@ -52,9 +56,15 @@ public static class NodeBindings
     public static void Install(JsRealm realm)
     {
         ArgumentNullException.ThrowIfNull(realm);
-        if (realm.NodePrototype is not null) return; // idempotent
+        if (realm.NodePrototype is not null)
+        {
+            return; // idempotent
+        }
+
         if (realm.EventTargetPrototype is null)
+        {
             throw new InvalidOperationException("EventTargetBinding.Install must run before NodeBindings.Install");
+        }
 
         InstallNode(realm);
         InstallAttr(realm);           // WPT-05: Attr extends Node
@@ -84,7 +94,11 @@ public static class NodeBindings
     /// install so it wins on Element.prototype.</summary>
     private static void ReapplyScriptSrcAwareSetAttribute(JsRealm realm)
     {
-        if (realm.ElementPrototype is not { } elProto) return;
+        if (realm.ElementPrototype is not { } elProto)
+        {
+            return;
+        }
+
         EventTargetBinding.DefineMethod(realm, elProto, "setAttribute", (thisV, args) =>
         {
             var receiver = IdlMarshal.Receiver<Element>(realm, thisV, "Element", "setAttribute");
@@ -114,7 +128,10 @@ public static class NodeBindings
             (thisV, args) =>
             {
                 if (DomWrappers.UnwrapNode(thisV) is { } n && args.Length > 0)
+                {
                     n.NodeValue = args[0].IsNullish ? null : JsValue.ToStringValue(args[0]);
+                }
+
                 return JsValue.Undefined;
             });
         EventTargetBinding.DefineAccessor(realm, nodeProto, "textContent",
@@ -122,7 +139,10 @@ public static class NodeBindings
             (thisV, args) =>
             {
                 if (DomWrappers.UnwrapNode(thisV) is { } n)
+                {
                     n.TextContent = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
+                }
+
                 return JsValue.Undefined;
             });
         EventTargetBinding.DefineAccessor(realm, nodeProto, "parentNode",
@@ -145,15 +165,27 @@ public static class NodeBindings
                 ? JsValue.Object(DomWrappers.Wrap(realm, c)) : JsValue.Null);
         EventTargetBinding.DefineAccessor(realm, nodeProto, "childNodes", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not { } n) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapNode(thisV) is not { } n)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var items = new List<JsValue>();
-            foreach (var c in n.ChildNodes) items.Add(JsValue.Object(DomWrappers.Wrap(realm, c)));
+            foreach (var c in n.ChildNodes)
+            {
+                items.Add(JsValue.Object(DomWrappers.Wrap(realm, c)));
+            }
+
             return MakeArray(realm, items);
         });
         EventTargetBinding.DefineAccessor(realm, nodeProto, "ownerDocument", (thisV, _) =>
         {
             var n = DomWrappers.UnwrapNode(thisV);
-            if (n is Document) return JsValue.Null; // documents have no owner
+            if (n is Document)
+            {
+                return JsValue.Null; // documents have no owner
+            }
+
             return n?.OwnerDocument is { } d ? JsValue.Object(DomWrappers.Wrap(realm, d)) : JsValue.Null;
         });
         EventTargetBinding.DefineAccessor(realm, nodeProto, "baseURI", (thisV, _) =>
@@ -166,13 +198,23 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, nodeProto, "appendChild", (thisV, args) =>
         {
             var parent = DomWrappers.UnwrapNode(thisV);
-            if (parent is null) throw new JsThrow(realm.NewTypeError("appendChild called on non-Node"));
+            if (parent is null)
+            {
+                throw new JsThrow(realm.NewTypeError("appendChild called on non-Node"));
+            }
+
             if (args.Length == 0 || !args[0].IsObject || DomWrappers.UnwrapNode(args[0]) is null)
+            {
                 throw new JsThrow(realm.NewTypeError("appendChild requires a Node argument"));
+            }
+
             var child = DomWrappers.UnwrapNode(args[0])!;
             // DOM §4.4.3 — Attr nodes cannot be inserted into a normal node tree.
             if (child is AttrNode)
+            {
                 throw DomExceptionBinding.Throw(realm, "HierarchyRequestError", "Cannot insert an Attr into a node tree.");
+            }
+
             ValidatePreInsert(realm, parent, child, null);
             try { parent.AppendChild(child); }
             catch (InvalidOperationException ex) { throw NodeMutationException(realm, ex, parent, child); }
@@ -181,12 +223,22 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, nodeProto, "removeChild", (thisV, args) =>
         {
             var parent = DomWrappers.UnwrapNode(thisV);
-            if (parent is null) throw new JsThrow(realm.NewTypeError("removeChild called on non-Node"));
+            if (parent is null)
+            {
+                throw new JsThrow(realm.NewTypeError("removeChild called on non-Node"));
+            }
+
             if (args.Length == 0 || !args[0].IsObject || DomWrappers.UnwrapNode(args[0]) is null)
+            {
                 throw new JsThrow(realm.NewTypeError("removeChild requires a Node argument"));
+            }
+
             var child = DomWrappers.UnwrapNode(args[0])!;
             if (!ReferenceEquals(child.ParentNode, parent))
+            {
                 throw DomExceptionBinding.Throw(realm, "NotFoundError", "The node to be removed is not a child of this node");
+            }
+
             try { parent.RemoveChild(child); }
             catch (InvalidOperationException ex) { throw NodeMutationException(realm, ex, parent, child); }
             return args[0];
@@ -194,16 +246,29 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, nodeProto, "insertBefore", (thisV, args) =>
         {
             var parent = DomWrappers.UnwrapNode(thisV);
-            if (parent is null) throw new JsThrow(realm.NewTypeError("insertBefore called on non-Node"));
+            if (parent is null)
+            {
+                throw new JsThrow(realm.NewTypeError("insertBefore called on non-Node"));
+            }
+
             if (args.Length == 0 || !args[0].IsObject || DomWrappers.UnwrapNode(args[0]) is null)
+            {
                 throw new JsThrow(realm.NewTypeError("insertBefore requires a Node argument"));
+            }
+
             var child = DomWrappers.UnwrapNode(args[0])!;
             var refChild = args.Length > 1 && !args[1].IsNullish ? DomWrappers.UnwrapNode(args[1]) : null;
             // DOM §4.4.3 — Attr nodes cannot be inserted into a normal node tree.
             if (child is AttrNode)
+            {
                 throw DomExceptionBinding.Throw(realm, "HierarchyRequestError", "Cannot insert an Attr into a node tree.");
+            }
+
             if (refChild is not null && !ReferenceEquals(refChild.ParentNode, parent))
+            {
                 throw DomExceptionBinding.Throw(realm, "NotFoundError", "The reference node is not a child of this node");
+            }
+
             ValidatePreInsert(realm, parent, child, refChild);
             try { parent.InsertBefore(child, refChild); }
             catch (InvalidOperationException ex) { throw NodeMutationException(realm, ex, parent, child); }
@@ -212,17 +277,30 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, nodeProto, "replaceChild", (thisV, args) =>
         {
             var parent = DomWrappers.UnwrapNode(thisV);
-            if (parent is null) throw new JsThrow(realm.NewTypeError("replaceChild called on non-Node"));
+            if (parent is null)
+            {
+                throw new JsThrow(realm.NewTypeError("replaceChild called on non-Node"));
+            }
+
             if (args.Length < 2 || !args[0].IsObject || !args[1].IsObject
                 || DomWrappers.UnwrapNode(args[0]) is null || DomWrappers.UnwrapNode(args[1]) is null)
+            {
                 throw new JsThrow(realm.NewTypeError("replaceChild requires two Node arguments"));
+            }
+
             var newChild = DomWrappers.UnwrapNode(args[0])!;
             var oldChild = DomWrappers.UnwrapNode(args[1])!;
             // DOM §4.4.3 — Attr nodes cannot be inserted into a normal node tree.
             if (newChild is AttrNode)
+            {
                 throw DomExceptionBinding.Throw(realm, "HierarchyRequestError", "Cannot insert an Attr into a node tree.");
+            }
+
             if (!ReferenceEquals(oldChild.ParentNode, parent))
+            {
                 throw DomExceptionBinding.Throw(realm, "NotFoundError", "The child to be replaced is not a child of this node");
+            }
+
             try { parent.ReplaceChild(newChild, oldChild); }
             catch (InvalidOperationException ex) { throw NodeMutationException(realm, ex, parent, newChild); }
             return args[1];
@@ -232,7 +310,11 @@ public static class NodeBindings
         // DOM §4.4.4 — cloneNode. Defined on Node so all node types can use it.
         EventTargetBinding.DefineMethod(realm, nodeProto, "cloneNode", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not { } n) return JsValue.Null;
+            if (DomWrappers.UnwrapNode(thisV) is not { } n)
+            {
+                return JsValue.Null;
+            }
+
             var deep = args.Length > 0 && JsValue.ToBoolean(args[0]);
             var clone = CloneNode(realm, n, deep);
             return JsValue.Object(DomWrappers.Wrap(realm, clone));
@@ -241,17 +323,34 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, nodeProto, "normalize", (thisV, _) =>
         {
             if (DomWrappers.UnwrapNode(thisV) is { } n)
+            {
                 NormalizeNode(n);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, nodeProto, "contains", (thisV, args) =>
         {
             var self = DomWrappers.UnwrapNode(thisV);
-            if (self is null || args.Length == 0) return JsValue.False;
+            if (self is null || args.Length == 0)
+            {
+                return JsValue.False;
+            }
+
             var other = DomWrappers.UnwrapNode(args[0]);
-            if (other is null) return JsValue.False;
+            if (other is null)
+            {
+                return JsValue.False;
+            }
+
             for (var n = other; n is not null; n = n.ParentNode)
-                if (ReferenceEquals(n, self)) return JsValue.True;
+            {
+                if (ReferenceEquals(n, self))
+                {
+                    return JsValue.True;
+                }
+            }
+
             return JsValue.False;
         }, length: 1);
 
@@ -261,7 +360,13 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, nodeProto, "before", (thisV, args) =>
         {
             if (DomWrappers.UnwrapNode(thisV) is { ParentNode: { } parent } node)
-                foreach (var n in CoerceNodes(realm, node, args)) parent.InsertBefore(n, node);
+            {
+                foreach (var n in CoerceNodes(realm, node, args))
+                {
+                    parent.InsertBefore(n, node);
+                }
+            }
+
             return JsValue.Undefined;
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, nodeProto, "after", (thisV, args) =>
@@ -269,7 +374,10 @@ public static class NodeBindings
             if (DomWrappers.UnwrapNode(thisV) is { ParentNode: { } parent } node)
             {
                 var refNode = node.NextSibling;
-                foreach (var n in CoerceNodes(realm, node, args)) parent.InsertBefore(n, refNode);
+                foreach (var n in CoerceNodes(realm, node, args))
+                {
+                    parent.InsertBefore(n, refNode);
+                }
             }
             return JsValue.Undefined;
         }, length: 1);
@@ -280,7 +388,10 @@ public static class NodeBindings
                 var refNode = node.NextSibling;
                 var nodes = CoerceNodes(realm, node, args);
                 node.RemoveFromParent();
-                foreach (var n in nodes) parent.InsertBefore(n, refNode);
+                foreach (var n in nodes)
+                {
+                    parent.InsertBefore(n, refNode);
+                }
             }
             return JsValue.Undefined;
         }, length: 1);
@@ -292,7 +403,13 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, nodeProto, "append", (thisV, args) =>
         {
             if (DomWrappers.UnwrapNode(thisV) is { } node)
-                foreach (var n in CoerceNodes(realm, node, args)) node.AppendChild(n);
+            {
+                foreach (var n in CoerceNodes(realm, node, args))
+                {
+                    node.AppendChild(n);
+                }
+            }
+
             return JsValue.Undefined;
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, nodeProto, "prepend", (thisV, args) =>
@@ -300,7 +417,10 @@ public static class NodeBindings
             if (DomWrappers.UnwrapNode(thisV) is { } node)
             {
                 var refNode = node.FirstChild;
-                foreach (var n in CoerceNodes(realm, node, args)) node.InsertBefore(n, refNode);
+                foreach (var n in CoerceNodes(realm, node, args))
+                {
+                    node.InsertBefore(n, refNode);
+                }
             }
             return JsValue.Undefined;
         }, length: 1);
@@ -309,8 +429,15 @@ public static class NodeBindings
             if (DomWrappers.UnwrapNode(thisV) is { } node)
             {
                 var nodes = CoerceNodes(realm, node, args);
-                while (node.FirstChild is { } c) c.RemoveFromParent();
-                foreach (var n in nodes) node.AppendChild(n);
+                while (node.FirstChild is { } c)
+                {
+                    c.RemoveFromParent();
+                }
+
+                foreach (var n in nodes)
+                {
+                    node.AppendChild(n);
+                }
             }
             return JsValue.Undefined;
         }, length: 1);
@@ -329,7 +456,11 @@ public static class NodeBindings
         }, length: 2);
         EventTargetBinding.DefineMethod(realm, nodeProto, "lookupNamespaceURI", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not { } n) return JsValue.Null;
+            if (DomWrappers.UnwrapNode(thisV) is not { } n)
+            {
+                return JsValue.Null;
+            }
+
             var r = n.LookupNamespaceURI(args.Length > 0 && !args[0].IsNullish ? JsValue.ToStringValue(args[0]) : null);
             return r is null ? JsValue.Null : JsValue.String(r);
         }, length: 1);
@@ -339,7 +470,11 @@ public static class NodeBindings
                 : JsValue.False, length: 1);
         EventTargetBinding.DefineMethod(realm, nodeProto, "lookupPrefix", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not { } n) return JsValue.Null;
+            if (DomWrappers.UnwrapNode(thisV) is not { } n)
+            {
+                return JsValue.Null;
+            }
+
             var r = n.LookupPrefix(args.Length > 0 && !args[0].IsNullish ? JsValue.ToStringValue(args[0]) : null);
             return r is null ? JsValue.Null : JsValue.String(r);
         }, length: 1);
@@ -347,10 +482,18 @@ public static class NodeBindings
         // DOM §4.4 — getRootNode: climb parent chain to the topmost node (WPT-03).
         EventTargetBinding.DefineMethod(realm, nodeProto, "getRootNode", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not { } n) return JsValue.Null;
+            if (DomWrappers.UnwrapNode(thisV) is not { } n)
+            {
+                return JsValue.Null;
+            }
+
             _ = args.Length > 0 && args[0].IsObject && JsValue.ToBoolean(args[0].AsObject.Get("composed"));
             var root = n;
-            while (root.ParentNode is { } p) root = p;
+            while (root.ParentNode is { } p)
+            {
+                root = p;
+            }
+
             return JsValue.Object(DomWrappers.Wrap(realm, root));
         }, length: 0);
 
@@ -363,7 +506,10 @@ public static class NodeBindings
             (thisV, args) =>
             {
                 if (DomWrappers.UnwrapNode(thisV) is CharacterData cd)
+                {
                     cd.Data = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
+                }
+
                 return JsValue.Undefined;
             });
         EventTargetBinding.DefineAccessor(realm, nodeProto, "length",
@@ -371,7 +517,11 @@ public static class NodeBindings
                 ? JsValue.Number(cd.Data.Length) : JsValue.Undefined);
         EventTargetBinding.DefineMethod(realm, nodeProto, "substringData", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not CharacterData cd) return JsValue.Undefined;
+            if (DomWrappers.UnwrapNode(thisV) is not CharacterData cd)
+            {
+                return JsValue.Undefined;
+            }
+
             var offset = args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : 0;
             var count = args.Length > 1 ? (int)JsValue.ToNumber(args[1]) : 0;
             offset = Math.Max(0, Math.Min(offset, cd.Data.Length));
@@ -391,7 +541,11 @@ public static class NodeBindings
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, nodeProto, "insertData", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not CharacterData cd) return JsValue.Undefined;
+            if (DomWrappers.UnwrapNode(thisV) is not CharacterData cd)
+            {
+                return JsValue.Undefined;
+            }
+
             var offset = args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : 0;
             var s = args.Length > 1 ? JsValue.ToStringValue(args[1]) : "";
             offset = Math.Max(0, Math.Min(offset, cd.Data.Length));
@@ -401,7 +555,11 @@ public static class NodeBindings
         }, length: 2);
         EventTargetBinding.DefineMethod(realm, nodeProto, "deleteData", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not CharacterData cd) return JsValue.Undefined;
+            if (DomWrappers.UnwrapNode(thisV) is not CharacterData cd)
+            {
+                return JsValue.Undefined;
+            }
+
             var offset = args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : 0;
             var count = args.Length > 1 ? (int)JsValue.ToNumber(args[1]) : 0;
             offset = Math.Max(0, Math.Min(offset, cd.Data.Length));
@@ -412,14 +570,25 @@ public static class NodeBindings
         }, length: 2);
         EventTargetBinding.DefineMethod(realm, nodeProto, "replaceData", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not CharacterData cd) return JsValue.Undefined;
-            if (args.Length < 3) throw new JsThrow(realm.NewTypeError("replaceData requires 3 arguments"));
+            if (DomWrappers.UnwrapNode(thisV) is not CharacterData cd)
+            {
+                return JsValue.Undefined;
+            }
+
+            if (args.Length < 3)
+            {
+                throw new JsThrow(realm.NewTypeError("replaceData requires 3 arguments"));
+            }
+
             var offset = CdataOffset(args[0]);
             var count = CdataOffset(args[1]);
             var s = JsValue.ToStringValue(args[2]);
             var len = cd.Data.Length;
             if (offset > len)
+            {
                 throw DomExceptionBinding.Throw(realm, "IndexSizeError", $"Offset {offset} is outside the data length {len}");
+            }
+
             var o = (int)offset;
             var realCount = (int)Math.Min(count, len - o);
             cd.Data = cd.Data[..o] + s + cd.Data[(o + realCount)..];
@@ -432,7 +601,11 @@ public static class NodeBindings
         // text with offset > splitOffset must re-target the new node.
         EventTargetBinding.DefineMethod(realm, nodeProto, "splitText", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not Text text) return JsValue.Null;
+            if (DomWrappers.UnwrapNode(thisV) is not Text text)
+            {
+                return JsValue.Null;
+            }
+
             var offset = args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : 0;
             offset = Math.Max(0, Math.Min(offset, text.Data.Length));
             var newText = (text.OwnerDocument ?? new Document()).CreateTextNode(text.Data[offset..]);
@@ -482,8 +655,15 @@ public static class NodeBindings
         {
             var self = DomWrappers.UnwrapNode(thisV);
             var other = args.Length > 0 ? DomWrappers.UnwrapNode(args[0]) : null;
-            if (self is null || other is null) return JsValue.Number(0);
-            if (ReferenceEquals(self, other)) return JsValue.Number(0);
+            if (self is null || other is null)
+            {
+                return JsValue.Number(0);
+            }
+
+            if (ReferenceEquals(self, other))
+            {
+                return JsValue.Number(0);
+            }
             // Find the roots; if different, return DISCONNECTED | IMPLEMENTATION_SPECIFIC.
             var rootSelf = NodeRoot(self);
             var rootOther = NodeRoot(other);
@@ -503,15 +683,25 @@ public static class NodeBindings
             var otherContainsSelf = IsAncestor(other, self);
             int bits = 0;
             if (selfContainsOther)
+            {
                 bits |= 16; // CONTAINED_BY (other is contained by self)
+            }
+
             if (otherContainsSelf)
+            {
                 bits |= 8; // CONTAINS (self is contained by other, i.e. other contains self)
+            }
             // Determine PRECEDING/FOLLOWING by pre-order walk.
             // "preceding" = other comes before self in tree order.
             if (IsBeforeInTreeOrder(other, self))
+            {
                 bits |= 2; // PRECEDING (other precedes self, so self is after other)
+            }
             else
+            {
                 bits |= 4; // FOLLOWING (other follows self)
+            }
+
             return JsValue.Number(bits);
         }, length: 1);
 
@@ -548,12 +738,17 @@ public static class NodeBindings
         // per GlobalEventHandlers member; the slot machinery lives in
         // EventTargetBinding.
         foreach (var type in EventTargetBinding.ElementEventHandlerTypes)
+        {
             EventTargetBinding.DefineEventHandlerAccessor(realm, elProto, type);
+        }
 
         EventTargetBinding.DefineAccessor(realm, elProto, "tagName",
             (thisV, _) =>
             {
-                if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.String("");
+                if (DomWrappers.UnwrapElement(thisV) is not { } e)
+                {
+                    return JsValue.String("");
+                }
                 // DOM §4.9 — tagName is ASCII-uppercased only for HTML-namespace
                 // elements in an HTML document. SVG/MathML/other namespaces keep
                 // their original case.
@@ -577,14 +772,20 @@ public static class NodeBindings
         EventTargetBinding.DefineAccessor(realm, elProto, "contentDocument", (thisV, _) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is not { } e || !IFrameBinding.IsFrameElement(e))
+            {
                 return JsValue.Null;
+            }
+
             var ctx = IFrameBinding.EnsureContext(e);
             return JsValue.Object(DomWrappers.Wrap(realm, ctx.Document));
         });
         EventTargetBinding.DefineAccessor(realm, elProto, "contentWindow", (thisV, _) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is not { } e || !IFrameBinding.IsFrameElement(e))
+            {
                 return JsValue.Null;
+            }
+
             var ctx = IFrameBinding.EnsureContext(e);
             return JsValue.Object(IFrameBinding.EnsureContentWindow(realm, ctx));
         });
@@ -598,7 +799,10 @@ public static class NodeBindings
             (thisV, args) =>
             {
                 if (DomWrappers.UnwrapElement(thisV) is { } e)
+                {
                     e.Id = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
+                }
+
                 return JsValue.Undefined;
             });
         EventTargetBinding.DefineAccessor(realm, elProto, "className",
@@ -606,7 +810,10 @@ public static class NodeBindings
             (thisV, args) =>
             {
                 if (DomWrappers.UnwrapElement(thisV) is { } e)
+                {
                     e.SetAttribute("class", args.Length > 0 ? JsValue.ToStringValue(args[0]) : "");
+                }
+
                 return JsValue.Undefined;
             });
         // HTMLInputElement / HTMLTextAreaElement `value` IDL attribute. Reads
@@ -619,7 +826,10 @@ public static class NodeBindings
             (thisV, args) =>
             {
                 if (DomWrappers.UnwrapElement(thisV) is { } e)
+                {
                     HtmlFormControls.SetValue(e, args.Length > 0 ? JsValue.ToStringValue(args[0]) : "");
+                }
+
                 return JsValue.Undefined;
             });
         InstallFormControlAccessors(realm, elProto);
@@ -628,14 +838,20 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, elProto, "focus", (thisV, _) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is { } e && e.OwnerDocument is { } d)
+            {
                 d.FocusedElement = e;
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, elProto, "blur", (thisV, _) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is { } e && e.OwnerDocument is { } d
                 && ReferenceEquals(d.FocusedElement, e))
+            {
                 d.FocusedElement = null;
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineAccessor(realm, elProto, "innerHTML",
@@ -648,7 +864,11 @@ public static class NodeBindings
                     var markup = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
                     var fragment = ParseFragment(e, markup);
                     // Replace all existing children with the parsed nodes.
-                    while (e.FirstChild is not null) e.RemoveChild(e.FirstChild);
+                    while (e.FirstChild is not null)
+                    {
+                        e.RemoveChild(e.FirstChild);
+                    }
+
                     e.AppendChild(fragment);
                 }
                 return JsValue.Undefined;
@@ -658,10 +878,16 @@ public static class NodeBindings
                 ? JsValue.String(HtmlSerializer.SerializeNode(e)) : JsValue.String(""),
             (thisV, args) =>
             {
-                if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Undefined;
+                if (DomWrappers.UnwrapElement(thisV) is not { } e)
+                {
+                    return JsValue.Undefined;
+                }
+
                 var parent = e.ParentNode;
                 if (parent is null)
+                {
                     throw new JsThrow(realm.NewTypeError("Cannot set outerHTML on an element with no parent"));
+                }
                 // Parse the markup in the context of the element's parent (or the
                 // element itself if the parent is the document), then swap it in.
                 var context = parent as Element ?? e;
@@ -673,49 +899,109 @@ public static class NodeBindings
             });
         EventTargetBinding.DefineAccessor(realm, elProto, "children", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             return BuildHtmlCollection(realm, () =>
             {
                 var list = new List<Element>();
                 for (var n = e.FirstChild; n is not null; n = n.NextSibling)
-                    if (n is Element child) list.Add(child);
+                {
+                    if (n is Element child)
+                    {
+                        list.Add(child);
+                    }
+                }
+
                 return list;
             });
         });
         EventTargetBinding.DefineAccessor(realm, elProto, "firstElementChild", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Null;
+            }
+
             for (var n = e.FirstChild; n is not null; n = n.NextSibling)
-                if (n is Element c) return JsValue.Object(DomWrappers.Wrap(realm, c));
+            {
+                if (n is Element c)
+                {
+                    return JsValue.Object(DomWrappers.Wrap(realm, c));
+                }
+            }
+
             return JsValue.Null;
         });
         EventTargetBinding.DefineAccessor(realm, elProto, "lastElementChild", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Null;
+            }
+
             for (var n = e.LastChild; n is not null; n = n.PreviousSibling)
-                if (n is Element c) return JsValue.Object(DomWrappers.Wrap(realm, c));
+            {
+                if (n is Element c)
+                {
+                    return JsValue.Object(DomWrappers.Wrap(realm, c));
+                }
+            }
+
             return JsValue.Null;
         });
         EventTargetBinding.DefineAccessor(realm, elProto, "nextElementSibling", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Null;
+            }
+
             for (var n = e.NextSibling; n is not null; n = n.NextSibling)
-                if (n is Element s) return JsValue.Object(DomWrappers.Wrap(realm, s));
+            {
+                if (n is Element s)
+                {
+                    return JsValue.Object(DomWrappers.Wrap(realm, s));
+                }
+            }
+
             return JsValue.Null;
         });
         EventTargetBinding.DefineAccessor(realm, elProto, "previousElementSibling", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Null;
+            }
+
             for (var n = e.PreviousSibling; n is not null; n = n.PreviousSibling)
-                if (n is Element s) return JsValue.Object(DomWrappers.Wrap(realm, s));
+            {
+                if (n is Element s)
+                {
+                    return JsValue.Object(DomWrappers.Wrap(realm, s));
+                }
+            }
+
             return JsValue.Null;
         });
         EventTargetBinding.DefineAccessor(realm, elProto, "childElementCount", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Number(0);
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Number(0);
+            }
+
             var count = 0;
             for (var n = e.FirstChild; n is not null; n = n.NextSibling)
-                if (n is Element) count++;
+            {
+                if (n is Element)
+                {
+                    count++;
+                }
+            }
+
             return JsValue.Number(count);
         });
 
@@ -724,12 +1010,24 @@ public static class NodeBindings
         // JsNamedNodeMapObject (exotic) cached on the element wrapper.
         EventTargetBinding.DefineAccessor(realm, elProto, "attributes", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Null;
+            }
+
             var wrapper = thisV.IsObject ? thisV.AsObject : null;
-            if (wrapper is null) return JsValue.Null;
+            if (wrapper is null)
+            {
+                return JsValue.Null;
+            }
+
             const string cacheKey = "__attributes__";
             var cached = wrapper.Get(cacheKey);
-            if (!cached.IsUndefined) return cached;
+            if (!cached.IsUndefined)
+            {
+                return cached;
+            }
+
             var nmObj = new JsNamedNodeMapObject(realm, e);
             wrapper.Set(cacheKey, JsValue.Object(nmObj));
             return JsValue.Object(nmObj);
@@ -738,49 +1036,84 @@ public static class NodeBindings
         // ---- getAttributeNode / setAttributeNode / removeAttributeNode ----
         EventTargetBinding.DefineMethod(realm, elProto, "getAttributeNode", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var attr = e.Attributes.GetNamedItem(JsValue.ToStringValue(args[0]));
             return attr is null ? JsValue.Null : JsValue.Object(DomWrappers.WrapAttr(realm, attr));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, elProto, "getAttributeNodeNS", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length < 2) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length < 2)
+            {
+                return JsValue.Null;
+            }
+
             var ns = args[0].IsNullish ? null : JsValue.ToStringValue(args[0]);
             var attr = e.Attributes.GetNamedItemNS(ns, JsValue.ToStringValue(args[1]));
             return attr is null ? JsValue.Null : JsValue.Object(DomWrappers.WrapAttr(realm, attr));
         }, length: 2);
         EventTargetBinding.DefineMethod(realm, elProto, "setAttributeNode", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             if (DomWrappers.UnwrapAttr(args[0]) is not { } attr)
+            {
                 throw new JsThrow(realm.NewTypeError("setAttributeNode requires an Attr argument"));
+            }
+
             var old = e.Attributes.SetNamedItem(attr);
             return old is null ? JsValue.Null : JsValue.Object(DomWrappers.WrapAttr(realm, old));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, elProto, "setAttributeNodeNS", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             if (DomWrappers.UnwrapAttr(args[0]) is not { } attr)
+            {
                 throw new JsThrow(realm.NewTypeError("setAttributeNodeNS requires an Attr argument"));
+            }
+
             var old = e.Attributes.SetNamedItemNS(attr);
             return old is null ? JsValue.Null : JsValue.Object(DomWrappers.WrapAttr(realm, old));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, elProto, "removeAttributeNode", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             if (DomWrappers.UnwrapAttr(args[0]) is not { } attr)
+            {
                 throw new JsThrow(realm.NewTypeError("removeAttributeNode requires an Attr argument"));
+            }
             // Find by reference; if not found throw NotFoundError.
             var found = e.Attributes.GetNamedItem(attr.Name);
             if (found is null || !ReferenceEquals(found, attr))
+            {
                 throw DomExceptionBinding.Throw(realm, "NotFoundError", "The node was not found.");
+            }
+
             e.Attributes.RemoveNamedItem(attr.Name);
             return JsValue.Object(DomWrappers.WrapAttr(realm, attr));
         }, length: 1);
 
         EventTargetBinding.DefineMethod(realm, elProto, "getAttribute", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var v = e.GetAttribute(JsValue.ToStringValue(args[0]));
             return v is null ? JsValue.Null : JsValue.String(v);
         }, length: 1);
@@ -821,8 +1154,14 @@ public static class NodeBindings
             {
                 if (DomWrappers.UnwrapElement(thisV) is { } e)
                 {
-                    if (args.Length > 0 && JsValue.ToBoolean(args[0])) e.SetAttribute("async", "");
-                    else e.RemoveAttribute("async");
+                    if (args.Length > 0 && JsValue.ToBoolean(args[0]))
+                    {
+                        e.SetAttribute("async", "");
+                    }
+                    else
+                    {
+                        e.RemoveAttribute("async");
+                    }
                 }
                 return JsValue.Undefined;
             });
@@ -836,15 +1175,27 @@ public static class NodeBindings
         // DOM §4.9 getAttributeNames — returns an array of qualified attribute names.
         EventTargetBinding.DefineMethod(realm, elProto, "getAttributeNames", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var names = new List<JsValue>(e.Attributes.Count);
-            foreach (var attr in e.Attributes) names.Add(JsValue.String(attr.Name));
+            foreach (var attr in e.Attributes)
+            {
+                names.Add(JsValue.String(attr.Name));
+            }
+
             return MakeArray(realm, names);
         }, length: 0);
         // DOM §4.9 toggleAttribute(name[, force]) — toggles a boolean attribute.
         EventTargetBinding.DefineMethod(realm, elProto, "toggleAttribute", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.False;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.False;
+            }
+
             var name = JsValue.ToStringValue(args[0]);
             bool result;
             if (args.Length > 1 && !args[1].IsUndefined)
@@ -860,21 +1211,31 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, elProto, "removeAttribute", (thisV, args) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is { } e && args.Length > 0)
+            {
                 e.RemoveAttribute(JsValue.ToStringValue(args[0]));
+            }
+
             return JsValue.Undefined;
         }, length: 1);
         // ---- Namespace-aware attribute methods (DOM §4.9).
         EventTargetBinding.DefineMethod(realm, elProto, "getAttributeNS", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length < 2) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length < 2)
+            {
+                return JsValue.Null;
+            }
+
             var v = e.GetAttributeNS(args[0].IsNullish ? null : JsValue.ToStringValue(args[0]), JsValue.ToStringValue(args[1]));
             return v is null ? JsValue.Null : JsValue.String(v);
         }, length: 2);
         EventTargetBinding.DefineMethod(realm, elProto, "setAttributeNS", (thisV, args) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is { } e && args.Length >= 3)
+            {
                 e.SetAttributeNS(args[0].IsNullish ? null : JsValue.ToStringValue(args[0]),
                     JsValue.ToStringValue(args[1]), JsValue.ToStringValue(args[2]));
+            }
+
             return JsValue.Undefined;
         }, length: 3);
         EventTargetBinding.DefineMethod(realm, elProto, "hasAttributeNS", (thisV, args) =>
@@ -884,12 +1245,19 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, elProto, "removeAttributeNS", (thisV, args) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is { } e && args.Length >= 2)
+            {
                 e.RemoveAttributeNS(args[0].IsNullish ? null : JsValue.ToStringValue(args[0]), JsValue.ToStringValue(args[1]));
+            }
+
             return JsValue.Undefined;
         }, length: 2);
         EventTargetBinding.DefineMethod(realm, elProto, "getElementsByTagNameNS", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length < 2) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length < 2)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var ns = args[0].IsNullish ? null : JsValue.ToStringValue(args[0]);
             var local = JsValue.ToStringValue(args[1]);
             return BuildHtmlCollection(realm, () => e.GetElementsByTagNameNS(ns, local).ToList());
@@ -912,34 +1280,60 @@ public static class NodeBindings
         {
             if (DomWrappers.UnwrapElement(thisV) is not { } e
                 || !string.Equals(e.LocalName, "canvas", StringComparison.OrdinalIgnoreCase))
+            {
                 return JsValue.Null;
+            }
+
             var kind = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
-            if (kind != "2d") return JsValue.Null;
+            if (kind != "2d")
+            {
+                return JsValue.Null;
+            }
+
             return JsValue.Object(BuildCanvas2dContext(realm));
         }, length: 1);
 
         EventTargetBinding.DefineMethod(realm, elProto, "querySelector", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var match = QuerySelectorEngine.First(e, JsValue.ToStringValue(args[0]), realm);
             return match is null ? JsValue.Null : JsValue.Object(DomWrappers.Wrap(realm, match));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, elProto, "querySelectorAll", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var items = new List<JsValue>();
             foreach (var m in QuerySelectorEngine.All(e, JsValue.ToStringValue(args[0]), realm))
+            {
                 items.Add(JsValue.Object(DomWrappers.Wrap(realm, m)));
+            }
+
             return MakeArray(realm, items);
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, elProto, "matches", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.False;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.False;
+            }
+
             return JsValue.Boolean(QuerySelectorEngine.Matches(e, JsValue.ToStringValue(args[0]), realm));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, elProto, "closest", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var match = QuerySelectorEngine.Closest(e, JsValue.ToStringValue(args[0]), realm);
             return match is null ? JsValue.Null : JsValue.Object(DomWrappers.Wrap(realm, match));
         }, length: 1);
@@ -947,41 +1341,66 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, elProto, "click", (thisV, _) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is not null)
+            {
                 EventTargetBinding.DispatchHostEvent(thisV,
                     new Starling.Dom.Events.MouseEvent("click",
                         new Starling.Dom.Events.EventInit(Bubbles: true, Cancelable: true, Composed: true)));
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, elProto, "getElementsByTagName", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var name = JsValue.ToStringValue(args[0]);
             return BuildHtmlCollection(realm, () =>
             {
                 var list = new List<Element>();
                 foreach (var d in e.DescendantElements())
+                {
                     if (name == "*" || d.LocalName.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    {
                         list.Add(d);
+                    }
+                }
+
                 return list;
             });
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, elProto, "getElementsByClassName", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var classes = JsValue.ToStringValue(args[0])
                 .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             return BuildHtmlCollection(realm, () =>
             {
                 var list = new List<Element>();
                 foreach (var d in e.DescendantElements())
+                {
                     if (classes.Length > 0 && classes.All(d.ClassList.Contains))
+                    {
                         list.Add(d);
+                    }
+                }
+
                 return list;
             });
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, elProto, "remove", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is { } e) e.RemoveFromParent();
+            if (DomWrappers.UnwrapElement(thisV) is { } e)
+            {
+                e.RemoveFromParent();
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         // DOM §4.9 — Element.hasAttributes().
@@ -990,7 +1409,11 @@ public static class NodeBindings
         // DOM §4.9 — Element.getAttributeNode(name) → Attr | null.
         EventTargetBinding.DefineMethod(realm, elProto, "getAttributeNode", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var name = JsValue.ToStringValue(args[0]);
             var attr = e.Attributes.GetNamedItem(name);
             return attr is null ? JsValue.Null : JsValue.Object(DomWrappers.WrapAttr(realm, attr));
@@ -998,7 +1421,11 @@ public static class NodeBindings
         // DOM §4.9 — Element.getAttributeNodeNS(ns, localName) → Attr | null.
         EventTargetBinding.DefineMethod(realm, elProto, "getAttributeNodeNS", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length < 2) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length < 2)
+            {
+                return JsValue.Null;
+            }
+
             var ns = args[0].IsNullish ? null : JsValue.ToStringValue(args[0]);
             var localName = JsValue.ToStringValue(args[1]);
             var attr = e.Attributes.GetNamedItemNS(ns, localName);
@@ -1007,16 +1434,23 @@ public static class NodeBindings
         // DOM §4.9 — Element.toggleAttribute(qualifiedName[, force]).
         EventTargetBinding.DefineMethod(realm, elProto, "toggleAttribute", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0) return JsValue.False;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e || args.Length == 0)
+            {
+                return JsValue.False;
+            }
+
             var name = JsValue.ToStringValue(args[0]);
             if (!IsValidName(name))
+            {
                 throw DomExceptionBinding.Throw(realm, "InvalidCharacterError", $"'{name}' is not a valid attribute name");
+            }
+
             var force = args.Length > 1 && !args[1].IsUndefined ? (bool?)JsValue.ToBoolean(args[1]) : null;
             var has = e.HasAttribute(name);
             if (force.HasValue)
             {
-                if (force.Value) { if (!has) e.SetAttribute(name, ""); return JsValue.True; }
-                else { if (has) e.RemoveAttribute(name); return JsValue.False; }
+                if (force.Value) { if (!has) { e.SetAttribute(name, ""); } return JsValue.True; }
+                else { if (has) { e.RemoveAttribute(name); } return JsValue.False; }
             }
             if (has) { e.RemoveAttribute(name); return JsValue.False; }
             e.SetAttribute(name, "");
@@ -1025,18 +1459,31 @@ public static class NodeBindings
         // DOM §4.9 — Element.getAttributeNames().
         EventTargetBinding.DefineMethod(realm, elProto, "getAttributeNames", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var items = new List<JsValue>();
             foreach (var attr in e.Attributes)
+            {
                 items.Add(JsValue.String(attr.Name));
+            }
+
             return MakeArray(realm, items);
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, elProto, "insertAdjacentHTML", (thisV, args) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
                 throw new JsThrow(realm.NewTypeError("insertAdjacentHTML called on a non-Element"));
+            }
+
             if (args.Length < 2)
+            {
                 throw new JsThrow(realm.NewTypeError("insertAdjacentHTML requires (position, text)"));
+            }
+
             var position = JsValue.ToStringValue(args[0]);
             var markup = JsValue.ToStringValue(args[1]);
 
@@ -1047,7 +1494,11 @@ public static class NodeBindings
                 case "beforebegin":
                     {
                         var parent = e.ParentNode;
-                        if (parent is null) return JsValue.Undefined; // no-op per spec
+                        if (parent is null)
+                        {
+                            return JsValue.Undefined; // no-op per spec
+                        }
+
                         var context = parent as Element ?? e;
                         parent.InsertBefore(ParseFragment(context, markup), e);
                         break;
@@ -1061,7 +1512,11 @@ public static class NodeBindings
                 case "afterend":
                     {
                         var parent = e.ParentNode;
-                        if (parent is null) return JsValue.Undefined; // no-op per spec
+                        if (parent is null)
+                        {
+                            return JsValue.Undefined; // no-op per spec
+                        }
+
                         var context = parent as Element ?? e;
                         parent.InsertBefore(ParseFragment(context, markup), e.NextSibling);
                         break;
@@ -1076,17 +1531,29 @@ public static class NodeBindings
         // DOM Living Standard — insertAdjacentElement(position, element).
         EventTargetBinding.DefineMethod(realm, elProto, "insertAdjacentElement", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Null;
-            if (args.Length < 2) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Null;
+            }
+
+            if (args.Length < 2)
+            {
+                return JsValue.Null;
+            }
+
             var position = JsValue.ToStringValue(args[0]).ToLowerInvariant();
             var newEl = DomWrappers.UnwrapElement(args[1]);
-            if (newEl is null) return JsValue.Null;
+            if (newEl is null)
+            {
+                return JsValue.Null;
+            }
+
             switch (position)
             {
-                case "beforebegin": if (e.ParentNode is { } pb) pb.InsertBefore(newEl, e); break;
+                case "beforebegin": if (e.ParentNode is { } pb) { pb.InsertBefore(newEl, e); } break;
                 case "afterbegin": e.InsertBefore(newEl, e.FirstChild); break;
                 case "beforeend": e.AppendChild(newEl); break;
-                case "afterend": if (e.ParentNode is { } pa) pa.InsertBefore(newEl, e.NextSibling); break;
+                case "afterend": if (e.ParentNode is { } pa) { pa.InsertBefore(newEl, e.NextSibling); } break;
                 default: return JsValue.Null;
             }
             return args[1];
@@ -1094,18 +1561,26 @@ public static class NodeBindings
         // DOM Living Standard — insertAdjacentText(position, data).
         EventTargetBinding.DefineMethod(realm, elProto, "insertAdjacentText", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Undefined;
-            if (args.Length < 2) return JsValue.Undefined;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Undefined;
+            }
+
+            if (args.Length < 2)
+            {
+                return JsValue.Undefined;
+            }
+
             var position = JsValue.ToStringValue(args[0]).ToLowerInvariant();
             var data = JsValue.ToStringValue(args[1]);
             var doc = e.OwnerDocument ?? new Document();
             var textNode = doc.CreateTextNode(data);
             switch (position)
             {
-                case "beforebegin": if (e.ParentNode is { } pb) pb.InsertBefore(textNode, e); break;
+                case "beforebegin": if (e.ParentNode is { } pb) { pb.InsertBefore(textNode, e); } break;
                 case "afterbegin": e.InsertBefore(textNode, e.FirstChild); break;
                 case "beforeend": e.AppendChild(textNode); break;
-                case "afterend": if (e.ParentNode is { } pa) pa.InsertBefore(textNode, e.NextSibling); break;
+                case "afterend": if (e.ParentNode is { } pa) { pa.InsertBefore(textNode, e.NextSibling); } break;
             }
             return JsValue.Undefined;
         }, length: 2);
@@ -1114,7 +1589,11 @@ public static class NodeBindings
         // recursively copies all descendant nodes.
         EventTargetBinding.DefineMethod(realm, elProto, "cloneNode", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not { } n) return JsValue.Null;
+            if (DomWrappers.UnwrapNode(thisV) is not { } n)
+            {
+                return JsValue.Null;
+            }
+
             var deep = args.Length > 0 && JsValue.ToBoolean(args[0]);
             var clone = CloneNode(realm, n, deep);
             return JsValue.Object(DomWrappers.Wrap(realm, clone));
@@ -1127,34 +1606,62 @@ public static class NodeBindings
         // parent. String args become Text nodes.
         EventTargetBinding.DefineMethod(realm, elProto, "prepend", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not { } parent) return JsValue.Undefined;
+            if (DomWrappers.UnwrapNode(thisV) is not { } parent)
+            {
+                return JsValue.Undefined;
+            }
+
             var refChild = parent.FirstChild;
             foreach (var arg in args)
+            {
                 InsertAdjacentNode(realm, parent, arg, before: refChild);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, elProto, "append", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapNode(thisV) is not { } parent) return JsValue.Undefined;
+            if (DomWrappers.UnwrapNode(thisV) is not { } parent)
+            {
+                return JsValue.Undefined;
+            }
+
             foreach (var arg in args)
+            {
                 InsertAdjacentNode(realm, parent, arg, before: null);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, elProto, "before", (thisV, args) =>
         {
             var self = DomWrappers.UnwrapNode(thisV);
-            if (self?.ParentNode is not { } parent) return JsValue.Undefined;
+            if (self?.ParentNode is not { } parent)
+            {
+                return JsValue.Undefined;
+            }
+
             foreach (var arg in args)
+            {
                 InsertAdjacentNode(realm, parent, arg, before: self);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, elProto, "after", (thisV, args) =>
         {
             var self = DomWrappers.UnwrapNode(thisV);
-            if (self?.ParentNode is not { } parent) return JsValue.Undefined;
+            if (self?.ParentNode is not { } parent)
+            {
+                return JsValue.Undefined;
+            }
+
             var refChild = self.NextSibling;
             foreach (var arg in args)
+            {
                 InsertAdjacentNode(realm, parent, arg, before: refChild);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
 
@@ -1163,10 +1670,17 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, elProto, "replaceWith", (thisV, args) =>
         {
             var self = DomWrappers.UnwrapNode(thisV);
-            if (self?.ParentNode is not { } parent) return JsValue.Undefined;
+            if (self?.ParentNode is not { } parent)
+            {
+                return JsValue.Undefined;
+            }
+
             var refChild = self.NextSibling;
             foreach (var arg in args)
+            {
                 InsertAdjacentNode(realm, parent, arg, before: refChild);
+            }
+
             self.RemoveFromParent();
             return JsValue.Undefined;
         }, length: 0);
@@ -1181,7 +1695,10 @@ public static class NodeBindings
             (thisV, args) =>
             {
                 if (DomWrappers.UnwrapElement(thisV) is { } e)
+                {
                     e.TextContent = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
+                }
+
                 return JsValue.Undefined;
             });
 
@@ -1191,12 +1708,24 @@ public static class NodeBindings
         // attribute `data-foo-bar` via camelCase ↔ kebab-case conversion.
         EventTargetBinding.DefineAccessor(realm, elProto, "dataset", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Null;
+            }
+
             var wrapper = thisV.IsObject ? thisV.AsObject : null;
-            if (wrapper is null) return JsValue.Null;
+            if (wrapper is null)
+            {
+                return JsValue.Null;
+            }
+
             const string cacheKey = "__dataset__";
             var cached = wrapper.Get(cacheKey);
-            if (!cached.IsUndefined) return cached;
+            if (!cached.IsUndefined)
+            {
+                return cached;
+            }
+
             var dsObj = BuildDataset(realm, e);
             wrapper.Set(cacheKey, JsValue.Object(dsObj));
             return JsValue.Object(dsObj);
@@ -1210,14 +1739,25 @@ public static class NodeBindings
         // `el.classList === el.classList` holds.
         EventTargetBinding.DefineAccessor(realm, elProto, "classList", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Null;
+            }
             // Cache the DOMTokenList wrapper on the JS element wrapper object
             // so identity is stable across multiple reads.
             var wrapper = thisV.IsObject ? thisV.AsObject : null;
-            if (wrapper is null) return JsValue.Null;
+            if (wrapper is null)
+            {
+                return JsValue.Null;
+            }
+
             const string cacheKey = "__classList__";
             var cached = wrapper.Get(cacheKey);
-            if (!cached.IsUndefined) return cached;
+            if (!cached.IsUndefined)
+            {
+                return cached;
+            }
+
             var clObj = BuildDomTokenList(realm, e);
             wrapper.Set(cacheKey, JsValue.Object(clObj));
             return JsValue.Object(clObj);
@@ -1233,9 +1773,16 @@ public static class NodeBindings
             {
                 if (DomWrappers.UnwrapElement(thisV) is not { } e || !applies(e)
                     || thisV.AsObject is not { } w)
+                {
                     return JsValue.Undefined;
+                }
+
                 var hit = w.Get(ck);
-                if (!hit.IsUndefined) return hit;
+                if (!hit.IsUndefined)
+                {
+                    return hit;
+                }
+
                 var o = JsValue.Object(BuildDomTokenList(realm, e, e.TokenListFor(attr), attr));
                 w.Set(ck, o);
                 return o;
@@ -1261,12 +1808,24 @@ public static class NodeBindings
         // accessors plus cssText / getPropertyValue / setProperty.
         EventTargetBinding.DefineAccessor(realm, elProto, "style", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { } e) return JsValue.Null;
+            if (DomWrappers.UnwrapElement(thisV) is not { } e)
+            {
+                return JsValue.Null;
+            }
+
             var wrapper = thisV.IsObject ? thisV.AsObject : null;
-            if (wrapper is null) return JsValue.Null;
+            if (wrapper is null)
+            {
+                return JsValue.Null;
+            }
+
             const string cacheKey = "__style__";
             var cached = wrapper.Get(cacheKey);
-            if (!cached.IsUndefined) return cached;
+            if (!cached.IsUndefined)
+            {
+                return cached;
+            }
+
             var styleObj = BuildInlineStyleDecl(realm, e);
             wrapper.Set(cacheKey, JsValue.Object(styleObj));
             return JsValue.Object(styleObj);
@@ -1480,12 +2039,22 @@ public static class NodeBindings
         var hasInstance = new JsNativeFunction(realm, "Symbol.hasInstance", 1, (_, args) =>
         {
             var element = args.Length > 0 ? DomWrappers.UnwrapElement(args[0]) : null;
-            if (element is null) return JsValue.False;
-            if (localNames.Length == 0) return JsValue.True;
+            if (element is null)
+            {
+                return JsValue.False;
+            }
+
+            if (localNames.Length == 0)
+            {
+                return JsValue.True;
+            }
+
             foreach (var localName in localNames)
             {
                 if (StringComparer.OrdinalIgnoreCase.Equals(element.LocalName, localName))
+                {
                     return JsValue.True;
+                }
             }
             return JsValue.False;
         }, isConstructor: false);
@@ -1522,38 +2091,67 @@ public static class NodeBindings
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d
                 || d.DocumentElement is not { LocalName: "html", Namespace: Element.HtmlNamespace } htmlEl)
+            {
                 return JsValue.Null;
+            }
+
             for (var c = htmlEl.FirstChild; c is not null; c = c.NextSibling)
+            {
                 if (c is Element { Namespace: Element.HtmlNamespace, LocalName: "body" or "frameset" } b)
+                {
                     return JsValue.Object(DomWrappers.Wrap(realm, b));
+                }
+            }
+
             return JsValue.Null;
         },
         (thisV, args) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d) return JsValue.Undefined;
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
+                return JsValue.Undefined;
+            }
+
             var val = args.Length > 0 ? args[0] : JsValue.Undefined;
             // The IDL type is HTMLElement?: a non-element (string, plain object)
             // is a TypeError; an element that is not a body/frameset is a
             // HierarchyRequestError.
             if (!val.IsObject || DomWrappers.UnwrapElement(val) is not { } newEl)
+            {
                 throw new JsThrow(realm.NewTypeError("document.body must be an HTMLElement"));
+            }
+
             if (newEl is not { Namespace: Element.HtmlNamespace, LocalName: "body" or "frameset" })
+            {
                 throw DomExceptionBinding.Throw(realm, "HierarchyRequestError",
                     "document.body must be a body or frameset element");
+            }
             // Replace the current body/frameset if present; otherwise append to the
             // document element (HierarchyRequestError when there is none).
             Element? current = null;
             if (d.DocumentElement is { LocalName: "html", Namespace: Element.HtmlNamespace } htmlEl2)
+            {
                 for (var c = htmlEl2.FirstChild; c is not null; c = c.NextSibling)
+                {
                     if (c is Element { Namespace: Element.HtmlNamespace, LocalName: "body" or "frameset" } b)
                     { current = b; break; }
+                }
+            }
+
             if (current is not null)
+            {
                 current.ParentNode!.ReplaceChild(newEl, current);
+            }
             else if (d.DocumentElement is { } root)
+            {
                 root.AppendChild(newEl);
+            }
             else
+            {
                 throw DomExceptionBinding.Throw(realm, "HierarchyRequestError",
                     "document.body cannot be set without a document element");
+            }
+
             return JsValue.Undefined;
         });
         EventTargetBinding.DefineAccessor(realm, docProto, "head", (thisV, _) =>
@@ -1564,13 +2162,20 @@ public static class NodeBindings
         // spec's fallback so scripts that read activeElement.tagName don't throw.
         EventTargetBinding.DefineAccessor(realm, docProto, "activeElement", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d) return JsValue.Null;
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
+                return JsValue.Null;
+            }
+
             var el = d.FocusedElement ?? d.Body;
             return el is { } ? JsValue.Object(DomWrappers.Wrap(realm, el)) : JsValue.Null;
         });
         EventTargetBinding.DefineAccessor(realm, docProto, "title", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d) return JsValue.String("");
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
+                return JsValue.String("");
+            }
             // The title element is the first title (in tree order) — an SVG title
             // child of an SVG root, else any title element. Its value is the child
             // text content with ASCII whitespace stripped and collapsed.
@@ -1579,7 +2184,11 @@ public static class NodeBindings
         },
         (thisV, args) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d) return JsValue.Undefined;
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
+                return JsValue.Undefined;
+            }
+
             var value = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
             var existing = FirstTitleElement(d);
             if (existing is not null) { existing.TextContent = value; return JsValue.Undefined; }
@@ -1600,21 +2209,35 @@ public static class NodeBindings
             DomWrappers.UnwrapDocument(thisV) is { } d ? JsValue.String(WindowBinding.UrlFor(realm, d)) : JsValue.String(""));
         EventTargetBinding.DefineAccessor(realm, docProto, "location", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d) return JsValue.Null;
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
+                return JsValue.Null;
+            }
             // A document with no browsing context (createDocument/createHTMLDocument)
             // has a null location.
-            if (!WindowBinding.DocumentHasBrowsingContext(realm, d)) return JsValue.Null;
+            if (!WindowBinding.DocumentHasBrowsingContext(realm, d))
+            {
+                return JsValue.Null;
+            }
+
             return JsValue.Object(WindowBinding.LocationObjectFor(realm, d));
         });
         EventTargetBinding.DefineAccessor(realm, docProto, "defaultView", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d) return JsValue.Null;
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
+                return JsValue.Null;
+            }
             // The realm's own document is associated with the realm's global.
             if (ReferenceEquals(DomWrappers.UnwrapDocument(realm.GlobalObject.Get("document")), d))
+            {
                 return JsValue.Object(realm.GlobalObject);
+            }
             // An iframe's content document resolves to its contentWindow.
             if (IFrameBinding.WindowForDocument(realm, d) is { } w)
+            {
                 return JsValue.Object(w);
+            }
             // createHTMLDocument / createDocument produce documents with no
             // browsing context, so their defaultView is null.
             return JsValue.Null;
@@ -1644,9 +2267,19 @@ public static class NodeBindings
         // DOM §4.5 — document.doctype: the DocumentType child of the document, or null.
         EventTargetBinding.DefineAccessor(realm, docProto, "doctype", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d) return JsValue.Null;
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
+                return JsValue.Null;
+            }
+
             for (var c = d.FirstChild; c is not null; c = c.NextSibling)
-                if (c is DocumentType dt) return JsValue.Object(DomWrappers.Wrap(realm, dt));
+            {
+                if (c is DocumentType dt)
+                {
+                    return JsValue.Object(DomWrappers.Wrap(realm, dt));
+                }
+            }
+
             return JsValue.Null;
         });
         // HTML §8.4.1 — document.compatMode returns "CSS1Compat" when the
@@ -1654,7 +2287,11 @@ public static class NodeBindings
         // this on boot to decide the scrollSize calculation branch.
         EventTargetBinding.DefineAccessor(realm, docProto, "compatMode", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d) return JsValue.String("CSS1Compat");
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
+                return JsValue.String("CSS1Compat");
+            }
+
             return JsValue.String(d.Mode == QuirksMode.Quirks ? "BackCompat" : "CSS1Compat");
         });
         // Page Visibility API §4 — document.hidden / visibilityState.
@@ -1678,10 +2315,18 @@ public static class NodeBindings
         EventTargetBinding.DefineAccessor(realm, docProto, "implementation", (thisV, _) =>
         {
             var wrapper = thisV.IsObject ? thisV.AsObject : null;
-            if (wrapper is null) return JsValue.Null;
+            if (wrapper is null)
+            {
+                return JsValue.Null;
+            }
+
             const string cacheKey = "__domImpl__";
             var cached = wrapper.Get(cacheKey);
-            if (!cached.IsUndefined) return cached;
+            if (!cached.IsUndefined)
+            {
+                return cached;
+            }
+
             var impl = BuildDomImplementation(realm, DomWrappers.UnwrapDocument(thisV));
             wrapper.Set(cacheKey, JsValue.Object(impl));
             return JsValue.Object(impl);
@@ -1689,30 +2334,50 @@ public static class NodeBindings
 
         EventTargetBinding.DefineMethod(realm, docProto, "getElementById", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var id = JsValue.ToStringValue(args[0]);
             // The empty string never matches an id (elements with no id attribute
             // would otherwise match spuriously).
-            if (id.Length == 0) return JsValue.Null;
+            if (id.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             return d.GetElementById(id) is { } e
                 ? JsValue.Object(DomWrappers.Wrap(realm, e)) : JsValue.Null;
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, docProto, "getElementsByTagName", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var name = JsValue.ToStringValue(args[0]);
             return BuildHtmlCollection(realm, () => d.GetElementsByTagName(name));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, docProto, "getElementsByTagNameNS", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length < 2) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length < 2)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var ns = args[0].IsNullish ? null : JsValue.ToStringValue(args[0]);
             var local = JsValue.ToStringValue(args[1]);
             return BuildHtmlCollection(realm, () => d.GetElementsByTagNameNS(ns, local));
         }, length: 2);
         EventTargetBinding.DefineMethod(realm, docProto, "getElementsByClassName", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var cls = JsValue.ToStringValue(args[0]);
             return BuildHtmlCollection(realm, () => d.GetElementsByClassName(cls));
         }, length: 1);
@@ -1722,7 +2387,10 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, docProto, "getElementsByName", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0)
+            {
                 return BuildNodeList(realm, static () => Array.Empty<Node>());
+            }
+
             var name = JsValue.ToStringValue(args[0]);
             return BuildNodeList(realm,
                 () => d.DescendantElements().Where(e => e.GetAttribute("name") == name).ToList<Node>());
@@ -1747,39 +2415,64 @@ public static class NodeBindings
         DefineDocCollection("anchors", e => e.LocalName == "a" && e.HasAttribute("name"));
         EventTargetBinding.DefineMethod(realm, docProto, "querySelector", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var match = QuerySelectorEngine.First(d, JsValue.ToStringValue(args[0]), realm);
             return match is null ? JsValue.Null : JsValue.Object(DomWrappers.Wrap(realm, match));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, docProto, "querySelectorAll", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var items = new List<JsValue>();
             foreach (var m in QuerySelectorEngine.All(d, JsValue.ToStringValue(args[0]), realm))
+            {
                 items.Add(JsValue.Object(DomWrappers.Wrap(realm, m)));
+            }
+
             return MakeArray(realm, items);
         }, length: 1);
         // ---- DOM §4.9 createAttribute / createAttributeNS -----------------
         EventTargetBinding.DefineMethod(realm, docProto, "createAttribute", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
                 throw new JsThrow(realm.NewTypeError("createAttribute called on non-Document"));
+            }
             // DOM Living Standard: null/undefined are coerced to string first.
             // The only invalid name is the empty string (after coercion).
             var name = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
             if (name.Length == 0)
+            {
                 throw DomExceptionBinding.Throw(realm, "InvalidCharacterError", "The attribute name must not be empty.");
+            }
             // HTML documents lower-case; XML documents preserve case.
-            if (d.IsHtml) name = name.ToLowerInvariant();
+            if (d.IsHtml)
+            {
+                name = name.ToLowerInvariant();
+            }
+
             var attr = d.CreateAttribute(name);
             return JsValue.Object(DomWrappers.WrapAttr(realm, attr));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, docProto, "createAttributeNS", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
                 throw new JsThrow(realm.NewTypeError("createAttributeNS called on non-Document"));
+            }
+
             if (args.Length < 2)
+            {
                 throw new JsThrow(realm.NewTypeError("createAttributeNS requires (namespace, qualifiedName)"));
+            }
+
             var ns = args[0].IsNullish ? null : JsValue.ToStringValue(args[0]);
             var qname = args[1].IsNullish ? "" : JsValue.ToStringValue(args[1]);
             ValidateQualifiedName(ThrowRealmFor(realm, d), ns, qname); // cross-realm-aware throw
@@ -1790,11 +2483,16 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, docProto, "createElement", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("createElement requires a tag name"));
+            }
+
             var name = JsValue.ToStringValue(args[0]);
             // DOM §4.5: an invalid Name throws InvalidCharacterError.
             if (!IsValidName(name))
+            {
                 throw DomExceptionBinding.Throw(ThrowRealmFor(realm, d), "InvalidCharacterError", $"'{name}' is not a valid element name");
+            }
             // An HTML document lowercases the name; an XML document preserves its
             // case (and uses the null namespace).
             var el = d.IsHtml ? d.CreateElement(name) : d.CreateElementNS(null, name);
@@ -1803,7 +2501,10 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, docProto, "createElementNS", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length < 2)
+            {
                 throw new JsThrow(realm.NewTypeError("createElementNS requires (namespace, qualifiedName)"));
+            }
+
             var ns = args[0].IsNullish ? null : JsValue.ToStringValue(args[0]);
             // qualifiedName is a non-nullable DOMString: null -> "null".
             var qname = JsValue.ToStringValue(args[1]);
@@ -1816,27 +2517,39 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, docProto, "createEvent", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is null)
+            {
                 throw new JsThrow(realm.NewTypeError("createEvent called on non-Document"));
+            }
+
             return EventTargetBinding.CreateLegacyEvent(realm, args.Length > 0 ? JsValue.ToStringValue(args[0]) : "");
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, docProto, "createTextNode", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
                 throw new JsThrow(realm.NewTypeError("createTextNode called on non-Document"));
+            }
+
             var t = d.CreateTextNode(args.Length > 0 ? JsValue.ToStringValue(args[0]) : "");
             return JsValue.Object(DomWrappers.Wrap(realm, t));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, docProto, "createProcessingInstruction", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d || args.Length < 2)
+            {
                 throw new JsThrow(realm.NewTypeError("createProcessingInstruction requires (target, data)"));
+            }
+
             return JsValue.Object(DomWrappers.Wrap(realm,
                 d.CreateProcessingInstruction(JsValue.ToStringValue(args[0]), JsValue.ToStringValue(args[1]))));
         }, length: 2);
         EventTargetBinding.DefineMethod(realm, docProto, "createComment", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
                 throw new JsThrow(realm.NewTypeError("createComment called on non-Document"));
+            }
+
             var c = d.CreateComment(args.Length > 0 ? JsValue.ToStringValue(args[0]) : "");
             return JsValue.Object(DomWrappers.Wrap(realm, c));
         }, length: 1);
@@ -1845,25 +2558,39 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, docProto, "createCDATASection", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
                 throw new JsThrow(realm.NewTypeError("createCDATASection called on non-Document"));
+            }
+
             var data = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
             if (data.Contains("]]>", StringComparison.Ordinal))
+            {
                 throw DomExceptionBinding.Throw(realm, "InvalidCharacterError", "CDATA section data must not contain ']]>'");
+            }
+
             return JsValue.Object(DomWrappers.Wrap(realm, d.CreateCDataSection(data)));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, docProto, "createDocumentFragment", (thisV, _) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is not { } d)
+            {
                 throw new JsThrow(realm.NewTypeError("createDocumentFragment called on non-Document"));
+            }
+
             return JsValue.Object(DomWrappers.Wrap(realm, d.CreateDocumentFragment()));
         }, length: 0);
         // DOM §4.5 — document.adoptNode(node): moves a node from its document into this one.
         EventTargetBinding.DefineMethod(realm, docProto, "adoptNode", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is null || args.Length == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("adoptNode requires a Node argument"));
+            }
+
             if (DomWrappers.UnwrapNode(args[0]) is null)
+            {
                 throw new JsThrow(realm.NewTypeError("adoptNode requires a Node argument"));
+            }
             // Adopt: remove from current parent. The ownerDocument change would require
             // walking the subtree; as a simplification we just return the node.
             var node = DomWrappers.UnwrapNode(args[0])!;
@@ -1874,9 +2601,15 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, docProto, "importNode", (thisV, args) =>
         {
             if (DomWrappers.UnwrapDocument(thisV) is null || args.Length == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("importNode requires a Node argument"));
+            }
+
             if (DomWrappers.UnwrapNode(args[0]) is not { } src)
+            {
                 throw new JsThrow(realm.NewTypeError("importNode requires a Node argument"));
+            }
+
             var deep = args.Length > 1 && JsValue.ToBoolean(args[1]);
             var clone = CloneNode(realm, src, deep);
             return JsValue.Object(DomWrappers.Wrap(realm, clone));
@@ -1937,12 +2670,22 @@ public static class NodeBindings
         foreach (var el in doc.GetElementsByTagName("base"))
         {
             var href = el.GetAttribute("href");
-            if (string.IsNullOrWhiteSpace(href)) continue;
+            if (string.IsNullOrWhiteSpace(href))
+            {
+                continue;
+            }
+
             if (Uri.TryCreate(href, UriKind.Absolute, out var absolute))
+            {
                 return absolute.ToString();
+            }
+
             if (Uri.TryCreate(documentUrl, UriKind.Absolute, out var baseUri)
                 && Uri.TryCreate(baseUri, href, out var resolved))
+            {
                 return resolved.ToString();
+            }
+
             break;
         }
         return documentUrl;
@@ -1978,7 +2721,9 @@ public static class NodeBindings
             // name is rejected only when it contains a '>' or ASCII whitespace,
             // which would break the "<!DOCTYPE name>" serialization.
             if (qname.Any(c => c is '>' or ' ' or '\t' or '\n' or '\r' or '\f'))
+            {
                 throw DomExceptionBinding.Throw(realm, "InvalidCharacterError", $"'{qname}' is not a valid doctype name");
+            }
             // The new doctype's node document is the implementation's document, so
             // its ownerDocument is non-null even before it is inserted into a tree.
             var dt = ownerDoc is { } d
@@ -2001,7 +2746,9 @@ public static class NodeBindings
             // DOM §4.5.1 — validate the qualified name (InvalidCharacterError /
             // NamespaceError) before building anything.
             if (qname.Length != 0)
+            {
                 ValidateQualifiedName(realm, ns, qname);
+            }
             // DOM §4.5.1 step 7 — the content type is derived from the namespace:
             // the HTML namespace → application/xhtml+xml, SVG → image/svg+xml,
             // anything else (or none) → application/xml.
@@ -2013,9 +2760,15 @@ public static class NodeBindings
             };
             var doc = new Document { IsHtml = false, ContentType = contentType }; // XML document — preserve name case
             if (args.Length > 2 && DomWrappers.UnwrapAs<DocumentType>(args[2]) is { } dt)
+            {
                 doc.AppendChild(dt);
+            }
+
             if (!string.IsNullOrEmpty(qname))
+            {
                 doc.AppendChild(doc.CreateElementNS(ns, qname));
+            }
+
             return JsValue.Object(DomWrappers.Wrap(realm, doc));
         }, length: 3);
 
@@ -2051,7 +2804,11 @@ public static class NodeBindings
 
     private static JsObject HtmlCollectionProto(JsRealm realm)
     {
-        if (HtmlCollectionProtos.TryGetValue(realm, out var proto)) return proto;
+        if (HtmlCollectionProtos.TryGetValue(realm, out var proto))
+        {
+            return proto;
+        }
+
         proto = new JsObject(realm.ObjectPrototype);
         proto.DefineOwnProperty(Starling.Js.Intrinsics.SymbolCtor.ToStringTag,
             PropertyDescriptor.Data(JsValue.String("HTMLCollection"), writable: false, enumerable: false, configurable: true));
@@ -2071,8 +2828,11 @@ public static class NodeBindings
         JsValue Iterate(JsValue thisV, JsValue[] _)
         {
             if (thisV.IsObject && thisV.AsObject is HtmlCollectionObject c)
+            {
                 return Starling.Js.Intrinsics.IteratorIntrinsics.CreateArrayIterator(
                     realm, MakeArray(realm, c.Values().ToList()), Starling.Js.Intrinsics.ArrayIteratorKind.Value);
+            }
+
             return JsValue.Undefined;
         }
         // HTMLCollection is iterable but, unlike NodeList, its WebIDL has no
@@ -2094,7 +2854,10 @@ public static class NodeBindings
 
     private static JsObject NodeListProto(JsRealm realm)
     {
-        if (NodeListProtos.TryGetValue(realm, out var proto)) return proto;
+        if (NodeListProtos.TryGetValue(realm, out var proto))
+        {
+            return proto;
+        }
         // Reuse the global NodeList.prototype (installed by EventTargetBinding) so
         // `list instanceof NodeList` holds, then augment it with the interface
         // members. NodeList has an iterable<Node> declaration, so it exposes a full
@@ -2135,8 +2898,10 @@ public static class NodeBindings
                 var thisArg = args.Length > 1 ? args[1] : JsValue.Undefined;
                 var snapshot = c.Values().ToList();
                 for (var i = 0; i < snapshot.Count; i++)
+                {
                     AbstractOperations.Call(realm.ActiveVm, fn, thisArg,
                         new[] { snapshot[i], JsValue.Number(i), thisV });
+                }
             }
             return JsValue.Undefined;
         }, length: 1);
@@ -2156,37 +2921,37 @@ public static class NodeBindings
     {
         EventTargetBinding.DefineAccessor(realm, proto, "name",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.String(e.GetAttribute("name") ?? "") : JsValue.String(""),
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) e.SetAttribute("name", args.Length > 0 ? JsValue.ToStringValue(args[0]) : ""); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { e.SetAttribute("name", args.Length > 0 ? JsValue.ToStringValue(args[0]) : ""); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, proto, "type",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.String(HtmlFormControls.InputType(e)) : JsValue.String(""),
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) e.SetAttribute("type", args.Length > 0 ? JsValue.ToStringValue(args[0]) : ""); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { e.SetAttribute("type", args.Length > 0 ? JsValue.ToStringValue(args[0]) : ""); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, proto, "required",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.Boolean(e.HasAttribute("required")) : JsValue.False,
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) SetBoolAttr(e, "required", args.Length > 0 && JsValue.ToBoolean(args[0])); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { SetBoolAttr(e, "required", args.Length > 0 && JsValue.ToBoolean(args[0])); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, proto, "disabled",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.Boolean(e.HasAttribute("disabled")) : JsValue.False,
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) SetBoolAttr(e, "disabled", args.Length > 0 && JsValue.ToBoolean(args[0])); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { SetBoolAttr(e, "disabled", args.Length > 0 && JsValue.ToBoolean(args[0])); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, proto, "readOnly",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.Boolean(e.HasAttribute("readonly")) : JsValue.False,
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) SetBoolAttr(e, "readonly", args.Length > 0 && JsValue.ToBoolean(args[0])); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { SetBoolAttr(e, "readonly", args.Length > 0 && JsValue.ToBoolean(args[0])); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, proto, "multiple",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.Boolean(e.HasAttribute("multiple")) : JsValue.False,
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) SetBoolAttr(e, "multiple", args.Length > 0 && JsValue.ToBoolean(args[0])); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { SetBoolAttr(e, "multiple", args.Length > 0 && JsValue.ToBoolean(args[0])); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, proto, "checked",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.Boolean(HtmlFormControls.Checked(e)) : JsValue.False,
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) HtmlFormControls.SetChecked(e, args.Length > 0 && JsValue.ToBoolean(args[0])); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { HtmlFormControls.SetChecked(e, args.Length > 0 && JsValue.ToBoolean(args[0])); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, proto, "selected",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.Boolean(e.HasAttribute("selected")) : JsValue.False,
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) SetBoolAttr(e, "selected", args.Length > 0 && JsValue.ToBoolean(args[0])); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { SetBoolAttr(e, "selected", args.Length > 0 && JsValue.ToBoolean(args[0])); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, proto, "form",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e && HtmlFormControls.FormOwner(e) is { } form
                 ? JsValue.Object(DomWrappers.Wrap(realm, form)) : JsValue.Null);
         EventTargetBinding.DefineAccessor(realm, proto, "selectionStart",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e && HtmlFormControls.IsTextControl(e) ? JsValue.Number(e.SelectionStart) : JsValue.Null,
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) HtmlFormControls.SetSelectionRange(e, args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : 0, e.SelectionEnd, e.SelectionDirection); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { HtmlFormControls.SetSelectionRange(e, args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : 0, e.SelectionEnd, e.SelectionDirection); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, proto, "selectionEnd",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e && HtmlFormControls.IsTextControl(e) ? JsValue.Number(e.SelectionEnd) : JsValue.Null,
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) HtmlFormControls.SetSelectionRange(e, e.SelectionStart, args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : 0, e.SelectionDirection); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { HtmlFormControls.SetSelectionRange(e, e.SelectionStart, args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : 0, e.SelectionDirection); } return JsValue.Undefined; });
         EventTargetBinding.DefineAccessor(realm, proto, "validity",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.Object(BuildValidityObject(realm, HtmlFormControls.Validity(e))) : JsValue.Undefined);
         EventTargetBinding.DefineAccessor(realm, proto, "willValidate",
@@ -2195,14 +2960,17 @@ public static class NodeBindings
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.String(HtmlFormControls.ValidationMessage(e)) : JsValue.String(""));
         EventTargetBinding.DefineAccessor(realm, proto, "selectedIndex",
             (thisV, _) => DomWrappers.UnwrapElement(thisV) is { } e ? JsValue.Number(SelectedIndex(e)) : JsValue.Number(-1),
-            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) SetSelectedIndex(e, args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : -1); return JsValue.Undefined; });
+            (thisV, args) => { if (DomWrappers.UnwrapElement(thisV) is { } e) { SetSelectedIndex(e, args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : -1); } return JsValue.Undefined; });
         EventTargetBinding.DefineMethod(realm, proto, "setSelectionRange", (thisV, args) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is { } e)
+            {
                 HtmlFormControls.SetSelectionRange(e,
                     args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : 0,
                     args.Length > 1 ? (int)JsValue.ToNumber(args[1]) : 0,
                     args.Length > 2 ? JsValue.ToStringValue(args[2]) : "none");
+            }
+
             return JsValue.Undefined;
         }, length: 2);
         EventTargetBinding.DefineMethod(realm, proto, "checkValidity", (thisV, _) =>
@@ -2212,7 +2980,10 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, proto, "setCustomValidity", (thisV, args) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is { } e)
+            {
                 e.CustomValidationMessage = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
+            }
+
             return JsValue.Undefined;
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, proto, "serialize", (thisV, _) =>
@@ -2220,17 +2991,31 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, proto, "submit", (thisV, _) =>
         {
             if (DomWrappers.UnwrapElement(thisV) is { LocalName: "form" } form)
+            {
                 HtmlFormControls.RecordAutocompleteSubmission(form);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, proto, "requestSubmit", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapElement(thisV) is not { LocalName: "form" } form) return JsValue.Undefined;
-            if (!DispatchInvalidEvents(form)) return JsValue.Undefined;
+            if (DomWrappers.UnwrapElement(thisV) is not { LocalName: "form" } form)
+            {
+                return JsValue.Undefined;
+            }
+
+            if (!DispatchInvalidEvents(form))
+            {
+                return JsValue.Undefined;
+            }
+
             var ev = new Starling.Dom.Events.Event("submit", new Starling.Dom.Events.EventInit(Bubbles: true, Cancelable: true));
             form.DispatchEvent(ev);
             if (!ev.DefaultPrevented)
+            {
                 HtmlFormControls.RecordAutocompleteSubmission(form);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, proto, "autocompleteSuggestions", (thisV, _) =>
@@ -2258,20 +3043,39 @@ public static class NodeBindings
     {
         var items = new JsValue[values.Count];
         for (var i = 0; i < values.Count; i++)
+        {
             items[i] = JsValue.String(values[i]);
+        }
+
         return MakeArray(realm, items);
     }
 
     private static int SelectedIndex(Element element)
     {
-        if (element.LocalName != "select") return -1;
+        if (element.LocalName != "select")
+        {
+            return -1;
+        }
+
         var index = 0;
         var fallback = -1;
         foreach (var option in element.DescendantElements())
         {
-            if (option.LocalName != "option") continue;
-            if (fallback < 0) fallback = index;
-            if (option.HasAttribute("selected")) return index;
+            if (option.LocalName != "option")
+            {
+                continue;
+            }
+
+            if (fallback < 0)
+            {
+                fallback = index;
+            }
+
+            if (option.HasAttribute("selected"))
+            {
+                return index;
+            }
+
             index++;
         }
         return fallback;
@@ -2279,13 +3083,28 @@ public static class NodeBindings
 
     private static void SetSelectedIndex(Element element, int selectedIndex)
     {
-        if (element.LocalName != "select") return;
+        if (element.LocalName != "select")
+        {
+            return;
+        }
+
         var index = 0;
         foreach (var option in element.DescendantElements())
         {
-            if (option.LocalName != "option") continue;
-            if (index == selectedIndex) option.SetAttribute("selected", string.Empty);
-            else if (!element.HasAttribute("multiple")) option.RemoveAttribute("selected");
+            if (option.LocalName != "option")
+            {
+                continue;
+            }
+
+            if (index == selectedIndex)
+            {
+                option.SetAttribute("selected", string.Empty);
+            }
+            else if (!element.HasAttribute("multiple"))
+            {
+                option.RemoveAttribute("selected");
+            }
+
             index++;
         }
     }
@@ -2295,7 +3114,11 @@ public static class NodeBindings
         var valid = true;
         foreach (var control in HtmlFormControls.FormControls(form))
         {
-            if (HtmlFormControls.Validity(control).Valid) continue;
+            if (HtmlFormControls.Validity(control).Valid)
+            {
+                continue;
+            }
+
             valid = false;
             control.DispatchEvent(new Starling.Dom.Events.Event("invalid", new Starling.Dom.Events.EventInit(Cancelable: true)));
         }
@@ -2304,8 +3127,14 @@ public static class NodeBindings
 
     private static void SetBoolAttr(Element element, string attr, bool value)
     {
-        if (value) element.SetAttribute(attr, string.Empty);
-        else element.RemoveAttribute(attr);
+        if (value)
+        {
+            element.SetAttribute(attr, string.Empty);
+        }
+        else
+        {
+            element.RemoveAttribute(attr);
+        }
     }
 
     // ---- DOM Name / QName validation (DOM §1 "validate", §4.5). Approximates
@@ -2321,7 +3150,10 @@ public static class NodeBindings
         var doc = context.OwnerDocument ?? context as Document ?? new Document();
         var list = new List<Node>(args.Length);
         foreach (var a in args)
+        {
             list.Add(DomWrappers.UnwrapNode(a) is { } n ? n : doc.CreateTextNode(JsValue.ToStringValue(a)));
+        }
+
         return list;
     }
 
@@ -2332,7 +3164,11 @@ public static class NodeBindings
     /// <summary>Walk up to the tree root of <paramref name="n"/> (no owner doc).</summary>
     private static Node NodeRoot(Node n)
     {
-        while (n.ParentNode is { } p) n = p;
+        while (n.ParentNode is { } p)
+        {
+            n = p;
+        }
+
         return n;
     }
 
@@ -2343,7 +3179,11 @@ public static class NodeBindings
         var cur = descendant;
         while (cur is not null)
         {
-            if (ReferenceEquals(cur, ancestor)) return true;
+            if (ReferenceEquals(cur, ancestor))
+            {
+                return true;
+            }
+
             cur = cur.ParentNode;
         }
         return false;
@@ -2359,7 +3199,10 @@ public static class NodeBindings
         {
             var path = new System.Collections.Generic.List<Node>();
             for (var cur = n; cur is not null; cur = cur.ParentNode)
+            {
                 path.Insert(0, cur);
+            }
+
             return path;
         }
         var pa = Path(a);
@@ -2372,11 +3215,22 @@ public static class NodeBindings
             {
                 // pa[i-1] is the common ancestor; find sibling index.
                 var parent = i > 0 ? pa[i - 1] : null;
-                if (parent is null) return false;
+                if (parent is null)
+                {
+                    return false;
+                }
+
                 for (var child = parent.FirstChild; child is not null; child = child.NextSibling)
                 {
-                    if (ReferenceEquals(child, pa[i])) return true;   // a's branch comes first
-                    if (ReferenceEquals(child, pb[i])) return false;  // b's branch comes first
+                    if (ReferenceEquals(child, pa[i]))
+                    {
+                        return true;   // a's branch comes first
+                    }
+
+                    if (ReferenceEquals(child, pb[i]))
+                    {
+                        return false;  // b's branch comes first
+                    }
                 }
                 return false;
             }
@@ -2388,39 +3242,76 @@ public static class NodeBindings
     /// <summary>Structural (deep) equality per DOM §4.4.3 isEqualNode algorithm.</summary>
     private static bool AreEqual(Node? a, Node? b)
     {
-        if (a is null && b is null) return true;
-        if (a is null || b is null) return false;
-        if (a.Kind != b.Kind) return false;
+        if (a is null && b is null)
+        {
+            return true;
+        }
+
+        if (a is null || b is null)
+        {
+            return false;
+        }
+
+        if (a.Kind != b.Kind)
+        {
+            return false;
+        }
         // Check node-type-specific attributes.
         switch (a)
         {
             case Element ea when b is Element eb:
-                if (ea.TagName != eb.TagName || ea.Namespace != eb.Namespace) return false;
+                if (ea.TagName != eb.TagName || ea.Namespace != eb.Namespace)
+                {
+                    return false;
+                }
                 // Compare attributes (order-independent).
                 var attrsA = ea.Attributes;
                 var attrsB = eb.Attributes;
-                if (attrsA.Count != attrsB.Count) return false;
+                if (attrsA.Count != attrsB.Count)
+                {
+                    return false;
+                }
+
                 for (var i = 0; i < attrsA.Count; i++)
                 {
                     var atA = attrsA[i];
                     var localName = NamedNodeMap.LocalNameOf(atA.Name);
                     var atB = eb.GetAttributeNS(atA.Namespace, localName);
-                    if (atB is null || atA.Value != atB) return false;
+                    if (atB is null || atA.Value != atB)
+                    {
+                        return false;
+                    }
                 }
                 break;
             case Text ta when b is Text tb:
-                if (ta.Data != tb.Data) return false;
+                if (ta.Data != tb.Data)
+                {
+                    return false;
+                }
+
                 break;
             case Comment ca when b is Comment cb:
-                if (ca.Data != cb.Data) return false;
+                if (ca.Data != cb.Data)
+                {
+                    return false;
+                }
+
                 break;
             case ProcessingInstruction pia when b is ProcessingInstruction pib:
-                if (pia.Target != pib.Target || pia.Data != pib.Data) return false;
+                if (pia.Target != pib.Target || pia.Data != pib.Data)
+                {
+                    return false;
+                }
+
                 break;
             case Document:
                 break; // Documents are equal iff children are equal (checked below).
             case DocumentType dta when b is DocumentType dtb:
-                if (dta.Name != dtb.Name) return false;
+                if (dta.Name != dtb.Name)
+                {
+                    return false;
+                }
+
                 break;
         }
         // Recurse into children.
@@ -2428,7 +3319,11 @@ public static class NodeBindings
         var bc = b.FirstChild;
         while (ac is not null && bc is not null)
         {
-            if (!AreEqual(ac, bc)) return false;
+            if (!AreEqual(ac, bc))
+            {
+                return false;
+            }
+
             ac = ac.NextSibling;
             bc = bc.NextSibling;
         }
@@ -2440,29 +3335,55 @@ public static class NodeBindings
     /// (tag/data/etc.), the same attributes, and the same children — recursively.</summary>
     private static bool NodesEqual(Node a, Node b)
     {
-        if (a.Kind != b.Kind) return false;
+        if (a.Kind != b.Kind)
+        {
+            return false;
+        }
+
         switch (a)
         {
             case DocumentType dta when b is DocumentType dtb:
-                if (dta.Name != dtb.Name || dta.PublicId != dtb.PublicId || dta.SystemId != dtb.SystemId) return false;
+                if (dta.Name != dtb.Name || dta.PublicId != dtb.PublicId || dta.SystemId != dtb.SystemId)
+                {
+                    return false;
+                }
+
                 break;
             case Element ea when b is Element eb:
-                if (ea.Namespace != eb.Namespace || ea.LocalName != eb.LocalName) return false;
+                if (ea.Namespace != eb.Namespace || ea.LocalName != eb.LocalName)
+                {
+                    return false;
+                }
                 // Compare attributes (order-independent per spec).
                 var attrsA = ea.Attributes.ToList();
                 var attrsB = eb.Attributes.ToList();
-                if (attrsA.Count != attrsB.Count) return false;
+                if (attrsA.Count != attrsB.Count)
+                {
+                    return false;
+                }
+
                 foreach (var attr in attrsA)
                 {
                     var matchIdx = attrsB.FindIndex(x => x.Name == attr.Name && x.Namespace == attr.Namespace);
-                    if (matchIdx < 0 || attrsB[matchIdx].Value != attr.Value) return false;
+                    if (matchIdx < 0 || attrsB[matchIdx].Value != attr.Value)
+                    {
+                        return false;
+                    }
                 }
                 break;
             case ProcessingInstruction pia when b is ProcessingInstruction pib:
-                if (pia.Target != pib.Target || pia.Data != pib.Data) return false;
+                if (pia.Target != pib.Target || pia.Data != pib.Data)
+                {
+                    return false;
+                }
+
                 break;
             case CharacterData cda when b is CharacterData cdb:
-                if (cda.Data != cdb.Data) return false;
+                if (cda.Data != cdb.Data)
+                {
+                    return false;
+                }
+
                 break;
         }
         // Recursively compare children.
@@ -2470,7 +3391,11 @@ public static class NodeBindings
         var cb = b.FirstChild;
         while (ca is not null && cb is not null)
         {
-            if (!NodesEqual(ca, cb)) return false;
+            if (!NodesEqual(ca, cb))
+            {
+                return false;
+            }
+
             ca = ca.NextSibling;
             cb = cb.NextSibling;
         }
@@ -2486,7 +3411,11 @@ public static class NodeBindings
     private static long CdataOffset(JsValue v)
     {
         var d = JsValue.ToNumber(v);
-        if (double.IsNaN(d) || double.IsInfinity(d)) return 0;
+        if (double.IsNaN(d) || double.IsInfinity(d))
+        {
+            return 0;
+        }
+
         return unchecked((uint)(long)Math.Truncate(d));
     }
 
@@ -2544,13 +3473,24 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, cdProto, "substringData", (thisV, args) =>
         {
             var cd = DomWrappers.UnwrapAs<CharacterData>(thisV);
-            if (cd is null) return JsValue.String("");
-            if (args.Length < 2) throw new JsThrow(realm.NewTypeError("substringData requires 2 arguments"));
+            if (cd is null)
+            {
+                return JsValue.String("");
+            }
+
+            if (args.Length < 2)
+            {
+                throw new JsThrow(realm.NewTypeError("substringData requires 2 arguments"));
+            }
+
             var offset = CdataOffset(args[0]);
             var count = CdataOffset(args[1]);
             var len = cd.Data.Length;
             if (offset > len)
+            {
                 throw DomExceptionBinding.Throw(realm, "IndexSizeError", $"Offset {offset} is outside the data length {len}");
+            }
+
             var o = (int)offset;
             var realCount = (int)Math.Min(count, len - o);
             return JsValue.String(cd.Data.Substring(o, realCount));
@@ -2562,7 +3502,11 @@ public static class NodeBindings
         {
             if (DomWrappers.UnwrapAs<CharacterData>(thisV) is { } cd)
             {
-                if (args.Length < 1) throw new JsThrow(realm.NewTypeError("appendData requires 1 argument"));
+                if (args.Length < 1)
+                {
+                    throw new JsThrow(realm.NewTypeError("appendData requires 1 argument"));
+                }
+
                 var data = JsValue.ToStringValue(args[0]);
                 var pos = cd.Data.Length;
                 cd.Data += data;
@@ -2575,13 +3519,24 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, cdProto, "insertData", (thisV, args) =>
         {
             var cd = DomWrappers.UnwrapAs<CharacterData>(thisV);
-            if (cd is null) return JsValue.Undefined;
-            if (args.Length < 2) throw new JsThrow(realm.NewTypeError("insertData requires 2 arguments"));
+            if (cd is null)
+            {
+                return JsValue.Undefined;
+            }
+
+            if (args.Length < 2)
+            {
+                throw new JsThrow(realm.NewTypeError("insertData requires 2 arguments"));
+            }
+
             var offset = CdataOffset(args[0]);
             var data = JsValue.ToStringValue(args[1]);
             var len = cd.Data.Length;
             if (offset > len)
+            {
                 throw DomExceptionBinding.Throw(realm, "IndexSizeError", $"Offset {offset} is outside the data length {len}");
+            }
+
             var o = (int)offset;
             cd.Data = cd.Data[..o] + data + cd.Data[o..];
             Starling.Dom.DomRange.OnReplaceData(cd, o, 0, data.Length);
@@ -2592,13 +3547,24 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, cdProto, "deleteData", (thisV, args) =>
         {
             var cd = DomWrappers.UnwrapAs<CharacterData>(thisV);
-            if (cd is null) return JsValue.Undefined;
-            if (args.Length < 2) throw new JsThrow(realm.NewTypeError("deleteData requires 2 arguments"));
+            if (cd is null)
+            {
+                return JsValue.Undefined;
+            }
+
+            if (args.Length < 2)
+            {
+                throw new JsThrow(realm.NewTypeError("deleteData requires 2 arguments"));
+            }
+
             var offset = CdataOffset(args[0]);
             var count = CdataOffset(args[1]);
             var len = cd.Data.Length;
             if (offset > len)
+            {
                 throw DomExceptionBinding.Throw(realm, "IndexSizeError", $"Offset {offset} is outside the data length {len}");
+            }
+
             var o = (int)offset;
             var realCount = (int)Math.Min(count, len - o);
             cd.Data = cd.Data[..o] + cd.Data[(o + realCount)..];
@@ -2610,14 +3576,25 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, cdProto, "replaceData", (thisV, args) =>
         {
             var cd = DomWrappers.UnwrapAs<CharacterData>(thisV);
-            if (cd is null) return JsValue.Undefined;
-            if (args.Length < 3) throw new JsThrow(realm.NewTypeError("replaceData requires 3 arguments"));
+            if (cd is null)
+            {
+                return JsValue.Undefined;
+            }
+
+            if (args.Length < 3)
+            {
+                throw new JsThrow(realm.NewTypeError("replaceData requires 3 arguments"));
+            }
+
             var offset = CdataOffset(args[0]);
             var count = CdataOffset(args[1]);
             var data = JsValue.ToStringValue(args[2]);
             var len = cd.Data.Length;
             if (offset > len)
+            {
                 throw DomExceptionBinding.Throw(realm, "IndexSizeError", $"Offset {offset} is outside the data length {len}");
+            }
+
             var o = (int)offset;
             var realCount = (int)Math.Min(count, len - o);
             cd.Data = cd.Data[..o] + data + cd.Data[(o + realCount)..];
@@ -2643,27 +3620,48 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, textProto, "splitText", (thisV, args) =>
         {
             var text = DomWrappers.UnwrapAs<Text>(thisV);
-            if (text is null) throw new JsThrow(realm.NewTypeError("splitText called on non-Text node"));
+            if (text is null)
+            {
+                throw new JsThrow(realm.NewTypeError("splitText called on non-Text node"));
+            }
+
             var offset = args.Length > 0 ? (int)JsValue.ToNumber(args[0]) : 0;
             var len = text.Data.Length;
             if (offset < 0 || offset > len)
+            {
                 throw DomExceptionBinding.Throw(realm, "IndexSizeError", $"Offset {offset} is outside the text length {len}");
+            }
+
             var newText = new Text(text.Data[offset..]);
             text.Data = text.Data[..offset];
             if (text.ParentNode is { } parent)
+            {
                 parent.InsertBefore(newText, text.NextSibling);
+            }
+
             return JsValue.Object(DomWrappers.Wrap(realm, newText));
         }, length: 1);
         // Text.wholeText — concatenates text node and adjacent text siblings.
         EventTargetBinding.DefineAccessor(realm, textProto, "wholeText", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapAs<Text>(thisV) is not { } t) return JsValue.String("");
+            if (DomWrappers.UnwrapAs<Text>(thisV) is not { } t)
+            {
+                return JsValue.String("");
+            }
+
             var sb = new System.Text.StringBuilder();
             // Walk backwards to find start
             Node cur = t;
-            while (cur.PreviousSibling is Text prev) cur = prev;
+            while (cur.PreviousSibling is Text prev)
+            {
+                cur = prev;
+            }
             // Concatenate
-            while (cur is Text txt) { sb.Append(txt.Data); cur = cur.NextSibling!; if (cur is null) break; }
+            while (cur is Text txt) { sb.Append(txt.Data); cur = cur.NextSibling!; if (cur is null)
+                {
+                    break;
+                }
+            }
             return JsValue.String(sb.ToString());
         });
 
@@ -2722,16 +3720,27 @@ public static class NodeBindings
         realm.DocumentFragmentPrototype = dfProto;
         EventTargetBinding.DefineMethod(realm, dfProto, "querySelector", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapAs<DocumentFragment>(thisV) is not { } df || args.Length == 0) return JsValue.Null;
+            if (DomWrappers.UnwrapAs<DocumentFragment>(thisV) is not { } df || args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var match = QuerySelectorEngine.First(df, JsValue.ToStringValue(args[0]), realm);
             return match is null ? JsValue.Null : JsValue.Object(DomWrappers.Wrap(realm, match));
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, dfProto, "querySelectorAll", (thisV, args) =>
         {
-            if (DomWrappers.UnwrapAs<DocumentFragment>(thisV) is not { } df || args.Length == 0) return MakeArray(realm, Array.Empty<JsValue>());
+            if (DomWrappers.UnwrapAs<DocumentFragment>(thisV) is not { } df || args.Length == 0)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var items = new List<JsValue>();
             foreach (var m in QuerySelectorEngine.All(df, JsValue.ToStringValue(args[0]), realm))
+            {
                 items.Add(JsValue.Object(DomWrappers.Wrap(realm, m)));
+            }
+
             return MakeArray(realm, items);
         }, length: 1);
         var dfCtor = new JsNativeFunction(realm, "DocumentFragment", 0, (_, _) =>
@@ -2778,19 +3787,25 @@ public static class NodeBindings
     {
         // Parent must be able to have children.
         if (parent is not (Document or Element or DocumentFragment))
+        {
             throw DomExceptionBinding.Throw(realm, "HierarchyRequestError",
                 $"Node of type '{parent.GetType().Name}' cannot have children");
+        }
         // Child must not be an ancestor of parent (cycle check).
         for (var p = parent; p is not null; p = p.ParentNode)
         {
             if (ReferenceEquals(p, child))
+            {
                 throw DomExceptionBinding.Throw(realm, "HierarchyRequestError",
                     "The new child element contains the parent");
+            }
         }
         // A document cannot be inserted as a child (unless it's already there somehow).
         if (child is Document && parent is not Document)
+        {
             throw DomExceptionBinding.Throw(realm, "HierarchyRequestError",
                 "Documents cannot be inserted as a child node");
+        }
     }
 
     /// <summary>Convert an <see cref="InvalidOperationException"/> from a host
@@ -2801,10 +3816,15 @@ public static class NodeBindings
         var msg = ex.Message ?? "";
         if (msg.Contains("ancestor", StringComparison.OrdinalIgnoreCase) ||
             msg.Contains("hierarchy", StringComparison.OrdinalIgnoreCase))
+        {
             return DomExceptionBinding.Throw(realm, "HierarchyRequestError", msg);
+        }
+
         if (msg.Contains("not found", StringComparison.OrdinalIgnoreCase) ||
             msg.Contains("not a child", StringComparison.OrdinalIgnoreCase))
+        {
             return DomExceptionBinding.Throw(realm, "NotFoundError", msg);
+        }
         // Default: HierarchyRequestError
         return DomExceptionBinding.Throw(realm, "HierarchyRequestError", msg);
     }
@@ -2844,11 +3864,23 @@ public static class NodeBindings
         if (d.DocumentElement is { LocalName: "svg", Namespace: svgNs } svgRoot)
         {
             for (var c = svgRoot.FirstChild; c is not null; c = c.NextSibling)
-                if (c is Element { LocalName: "title", Namespace: svgNs } st) return st;
+            {
+                if (c is Element { LocalName: "title", Namespace: svgNs } st)
+                {
+                    return st;
+                }
+            }
+
             return null;
         }
         foreach (var n in d.Descendants())
-            if (n is Element { LocalName: "title" } t) return t;
+        {
+            if (n is Element { LocalName: "title" } t)
+            {
+                return t;
+            }
+        }
+
         return null;
     }
 
@@ -2874,9 +3906,19 @@ public static class NodeBindings
 
     private static bool IsValidName(string name)
     {
-        if (string.IsNullOrEmpty(name) || !IsNameStart(name[0])) return false;
+        if (string.IsNullOrEmpty(name) || !IsNameStart(name[0]))
+        {
+            return false;
+        }
+
         for (var i = 1; i < name.Length; i++)
-            if (!IsNameChar(name[i])) return false;
+        {
+            if (!IsNameChar(name[i]))
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -2887,12 +3929,21 @@ public static class NodeBindings
     private static bool IsValidQName(string qname, out string? prefix)
     {
         prefix = null;
-        if (string.IsNullOrEmpty(qname)) return false;
+        if (string.IsNullOrEmpty(qname))
+        {
+            return false;
+        }
+
         var colon = qname.IndexOf(':', StringComparison.Ordinal);
         if (colon < 0)
+        {
             return IsValidName(qname);    // unprefixed — must be a full NCName (NameStart first)
+        }
         // An empty prefix (":local") or empty local part ("prefix:") is invalid.
-        if (colon == 0 || colon == qname.Length - 1) return false;
+        if (colon == 0 || colon == qname.Length - 1)
+        {
+            return false;
+        }
         // Match browser leniency exactly (see the WPT name-validity cases): the
         // prefix is an Nmtoken — every char is a NameChar but a leading digit is
         // tolerated ("0:a" is valid) — while the local part must be a real NCName
@@ -2902,10 +3953,26 @@ public static class NodeBindings
         var prefixPart = qname[..colon];
         var localPart = qname[(colon + 1)..];
         foreach (var c in prefixPart)
-            if (!IsNameChar(c)) return false;
-        if (!IsNameStart(localPart[0])) return false;
+        {
+            if (!IsNameChar(c))
+            {
+                return false;
+            }
+        }
+
+        if (!IsNameStart(localPart[0]))
+        {
+            return false;
+        }
+
         for (var i = 1; i < localPart.Length; i++)
-            if (!IsNameChar(localPart[i])) return false;
+        {
+            if (!IsNameChar(localPart[i]))
+            {
+                return false;
+            }
+        }
+
         prefix = prefixPart;              // everything before the FIRST colon
         return true;
     }
@@ -2916,15 +3983,26 @@ public static class NodeBindings
     private static void ValidateQualifiedName(JsRealm realm, string? ns, string qname)
     {
         if (!IsValidQName(qname, out var prefix))
+        {
             throw DomExceptionBinding.Throw(realm, "InvalidCharacterError", $"'{qname}' is not a valid qualified name");
+        }
+
         var nsOrNull = string.IsNullOrEmpty(ns) ? null : ns;
         if (prefix is not null && nsOrNull is null)
+        {
             throw DomExceptionBinding.Throw(realm, "NamespaceError", "a prefix requires a non-null namespace");
+        }
+
         if (prefix == "xml" && nsOrNull != XmlNamespace)
+        {
             throw DomExceptionBinding.Throw(realm, "NamespaceError", "the 'xml' prefix requires the XML namespace");
+        }
+
         var isXmlns = qname == "xmlns" || prefix == "xmlns";
         if (isXmlns != (nsOrNull == XmlnsNamespace))
+        {
             throw DomExceptionBinding.Throw(realm, "NamespaceError", "the xmlns name/namespace must match");
+        }
     }
 
     /// <summary>Run the HTML fragment parsing algorithm for <paramref name="markup"/>
@@ -2997,7 +4075,10 @@ public static class NodeBindings
             var text = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
             var fontPx = 10.0;
             if (thisV.IsObject && thisV.AsObject.Get("font") is { IsString: true } f)
+            {
                 fontPx = ParseFontPx(f.AsString) ?? 10.0;
+            }
+
             var metrics = new JsObject(realm.ObjectPrototype);
             metrics.Set("width", JsValue.Number(text.Length * fontPx * 0.5));
             return JsValue.Object(metrics);
@@ -3011,7 +4092,9 @@ public static class NodeBindings
             "scale", "rotate", "translate", "setTransform", "fillText", "strokeText",
             "drawImage", "arc", "clip",
         })
+        {
             EventTargetBinding.DefineMethod(realm, ctx, noop, (_, _) => JsValue.Undefined, length: 0);
+        }
 
         return ctx;
     }
@@ -3021,9 +4104,17 @@ public static class NodeBindings
     private static double? ParseFontPx(string font)
     {
         var idx = font.IndexOf("px", StringComparison.OrdinalIgnoreCase);
-        if (idx <= 0) return null;
+        if (idx <= 0)
+        {
+            return null;
+        }
+
         var start = idx;
-        while (start > 0 && (char.IsDigit(font[start - 1]) || font[start - 1] == '.')) start--;
+        while (start > 0 && (char.IsDigit(font[start - 1]) || font[start - 1] == '.'))
+        {
+            start--;
+        }
+
         return double.TryParse(font.AsSpan(start, idx - start),
             System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
     }
@@ -3058,14 +4149,20 @@ public static class NodeBindings
     {
         var host = WindowBinding.LayoutHostForRealm(realm);
         if (host is null || DomWrappers.UnwrapElement(thisV) is not { } e)
+        {
             return JsValue.Number(0);
+        }
+
         if (IsDocumentScroller(e))
         {
             var r = host.GetRootScrollMetrics();
             return JsValue.Number(vertical ? r.ScrollTop : r.ScrollLeft);
         }
         if (host.TryGetScrollMetrics(e, out var m))
+        {
             return JsValue.Number(vertical ? m.ScrollTop : m.ScrollLeft);
+        }
+
         return JsValue.Number(0);
     }
 
@@ -3078,9 +4175,16 @@ public static class NodeBindings
     {
         var host = WindowBinding.LayoutHostForRealm(realm);
         if (host is null || DomWrappers.UnwrapElement(thisV) is not { } e)
+        {
             return JsValue.Undefined;
+        }
+
         var v = args.Length > 0 ? JsValue.ToNumber(args[0]) : 0;
-        if (!double.IsFinite(v)) v = 0; // CSSOM: normalize non-finite values
+        if (!double.IsFinite(v))
+        {
+            v = 0; // CSSOM: normalize non-finite values
+        }
+
         if (IsDocumentScroller(e))
         {
             var r = host.GetRootScrollMetrics();
@@ -3110,21 +4214,30 @@ public static class NodeBindings
     {
         var host = WindowBinding.LayoutHostForRealm(realm);
         if (host is null || DomWrappers.UnwrapElement(thisV) is not { } e)
+        {
             return JsValue.Number(0);
+        }
+
         if (IsDocumentScroller(e))
         {
             var r = host.GetRootScrollMetrics();
             var rootSize = vertical ? r.ScrollHeight : r.ScrollWidth;
             // All-zero root metrics mean no store behind the host (legacy
             // snapshot) — fall through to the offset alias below.
-            if (rootSize > 0) return JsValue.Number(rootSize);
+            if (rootSize > 0)
+            {
+                return JsValue.Number(rootSize);
+            }
         }
         else if (host.TryGetScrollMetrics(e, out var m))
         {
             return JsValue.Number(vertical ? m.ScrollHeight : m.ScrollWidth);
         }
         if (host.TryGetOffsetMetrics(e, out var om))
+        {
             return JsValue.Number(vertical ? om.OffsetHeight : om.OffsetWidth);
+        }
+
         return JsValue.Number(0);
     }
 
@@ -3148,14 +4261,29 @@ public static class NodeBindings
         {
             var o = args[0].AsObject;
             var l = o.Get("left");
-            if (!l.IsUndefined) left = JsValue.ToNumber(l);
+            if (!l.IsUndefined)
+            {
+                left = JsValue.ToNumber(l);
+            }
+
             var t = o.Get("top");
-            if (!t.IsUndefined) top = JsValue.ToNumber(t);
+            if (!t.IsUndefined)
+            {
+                top = JsValue.ToNumber(t);
+            }
         }
         var lx = left.GetValueOrDefault();
         var ty = top.GetValueOrDefault();
-        if (!double.IsFinite(lx)) lx = 0;
-        if (!double.IsFinite(ty)) ty = 0;
+        if (!double.IsFinite(lx))
+        {
+            lx = 0;
+        }
+
+        if (!double.IsFinite(ty))
+        {
+            ty = 0;
+        }
+
         if (relative)
         {
             x = currentX + lx;
@@ -3175,7 +4303,10 @@ public static class NodeBindings
     {
         var host = WindowBinding.LayoutHostForRealm(realm);
         if (host is null || DomWrappers.UnwrapElement(thisV) is not { } e)
+        {
             return JsValue.Undefined;
+        }
+
         if (IsDocumentScroller(e))
         {
             var r = host.GetRootScrollMetrics();
@@ -3183,7 +4314,11 @@ public static class NodeBindings
             host.SetRootScrollOffset(rx, ry);
             return JsValue.Undefined;
         }
-        if (!host.TryGetScrollMetrics(e, out var m)) return JsValue.Undefined;
+        if (!host.TryGetScrollMetrics(e, out var m))
+        {
+            return JsValue.Undefined;
+        }
+
         ParseScrollArgs(args, relative, m.ScrollLeft, m.ScrollTop, out var x, out var y);
         host.SetScrollOffset(e, x, y);
         return JsValue.Undefined;
@@ -3199,7 +4334,9 @@ public static class NodeBindings
     {
         var host = WindowBinding.LayoutHostForRealm(realm);
         if (host is null || DomWrappers.UnwrapElement(thisV) is not { } e)
+        {
             return JsValue.Undefined;
+        }
 
         var blockAlign = ScrollAlign.Start;
         var inlineAlign = ScrollAlign.Nearest;
@@ -3217,7 +4354,10 @@ public static class NodeBindings
             }
         }
 
-        if (!host.TryGetBoundingClientRect(e, out var target)) return JsValue.Undefined;
+        if (!host.TryGetBoundingClientRect(e, out var target))
+        {
+            return JsValue.Undefined;
+        }
 
         // Host rects are document-space at scroll zero, so the target's
         // *visual* position at each level is its layout rect minus the
@@ -3226,9 +4366,20 @@ public static class NodeBindings
         double accX = 0, accY = 0;
         for (var p = e.ParentElement; p is not null; p = p.ParentElement)
         {
-            if (IsDocumentScroller(p)) break; // the viewport leg below owns the root
-            if (!host.TryGetScrollMetrics(p, out var m)) continue;
-            if (!host.TryGetBoundingClientRect(p, out var box)) continue;
+            if (IsDocumentScroller(p))
+            {
+                break; // the viewport leg below owns the root
+            }
+
+            if (!host.TryGetScrollMetrics(p, out var m))
+            {
+                continue;
+            }
+
+            if (!host.TryGetBoundingClientRect(p, out var box))
+            {
+                continue;
+            }
             // Target in the scroller's scroll-origin (padding-box) space.
             var elemX = target.X - accX - (box.X + m.ClientLeft);
             var elemY = target.Y - accY - (box.Y + m.ClientTop);
@@ -3258,14 +4409,34 @@ public static class NodeBindings
 
     private static ScrollAlign ParseScrollAlign(JsValue v, ScrollAlign fallback)
     {
-        if (v.IsUndefined) return fallback;
+        if (v.IsUndefined)
+        {
+            return fallback;
+        }
+
         var s = JsValue.ToStringValue(v);
         // WebIDL would throw on an unknown enum value; the binding surface is
         // lenient and keeps the default instead.
-        if (s.Equals("start", StringComparison.Ordinal)) return ScrollAlign.Start;
-        if (s.Equals("center", StringComparison.Ordinal)) return ScrollAlign.Center;
-        if (s.Equals("end", StringComparison.Ordinal)) return ScrollAlign.End;
-        if (s.Equals("nearest", StringComparison.Ordinal)) return ScrollAlign.Nearest;
+        if (s.Equals("start", StringComparison.Ordinal))
+        {
+            return ScrollAlign.Start;
+        }
+
+        if (s.Equals("center", StringComparison.Ordinal))
+        {
+            return ScrollAlign.Center;
+        }
+
+        if (s.Equals("end", StringComparison.Ordinal))
+        {
+            return ScrollAlign.End;
+        }
+
+        if (s.Equals("nearest", StringComparison.Ordinal))
+        {
+            return ScrollAlign.Nearest;
+        }
+
         return fallback;
     }
 
@@ -3287,8 +4458,16 @@ public static class NodeBindings
                 // the spec's larger-than-port edge flip.
                 var startOut = pos < current;
                 var endOut = pos + size > current + port;
-                if (startOut == endOut) return current;
-                if ((startOut && size <= port) || (endOut && size > port)) return pos;
+                if (startOut == endOut)
+                {
+                    return current;
+                }
+
+                if ((startOut && size <= port) || (endOut && size > port))
+                {
+                    return pos;
+                }
+
                 return pos + size - port;
         }
     }
@@ -3300,13 +4479,25 @@ public static class NodeBindings
     /// browsing-context load (WPT-07).</summary>
     private static void MaybeTriggerScriptSrc(JsRealm realm, Element e, string attrName)
     {
-        if (!attrName.Equals("src", StringComparison.OrdinalIgnoreCase)) return;
+        if (!attrName.Equals("src", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
         var src = e.GetAttribute("src");
-        if (string.IsNullOrWhiteSpace(src)) return;
+        if (string.IsNullOrWhiteSpace(src))
+        {
+            return;
+        }
+
         if (e.LocalName.Equals("script", StringComparison.OrdinalIgnoreCase))
+        {
             ScriptSrcHook.NotifySrcSet(realm, e);
+        }
         else if (IFrameBinding.IsFrameElement(e))
+        {
             IFrameBinding.OnSrcSet(realm, e);
+        }
     }
 
     private static int NodeTypeFromKind(NodeKind kind) => (int)kind;
@@ -3362,7 +4553,10 @@ public static class NodeBindings
         // Copy attributes, preserving any namespace/qualified name.
         // Clone the AttrNode so the clone element gets its own independent nodes.
         foreach (var attr in el.Attributes)
+        {
             clone.Attributes.SetNamedItemNS(attr.Clone());
+        }
+
         return clone;
     }
 
@@ -3432,11 +4626,18 @@ public static class NodeBindings
     private static void ValidateDomToken(JsRealm realm, string token)
     {
         if (token.Length == 0)
+        {
             throw DomExceptionBinding.Throw(realm, "SyntaxError", "The token provided must not be empty.");
+        }
+
         foreach (var c in token)
+        {
             if (c == '\t' || c == '\n' || c == '\f' || c == '\r' || c == ' ')
+            {
                 throw DomExceptionBinding.Throw(realm, "InvalidCharacterError",
                     "The token provided contains HTML space characters, which are not valid in tokens.");
+            }
+        }
     }
 
     /// <summary>Build a DOMTokenList JS object wrapping the element's classList.
@@ -3465,7 +4666,11 @@ public static class NodeBindings
 
         EventTargetBinding.DefineMethod(realm, obj, "contains", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.False;
+            if (args.Length == 0)
+            {
+                return JsValue.False;
+            }
+
             try { return JsValue.Boolean(cl.Contains(JsValue.ToStringValue(args[0]))); }
             catch { return JsValue.False; }
         }, length: 1);
@@ -3479,7 +4684,11 @@ public static class NodeBindings
                 tokens[i] = JsValue.ToStringValue(args[i]);
                 ValidateDomToken(realm, tokens[i]);
             }
-            foreach (var t in tokens) cl.Add(t);
+            foreach (var t in tokens)
+            {
+                cl.Add(t);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, obj, "remove", (_, args) =>
@@ -3490,12 +4699,20 @@ public static class NodeBindings
                 tokens[i] = JsValue.ToStringValue(args[i]);
                 ValidateDomToken(realm, tokens[i]);
             }
-            foreach (var t in tokens) cl.Remove(t);
+            foreach (var t in tokens)
+            {
+                cl.Remove(t);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         EventTargetBinding.DefineMethod(realm, obj, "toggle", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.False;
+            if (args.Length == 0)
+            {
+                return JsValue.False;
+            }
+
             var token = JsValue.ToStringValue(args[0]);
             ValidateDomToken(realm, token);
             bool result;
@@ -3514,7 +4731,11 @@ public static class NodeBindings
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, obj, "replace", (_, args) =>
         {
-            if (args.Length < 2) throw new JsThrow(realm.NewTypeError("replace requires 2 arguments"));
+            if (args.Length < 2)
+            {
+                throw new JsThrow(realm.NewTypeError("replace requires 2 arguments"));
+            }
+
             var oldToken = JsValue.ToStringValue(args[0]);
             var newToken = JsValue.ToStringValue(args[1]);
             ValidateDomToken(realm, oldToken);
@@ -3524,13 +4745,21 @@ public static class NodeBindings
         }, length: 2);
         EventTargetBinding.DefineMethod(realm, obj, "item", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.Null;
+            if (args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var idx = (int)JsValue.ToNumber(args[0]);
             return idx >= 0 && idx < cl.Count ? JsValue.String(cl[idx]) : JsValue.Null;
         }, length: 1);
         EventTargetBinding.DefineMethod(realm, obj, "forEach", (_, args) =>
         {
-            if (args.Length == 0 || !AbstractOperations.IsCallable(args[0])) return JsValue.Undefined;
+            if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
+                return JsValue.Undefined;
+            }
+
             var fn = args[0];
             var thisArg = args.Length > 1 ? args[1] : JsValue.Undefined;
             for (var i = 0; i < cl.Count; i++)
@@ -3546,7 +4775,11 @@ public static class NodeBindings
         JsValue TokenArray()
         {
             var items = new List<JsValue>(cl.Count);
-            for (var i = 0; i < cl.Count; i++) items.Add(JsValue.String(cl[i]));
+            for (var i = 0; i < cl.Count; i++)
+            {
+                items.Add(JsValue.String(cl[i]));
+            }
+
             return MakeArray(realm, items);
         }
         EventTargetBinding.DefineMethod(realm, obj, "keys", (_, _) =>
@@ -3585,22 +4818,35 @@ public static class NodeBindings
             {
                 var v = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
                 if (string.IsNullOrWhiteSpace(v))
+                {
                     element.RemoveAttribute("style");
+                }
                 else
+                {
                     element.SetAttribute("style", v);
+                }
+
                 return JsValue.Undefined;
             });
 
         EventTargetBinding.DefineMethod(realm, obj, "getPropertyValue", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.String("");
+            if (args.Length == 0)
+            {
+                return JsValue.String("");
+            }
+
             var prop = JsValue.ToStringValue(args[0]).Trim().ToLowerInvariant();
             return JsValue.String(ParseInlineStyleProp(element, prop));
         }, length: 1);
 
         EventTargetBinding.DefineMethod(realm, obj, "setProperty", (_, args) =>
         {
-            if (args.Length < 2) return JsValue.Undefined;
+            if (args.Length < 2)
+            {
+                return JsValue.Undefined;
+            }
+
             var prop = JsValue.ToStringValue(args[0]).Trim().ToLowerInvariant();
             var value = JsValue.ToStringValue(args[1]).Trim();
             WriteInlineStyleProp(element, prop, value);
@@ -3609,7 +4855,11 @@ public static class NodeBindings
 
         EventTargetBinding.DefineMethod(realm, obj, "removeProperty", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.String("");
+            if (args.Length == 0)
+            {
+                return JsValue.String("");
+            }
+
             var prop = JsValue.ToStringValue(args[0]).Trim().ToLowerInvariant();
             var old = ParseInlineStyleProp(element, prop);
             WriteInlineStyleProp(element, prop, null);
@@ -3649,7 +4899,11 @@ public static class NodeBindings
 
         EventTargetBinding.DefineMethod(realm, map, "get", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.Undefined;
+            if (args.Length == 0)
+            {
+                return JsValue.Undefined;
+            }
+
             var prop = JsValue.ToStringValue(args[0]).Trim().ToLowerInvariant();
             var text = ParseInlineStyleProp(element, prop);
             return string.IsNullOrEmpty(text) ? JsValue.Undefined : JsValue.Object(CssBinding.WrapDeclaredValue(realm, prop, text));
@@ -3657,7 +4911,11 @@ public static class NodeBindings
 
         EventTargetBinding.DefineMethod(realm, map, "getAll", (_, args) =>
         {
-            if (args.Length == 0) return MakeArray(realm, Array.Empty<JsValue>());
+            if (args.Length == 0)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var prop = JsValue.ToStringValue(args[0]).Trim().ToLowerInvariant();
             var text = ParseInlineStyleProp(element, prop);
             return string.IsNullOrEmpty(text)
@@ -3671,7 +4929,11 @@ public static class NodeBindings
 
         EventTargetBinding.DefineMethod(realm, map, "set", (_, args) =>
         {
-            if (args.Length < 2) return JsValue.Undefined;
+            if (args.Length < 2)
+            {
+                return JsValue.Undefined;
+            }
+
             var prop = JsValue.ToStringValue(args[0]).Trim().ToLowerInvariant();
             WriteInlineStyleProp(element, prop, CoerceCssText(realm, args[1]));
             return JsValue.Undefined;
@@ -3679,7 +4941,11 @@ public static class NodeBindings
 
         EventTargetBinding.DefineMethod(realm, map, "append", (_, args) =>
         {
-            if (args.Length < 2) return JsValue.Undefined;
+            if (args.Length < 2)
+            {
+                return JsValue.Undefined;
+            }
+
             var prop = JsValue.ToStringValue(args[0]).Trim().ToLowerInvariant();
             var add = CoerceCssText(realm, args[1]);
             var existing = ParseInlineStyleProp(element, prop);
@@ -3690,7 +4956,10 @@ public static class NodeBindings
         EventTargetBinding.DefineMethod(realm, map, "delete", (_, args) =>
         {
             if (args.Length > 0)
+            {
                 WriteInlineStyleProp(element, JsValue.ToStringValue(args[0]).Trim().ToLowerInvariant(), null);
+            }
+
             return JsValue.Undefined;
         }, length: 1);
 
@@ -3705,10 +4974,17 @@ public static class NodeBindings
 
         EventTargetBinding.DefineMethod(realm, map, "forEach", (_, args) =>
         {
-            if (args.Length == 0 || !AbstractOperations.IsCallable(args[0])) return JsValue.Undefined;
+            if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
+                return JsValue.Undefined;
+            }
+
             foreach (var (name, value) in InlineStyleEntries(element))
+            {
                 AbstractOperations.Call(realm.ActiveVm, args[0], JsValue.Undefined,
                     new[] { JsValue.Object(CssBinding.WrapDeclaredValue(realm, name, value)), JsValue.String(name), JsValue.Object(map) });
+            }
+
             return JsValue.Undefined;
         }, length: 1);
 
@@ -3727,7 +5003,11 @@ public static class NodeBindings
 
         EventTargetBinding.DefineMethod(realm, map, "get", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.Undefined;
+            if (args.Length == 0)
+            {
+                return JsValue.Undefined;
+            }
+
             var prop = JsValue.ToStringValue(args[0]).Trim().ToLowerInvariant();
             var text = Resolve(prop);
             return string.IsNullOrEmpty(text) ? JsValue.Undefined : JsValue.Object(CssBinding.WrapDeclaredValue(realm, prop, text));
@@ -3735,7 +5015,11 @@ public static class NodeBindings
 
         EventTargetBinding.DefineMethod(realm, map, "getAll", (_, args) =>
         {
-            if (args.Length == 0) return MakeArray(realm, Array.Empty<JsValue>());
+            if (args.Length == 0)
+            {
+                return MakeArray(realm, Array.Empty<JsValue>());
+            }
+
             var prop = JsValue.ToStringValue(args[0]).Trim().ToLowerInvariant();
             var text = Resolve(prop);
             return string.IsNullOrEmpty(text)
@@ -3751,17 +5035,31 @@ public static class NodeBindings
         {
             var n = 0;
             foreach (var prop in InlineStylePropertyNames)
-                if (!string.IsNullOrEmpty(Resolve(prop))) n++;
+            {
+                if (!string.IsNullOrEmpty(Resolve(prop)))
+                {
+                    n++;
+                }
+            }
+
             return JsValue.Number(n);
         });
 
         EventTargetBinding.DefineMethod(realm, map, "forEach", (_, args) =>
         {
-            if (args.Length == 0 || !AbstractOperations.IsCallable(args[0])) return JsValue.Undefined;
+            if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
+                return JsValue.Undefined;
+            }
+
             foreach (var prop in InlineStylePropertyNames)
             {
                 var text = Resolve(prop);
-                if (string.IsNullOrEmpty(text)) continue;
+                if (string.IsNullOrEmpty(text))
+                {
+                    continue;
+                }
+
                 AbstractOperations.Call(realm.ActiveVm, args[0], JsValue.Undefined,
                     new[] { JsValue.Object(CssBinding.WrapDeclaredValue(realm, prop, text)), JsValue.String(prop), JsValue.Object(map) });
             }
@@ -3780,7 +5078,9 @@ public static class NodeBindings
         {
             var ts = v.AsObject.Get("toString");
             if (AbstractOperations.IsCallable(ts))
+            {
                 return JsValue.ToStringValue(AbstractOperations.Call(realm.ActiveVm, ts, v, Array.Empty<JsValue>())).Trim();
+            }
         }
         return JsValue.ToStringValue(v).Trim();
     }
@@ -3791,11 +5091,19 @@ public static class NodeBindings
     {
         var list = new List<(string, string)>();
         var styleAttr = element.GetAttribute("style");
-        if (string.IsNullOrEmpty(styleAttr)) return list;
+        if (string.IsNullOrEmpty(styleAttr))
+        {
+            return list;
+        }
+
         foreach (var decl in styleAttr.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             var colon = decl.IndexOf(':');
-            if (colon < 0) continue;
+            if (colon < 0)
+            {
+                continue;
+            }
+
             list.Add((decl[..colon].Trim().ToLowerInvariant(), decl[(colon + 1)..].Trim()));
         }
         return list;
@@ -3814,14 +5122,24 @@ public static class NodeBindings
     private static string ParseInlineStyleProp(Element element, string kebabProp)
     {
         var styleAttr = element.GetAttribute("style");
-        if (string.IsNullOrEmpty(styleAttr)) return "";
+        if (string.IsNullOrEmpty(styleAttr))
+        {
+            return "";
+        }
+
         foreach (var decl in styleAttr.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             var colon = decl.IndexOf(':');
-            if (colon < 0) continue;
+            if (colon < 0)
+            {
+                continue;
+            }
+
             var name = decl[..colon].Trim().ToLowerInvariant();
             if (name == kebabProp)
+            {
                 return decl[(colon + 1)..].Trim();
+            }
         }
         return "";
     }
@@ -3836,24 +5154,40 @@ public static class NodeBindings
         foreach (var decl in styleAttr.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             var colon = decl.IndexOf(':');
-            if (colon < 0) continue;
+            if (colon < 0)
+            {
+                continue;
+            }
+
             pairs[decl[..colon].Trim().ToLowerInvariant()] = decl[(colon + 1)..].Trim();
         }
         // Mutate.
         if (string.IsNullOrEmpty(value))
+        {
             pairs.Remove(kebabProp);
+        }
         else
+        {
             pairs[kebabProp] = value;
+        }
         // Serialize.
         if (pairs.Count == 0)
+        {
             element.RemoveAttribute("style");
+        }
         else
+        {
             element.SetAttribute("style", string.Join("; ", pairs.Select(p => $"{p.Key}: {p.Value}")));
+        }
     }
 
     private static string KebabToCamel(string kebab)
     {
-        if (kebab.IndexOf('-') < 0) return kebab;
+        if (kebab.IndexOf('-') < 0)
+        {
+            return kebab;
+        }
+
         var sb = new System.Text.StringBuilder(kebab.Length);
         var upper = false;
         foreach (var c in kebab)
@@ -3897,7 +5231,10 @@ public static class NodeBindings
             (thisV, args) =>
             {
                 if (DomWrappers.UnwrapAttr(thisV) is { } a)
+                {
                     a.Value = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
+                }
+
                 return JsValue.Undefined;
             });
         // DOM §4.9 ownerElement
@@ -3939,7 +5276,10 @@ public static class NodeBindings
         EventTargetBinding.DefineAccessor(realm, nmProto, "length", (thisV, _) =>
         {
             if (thisV.IsObject && thisV.AsObject is JsNamedNodeMapObject nm)
+            {
                 return JsValue.Number(nm.Length);
+            }
+
             return JsValue.Number(0);
         });
 
@@ -3949,7 +5289,11 @@ public static class NodeBindings
         {
             if (thisV.IsObject && thisV.AsObject is JsNamedNodeMapObject nm)
             {
-                if (args.Length == 0) return JsValue.Null;
+                if (args.Length == 0)
+                {
+                    return JsValue.Null;
+                }
+
                 var idx = (int)JsValue.ToNumber(args[0]);
                 var attr = nm.GetItem(idx);
                 return attr is null ? JsValue.Null : JsValue.Object(DomWrappers.WrapAttr(realm, attr));
@@ -3980,7 +5324,10 @@ public static class NodeBindings
             if (thisV.IsObject && thisV.AsObject is JsNamedNodeMapObject nm && args.Length > 0)
             {
                 if (DomWrappers.UnwrapAttr(args[0]) is not { } attr)
+                {
                     throw new JsThrow(realm.NewTypeError("setNamedItem requires an Attr argument"));
+                }
+
                 var old = nm.SetNamedItem(attr);
                 return old is null ? JsValue.Null : JsValue.Object(DomWrappers.WrapAttr(realm, old));
             }
@@ -3991,7 +5338,10 @@ public static class NodeBindings
             if (thisV.IsObject && thisV.AsObject is JsNamedNodeMapObject nm && args.Length > 0)
             {
                 if (DomWrappers.UnwrapAttr(args[0]) is not { } attr)
+                {
                     throw new JsThrow(realm.NewTypeError("setNamedItemNS requires an Attr argument"));
+                }
+
                 var old = nm.SetNamedItemNS(attr);
                 return old is null ? JsValue.Null : JsValue.Object(DomWrappers.WrapAttr(realm, old));
             }
@@ -4003,7 +5353,10 @@ public static class NodeBindings
             {
                 var old = nm.RemoveNamedItem(JsValue.ToStringValue(args[0]));
                 if (old is null)
+                {
                     throw DomExceptionBinding.Throw(realm, "NotFoundError", "The attribute was not found.");
+                }
+
                 return JsValue.Object(DomWrappers.WrapAttr(realm, old));
             }
             throw DomExceptionBinding.Throw(realm, "NotFoundError", "The attribute was not found.");
@@ -4015,7 +5368,10 @@ public static class NodeBindings
                 var ns = args[0].IsNullish ? null : JsValue.ToStringValue(args[0]);
                 var old = nm.RemoveNamedItemNS(ns, JsValue.ToStringValue(args[1]));
                 if (old is null)
+                {
                     throw DomExceptionBinding.Throw(realm, "NotFoundError", "The attribute was not found.");
+                }
+
                 return JsValue.Object(DomWrappers.WrapAttr(realm, old));
             }
             throw DomExceptionBinding.Throw(realm, "NotFoundError", "The attribute was not found.");
@@ -4082,7 +5438,10 @@ public static class NodeBindings
             (thisV, args) =>
             {
                 if (DomWrappers.UnwrapAs<CharacterData>(thisV) is { } cd)
+                {
                     cd.Data = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
+                }
+
                 return JsValue.Undefined;
             });
         EventTargetBinding.DefineAccessor(realm, cdProto, "length",

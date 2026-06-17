@@ -432,7 +432,11 @@ public class ProgrammaticInputTests
         }
         finally
         {
-            if (File.Exists(path)) File.Delete(path);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+
             Teardown(window, panel);
         }
     }
@@ -518,14 +522,26 @@ public class ProgrammaticInputTests
     {
         var n = 0;
         for (var c = parent.FirstChild; c is not null; c = c.NextSibling)
-            if (c is DomElement e && e.LocalName == localName) n++;
+        {
+            if (c is DomElement e && e.LocalName == localName)
+            {
+                n++;
+            }
+        }
+
         return n;
     }
 
     private static DomElement? First(Starling.Dom.Node root, string localName)
     {
         foreach (var e in root.DescendantElements())
-            if (e.LocalName == localName) return e;
+        {
+            if (e.LocalName == localName)
+            {
+                return e;
+            }
+        }
+
         return null;
     }
 
@@ -535,13 +551,25 @@ public class ProgrammaticInputTests
         var fx = originX + box.Frame.X;
         var fy = originY + box.Frame.Y;
         if (ReferenceEquals(box.Element, target))
+        {
             return (fx + box.Frame.Width / 2, fy + box.Frame.Height / 2);
-        if (box is Starling.Layout.Box.TextBox) return null;
+        }
+
+        if (box is Starling.Layout.Box.TextBox)
+        {
+            return null;
+        }
 
         var cx = fx + box.Border.Left + box.Padding.Left;
         var cy = fy + box.Border.Top + box.Padding.Top;
         foreach (var child in box.Children)
-            if (CenterOf(child, target, cx, cy) is { } r) return r;
+        {
+            if (CenterOf(child, target, cx, cy) is { } r)
+            {
+                return r;
+            }
+        }
+
         return null;
     }
 }

@@ -132,7 +132,9 @@ public static class SvgImageDecoder
         // during the Mutate above; now that rasterization is complete they
         // can be released.
         foreach (var disposable in renderCtx.Pending)
+        {
             disposable.Dispose();
+        }
 
         var buffer = new byte[checked(pxW * pxH * 4)];
         image.CopyPixelDataTo(buffer);
@@ -147,7 +149,11 @@ public static class SvgImageDecoder
     /// </summary>
     private static Color ToImageSharpColor(CssColor? color)
     {
-        if (color is not { } c) return Color.Black;
+        if (color is not { } c)
+        {
+            return Color.Black;
+        }
+
         var srgb = c.ToSrgb();
         return Color.FromPixel(new Rgba32(srgb.R, srgb.G, srgb.B, srgb.A));
     }
@@ -178,7 +184,10 @@ public static class SvgImageDecoder
 
         var root = doc.Root;
         if (root is null || !root.Name.LocalName.Equals("svg", StringComparison.OrdinalIgnoreCase))
+        {
             throw new SvgDecodeException("SVG document has no <svg> root element.");
+        }
+
         return root;
     }
 
@@ -186,7 +195,9 @@ public static class SvgImageDecoder
         DrawingCanvas canvas, XElement parent, SvgStyle parentStyle, Matrix3x2 transform, SvgRenderContext ctx)
     {
         foreach (var el in parent.Elements())
+        {
             RenderElement(canvas, el, parentStyle, transform, ctx);
+        }
     }
 
     private static void RenderElement(
@@ -200,19 +211,26 @@ public static class SvgImageDecoder
         // fill="url(#id)", never inline. <symbol> is rendered via <use>.
         if (name is "defs" or "style" or "title" or "desc" or "metadata" or "symbol"
             or "clipPath" or "mask" or "pattern" or "linearGradient" or "radialGradient" or "filter" or "marker")
+        {
             return;
+        }
 
         // Resolve cascaded style: clone parent, apply class rules, then
         // presentation attributes, then style="…" (highest priority).
         var style = parentStyle.Clone();
         if (!ctx.Sheet.IsEmpty)
+        {
             ctx.Sheet.Apply(style, name, Attr(el, "class"));
+        }
+
         ApplyPresentationAttributes(style, el);
         style.ApplyStyleString(Attr(el, "style"));
 
         // display:none removes the element and its whole subtree.
         if (style.DisplayNone)
+        {
             return;
+        }
 
         // Compose this element's local transform onto the inherited one. SVG
         // applies the local transform first to a point, so for row-vector
@@ -233,7 +251,9 @@ public static class SvgImageDecoder
             // when the effect is unsupported or already mid-application.
             if (!ctx.ActiveEffects.Contains(el)
                 && TryRenderWithEffects(canvas, el, style, transform, ctx))
+            {
                 return;
+            }
 
             switch (name)
             {
@@ -263,9 +283,14 @@ public static class SvgImageDecoder
                     // double-blend through the inherited per-child Opacity.
                     // SVG 1.1 §14.6 / Compositing and Blending §7.
                     if (style.GroupOpacity < 1f - float.Epsilon && name == "g")
+                    {
                         RenderGroupWithOpacity(canvas, el, style, transform, ctx);
+                    }
                     else
+                    {
                         RenderChildren(canvas, el, style, transform, ctx);
+                    }
+
                     break;
                 case "use":
                     RenderUse(canvas, el, style, transform, ctx);
@@ -366,17 +391,27 @@ public static class SvgImageDecoder
     {
         // Guard against recursive <use> chains (self/indirect) overflowing the stack.
         if (ctx.RefDepth >= MaxRefDepth)
+        {
             return;
+        }
 
         // xlink:href and plain href are both valid in SVG 1.1/2.
         var href = Attr(useEl, "href") ?? Attr(useEl, "xlink:href");
         if (href is null || !href.StartsWith('#'))
+        {
             return;
+        }
+
         var refId = href[1..].Trim();
         if (refId.Length == 0)
+        {
             return;
+        }
+
         if (!ctx.ElementsById.TryGetValue(refId, out var refEl))
+        {
             return;
+        }
 
         float x = ParseLengthPct(Attr(useEl, "x"), ctx.Viewport.X) ?? 0;
         float y = ParseLengthPct(Attr(useEl, "y"), ctx.Viewport.Y) ?? 0;
@@ -387,7 +422,9 @@ public static class SvgImageDecoder
         // Cycle guard: skip if this target is already being expanded on the
         // current chain (also bounds branching self-references).
         if (!ctx.ActiveRefs.Add(refEl))
+        {
             return;
+        }
 
         ctx.RefDepth++;
         try
@@ -420,7 +457,9 @@ public static class SvgImageDecoder
     {
         var ext = Attr(child, "requiredExtensions");
         if (!string.IsNullOrWhiteSpace(ext))
+        {
             return false;
+        }
 
         var lang = Attr(child, "systemLanguage");
         if (lang is not null)
@@ -434,7 +473,9 @@ public static class SvgImageDecoder
                 if (primary.Equals("en", StringComparison.OrdinalIgnoreCase)) { en = true; break; }
             }
             if (!en)
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -449,14 +490,23 @@ public static class SvgImageDecoder
     {
         var raw = ReadInlineProperty(el, "transform-origin");
         if (raw is null)
+        {
             return local;
+        }
+
         var parts = raw.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0)
+        {
             return local;
+        }
+
         float? ox = ParseLength(parts[0]);
         float? oy = parts.Length > 1 ? ParseLength(parts[1]) : 0f;
         if (ox is null || oy is null)
+        {
             return local;
+        }
+
         return Matrix3x2.CreateTranslation(-ox.Value, -oy.Value)
              * local
              * Matrix3x2.CreateTranslation(ox.Value, oy.Value);
@@ -474,9 +524,15 @@ public static class SvgImageDecoder
             foreach (var decl in styleStr.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
                 int colon = decl.IndexOf(':');
-                if (colon <= 0) continue;
+                if (colon <= 0)
+                {
+                    continue;
+                }
+
                 if (decl.AsSpan(0, colon).Trim().Equals(property, StringComparison.OrdinalIgnoreCase))
+                {
                     return decl[(colon + 1)..].Trim();
+                }
             }
         }
         return Attr(el, property);
@@ -486,16 +542,28 @@ public static class SvgImageDecoder
     private static string? ParseUrlRef(string? value)
     {
         if (value is null)
+        {
             return null;
+        }
+
         var v = value.TrimStart();
         if (!v.StartsWith("url(", StringComparison.OrdinalIgnoreCase))
+        {
             return null;
+        }
+
         int close = v.IndexOf(')');
         if (close < 0)
+        {
             return null;
+        }
+
         var inner = v[4..close].Trim().Trim('"', '\'').Trim();
         if (!inner.StartsWith('#'))
+        {
             return null;
+        }
+
         inner = inner[1..].Trim();
         return inner.Length == 0 ? null : inner;
     }
@@ -526,13 +594,22 @@ public static class SvgImageDecoder
         {
             var p = GetShapePath(child, ctx);
             if (p is null)
+            {
                 continue;
+            }
+
             var childT = SvgTransform.Parse(Attr(child, "transform"));
             if (childT != Matrix3x2.Identity)
+            {
                 p = p.Transform(To4x4(childT));
+            }
+
             var cr = ReadInlineProperty(child, "clip-rule");
             if (cr is not null && cr.Equals("evenodd", StringComparison.OrdinalIgnoreCase))
+            {
                 evenOdd = true;
+            }
+
             paths.Add(p);
         }
         return paths.Count switch
@@ -555,17 +632,23 @@ public static class SvgImageDecoder
         if (id is null
             || !ctx.ElementsById.TryGetValue(id, out var clipEl)
             || !clipEl.Name.LocalName.Equals("clipPath", StringComparison.OrdinalIgnoreCase))
+        {
             return;
+        }
 
         var geom = BuildClipGeometry(clipEl, ctx, out bool evenOdd);
         if (geom is null)
+        {
             return;
+        }
 
         IPath device = geom.Transform(To4x4(transform));
 
         // Nested clip: intersect with the enclosing region.
         if (ctx.ClipDevice is { } outer)
+        {
             device = device.Clip(new ShapeOptions { BooleanOperation = BooleanOperation.Intersection }, outer);
+        }
 
         ctx.ClipDevice = device;
         ctx.ClipEvenOdd = evenOdd;
@@ -580,13 +663,18 @@ public static class SvgImageDecoder
     {
         // mix-blend-mode blends this element's paint with the backdrop.
         if (style.BlendMode != PixelColorBlendingMode.Normal)
+        {
             options.GraphicsOptions.ColorBlendingMode = style.BlendMode;
+        }
 
         if (ctx.ClipDevice is { } clip)
         {
             options.ShapeOptions.BooleanOperation = BooleanOperation.Intersection;
             if (ctx.ClipEvenOdd)
+            {
                 options.ShapeOptions.IntersectionRule = IntersectionRule.EvenOdd;
+            }
+
             canvas.Save(options, clip);
         }
         else
@@ -608,13 +696,18 @@ public static class SvgImageDecoder
         float w = ParseLengthPct(Attr(el, "width"), ctx.Viewport.X) ?? ctx.Viewport.X;
         float h = ParseLengthPct(Attr(el, "height"), ctx.Viewport.Y) ?? ctx.Viewport.Y;
         if (w <= 0 || h <= 0)
+        {
             return;
+        }
 
         // Clip to the viewport rectangle (device space), intersected with any
         // enclosing clip. The caller's finally restores ctx.ClipDevice.
         IPath device = new RectanglePolygon(x, y, w, h).Transform(To4x4(transform));
         if (ctx.ClipDevice is { } outer)
+        {
             device = device.Clip(new ShapeOptions { BooleanOperation = BooleanOperation.Intersection }, outer);
+        }
+
         ctx.ClipDevice = device;
         ctx.ClipEvenOdd = false;
 
@@ -654,13 +747,24 @@ public static class SvgImageDecoder
         // Recursion guard: skip an effect whose resource is already being applied
         // (a <mask>/<filter> that references itself through its own content).
         if (filterEl is not null && ctx.ActiveEffects.Contains(filterEl))
+        {
             filterEl = null;
+        }
+
         if (maskEl is not null && ctx.ActiveEffects.Contains(maskEl))
+        {
             maskEl = null;
+        }
+
         if (filterEl is null && maskEl is null)
+        {
             return false;
+        }
+
         if (ctx.DeviceWidth <= 0 || ctx.DeviceHeight <= 0)
+        {
             return false;
+        }
 
         // Render the element's raw content (effect suppressed) into a layer.
         var layer = new Image<Rgba32>(ctx.DeviceWidth, ctx.DeviceHeight, new Rgba32(0, 0, 0, 0));
@@ -724,7 +828,10 @@ public static class SvgImageDecoder
     {
         var id = ParseUrlRef(ReadInlineProperty(el, attr));
         if (id is null || !ctx.ElementsById.TryGetValue(id, out var fe))
+        {
             return null;
+        }
+
         return fe.Name.LocalName.Equals(expectedName, StringComparison.OrdinalIgnoreCase) ? fe : null;
     }
 
@@ -770,7 +877,10 @@ public static class SvgImageDecoder
                         var color = SvgColor.TryParse(Attr(prim, "flood-color") ?? "black", Color.Black, out var fc, out var none) && !none
                             ? fc : Color.Black;
                         if (float.TryParse(Attr(prim, "flood-opacity"), NumberStyles.Float, CultureInfo.InvariantCulture, out var fo))
+                        {
                             color = ApplyAlpha(color, Math.Clamp(fo, 0f, 1f)) ?? color;
+                        }
+
                         var region = FilterRegion(el, transform, ctx);
                         var flood = new Image<Rgba32>(layer.Width, layer.Height, new Rgba32(0, 0, 0, 0));
                         flood.Mutate(x => x.Paint(fc => fc.Fill(Brushes.Solid(color), new RectanglePolygon(region))));
@@ -786,7 +896,10 @@ public static class SvgImageDecoder
     {
         var p = GetShapePath(el, ctx);
         if (p is not null)
+        {
             return p.Transform(To4x4(transform)).Bounds;
+        }
+
         return new RectangleF(0, 0, ctx.DeviceWidth, ctx.DeviceHeight);
     }
 
@@ -803,7 +916,9 @@ public static class SvgImageDecoder
         maskLayer.Mutate(c => c.Paint(mc =>
         {
             foreach (var child in maskEl.Elements())
+            {
                 RenderElement(mc, child, maskStyle, transform, ctx);
+            }
         }));
 
         int w = layer.Width, h = layer.Height;
@@ -836,7 +951,10 @@ public static class SvgImageDecoder
     private static Font ResolveFont(XElement el, float size)
     {
         if (size <= 0)
+        {
             size = 16f;
+        }
+
         FontFamily family = default;
         bool found = false;
         var fam = ReadInlineProperty(el, "font-family");
@@ -850,10 +968,15 @@ public static class SvgImageDecoder
         if (!found)
         {
             foreach (var name in FallbackFontFamilies)
+            {
                 if (SystemFonts.TryGet(name, out family)) { found = true; break; }
+            }
         }
         if (!found)
+        {
             family = SystemFonts.Families.First();
+        }
+
         return family.CreateFont(size, FontStyle.Regular);
     }
 
@@ -885,17 +1008,31 @@ public static class SvgImageDecoder
                     ApplyPresentationAttributes(ts, child);
                     ts.ApplyStyleString(Attr(child, "style"));
                     if (ts.DisplayNone)
+                    {
                         continue;
+                    }
 
                     penX += ParseLength(Attr(child, "dx")) ?? 0;
                     float runY = penY + (ParseLength(Attr(child, "dy")) ?? 0);
-                    if (ParseLengthPct(Attr(child, "x"), ctx.Viewport.X) is { } ax) penX = ax;
-                    if (ParseLengthPct(Attr(child, "y"), ctx.Viewport.Y) is { } ay) runY = ay;
+                    if (ParseLengthPct(Attr(child, "x"), ctx.Viewport.X) is { } ax)
+                    {
+                        penX = ax;
+                    }
+
+                    if (ParseLengthPct(Attr(child, "y"), ctx.Viewport.Y) is { } ay)
+                    {
+                        runY = ay;
+                    }
+
                     float tsize = ParseLength(ReadInlineProperty(child, "font-size")) ?? size;
 
                     foreach (var tn in child.Nodes())
+                    {
                         if (tn is XText tt)
+                        {
                             DrawTextRun(canvas, tt.Value, child, ts, tsize, ref penX, runY, transform, ctx);
+                        }
+                    }
                 }
             }
         }
@@ -910,13 +1047,20 @@ public static class SvgImageDecoder
         ref float penX, float penY, Matrix3x2 transform, SvgRenderContext ctx)
     {
         if (string.IsNullOrEmpty(text))
+        {
             return;
+        }
         // Collapse XML whitespace as SVG text does for a first cut.
         text = System.Text.RegularExpressions.Regex.Replace(text, "\\s+", " ");
         if (text.Length == 0 || (text == " "))
+        {
             return;
+        }
+
         if (!style.Visible)
+        {
             return;
+        }
 
         var font = ResolveFont(el, size);
         var color = style.EffectiveFill() ?? Color.Black;
@@ -945,7 +1089,9 @@ public static class SvgImageDecoder
     {
         if (path is null
             || (style.MarkerStart is null && style.MarkerMid is null && style.MarkerEnd is null))
+        {
             return;
+        }
 
         try
         {
@@ -954,10 +1100,14 @@ public static class SvgImageDecoder
             {
                 var span = sub.Points.Span;
                 for (int i = 0; i < span.Length; i++)
+                {
                     pts.Add(span[i]);
+                }
             }
             if (pts.Count == 0)
+            {
                 return;
+            }
 
             // Only place interior (mid) markers for modest vertex counts so a
             // densely-flattened curve can't render thousands of glyphs.
@@ -968,7 +1118,9 @@ public static class SvgImageDecoder
                     : i == pts.Count - 1 ? style.MarkerEnd
                     : (doMid ? style.MarkerMid : null);
                 if (id is not null)
+                {
                     RenderOneMarker(canvas, id, pts[i], style, transform, ctx);
+                }
             }
         }
         catch
@@ -982,9 +1134,15 @@ public static class SvgImageDecoder
     {
         if (!ctx.ElementsById.TryGetValue(markerId, out var marker)
             || !marker.Name.LocalName.Equals("marker", StringComparison.OrdinalIgnoreCase))
+        {
             return;
+        }
+
         if (!ctx.ActiveRefs.Add(marker))
+        {
             return; // marker cycle
+        }
+
         try
         {
             float refX = ParseLength(Attr(marker, "refX")) ?? 0;
@@ -1003,7 +1161,9 @@ public static class SvgImageDecoder
 
             var markerStyle = new SvgStyle { CurrentColor = style.CurrentColor };
             foreach (var child in marker.Elements())
+            {
                 RenderElement(canvas, child, markerStyle, mt, ctx);
+            }
         }
         finally
         {
@@ -1015,11 +1175,15 @@ public static class SvgImageDecoder
         DrawingCanvas canvas, IPath? path, SvgStyle style, Matrix3x2 transform, SvgRenderContext ctx, bool strokeOnly = false)
     {
         if (path is null)
+        {
             return;
+        }
 
         // visibility:hidden suppresses this element's own geometry.
         if (!style.Visible)
+        {
             return;
+        }
 
         bool hasFillRef = style.FillRef is not null;
 
@@ -1143,11 +1307,17 @@ public static class SvgImageDecoder
         if (style.StrokeDashArray is { Length: > 0 } dashes)
         {
             float w = style.StrokeWidth;
-            if (w <= 0) w = 1f;
+            if (w <= 0)
+            {
+                w = 1f;
+            }
             // PenOptions(Color, width, pattern[]) — pattern values are absolute pixel lengths.
             float[] pattern = new float[dashes.Length];
             for (int i = 0; i < dashes.Length; i++)
+            {
                 pattern[i] = Math.Max(0.001f, dashes[i]); // avoid zero-length segments
+            }
+
             var opts = new PenOptions(color, w, pattern) { StrokeOptions = strokeOpts };
             return new PatternPen(opts);
         }
@@ -1168,7 +1338,9 @@ public static class SvgImageDecoder
     {
         // Guard against recursive <pattern> references overflowing the stack.
         if (ctx.RefDepth >= MaxRefDepth)
+        {
             return;
+        }
 
         // patternUnits: userSpaceOnUse uses the value as-is; objectBoundingBox
         // (the default) treats width/height/x/y as fractions of the shape's
@@ -1180,7 +1352,10 @@ public static class SvgImageDecoder
         float? tileW = ParseLength(Attr(pattern, "width"));
         float? tileH = ParseLength(Attr(pattern, "height"));
         if (tileW is not > 0 || tileH is not > 0)
+        {
             return;
+        }
+
         if (obb)
         {
             tileW *= bbox.Width;
@@ -1191,7 +1366,10 @@ public static class SvgImageDecoder
         // is rasterized at that resolution so it stays crisp when the shape is
         // scaled by the viewport transform.
         float scale = MathF.Sqrt(transform.M11 * transform.M11 + transform.M12 * transform.M12);
-        if (scale <= 0) scale = 1f;
+        if (scale <= 0)
+        {
+            scale = 1f;
+        }
 
         int tilePxW = Math.Clamp((int)MathF.Ceiling(tileW.Value * scale), 1, MaxDimension);
         int tilePxH = Math.Clamp((int)MathF.Ceiling(tileH.Value * scale), 1, MaxDimension);
@@ -1218,14 +1396,19 @@ public static class SvgImageDecoder
 
         // Cycle guard: a pattern whose content references itself is skipped.
         if (!ctx.ActiveRefs.Add(pattern))
+        {
             return;
+        }
+
         ctx.RefDepth++;
         try
         {
             tile.Mutate(c => c.Paint(tileCanvas =>
             {
                 foreach (var child in pattern.Elements())
+                {
                     RenderElement(tileCanvas, child, contentStyle, tileTransform, ctx);
+                }
             }));
         }
         finally
@@ -1262,7 +1445,9 @@ public static class SvgImageDecoder
     {
         var brush = BuildGradientBrush(gradEl, path, transform, ctx, forFill: true);
         if (brush is null)
+        {
             return;
+        }
 
         var devicePath = path.Transform(To4x4(transform));
         SaveClipped(canvas, new DrawingOptions
@@ -1282,7 +1467,9 @@ public static class SvgImageDecoder
     {
         var brush = BuildGradientBrush(gradEl, path, transform, ctx, forFill: false);
         if (brush is null)
+        {
             return;
+        }
 
         // PenOptions(Brush, width, pattern) is the only brush-accepting ctor;
         // pass an empty pattern array for a solid gradient stroke.
@@ -1313,7 +1500,10 @@ public static class SvgImageDecoder
         var stopsEl = ResolveGradientRef(gradEl, ctx);
         var stops = CollectGradientStops(stopsEl);
         if (stops.Length < 1)
+        {
             return null;
+        }
+
         if (stops.Length == 1)
         {
             // Degenerate gradient: treat as solid.
@@ -1382,10 +1572,15 @@ public static class SvgImageDecoder
             cx = pc.X; cy = pc.Y;
             // Scale r by the combined transform's scale factor.
             float rs = MathF.Sqrt(toDevice.M11 * toDevice.M11 + toDevice.M12 * toDevice.M12);
-            if (rs > 0) r *= rs;
+            if (rs > 0)
+            {
+                r *= rs;
+            }
 
             if (r <= 0)
+            {
                 return Brushes.Solid(stops[^1].Color);
+            }
 
             return new RadialGradientBrush(new PointF(cx, cy), r, repetition, stops);
         }
@@ -1407,14 +1602,22 @@ public static class SvgImageDecoder
             bool hasStops = current.Elements()
                 .Any(e => e.Name.LocalName.Equals("stop", StringComparison.OrdinalIgnoreCase));
             if (hasStops)
+            {
                 return current;
+            }
 
             var href = Attr(current, "href") ?? Attr(current, "xlink:href");
             if (href is null || !href.StartsWith('#'))
+            {
                 break;
+            }
+
             var refId = href[1..].Trim();
             if (refId.Length == 0 || !ctx.PaintServers.TryGetValue(refId, out var refEl))
+            {
                 break;
+            }
+
             current = refEl;
         }
         return current;
@@ -1440,13 +1643,22 @@ public static class SvgImageDecoder
         {
             var v = Attr(current, name);
             if (v is not null)
+            {
                 return v;
+            }
+
             var href = Attr(current, "href") ?? Attr(current, "xlink:href");
             if (href is null || !href.StartsWith('#'))
+            {
                 break;
+            }
+
             var refId = href[1..].Trim();
             if (refId.Length == 0 || !ctx.PaintServers.TryGetValue(refId, out var refEl))
+            {
                 break;
+            }
+
             current = refEl;
         }
         return null;
@@ -1467,13 +1679,20 @@ public static class SvgImageDecoder
                 var trimmed = offsetStr.Trim();
                 if (trimmed.EndsWith('%')
                     && float.TryParse(trimmed[..^1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var pct))
+                {
                     offset = Math.Clamp(pct / 100f, 0f, 1f);
+                }
                 else if (float.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out var raw))
+                {
                     offset = Math.Clamp(raw, 0f, 1f);
+                }
             }
             // Offsets must be non-decreasing (SVG 1.1 §13.2.4).
             if (prevOffset.HasValue && offset < prevOffset.Value)
+            {
                 offset = prevOffset.Value;
+            }
+
             prevOffset = offset;
 
             // stop-color / stop-opacity live in style="" or as presentation attrs.
@@ -1490,23 +1709,36 @@ public static class SvgImageDecoder
                 foreach (var decl in styleStr.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 {
                     int colon = decl.IndexOf(':');
-                    if (colon <= 0) continue;
+                    if (colon <= 0)
+                    {
+                        continue;
+                    }
+
                     var prop = decl[..colon].Trim();
                     var val = decl[(colon + 1)..].Trim();
                     if (prop.Equals("stop-color", StringComparison.OrdinalIgnoreCase))
+                    {
                         stopColorStr = val;
+                    }
                     else if (prop.Equals("stop-opacity", StringComparison.OrdinalIgnoreCase))
+                    {
                         stopOpacityStr = val;
+                    }
                 }
             }
             stopColorStr ??= Attr(stopEl, "stop-color");
             stopOpacityStr ??= Attr(stopEl, "stop-opacity");
 
             if (stopColorStr is not null && SvgColor.TryParse(stopColorStr, Color.Black, out var sc, out var scNone))
+            {
                 stopColor = scNone ? Color.Transparent : sc;
+            }
+
             if (stopOpacityStr is not null
                 && float.TryParse(stopOpacityStr.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var so))
+            {
                 stopOpacity = Math.Clamp(so, 0f, 1f);
+            }
 
             // Fold stop-opacity into the alpha channel.
             var px = stopColor.ToPixel<Rgba32>();
@@ -1525,7 +1757,10 @@ public static class SvgImageDecoder
     private static float? ParseGradCoord(string? v, bool obb, float origin, float size)
     {
         if (string.IsNullOrWhiteSpace(v))
+        {
             return null;
+        }
+
         var t = v.Trim();
         if (t.EndsWith('%')
             && float.TryParse(t[..^1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var pct))
@@ -1548,19 +1783,32 @@ public static class SvgImageDecoder
     private static float? ParseGradCoordAbs(string? v, bool obb, float refLength)
     {
         if (string.IsNullOrWhiteSpace(v))
+        {
             return null;
+        }
+
         var t = v.Trim();
         if (t.EndsWith('%')
             && float.TryParse(t[..^1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var pct))
+        {
             return obb ? pct / 100f * refLength : pct / 100f * refLength;
+        }
+
         if (float.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out var raw))
+        {
             return obb ? raw * refLength : raw;
+        }
+
         return null;
     }
 
     private static GradientRepetitionMode ParseSpreadMethod(string? v)
     {
-        if (v is null) return GradientRepetitionMode.None;
+        if (v is null)
+        {
+            return GradientRepetitionMode.None;
+        }
+
         return v.Trim().ToLowerInvariant() switch
         {
             "repeat" => GradientRepetitionMode.Repeat,
@@ -1594,7 +1842,9 @@ public static class SvgImageDecoder
         float w = ParseLengthPct(Attr(el, "width"), viewport.X) ?? 0;
         float h = ParseLengthPct(Attr(el, "height"), viewport.Y) ?? 0;
         if (w <= 0 || h <= 0)
+        {
             return null;
+        }
 
         float? rxRaw = ParseLength(Attr(el, "rx"));
         float? ryRaw = ParseLength(Attr(el, "ry"));
@@ -1605,8 +1855,16 @@ public static class SvgImageDecoder
         {
             // Ensure both radii are non-zero (SVG 1.1 §9.2: if one is given the
             // other defaults to it, already handled by the ?? above).
-            if (rx <= 0) rx = ry;
-            if (ry <= 0) ry = rx;
+            if (rx <= 0)
+            {
+                rx = ry;
+            }
+
+            if (ry <= 0)
+            {
+                ry = rx;
+            }
+
             return RoundedRectDistinct(x, y, w, h, rx, ry);
         }
 
@@ -1671,11 +1929,17 @@ public static class SvgImageDecoder
     {
         var pts = ParsePoints(Attr(el, "points"));
         if (pts.Count < 2)
+        {
             return null;
+        }
+
         var pb = new PathBuilder();
         pb.AddLines(pts);
         if (close)
+        {
             pb.CloseFigure();
+        }
+
         return pb.Build();
     }
 
@@ -1683,13 +1947,18 @@ public static class SvgImageDecoder
     {
         var list = new List<PointF>();
         if (string.IsNullOrWhiteSpace(s))
+        {
             return list;
+        }
+
         var nums = s.Split([' ', '\t', '\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i + 1 < nums.Length; i += 2)
         {
             if (float.TryParse(nums[i], NumberStyles.Float, CultureInfo.InvariantCulture, out var x) &&
                 float.TryParse(nums[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var y))
+            {
                 list.Add(new PointF(x, y));
+            }
         }
         return list;
     }
@@ -1726,13 +1995,17 @@ public static class SvgImageDecoder
     {
         var v = Attr(el, name);
         if (v is not null)
+        {
             style.ApplyDeclaration(name, v);
+        }
     }
 
     private static void CollectStyles(XElement el, SvgStyleSheet sheet)
     {
         foreach (var styleEl in el.Descendants().Where(e => e.Name.LocalName.Equals("style", StringComparison.OrdinalIgnoreCase)))
+        {
             sheet.AddCss(styleEl.Value);
+        }
     }
 
     // --- attribute / unit helpers -------------------------------------------
@@ -1741,22 +2014,35 @@ public static class SvgImageDecoder
     private static string? Attr(XElement el, string localName)
     {
         foreach (var a in el.Attributes())
+        {
             if (a.Name.LocalName.Equals(localName, StringComparison.OrdinalIgnoreCase))
+            {
                 return a.Value;
+            }
+        }
+
         return null;
     }
 
     private static float? ParseLength(string? v)
     {
         if (string.IsNullOrWhiteSpace(v))
+        {
             return null;
+        }
+
         v = v.Trim();
         if (v.EndsWith('%'))
+        {
             return null; // percentage lengths unsupported (first cut)
+        }
         // Strip a trailing unit suffix (px/pt/etc.); user units == px here.
         int end = v.Length;
         while (end > 0 && char.IsLetter(v[end - 1]))
+        {
             end--;
+        }
+
         return float.TryParse(v.AsSpan(0, end), NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : null;
     }
 
@@ -1768,11 +2054,17 @@ public static class SvgImageDecoder
     private static float? ParseLengthPct(string? v, float basis)
     {
         if (string.IsNullOrWhiteSpace(v))
+        {
             return null;
+        }
+
         var t = v.Trim();
         if (t.EndsWith('%')
             && float.TryParse(t[..^1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var pct))
+        {
             return pct / 100f * basis;
+        }
+
         return ParseLength(v);
     }
 
@@ -1793,7 +2085,9 @@ public static class SvgImageDecoder
         {
             var id = Attr(el, "id");
             if (!string.IsNullOrEmpty(id))
+            {
                 byId.TryAdd(id, el);
+            }
 
             var localName = el.Name.LocalName;
             if (localName.Equals("pattern", StringComparison.OrdinalIgnoreCase)
@@ -1801,7 +2095,9 @@ public static class SvgImageDecoder
              || localName.Equals("radialGradient", StringComparison.OrdinalIgnoreCase))
             {
                 if (!string.IsNullOrEmpty(id))
+                {
                     servers.TryAdd(id, el);
+                }
             }
         }
         return (servers, byId);
@@ -1810,15 +2106,24 @@ public static class SvgImageDecoder
     private static ViewBox? ParseViewBox(string? v)
     {
         if (string.IsNullOrWhiteSpace(v))
+        {
             return null;
+        }
+
         var parts = v.Split([' ', '\t', '\r', '\n', ','], StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 4)
+        {
             return null;
+        }
+
         if (float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var minX) &&
             float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var minY) &&
             float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var w) &&
             float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out var h))
+        {
             return new ViewBox(minX, minY, w, h);
+        }
+
         return null;
     }
 
@@ -1837,7 +2142,11 @@ public static class SvgImageDecoder
     {
         var px = c.ToPixel<Rgba32>();
         float a = px.A / 255f * Math.Clamp(alphaScale, 0f, 1f);
-        if (a <= 0f) return null;
+        if (a <= 0f)
+        {
+            return null;
+        }
+
         px.A = (byte)Math.Clamp((int)Math.Round(a * 255f), 0, 255);
         return Color.FromPixel(px);
     }
@@ -1847,7 +2156,10 @@ public static class SvgImageDecoder
         // Strip a UTF-8 BOM if present, then decode. SVG is XML; the bytes we get
         // are virtually always UTF-8 in practice.
         if (utf8.Length >= 3 && utf8[0] == 0xEF && utf8[1] == 0xBB && utf8[2] == 0xBF)
+        {
             utf8 = utf8[3..];
+        }
+
         return System.Text.Encoding.UTF8.GetString(utf8);
     }
 

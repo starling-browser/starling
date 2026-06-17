@@ -90,8 +90,16 @@ public sealed class DecodedImage : IDisposable
     public static DecodedImage CreatePooled(int width, int height, int intrinsicWidth, int intrinsicHeight, Action<Span<byte>> fill)
     {
         ArgumentNullException.ThrowIfNull(fill);
-        if (intrinsicWidth <= 0) throw new ArgumentOutOfRangeException(nameof(intrinsicWidth));
-        if (intrinsicHeight <= 0) throw new ArgumentOutOfRangeException(nameof(intrinsicHeight));
+        if (intrinsicWidth <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(intrinsicWidth));
+        }
+
+        if (intrinsicHeight <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(intrinsicHeight));
+        }
+
         var length = CheckedLength(width, height);
         var buffer = ArrayPool<byte>.Shared.Rent(length);
         try
@@ -117,16 +125,27 @@ public sealed class DecodedImage : IDisposable
         ArgumentNullException.ThrowIfNull(buffer);
         var length = CheckedLength(width, height);
         if (buffer.Length < length)
+        {
             throw new ArgumentException(
                 $"Buffer is {buffer.Length} bytes; need at least {length} for {width}x{height} RGBA8888.",
                 nameof(buffer));
+        }
+
         return new DecodedImage(width, height, width, height, buffer, length, pooled: false);
     }
 
     private static int CheckedLength(int width, int height)
     {
-        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
-        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+        if (width <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(width));
+        }
+
+        if (height <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(height));
+        }
+
         var length = checked(width * height * 4);
         return length;
     }
@@ -138,6 +157,8 @@ public sealed class DecodedImage : IDisposable
         var buffer = _buffer;
         _buffer = null;
         if (buffer is not null && _pooled)
+        {
             ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 }

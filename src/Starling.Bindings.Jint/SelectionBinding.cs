@@ -30,8 +30,15 @@ internal static class SelectionBinding
         ArgumentNullException.ThrowIfNull(ctx);
         var engine = ctx.Engine;
         var docProto = ctx.Wrappers.DocumentPrototype;
-        if (docProto is null) return; // NodeBindings must run first.
-        if (engine.Global.HasOwnProperty("Selection")) return; // idempotent
+        if (docProto is null)
+        {
+            return; // NodeBindings must run first.
+        }
+
+        if (engine.Global.HasOwnProperty("Selection"))
+        {
+            return; // idempotent
+        }
 
         var proto = new JsObject(engine);
         Protos.AddOrUpdate(engine, proto);
@@ -71,7 +78,10 @@ internal static class SelectionBinding
         {
             var s = Req(ctx, t, "addRange");
             if (a.Length < 1 || RangeBinding.Range(a[0]) is not { } r)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "addRange: argument must be a Range");
+            }
+
             s.AddRange(r);
             return JsValue.Undefined;
         }, 1);
@@ -79,7 +89,10 @@ internal static class SelectionBinding
         {
             var s = Req(ctx, t, "removeRange");
             if (a.Length < 1 || RangeBinding.Range(a[0]) is not { } r)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "removeRange: argument must be a Range");
+            }
+
             GuardV(ctx, () => s.RemoveRange(r));
             return JsValue.Undefined;
         }, 1);
@@ -93,7 +106,10 @@ internal static class SelectionBinding
         {
             var s = Req(ctx, t, "extend");
             if (a.Length < 1 || ctx.Wrappers.UnwrapNode(a[0]) is not { } node)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "extend: argument 0 must be a Node");
+            }
+
             var offset = a.Length > 1 ? (int)TypeConverter.ToNumber(a[1]) : 0;
             GuardV(ctx, () => s.Extend(node, offset));
             return JsValue.Undefined;
@@ -101,7 +117,11 @@ internal static class SelectionBinding
         JintInterop.DefineMethod(engine, proto, "setBaseAndExtent", (t, a) =>
         {
             var s = Req(ctx, t, "setBaseAndExtent");
-            if (a.Length < 4) throw new JavaScriptException(engine.Intrinsics.TypeError, "setBaseAndExtent: requires 4 arguments");
+            if (a.Length < 4)
+            {
+                throw new JavaScriptException(engine.Intrinsics.TypeError, "setBaseAndExtent: requires 4 arguments");
+            }
+
             var aNode = ctx.Wrappers.UnwrapNode(a[0]) ?? throw new JavaScriptException(engine.Intrinsics.TypeError, "setBaseAndExtent: anchorNode must be a Node");
             var aOff = (int)TypeConverter.ToNumber(a[1]);
             var fNode = ctx.Wrappers.UnwrapNode(a[2]) ?? throw new JavaScriptException(engine.Intrinsics.TypeError, "setBaseAndExtent: focusNode must be a Node");
@@ -113,7 +133,10 @@ internal static class SelectionBinding
         {
             var s = Req(ctx, t, "selectAllChildren");
             if (a.Length < 1 || ctx.Wrappers.UnwrapNode(a[0]) is not { } node)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "selectAllChildren: argument must be a Node");
+            }
+
             GuardV(ctx, () => s.SelectAllChildren(node));
             return JsValue.Undefined;
         }, 1);
@@ -121,7 +144,10 @@ internal static class SelectionBinding
         {
             var s = Req(ctx, t, "containsNode");
             if (a.Length < 1 || ctx.Wrappers.UnwrapNode(a[0]) is not { } node)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "containsNode: argument 0 must be a Node");
+            }
+
             var allowPartial = a.Length > 1 && TypeConverter.ToBoolean(a[1]);
             return JintInterop.Bool(s.ContainsNode(node, allowPartial));
         }, 1);
@@ -143,8 +169,16 @@ internal static class SelectionBinding
         // ---- document.getSelection() — same instance for the realm document.
         JintInterop.DefineMethod(engine, docProto, "getSelection", (t, _) =>
         {
-            if (ctx.Wrappers.UnwrapDocument(t) is not { } doc) return JsValue.Null;
-            if (!ReferenceEquals(doc, ctx.Document)) return JsValue.Null;
+            if (ctx.Wrappers.UnwrapDocument(t) is not { } doc)
+            {
+                return JsValue.Null;
+            }
+
+            if (!ReferenceEquals(doc, ctx.Document))
+            {
+                return JsValue.Null;
+            }
+
             return WrapSelection(ctx, doc);
         }, 0);
     }
@@ -152,10 +186,17 @@ internal static class SelectionBinding
     private static void Collapse(JintBackendContext ctx, JsValue t, JsValue[] a, string op)
     {
         var s = Req(ctx, t, op);
-        if (a.Length == 0) throw new JavaScriptException(ctx.Engine.Intrinsics.TypeError, $"{op}: requires a Node or null");
+        if (a.Length == 0)
+        {
+            throw new JavaScriptException(ctx.Engine.Intrinsics.TypeError, $"{op}: requires a Node or null");
+        }
+
         Node? node = a[0].IsNull() ? null : ctx.Wrappers.UnwrapNode(a[0]);
         if (!a[0].IsNull() && node is null)
+        {
             throw new JavaScriptException(ctx.Engine.Intrinsics.TypeError, $"{op}: argument 0 must be a Node or null");
+        }
+
         var offset = a.Length > 1 ? (int)TypeConverter.ToNumber(a[1]) : 0;
         GuardV(ctx, () => s.Collapse(node, offset));
     }
@@ -163,7 +204,11 @@ internal static class SelectionBinding
     private static JintSelectionObject WrapSelection(JintBackendContext ctx, Document document)
     {
         var cache = Caches.GetValue(ctx.Engine, _ => new ConditionalWeakTable<Document, JintSelectionObject>());
-        if (cache.TryGetValue(document, out var existing)) return existing;
+        if (cache.TryGetValue(document, out var existing))
+        {
+            return existing;
+        }
+
         var host = HostSelections.GetValue(document, d => new DomSelection(d));
         var proto = Protos.TryGetValue(ctx.Engine, out var p) ? p : null;
         var wrapper = new JintSelectionObject(ctx.Engine, proto, host);
@@ -196,6 +241,9 @@ internal sealed class JintSelectionObject : ObjectInstance
     public JintSelectionObject(global::Jint.Engine engine, ObjectInstance? proto, DomSelection host) : base(engine)
     {
         Host = host;
-        if (proto is not null) Prototype = proto;
+        if (proto is not null)
+        {
+            Prototype = proto;
+        }
     }
 }

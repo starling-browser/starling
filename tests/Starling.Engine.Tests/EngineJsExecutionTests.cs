@@ -770,7 +770,10 @@ public sealed class EngineJsExecutionTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 
@@ -821,7 +824,10 @@ public sealed class EngineJsExecutionTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 
@@ -864,7 +870,10 @@ public sealed class EngineJsExecutionTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 
@@ -901,7 +910,10 @@ public sealed class EngineJsExecutionTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 
@@ -937,7 +949,11 @@ public sealed class EngineJsExecutionTests
 
     private static void TryDelete(string path)
     {
-        try { if (File.Exists(path)) File.Delete(path); }
+        try { if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
         catch { /* best-effort */ }
     }
 

@@ -44,21 +44,29 @@ public sealed class DnsResolver
         string hostname, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(hostname))
+        {
             return Result<DnsResult, DnsError>.Err(DnsError.EmptyHostname);
+        }
 
         hostname = hostname.Trim().TrimEnd('.').ToLowerInvariant();
 
         // Short-circuit: localhost.
         if (hostname == "localhost")
+        {
             return Result<DnsResult, DnsError>.Ok(DnsResult.LoopbackFor(hostname));
+        }
 
         // Short-circuit: numeric IPv4 dotted quad.
         if (IPAddress.TryParse(hostname, out var literal))
+        {
             return Result<DnsResult, DnsError>.Ok(new DnsResult(hostname, [literal], TimeSpan.FromHours(1)));
+        }
 
         // Cache.
         if (_cache.TryGet(hostname, out var cached))
+        {
             return Result<DnsResult, DnsError>.Ok(cached);
+        }
 
         // Query A + AAAA in parallel.
         var aTask = QueryAsync(hostname, DnsMessage.QType.A, ct);
@@ -71,8 +79,16 @@ public sealed class DnsResolver
         foreach (var task in new[] { aTask, aaaaTask })
         {
             var result = task.Result;
-            if (result.Header.Rcode == DnsMessage.RCode.NameError) continue;
-            if (result.Header.Rcode != DnsMessage.RCode.NoError) continue;
+            if (result.Header.Rcode == DnsMessage.RCode.NameError)
+            {
+                continue;
+            }
+
+            if (result.Header.Rcode != DnsMessage.RCode.NoError)
+            {
+                continue;
+            }
+
             foreach (var a in result.Answers)
             {
                 if (a is DnsMessage.AAnswer av4)
@@ -91,7 +107,9 @@ public sealed class DnsResolver
         }
 
         if (ips.Count == 0)
+        {
             return Result<DnsResult, DnsError>.Err(DnsError.NoRecords);
+        }
 
         var ttl = TimeSpan.FromSeconds(minTtl == uint.MaxValue ? 60 : minTtl);
         var result_ = new DnsResult(hostname, ips, ttl);

@@ -34,22 +34,35 @@ internal sealed class FrameCountdownSet<T> where T : notnull
     /// whose window has elapsed.</summary>
     public void Decay()
     {
-        if (_entries.Count == 0) return;
+        if (_entries.Count == 0)
+        {
+            return;
+        }
+
         var keys = _scratch ??= new List<T>();
         keys.Clear();
         keys.AddRange(_entries.Keys);
         foreach (var item in keys)
         {
             var ttl = _entries[item] - 1;
-            if (ttl <= 0) _entries.Remove(item);
-            else _entries[item] = ttl;
+            if (ttl <= 0)
+            {
+                _entries.Remove(item);
+            }
+            else
+            {
+                _entries[item] = ttl;
+            }
         }
     }
 
     /// <summary>Adds every current member to <paramref name="into"/>.</summary>
     public void CopyTo(ISet<T> into)
     {
-        foreach (var item in _entries.Keys) into.Add(item);
+        foreach (var item in _entries.Keys)
+        {
+            into.Add(item);
+        }
     }
 
     public void Clear() => _entries.Clear();

@@ -20,7 +20,10 @@ public static class ReflectObj
             var target = RequireObject(realm, args, 0, "get");
             var key = AbstractOperations.ToPropertyKey(args.Length > 1 ? args[1] : JsValue.Undefined);
             if (args.Length > 2)
+            {
                 return AbstractOperations.GetWithReceiver(realm.ActiveVm, target, key, args[2]);
+            }
+
             return AbstractOperations.Get(realm.ActiveVm, target, key);
         });
 
@@ -30,7 +33,10 @@ public static class ReflectObj
             var key = AbstractOperations.ToPropertyKey(args.Length > 1 ? args[1] : JsValue.Undefined);
             var value = args.Length > 2 ? args[2] : JsValue.Undefined;
             if (args.Length > 3)
+            {
                 return JsValue.Boolean(AbstractOperations.SetWithReceiver(realm.ActiveVm, target, key, value, args[3]));
+            }
+
             return JsValue.Boolean(AbstractOperations.Set(realm.ActiveVm, target, key, value));
         });
 
@@ -53,7 +59,11 @@ public static class ReflectObj
             var target = RequireObject(realm, args, 0, "getOwnPropertyDescriptor");
             var key = AbstractOperations.ToPropertyKey(args.Length > 1 ? args[1] : JsValue.Undefined);
             var d = target.GetOwnPropertyDescriptor(key);
-            if (d is null) return JsValue.Undefined;
+            if (d is null)
+            {
+                return JsValue.Undefined;
+            }
+
             return FromPropertyDescriptor(realm, d.Value);
         });
 
@@ -79,9 +89,19 @@ public static class ReflectObj
             var target = RequireObject(realm, args, 0, "setPrototypeOf");
             var protoV = args.Length > 1 ? args[1] : JsValue.Undefined;
             JsObject? proto;
-            if (protoV.IsNull) proto = null;
-            else if (protoV.IsObject) proto = protoV.AsObject;
-            else throw new JsThrow(realm.NewTypeError("Reflect.setPrototypeOf: prototype must be Object or null"));
+            if (protoV.IsNull)
+            {
+                proto = null;
+            }
+            else if (protoV.IsObject)
+            {
+                proto = protoV.AsObject;
+            }
+            else
+            {
+                throw new JsThrow(realm.NewTypeError("Reflect.setPrototypeOf: prototype must be Object or null"));
+            }
+
             return JsValue.Boolean(target.SetPrototypeOf(proto));
         });
 
@@ -107,21 +127,30 @@ public static class ReflectObj
             if (target is JsModuleNamespace)
             {
                 foreach (var k in target.OwnPropertyKeys)
+                {
                     arr.Push(k.IsSymbol ? JsValue.Symbol(k.AsSymbol) : JsValue.String(k.AsString));
+                }
+
                 return JsValue.Object(arr);
             }
             // Spec §10.1.11.1 OrdinaryOwnPropertyKeys order (integer indices
             // ascending, then string keys in creation order, then symbols) is
             // now produced directly by [[OwnPropertyKeys]].
             foreach (var k in target.OwnPropertyKeys)
+            {
                 arr.Push(k.IsSymbol ? JsValue.Symbol(k.AsSymbol) : JsValue.String(k.AsString));
+            }
+
             return JsValue.Object(arr);
         });
 
         DefineMethod(realm, reflect, "apply", length: 3, (thisV, args) =>
         {
             if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
                 throw new JsThrow(realm.NewTypeError("Reflect.apply: target must be callable"));
+            }
+
             var target = args[0];
             var thisArg = args.Length > 1 ? args[1] : JsValue.Undefined;
             var argList = args.Length > 2 ? args[2] : JsValue.Undefined;
@@ -132,7 +161,10 @@ public static class ReflectObj
         DefineMethod(realm, reflect, "construct", length: 2, (thisV, args) =>
         {
             if (args.Length == 0 || !AbstractOperations.IsConstructor(args[0]))
+            {
                 throw new JsThrow(realm.NewTypeError("Reflect.construct: target must be a constructor"));
+            }
+
             var target = args[0];
             var argList = args.Length > 1 ? args[1] : JsValue.Undefined;
             var argsArr = CreateListFromArrayLike(realm, argList);
@@ -140,7 +172,10 @@ public static class ReflectObj
             if (args.Length > 2)
             {
                 if (!AbstractOperations.IsConstructor(args[2]))
+                {
                     throw new JsThrow(realm.NewTypeError("Reflect.construct: newTarget must be a constructor"));
+                }
+
                 newTarget = args[2].AsObject;
             }
             return AbstractOperations.Construct(realm.ActiveVm, target, argsArr, newTarget);
@@ -167,10 +202,16 @@ public static class ReflectObj
     private static JsObject RequireObject(JsRealm realm, JsValue[] args, int index, string opName)
     {
         if (args.Length <= index)
+        {
             throw new JsThrow(realm.NewTypeError($"Reflect.{opName} called on non-object"));
+        }
+
         var v = args[index];
         if (!v.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError($"Reflect.{opName} called on non-object"));
+        }
+
         return v.AsObject;
     }
 
@@ -195,7 +236,10 @@ public static class ReflectObj
     private static PropertyDescriptor ToPropertyDescriptor(JsRealm realm, JsValue input)
     {
         if (!input.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Property descriptor must be an object"));
+        }
+
         var obj = input.AsObject;
 
         var hasEnumerable = AbstractOperations.HasProperty(obj, "enumerable");
@@ -223,7 +267,10 @@ public static class ReflectObj
             if (!g.IsUndefined)
             {
                 if (!AbstractOperations.IsCallable(g))
+                {
                     throw new JsThrow(realm.NewTypeError("Getter must be a function"));
+                }
+
                 getter = g.AsObject;
             }
         }
@@ -236,17 +283,24 @@ public static class ReflectObj
             if (!s.IsUndefined)
             {
                 if (!AbstractOperations.IsCallable(s))
+                {
                     throw new JsThrow(realm.NewTypeError("Setter must be a function"));
+                }
+
                 setter = s.AsObject;
             }
         }
 
         if ((hasValue || hasWritable) && (hasGet || hasSet))
+        {
             throw new JsThrow(realm.NewTypeError(
                 "Invalid property descriptor. Cannot both specify accessors and a value or writable attribute"));
+        }
 
         if (hasGet || hasSet)
+        {
             return PropertyDescriptor.Accessor(getter, setter, enumerable, configurable);
+        }
 
         return PropertyDescriptor.Data(value, writable, enumerable, configurable);
     }
@@ -254,11 +308,18 @@ public static class ReflectObj
     private static JsValue[] CreateListFromArrayLike(JsRealm realm, JsValue v)
     {
         if (!v.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("CreateListFromArrayLike called on non-object"));
+        }
+
         var obj = v.AsObject;
         var lenV = AbstractOperations.Get(realm.ActiveVm, obj, "length");
         var len = (int)JsValue.ToNumber(lenV);
-        if (len < 0) len = 0;
+        if (len < 0)
+        {
+            len = 0;
+        }
+
         var result = new JsValue[len];
         for (var i = 0; i < len; i++)
         {

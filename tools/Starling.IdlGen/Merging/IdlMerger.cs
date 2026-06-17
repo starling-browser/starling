@@ -21,7 +21,10 @@ public static class IdlMerger
         var callbacks = LastWins(defs.OfType<IdlCallback>());
 
         var typedefs = new Dictionary<string, IdlType>(StringComparer.Ordinal);
-        foreach (var td in defs.OfType<IdlTypedef>()) typedefs[td.Name] = td.Type;
+        foreach (var td in defs.OfType<IdlTypedef>())
+        {
+            typedefs[td.Name] = td.Type;
+        }
 
         var unresolved = ApplyIncludes(interfaces, mixins, defs.OfType<IdlIncludes>());
 
@@ -46,8 +49,12 @@ public static class IdlMerger
             var primary = byName.FirstOrDefault(i => !i.Partial) ?? byName.First();
             var members = new List<IdlMember>(primary.Members);
             foreach (var part in byName)
+            {
                 if (!ReferenceEquals(part, primary))
+                {
                     members.AddRange(part.Members);
+                }
+            }
 
             result[byName.Key] = primary with
             {
@@ -67,8 +74,12 @@ public static class IdlMerger
             var primary = byName.FirstOrDefault(d => !d.Partial) ?? byName.First();
             var members = new List<IdlDictionaryMember>(primary.Members);
             foreach (var part in byName)
+            {
                 if (!ReferenceEquals(part, primary))
+                {
                     members.AddRange(part.Members);
+                }
+            }
 
             result[byName.Key] = primary with
             {
@@ -88,8 +99,12 @@ public static class IdlMerger
             var primary = byName.FirstOrDefault(n => !n.Partial) ?? byName.First();
             var members = new List<IdlMember>(primary.Members);
             foreach (var part in byName)
+            {
                 if (!ReferenceEquals(part, primary))
+                {
                     members.AddRange(part.Members);
+                }
+            }
 
             result[byName.Key] = primary with
             {
@@ -122,7 +137,11 @@ public static class IdlMerger
     private static Dictionary<string, T> LastWins<T>(IEnumerable<T> defs) where T : IdlDefinition
     {
         var result = new Dictionary<string, T>(StringComparer.Ordinal);
-        foreach (var d in defs) result[d.Name] = d;
+        foreach (var d in defs)
+        {
+            result[d.Name] = d;
+        }
+
         return result;
     }
 }

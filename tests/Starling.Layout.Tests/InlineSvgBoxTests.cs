@@ -38,9 +38,19 @@ public sealed class InlineSvgBoxTests
 
     private static T? Find<T>(Box.Box box) where T : Box.Box
     {
-        if (box is T t) return t;
+        if (box is T t)
+        {
+            return t;
+        }
+
         foreach (var c in box.Children)
-            if (Find<T>(c) is { } hit) return hit;
+        {
+            if (Find<T>(c) is { } hit)
+            {
+                return hit;
+            }
+        }
+
         return null;
     }
 

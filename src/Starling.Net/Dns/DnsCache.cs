@@ -14,7 +14,11 @@ public sealed class DnsCache
 
     public DnsCache(int maxEntries = 256, Func<DateTimeOffset>? now = null)
     {
-        if (maxEntries < 1) throw new ArgumentOutOfRangeException(nameof(maxEntries));
+        if (maxEntries < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxEntries));
+        }
+
         _maxEntries = maxEntries;
         _entries = new(StringComparer.OrdinalIgnoreCase);
         _now = now ?? (() => DateTimeOffset.UtcNow);
@@ -33,7 +37,10 @@ public sealed class DnsCache
             }
             // Expired or absent.
             if (_entries.Remove(hostname, out var stale))
+            {
                 _lru.Remove(stale.Node);
+            }
+
             result = default!;
             return false;
         }
@@ -52,7 +59,11 @@ public sealed class DnsCache
             while (_entries.Count > _maxEntries)
             {
                 var oldest = _lru.Last;
-                if (oldest is null) break;
+                if (oldest is null)
+                {
+                    break;
+                }
+
                 _entries.Remove(oldest.Value);
                 _lru.RemoveLast();
             }
@@ -61,7 +72,11 @@ public sealed class DnsCache
 
     public int Count
     {
-        get { lock (_gate) return _entries.Count; }
+        get { lock (_gate)
+            {
+                return _entries.Count;
+            }
+        }
     }
 
     private readonly record struct Entry(

@@ -80,14 +80,18 @@ internal sealed class CachedPageRenderer
         }
 
         if (_cache.TryServe(viewport, scale, pageVersion, out var hit))
+        {
             return Compose(hit, device.Width, device.Height);
+        }
 
         var strips = _cache.ComputeUncachedStrips(viewport, scale, pageVersion);
 
         // Full miss: one strip equal to the whole device rect. Paint it, seed,
         // and serve from the now-complete cache.
         if (strips.Count == 1 && strips[0].Equals(device))
+        {
             return SeedAndServe(root, viewport, scale, pageVersion, device, styleOverride, images, scrollOffsets, stickyShifts);
+        }
 
         // Partial: paint each newly-exposed strip, then slide the cache window onto
         // the new viewport — retaining the still-visible overlap and dropping the
@@ -115,7 +119,9 @@ internal sealed class CachedPageRenderer
         finally
         {
             foreach (var (_, bmp) in painted)
+            {
                 bmp.Dispose();
+            }
         }
         return ServeAfterFill(viewport, scale, pageVersion, device);
     }
@@ -144,7 +150,10 @@ internal sealed class CachedPageRenderer
         // TryServeRaw (not TryServe): the frame's outcome was already counted as a
         // miss/partial; assembling the output must not also bump the hit counter.
         if (!_cache.TryServeRaw(viewport, scale, pageVersion, out var blit))
+        {
             throw new InvalidOperationException("Cache should fully cover the viewport after seed/stitch.");
+        }
+
         return Compose(blit, device.Width, device.Height);
     }
 
@@ -170,7 +179,11 @@ internal sealed class CachedPageRenderer
 
     private bool HasFixedOrScrollSubtree(BlockBox root, int pageVersion)
     {
-        if (_fixedScanVersion == pageVersion) return _hasFixed;
+        if (_fixedScanVersion == pageVersion)
+        {
+            return _hasFixed;
+        }
+
         _hasFixed = ContainsFixedOrScrollHint(root);
         _fixedScanVersion = pageVersion;
         return _hasFixed;
@@ -178,10 +191,24 @@ internal sealed class CachedPageRenderer
 
     private static bool ContainsFixedOrScrollHint(Box box)
     {
-        if ((box.Hints & LayerHint.Fixed) != LayerHint.None) return true;
-        if (box.Style is { } style && (IsScrollContainer(style) || IsSticky(style))) return true;
+        if ((box.Hints & LayerHint.Fixed) != LayerHint.None)
+        {
+            return true;
+        }
+
+        if (box.Style is { } style && (IsScrollContainer(style) || IsSticky(style)))
+        {
+            return true;
+        }
+
         foreach (var child in box.Children)
-            if (ContainsFixedOrScrollHint(child)) return true;
+        {
+            if (ContainsFixedOrScrollHint(child))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 

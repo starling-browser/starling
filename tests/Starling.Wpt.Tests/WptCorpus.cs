@@ -33,16 +33,35 @@ internal static class WptCorpus
         foreach (var sub in dirs)
         {
             var path = Path.Combine(suiteDir, sub);
-            if (!Directory.Exists(path)) continue;
+            if (!Directory.Exists(path))
+            {
+                continue;
+            }
+
             foreach (var file in Directory.EnumerateFiles(path, "*.html", SearchOption.AllDirectories)
                          .OrderBy(p => p, StringComparer.Ordinal))
             {
                 var rel = Path.GetRelativePath(suiteDir, file).Replace('\\', '/');
-                if (!IsCandidateTest(rel)) continue;
-                if (filter is not null && rel.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                if (skip.Any(s => rel.Contains(s, StringComparison.Ordinal))) continue;
+                if (!IsCandidateTest(rel))
+                {
+                    continue;
+                }
+
+                if (filter is not null && rel.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                if (skip.Any(s => rel.Contains(s, StringComparison.Ordinal)))
+                {
+                    continue;
+                }
+
                 yield return rel;
-                if (max > 0 && ++count >= max) yield break;
+                if (max > 0 && ++count >= max)
+                {
+                    yield break;
+                }
             }
         }
     }
@@ -56,7 +75,11 @@ internal static class WptCorpus
     private static string[] LoadSkipList(string suiteDir)
     {
         var path = Path.GetFullPath(Path.Combine(suiteDir, "..", "skip.txt"));
-        if (!File.Exists(path)) return Array.Empty<string>();
+        if (!File.Exists(path))
+        {
+            return Array.Empty<string>();
+        }
+
         return File.ReadAllLines(path)
             .Select(l => l.Trim())
             .Where(l => l.Length > 0 && !l.StartsWith('#'))
@@ -73,11 +96,26 @@ internal static class WptCorpus
             || rel.Contains("/common/", StringComparison.Ordinal)
             || rel.StartsWith("common/", StringComparison.Ordinal)
             || rel.StartsWith("resources/", StringComparison.Ordinal))
+        {
             return false;
+        }
+
         var name = rel.AsSpan(rel.LastIndexOf('/') + 1);
-        if (name.EndsWith("-manual.html", StringComparison.Ordinal)) return false;
-        if (name.EndsWith("-ref.html", StringComparison.Ordinal)) return false;   // reftest reference
-        if (name.EndsWith("-notref.html", StringComparison.Ordinal)) return false;
+        if (name.EndsWith("-manual.html", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (name.EndsWith("-ref.html", StringComparison.Ordinal))
+        {
+            return false;   // reftest reference
+        }
+
+        if (name.EndsWith("-notref.html", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -97,7 +135,11 @@ internal static class WptCorpus
         for (var i = 0; i < 12 && dir is not null; i++)
         {
             var candidate = Path.Combine(dir, "testdata", "wpt", "suite");
-            if (File.Exists(Path.Combine(candidate, "resources", "testharness.js"))) return candidate;
+            if (File.Exists(Path.Combine(candidate, "resources", "testharness.js")))
+            {
+                return candidate;
+            }
+
             dir = Path.GetDirectoryName(dir.TrimEnd(Path.DirectorySeparatorChar));
         }
         return null;

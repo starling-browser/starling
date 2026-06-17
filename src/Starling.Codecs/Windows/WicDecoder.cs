@@ -92,7 +92,9 @@ internal sealed partial class WicDecoder : IImageDecoder
     private static void ThrowIfFailed(int hr, string what)
     {
         if (hr < 0)
+        {
             throw new ImageDecodeException($"WIC: {what} failed (HRESULT 0x{hr:X8}).");
+        }
     }
 
     // --- WIC constants -----------------------------------------------------

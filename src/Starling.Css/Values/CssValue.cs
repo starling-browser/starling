@@ -238,7 +238,10 @@ public sealed record CssColor(byte R, byte G, byte B, byte A = 255) : CssValue
     public CssColor ToSrgb()
     {
         if (!HasWideGamutData)
+        {
             return new CssColor(R, G, B, A);
+        }
+
         var s1 = double.IsNaN(C1) ? 0 : C1;
         var s2 = double.IsNaN(C2) ? 0 : C2;
         var s3 = double.IsNaN(C3) ? 0 : C3;

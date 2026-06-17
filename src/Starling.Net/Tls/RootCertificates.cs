@@ -30,11 +30,18 @@ public sealed class RootCertificates
 
     public static RootCertificates FromPem(Stream pemStream)
     {
-        if (pemStream is null) throw new ArgumentNullException(nameof(pemStream));
+        if (pemStream is null)
+        {
+            throw new ArgumentNullException(nameof(pemStream));
+        }
+
         var parser = new X509CertificateParser();
         var certificates = parser.ReadCertificates(pemStream).ToArray();
         if (certificates.Length == 0)
+        {
             throw new InvalidDataException("root certificate bundle is empty");
+        }
+
         return new RootCertificates(certificates);
     }
 
@@ -45,12 +52,16 @@ public sealed class RootCertificates
         // store becomes a single trust anchor.
         var seen = new HashSet<string>(Default._certificates.Count);
         foreach (var certificate in Default._certificates)
+        {
             seen.Add(Fingerprint(certificate));
+        }
 
         foreach (var certificate in SystemRootCertificates.Load())
         {
             if (seen.Add(Fingerprint(certificate)))
+            {
                 combined.Add(certificate);
+            }
         }
 
         return new RootCertificates(combined);

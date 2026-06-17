@@ -131,9 +131,13 @@ public class IncrementalLayoutBench
     private void ToggleScratch()
     {
         if (_scratchChild.ParentNode is not null)
+        {
             _scratchParent.RemoveChild(_scratchChild);
+        }
         else
+        {
             _scratchParent.AppendChild(_scratchChild);
+        }
     }
 
     private static Element MakeRow(Document doc, string id)
@@ -153,17 +157,34 @@ public class IncrementalLayoutBench
     {
         for (var c = node.FirstChild; c is not null; c = c.NextSibling)
         {
-            if (c is Text t && !string.IsNullOrWhiteSpace(t.Data)) return t;
-            if (FirstText(c) is { } found) return found;
+            if (c is Text t && !string.IsNullOrWhiteSpace(t.Data))
+            {
+                return t;
+            }
+
+            if (FirstText(c) is { } found)
+            {
+                return found;
+            }
         }
         return null;
     }
 
     private static Element? FirstElement(Element root, string localName)
     {
-        if (string.Equals(root.LocalName, localName, StringComparison.OrdinalIgnoreCase)) return root;
+        if (string.Equals(root.LocalName, localName, StringComparison.OrdinalIgnoreCase))
+        {
+            return root;
+        }
+
         for (var c = root.FirstChild; c is not null; c = c.NextSibling)
-            if (c is Element e && FirstElement(e, localName) is { } found) return found;
+        {
+            if (c is Element e && FirstElement(e, localName) is { } found)
+            {
+                return found;
+            }
+        }
+
         return null;
     }
 }
@@ -274,8 +295,15 @@ public class IncrementalLayoutNginxBench
     {
         for (var c = node.FirstChild; c is not null; c = c.NextSibling)
         {
-            if (c is Text t && !string.IsNullOrWhiteSpace(t.Data)) return t;
-            if (c is Element e && IsRendered(e) && FirstRenderedText(e) is { } found) return found;
+            if (c is Text t && !string.IsNullOrWhiteSpace(t.Data))
+            {
+                return t;
+            }
+
+            if (c is Element e && IsRendered(e) && FirstRenderedText(e) is { } found)
+            {
+                return found;
+            }
         }
         return null;
     }
@@ -289,9 +317,19 @@ public class IncrementalLayoutNginxBench
 
     private static Element? FirstElement(Element root, string localName)
     {
-        if (string.Equals(root.LocalName, localName, StringComparison.OrdinalIgnoreCase)) return root;
+        if (string.Equals(root.LocalName, localName, StringComparison.OrdinalIgnoreCase))
+        {
+            return root;
+        }
+
         for (var c = root.FirstChild; c is not null; c = c.NextSibling)
-            if (c is Element e && FirstElement(e, localName) is { } found) return found;
+        {
+            if (c is Element e && FirstElement(e, localName) is { } found)
+            {
+                return found;
+            }
+        }
+
         return null;
     }
 }

@@ -23,7 +23,9 @@ public sealed class MediaQueryParser
         var queries = new List<MediaQuery>();
         SkipWs();
         if (IsEnd)
+        {
             return MediaQueryList.All;
+        }
 
         while (!IsEnd)
         {
@@ -31,7 +33,10 @@ public sealed class MediaQueryParser
             queries.Add(query);
             SkipWs();
             if (!ConsumeComma())
+            {
                 break;
+            }
+
             SkipWs();
         }
 
@@ -62,7 +67,11 @@ public sealed class MediaQueryParser
                 while (true)
                 {
                     SkipWs();
-                    if (!PeekIdentEquals("and")) break;
+                    if (!PeekIdentEquals("and"))
+                    {
+                        break;
+                    }
+
                     _position++;
                     SkipWs();
                     parts.Add(ParseConditionInParens());
@@ -96,7 +105,11 @@ public sealed class MediaQueryParser
             while (true)
             {
                 SkipWs();
-                if (!PeekIdentEquals("and")) break;
+                if (!PeekIdentEquals("and"))
+                {
+                    break;
+                }
+
                 _position++;
                 SkipWs();
                 parts.Add(ParseConditionInParens());
@@ -167,7 +180,11 @@ public sealed class MediaQueryParser
         }
 
         // Malformed — consume one token and yield an always-false feature.
-        if (!IsEnd) _position++;
+        if (!IsEnd)
+        {
+            _position++;
+        }
+
         return new MediaConditionFeature(new MediaFeatureBoolean("__unknown__"));
     }
 
@@ -220,15 +237,24 @@ public sealed class MediaQueryParser
         var lhs = ParseFeatureValue();
         SkipWs();
         if (!TryParseRangeOp(out var op1))
+        {
             return new MediaFeatureBoolean("__unknown__");
+        }
+
         SkipWs();
         if (Current is not CssTokenValue { Token.Type: CssTokenType.Ident } midIdent)
+        {
             return new MediaFeatureBoolean("__unknown__");
+        }
+
         var featureName = midIdent.Token.Value.ToLowerInvariant();
         _position++;
         SkipWs();
         if (!TryParseRangeOp(out var op2))
+        {
             return new MediaFeatureRange(featureName, op1, lhs, RangeOp.None, null);
+        }
+
         SkipWs();
         var rhs2 = ParseFeatureValue();
         return new MediaFeatureRange(featureName, op1, lhs, op2, rhs2);
@@ -245,8 +271,15 @@ public sealed class MediaQueryParser
     {
         var i = _position + offset;
         while (i < _values.Count && _values[i] is CssTokenValue { Token.Type: CssTokenType.Whitespace })
+        {
             i++;
-        if (i >= _values.Count) return false;
+        }
+
+        if (i >= _values.Count)
+        {
+            return false;
+        }
+
         return _values[i] is CssTokenValue { Token.Type: CssTokenType.Delim, Token.Delimiter: '<' or '>' or '=' };
     }
 
@@ -254,10 +287,16 @@ public sealed class MediaQueryParser
     {
         op = RangeOp.None;
         if (Current is not CssTokenValue { Token.Type: CssTokenType.Delim } tok)
+        {
             return false;
+        }
+
         var d = tok.Token.Delimiter;
         if (d is not ('<' or '>' or '='))
+        {
             return false;
+        }
+
         _position++;
         // check for `<=` or `>=`
         if (d is '<' or '>' && Current is CssTokenValue { Token.Type: CssTokenType.Delim, Token.Delimiter: '=' })
@@ -316,7 +355,11 @@ public sealed class MediaQueryParser
             }
         }
         // unknown — yield a sentinel.
-        if (!IsEnd) _position++;
+        if (!IsEnd)
+        {
+            _position++;
+        }
+
         return new MediaFeatureIdent("__unknown__");
     }
 
@@ -347,7 +390,9 @@ public sealed class MediaQueryParser
     private void SkipWs()
     {
         while (Current is CssTokenValue { Token.Type: CssTokenType.Whitespace })
+        {
             _position++;
+        }
     }
 
     private CssComponentValue Current

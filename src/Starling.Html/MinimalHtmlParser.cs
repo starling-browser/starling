@@ -34,7 +34,11 @@ public static class MinimalHtmlParser
                 if (StartsWith(html, i, "<!--"))
                 {
                     var end = html.IndexOf("-->", i + 4, StringComparison.Ordinal);
-                    if (end < 0) end = n - 3; // unterminated → swallow to EOF
+                    if (end < 0)
+                    {
+                        end = n - 3; // unterminated → swallow to EOF
+                    }
+
                     var data = html[(i + 4)..end];
                     AppendNode(stack, new Comment(data));
                     i = end + 3;
@@ -44,7 +48,11 @@ public static class MinimalHtmlParser
                     StartsWith(html, i, "<!DOCTYPE", ignoreCase: true))
                 {
                     var end = html.IndexOf('>', i + 1);
-                    if (end < 0) end = n - 1;
+                    if (end < 0)
+                    {
+                        end = n - 1;
+                    }
+
                     i = end + 1;
                     continue;
                 }
@@ -52,7 +60,11 @@ public static class MinimalHtmlParser
                 {
                     // end tag
                     var end = html.IndexOf('>', i + 2);
-                    if (end < 0) end = n - 1;
+                    if (end < 0)
+                    {
+                        end = n - 1;
+                    }
+
                     var name = html[(i + 2)..end].Trim().ToLowerInvariant();
                     PopUntil(stack, name);
                     i = end + 1;
@@ -69,7 +81,10 @@ public static class MinimalHtmlParser
                 }
                 var raw = html[(i + 1)..tagEnd];
                 var selfClosing = raw.EndsWith('/');
-                if (selfClosing) raw = raw[..^1];
+                if (selfClosing)
+                {
+                    raw = raw[..^1];
+                }
 
                 var (tag, attrs) = ParseStartTag(raw);
                 if (tag.Length == 0)
@@ -83,11 +98,16 @@ public static class MinimalHtmlParser
                 var doc = OwnerDocument(stack);
                 var el = doc.CreateElement(tag);
                 foreach (var (an, av) in attrs)
+                {
                     el.SetAttribute(an, av);
+                }
+
                 AppendNode(stack, el);
 
                 if (!IsVoidElement(tag) && !selfClosing)
+                {
                     stack.Push(el);
+                }
 
                 i = tagEnd + 1;
                 continue;
@@ -95,7 +115,11 @@ public static class MinimalHtmlParser
 
             // Plain character data — read until next '<'.
             var next = html.IndexOf('<', i);
-            if (next < 0) next = n;
+            if (next < 0)
+            {
+                next = n;
+            }
+
             AppendText(stack, html[i..next]);
             i = next;
         }
@@ -106,7 +130,13 @@ public static class MinimalHtmlParser
     private static Document OwnerDocument(Stack<Node> stack)
     {
         foreach (var n in stack)
-            if (n is Document d) return d;
+        {
+            if (n is Document d)
+            {
+                return d;
+            }
+        }
+
         throw new InvalidOperationException("No Document at the bottom of the parser stack.");
     }
 
@@ -115,7 +145,11 @@ public static class MinimalHtmlParser
 
     private static void AppendText(Stack<Node> stack, string s)
     {
-        if (s.Length == 0) return;
+        if (s.Length == 0)
+        {
+            return;
+        }
+
         var doc = OwnerDocument(stack);
         stack.Peek().AppendChild(doc.CreateTextNode(s));
     }
@@ -130,16 +164,26 @@ public static class MinimalHtmlParser
             if (snapshot[i] is Element e && e.TagName == tagName)
             {
                 for (var k = 0; k <= i; k++)
+                {
                     stack.Pop();
+                }
+
                 return;
             }
-            if (snapshot[i] is Document) return;
+            if (snapshot[i] is Document)
+            {
+                return;
+            }
         }
     }
 
     private static bool StartsWith(string s, int at, string needle, bool ignoreCase = false)
     {
-        if (at + needle.Length > s.Length) return false;
+        if (at + needle.Length > s.Length)
+        {
+            return false;
+        }
+
         return string.Compare(s, at, needle, 0, needle.Length,
             ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0;
     }
@@ -157,16 +201,31 @@ public static class MinimalHtmlParser
         var i = 0;
         var n = raw.Length;
         // tag name
-        while (i < n && !char.IsWhiteSpace(raw[i])) i++;
+        while (i < n && !char.IsWhiteSpace(raw[i]))
+        {
+            i++;
+        }
+
         var tag = raw[..i].ToLowerInvariant();
 
         while (i < n)
         {
-            while (i < n && char.IsWhiteSpace(raw[i])) i++;
-            if (i >= n) break;
+            while (i < n && char.IsWhiteSpace(raw[i]))
+            {
+                i++;
+            }
+
+            if (i >= n)
+            {
+                break;
+            }
 
             var nameStart = i;
-            while (i < n && raw[i] != '=' && !char.IsWhiteSpace(raw[i])) i++;
+            while (i < n && raw[i] != '=' && !char.IsWhiteSpace(raw[i]))
+            {
+                i++;
+            }
+
             var name = raw[nameStart..i].ToLowerInvariant();
 
             string value = string.Empty;
@@ -177,20 +236,33 @@ public static class MinimalHtmlParser
                 {
                     var quote = raw[i++];
                     var valueStart = i;
-                    while (i < n && raw[i] != quote) i++;
+                    while (i < n && raw[i] != quote)
+                    {
+                        i++;
+                    }
+
                     value = raw[valueStart..i];
-                    if (i < n) i++; // skip closing quote
+                    if (i < n)
+                    {
+                        i++; // skip closing quote
+                    }
                 }
                 else
                 {
                     var valueStart = i;
-                    while (i < n && !char.IsWhiteSpace(raw[i])) i++;
+                    while (i < n && !char.IsWhiteSpace(raw[i]))
+                    {
+                        i++;
+                    }
+
                     value = raw[valueStart..i];
                 }
             }
 
             if (name.Length > 0)
+            {
                 attrs.Add((name, value));
+            }
         }
 
         return (tag, attrs);

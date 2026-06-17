@@ -33,10 +33,10 @@ public sealed class IconButton : Border
         Child = Icons.Make(iconData, isOn ? _t.Accent : _t.Text2, 17);
         global::Avalonia.Automation.AutomationProperties.SetName(this, label);
 
-        ChromeKit.AttachClick(this, () => { if (_enabled) Clicked?.Invoke(this, EventArgs.Empty); });
+        ChromeKit.AttachClick(this, () => { if (_enabled) { Clicked?.Invoke(this, EventArgs.Empty); } });
         ChromeKit.AttachHover(this,
-            () => { if (_enabled && !_on) Background = new SolidColorBrush(_t.Hover); },
-            () => { if (!_on) Background = new SolidColorBrush(Colors.Transparent); });
+            () => { if (_enabled && !_on) { Background = new SolidColorBrush(_t.Hover); } },
+            () => { if (!_on) { Background = new SolidColorBrush(Colors.Transparent); } });
     }
 
     /// <summary>Dims the button and stops it raising <see cref="Clicked"/>.</summary>
@@ -49,6 +49,9 @@ public sealed class IconButton : Border
     /// <summary>Test hook: raises <see cref="Clicked"/> as a tap would (honors the disabled state).</summary>
     internal void RaiseClickForTest()
     {
-        if (_enabled) Clicked?.Invoke(this, EventArgs.Empty);
+        if (_enabled)
+        {
+            Clicked?.Invoke(this, EventArgs.Empty);
+        }
     }
 }

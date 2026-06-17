@@ -285,7 +285,9 @@ public class StarlingMcpServerTests
         {
             var trimmed = body.TrimStart();
             if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
+            {
                 return body;
+            }
 
             var payload = new StringBuilder();
             using var reader = new StringReader(body);
@@ -293,12 +295,16 @@ public class StarlingMcpServerTests
             while ((line = reader.ReadLine()) is not null)
             {
                 if (!line.StartsWith("data:", StringComparison.Ordinal))
+                {
                     continue;
+                }
 
                 var start = line.Length > 5 && line[5] == ' ' ? 6 : 5;
                 var data = line[start..];
                 if (data.Length > 0)
+                {
                     payload.Append(data);
+                }
             }
 
             return payload.Length == 0 ? body : payload.ToString();
@@ -316,9 +322,14 @@ public class StarlingMcpServerTests
                 ["method"] = method,
             };
             if (id is not null)
+            {
                 request["id"] = id.Value;
+            }
+
             if (@params is not null)
+            {
                 request["params"] = @params;
+            }
 
             var message = new HttpRequestMessage(HttpMethod.Post, Endpoint.AbsolutePath)
             {

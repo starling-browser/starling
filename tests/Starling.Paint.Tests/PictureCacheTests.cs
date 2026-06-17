@@ -71,7 +71,9 @@ public sealed class PictureCacheTests
         using (renderer.Render(root, new LayoutRect(0, 0, ViewW, ViewH), 1f, version)) { }
 
         for (var i = 1; i <= scrolls; i++)
+        {
             using (renderer.Render(root, new LayoutRect(0, i * delta, ViewW, ViewH), 1f, version)) { }
+        }
 
         metrics.CountOf("paint.cache.miss").Should().BeLessThanOrEqualTo(1,
             "only the first render should be a full miss; every subsequent scroll overlaps the cache");
@@ -241,7 +243,9 @@ public sealed class PictureCacheTests
             _listener.InstrumentPublished = (inst, lst) =>
             {
                 if (inst.Meter.Name == StarlingTelemetry.SourceName)
+                {
                     lst.EnableMeasurementEvents(inst);
+                }
             };
             _listener.SetMeasurementEventCallback<double>((inst, m, _, _) => Add(inst.Name, m));
             _listener.SetMeasurementEventCallback<long>((inst, m, _, _) => Add(inst.Name, (double)m));

@@ -32,11 +32,18 @@ public static class StringCtor
             var constructed = IntrinsicHelpers.IsConstructInvocation(newTarget);
             string text;
             if (args.Length == 0)
+            {
                 text = string.Empty;
+            }
             else if (!constructed && args[0].IsSymbol)
+            {
                 text = args[0].AsSymbol.DescriptiveString;
+            }
             else
+            {
                 text = AbstractOperations.ToStringJs(realm.ActiveVm, args[0]);
+            }
+
             if (constructed)
             {
                 // §22.1.1.1 step 5: StringCreate with OrdinaryCreateFromConstructor —
@@ -125,11 +132,22 @@ public static class StringCtor
         // §22.1.3.4 thisStringValue: accept primitive strings and String exotic
         // wrappers; otherwise RequireObjectCoercible then ToString.
         if (thisV.IsNullish)
+        {
             throw new JsThrow(realm.NewTypeError("String.prototype method called on null or undefined"));
-        if (thisV.IsString) return thisV.AsString;
+        }
+
+        if (thisV.IsString)
+        {
+            return thisV.AsString;
+        }
+
         if (thisV.IsObject)
         {
-            if (thisV.AsObject is JsStringObject jso) return jso.Text;
+            if (thisV.AsObject is JsStringObject jso)
+            {
+                return jso.Text;
+            }
+
             return JsValue.ToStringValue(AbstractOperations.ToPrimitive(thisV, "string"));
         }
         return JsValue.ToStringValue(thisV);
@@ -139,7 +157,10 @@ public static class StringCtor
     {
         var chars = new char[args.Length];
         for (var i = 0; i < args.Length; i++)
+        {
             chars[i] = (char)ToUint16(args[i]);
+        }
+
         return JsValue.String(new string(chars));
     }
 
@@ -150,7 +171,10 @@ public static class StringCtor
         {
             var n = JsValue.ToNumber(arg);
             if (!IsIntegral(n) || n < 0 || n > 0x10FFFF)
+            {
                 throw new JsThrow(realm.NewRangeError("Invalid code point"));
+            }
+
             sb.Append(char.ConvertFromUtf32((int)n));
         }
         return JsValue.String(sb.ToString());
@@ -158,17 +182,27 @@ public static class StringCtor
 
     private static JsValue Raw(JsRealm realm, JsValue[] args)
     {
-        if (args.Length == 0) throw new JsThrow(realm.NewTypeError("String.raw requires a template object"));
+        if (args.Length == 0)
+        {
+            throw new JsThrow(realm.NewTypeError("String.raw requires a template object"));
+        }
+
         var cooked = AbstractOperations.ToObject(realm, args[0]);
         var raw = AbstractOperations.ToObject(realm, cooked.Get("raw"));
         var literalSegments = ToLength(raw.Get("length"));
-        if (literalSegments == 0) return JsValue.String(string.Empty);
+        if (literalSegments == 0)
+        {
+            return JsValue.String(string.Empty);
+        }
+
         var sb = new StringBuilder();
         for (var i = 0; i < literalSegments; i++)
         {
             sb.Append(JsValue.ToStringValue(raw.Get(i.ToString(CultureInfo.InvariantCulture))));
             if (i + 1 < literalSegments)
+            {
                 sb.Append(i + 1 < args.Length ? JsValue.ToStringValue(args[i + 1]) : string.Empty);
+            }
         }
         return JsValue.String(sb.ToString());
     }
@@ -199,17 +233,28 @@ public static class StringCtor
     {
         var s = ThisStringValue(realm, thisV);
         var pos = ToIntegerOrInfinity(args.Length > 0 ? args[0] : JsValue.Undefined);
-        if (pos < 0 || pos >= s.Length) return JsValue.Undefined;
+        if (pos < 0 || pos >= s.Length)
+        {
+            return JsValue.Undefined;
+        }
+
         var first = s[(int)pos];
         if (char.IsHighSurrogate(first) && pos + 1 < s.Length && char.IsLowSurrogate(s[(int)pos + 1]))
+        {
             return JsValue.Number(char.ConvertToUtf32(first, s[(int)pos + 1]));
+        }
+
         return JsValue.Number(first);
     }
 
     private static JsValue Concat(JsRealm realm, JsValue thisV, JsValue[] args)
     {
         var sb = new StringBuilder(ThisStringValue(realm, thisV));
-        foreach (var arg in args) sb.Append(JsValue.ToStringValue(arg));
+        foreach (var arg in args)
+        {
+            sb.Append(JsValue.ToStringValue(arg));
+        }
+
         return JsValue.String(sb.ToString());
     }
 
@@ -243,7 +288,11 @@ public static class StringCtor
         var search = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "undefined";
         var raw = args.Length > 1 ? JsValue.ToNumber(args[1]) : double.NaN;
         var pos = double.IsNaN(raw) ? s.Length : Clamp(ToIntegerOrInfinity(args[1]), 0, s.Length);
-        if (search.Length == 0) return JsValue.Number(pos);
+        if (search.Length == 0)
+        {
+            return JsValue.Number(pos);
+        }
+
         var start = Math.Min((int)pos + search.Length - 1, s.Length - 1);
         return JsValue.Number(start < 0 ? -1 : s.LastIndexOf(search, start, StringComparison.Ordinal));
     }
@@ -274,9 +323,17 @@ public static class StringCtor
     {
         var s = ThisStringValue(realm, thisV);
         var maxLength = ToLength(args.Length > 0 ? args[0] : JsValue.Undefined);
-        if (maxLength <= s.Length) return JsValue.String(s);
+        if (maxLength <= s.Length)
+        {
+            return JsValue.String(s);
+        }
+
         var fill = args.Length > 1 && !args[1].IsUndefined ? JsValue.ToStringValue(args[1]) : " ";
-        if (fill.Length == 0) return JsValue.String(s);
+        if (fill.Length == 0)
+        {
+            return JsValue.String(s);
+        }
+
         var needed = (int)Math.Min(maxLength - s.Length, MaxRepeatLength);
         var filler = RepeatToLength(fill, needed);
         return JsValue.String(atStart ? filler + s : s + filler);
@@ -287,11 +344,22 @@ public static class StringCtor
         var s = ThisStringValue(realm, thisV);
         var n = JsValue.ToNumber(args.Length > 0 ? args[0] : JsValue.Undefined);
         var count = ToIntegerOrInfinity(args.Length > 0 ? args[0] : JsValue.Undefined);
-        if (double.IsInfinity(n) || count < 0) throw new JsThrow(realm.NewRangeError("Invalid repeat count"));
+        if (double.IsInfinity(n) || count < 0)
+        {
+            throw new JsThrow(realm.NewRangeError("Invalid repeat count"));
+        }
+
         if (s.Length != 0 && count > MaxRepeatLength / s.Length)
+        {
             throw new JsThrow(realm.NewRangeError("Repeat count too large"));
+        }
+
         var sb = new StringBuilder(s.Length * (int)count);
-        for (var i = 0; i < count; i++) sb.Append(s);
+        for (var i = 0; i < count; i++)
+        {
+            sb.Append(s);
+        }
+
         return JsValue.String(sb.ToString());
     }
 
@@ -308,21 +376,33 @@ public static class StringCtor
             // (§22.1.3.20 step 2): a RegExp without the global flag throws.
             if (replaceAll && RegExpCtor.IsRegExp(args[0])
                 && (((JsRegExp)args[0].AsObject).Flags & Starling.RegExp.RegexFlags.Global) == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("String.prototype.replaceAll called with a non-global RegExp"));
+            }
+
             var replaceFn = args[0].AsObject.Get(SymbolCtor.Replace);
             if (args[0].AsObject is JsRegExp re && replaceFn.IsObject
                 && ReferenceEquals(replaceFn.AsObject, realm.RegExpBuiltinSymbolReplace))
+            {
                 return RegExpCtor.ReplaceString(realm, re, s, args.Length > 1 ? args[1] : JsValue.Undefined);
+            }
+
             if (AbstractOperations.IsCallable(replaceFn))
+            {
                 return AbstractOperations.Call(realm.ActiveVm, replaceFn, args[0],
                     new[] { JsValue.String(s), args.Length > 1 ? args[1] : JsValue.Undefined });
+            }
         }
         var search = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "undefined";
         var replacement = args.Length > 1 ? args[1] : JsValue.Undefined;
         if (!replaceAll)
         {
             var pos = s.IndexOf(search, StringComparison.Ordinal);
-            if (pos < 0) return JsValue.String(s);
+            if (pos < 0)
+            {
+                return JsValue.String(s);
+            }
+
             return JsValue.String(s[..pos] + ReplacementText(realm, replacement, search, pos, s) + s[(pos + search.Length)..]);
         }
 
@@ -332,7 +412,10 @@ public static class StringCtor
             for (var i = 0; i <= s.Length; i++)
             {
                 sbEmpty.Append(ReplacementText(realm, replacement, search, i, s));
-                if (i < s.Length) sbEmpty.Append(s[i]);
+                if (i < s.Length)
+                {
+                    sbEmpty.Append(s[i]);
+                }
             }
             return JsValue.String(sbEmpty.ToString());
         }
@@ -342,7 +425,11 @@ public static class StringCtor
         while (cursor <= s.Length)
         {
             var pos = s.IndexOf(search, cursor, StringComparison.Ordinal);
-            if (pos < 0) break;
+            if (pos < 0)
+            {
+                break;
+            }
+
             sb.Append(s, cursor, pos - cursor);
             sb.Append(ReplacementText(realm, replacement, search, pos, s));
             cursor = pos + search.Length;
@@ -430,12 +517,19 @@ public static class StringCtor
             // regex is not global. Mirror that here for parity with the
             // Symbol.matchAll path before returning the RegExp string iterator.
             if ((re.Flags & Starling.RegExp.RegexFlags.Global) == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("matchAll requires a global regular expression"));
+            }
+
             var unicode = (re.Flags & Starling.RegExp.RegexFlags.Unicode) != 0;
             return JsValue.Object(new JsRegExpStringIterator(realm, re, s, global: true, unicode: unicode));
         }
         var fn = re.Get(SymbolCtor.Match);
-        if (!fn.IsObject) return JsValue.Null;
+        if (!fn.IsObject)
+        {
+            return JsValue.Null;
+        }
+
         return AbstractOperations.Call(realm.ActiveVm, fn, JsValue.Object(re), new[] { JsValue.String(s) });
     }
 
@@ -446,7 +540,11 @@ public static class StringCtor
             ? (JsRegExp)args[0].AsObject
             : RegExpCtor.Create(realm, args.Length > 0 && !args[0].IsUndefined ? JsValue.ToStringValue(args[0]) : "", "");
         var fn = re.Get(SymbolCtor.Search);
-        if (!fn.IsObject) return JsValue.Number(-1);
+        if (!fn.IsObject)
+        {
+            return JsValue.Number(-1);
+        }
+
         return AbstractOperations.Call(realm.ActiveVm, fn, JsValue.Object(re), new[] { JsValue.String(s) });
     }
 
@@ -459,12 +557,18 @@ public static class StringCtor
             var re = (JsRegExp)args[0].AsObject;
             var fn = re.Get(SymbolCtor.Split);
             if (fn.IsObject)
+            {
                 return AbstractOperations.Call(realm.ActiveVm, fn, args[0],
                     new[] { JsValue.String(s), args.Length > 1 ? args[1] : JsValue.Undefined });
+            }
         }
         var limit = args.Length > 1 && !args[1].IsUndefined ? ToUint32(args[1]) : uint.MaxValue;
         var result = new List<JsValue>();
-        if (limit == 0) return MakeArrayLike(realm, result);
+        if (limit == 0)
+        {
+            return MakeArrayLike(realm, result);
+        }
+
         if (args.Length == 0 || args[0].IsUndefined)
         {
             result.Add(JsValue.String(s));
@@ -473,18 +577,30 @@ public static class StringCtor
         var sep = JsValue.ToStringValue(args[0]);
         if (sep.Length == 0)
         {
-            for (var i = 0; i < s.Length && result.Count < limit; i++) result.Add(JsValue.String(s[i].ToString()));
+            for (var i = 0; i < s.Length && result.Count < limit; i++)
+            {
+                result.Add(JsValue.String(s[i].ToString()));
+            }
+
             return MakeArrayLike(realm, result);
         }
         var cursor = 0;
         while (result.Count < limit)
         {
             var pos = s.IndexOf(sep, cursor, StringComparison.Ordinal);
-            if (pos < 0) break;
+            if (pos < 0)
+            {
+                break;
+            }
+
             result.Add(JsValue.String(s[cursor..pos]));
             cursor = pos + sep.Length;
         }
-        if (result.Count < limit) result.Add(JsValue.String(s[cursor..]));
+        if (result.Count < limit)
+        {
+            result.Add(JsValue.String(s[cursor..]));
+        }
+
         return MakeArrayLike(realm, result);
     }
 
@@ -503,7 +619,11 @@ public static class StringCtor
         var end = args.Length > 1 && !args[1].IsUndefined
             ? Clamp(ToIntegerOrInfinity(args[1]), 0, s.Length)
             : s.Length;
-        if (start > end) (start, end) = (end, start);
+        if (start > end)
+        {
+            (start, end) = (end, start);
+        }
+
         return JsValue.String(s.Substring((int)start, (int)(end - start)));
     }
 
@@ -514,19 +634,39 @@ public static class StringCtor
         var size = (long)s.Length;
         var intStart = ToIntegerOrInfinity(args.Length > 0 ? args[0] : JsValue.Undefined);
         long lstart;
-        if (double.IsNegativeInfinity(intStart)) lstart = 0;
-        else if (intStart < 0) lstart = Math.Max(size + (long)intStart, 0);
-        else lstart = Math.Min((long)intStart, size);
+        if (double.IsNegativeInfinity(intStart))
+        {
+            lstart = 0;
+        }
+        else if (intStart < 0)
+        {
+            lstart = Math.Max(size + (long)intStart, 0);
+        }
+        else
+        {
+            lstart = Math.Min((long)intStart, size);
+        }
+
         long resultLen;
         if (args.Length <= 1 || args[1].IsUndefined)
+        {
             resultLen = size - lstart;
+        }
         else
         {
             var lenNum = ToIntegerOrInfinity(args[1]);
-            if (double.IsNegativeInfinity(lenNum) || lenNum <= 0) return JsValue.String("");
+            if (double.IsNegativeInfinity(lenNum) || lenNum <= 0)
+            {
+                return JsValue.String("");
+            }
+
             resultLen = Math.Min(double.IsPositiveInfinity(lenNum) ? size : (long)lenNum, size - lstart);
         }
-        if (resultLen <= 0) return JsValue.String("");
+        if (resultLen <= 0)
+        {
+            return JsValue.String("");
+        }
+
         return JsValue.String(s.Substring((int)lstart, (int)resultLen));
     }
 
@@ -540,7 +680,11 @@ public static class StringCtor
     private static string RepeatToLength(string fill, int length)
     {
         var sb = new StringBuilder(length);
-        while (sb.Length < length) sb.Append(fill);
+        while (sb.Length < length)
+        {
+            sb.Append(fill);
+        }
+
         return sb.ToString(0, length);
     }
 
@@ -548,8 +692,22 @@ public static class StringCtor
     {
         var start = 0;
         var end = s.Length - 1;
-        if (trimStart) while (start <= end && IsJsWhiteSpace(s[start])) start++;
-        if (trimEnd) while (end >= start && IsJsWhiteSpace(s[end])) end--;
+        if (trimStart)
+        {
+            while (start <= end && IsJsWhiteSpace(s[start]))
+            {
+                start++;
+            }
+        }
+
+        if (trimEnd)
+        {
+            while (end >= start && IsJsWhiteSpace(s[end]))
+            {
+                end--;
+            }
+        }
+
         return start > end ? string.Empty : s[start..(end + 1)];
     }
 
@@ -563,9 +721,21 @@ public static class StringCtor
     private static long ToIntegerOrInfinity(JsValue value)
     {
         var n = JsValue.ToNumber(value);
-        if (double.IsNaN(n) || n == 0) return 0;
-        if (double.IsPositiveInfinity(n)) return long.MaxValue;
-        if (double.IsNegativeInfinity(n)) return long.MinValue;
+        if (double.IsNaN(n) || n == 0)
+        {
+            return 0;
+        }
+
+        if (double.IsPositiveInfinity(n))
+        {
+            return long.MaxValue;
+        }
+
+        if (double.IsNegativeInfinity(n))
+        {
+            return long.MinValue;
+        }
+
         return (long)Math.Truncate(n);
     }
 
@@ -573,7 +743,11 @@ public static class StringCtor
     private static long ToLength(JsValue value)
     {
         var len = ToIntegerOrInfinity(value);
-        if (len <= 0) return 0;
+        if (len <= 0)
+        {
+            return 0;
+        }
+
         return Math.Min(len, int.MaxValue);
     }
 
@@ -581,7 +755,11 @@ public static class StringCtor
     private static uint ToUint32(JsValue value)
     {
         var n = JsValue.ToNumber(value);
-        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0) return 0;
+        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0)
+        {
+            return 0;
+        }
+
         var i = Math.Truncate(n);
         var mod = i - Math.Floor(i / 4294967296.0) * 4294967296.0;
         return (uint)mod;
@@ -590,7 +768,11 @@ public static class StringCtor
     private static ushort ToUint16(JsValue value)
     {
         var n = JsValue.ToNumber(value);
-        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0) return 0;
+        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0)
+        {
+            return 0;
+        }
+
         var i = Math.Truncate(n);
         var mod = i - Math.Floor(i / 65536.0) * 65536.0;
         return (ushort)mod;

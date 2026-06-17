@@ -113,7 +113,9 @@ public class BodyDecoderTests
         var payload = Encoding.UTF8.GetBytes("the quick brown fox jumps over the lazy dog");
         using var ms = new MemoryStream();
         using (var gz = new GZipStream(ms, CompressionLevel.Fastest, leaveOpen: true))
+        {
             gz.Write(payload);
+        }
 
         BodyDecoder.Decode(ms.ToArray(), new[] { "gzip" })
             .Should().Equal(payload);
@@ -125,7 +127,9 @@ public class BodyDecoderTests
         var payload = Encoding.UTF8.GetBytes("brotli compressed text payload, repeated. " + new string('a', 200));
         using var ms = new MemoryStream();
         using (var br = new BrotliStream(ms, CompressionLevel.Fastest, leaveOpen: true))
+        {
             br.Write(payload);
+        }
 
         BodyDecoder.Decode(ms.ToArray(), new[] { "br" })
             .Should().Equal(payload);
@@ -137,7 +141,9 @@ public class BodyDecoderTests
         var payload = Encoding.UTF8.GetBytes("zlib wrapped deflate payload");
         using var ms = new MemoryStream();
         using (var z = new ZLibStream(ms, CompressionLevel.Fastest, leaveOpen: true))
+        {
             z.Write(payload);
+        }
 
         BodyDecoder.Decode(ms.ToArray(), new[] { "deflate" })
             .Should().Equal(payload);
@@ -149,7 +155,9 @@ public class BodyDecoderTests
         var payload = Encoding.UTF8.GetBytes("raw deflate payload, no header");
         using var ms = new MemoryStream();
         using (var d = new DeflateStream(ms, CompressionLevel.Fastest, leaveOpen: true))
+        {
             d.Write(payload);
+        }
 
         BodyDecoder.Decode(ms.ToArray(), new[] { "deflate" })
             .Should().Equal(payload);
@@ -165,13 +173,19 @@ public class BodyDecoderTests
         using (var ms = new MemoryStream())
         {
             using (var z = new GZipStream(ms, CompressionLevel.Fastest, leaveOpen: true))
+            {
                 z.Write(payload);
+            }
+
             gz = ms.ToArray();
         }
         using (var ms = new MemoryStream())
         {
             using (var b = new BrotliStream(ms, CompressionLevel.Fastest, leaveOpen: true))
+            {
                 b.Write(gz);
+            }
+
             brOverGz = ms.ToArray();
         }
 

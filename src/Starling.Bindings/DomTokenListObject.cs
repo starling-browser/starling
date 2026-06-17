@@ -26,8 +26,16 @@ internal sealed class DomTokenListObject : JsObject
     private static bool TryIndex(string name, out uint index)
     {
         index = 0;
-        if (name.Length == 0) return false;
-        if (name.Length > 1 && name[0] == '0') return false;
+        if (name.Length == 0)
+        {
+            return false;
+        }
+
+        if (name.Length > 1 && name[0] == '0')
+        {
+            return false;
+        }
+
         return uint.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out index)
             && index != uint.MaxValue;
     }
@@ -35,22 +43,32 @@ internal sealed class DomTokenListObject : JsObject
     public override JsValue Get(string name)
     {
         if (TryIndex(name, out var i))
+        {
             return i < (uint)_list.Count ? JsValue.String(_list[(int)i]) : JsValue.Undefined;
+        }
+
         return base.Get(name);
     }
 
     public override bool HasOwn(string name)
     {
-        if (TryIndex(name, out var i)) return i < (uint)_list.Count;
+        if (TryIndex(name, out var i))
+        {
+            return i < (uint)_list.Count;
+        }
+
         return base.HasOwn(name);
     }
 
     public override PropertyDescriptor? GetOwnPropertyDescriptor(string name)
     {
         if (TryIndex(name, out var i))
+        {
             return i < (uint)_list.Count
                 ? PropertyDescriptor.Data(JsValue.String(_list[(int)i]), writable: false, enumerable: true, configurable: true)
                 : null;
+        }
+
         return base.GetOwnPropertyDescriptor(name);
     }
 
@@ -59,8 +77,14 @@ internal sealed class DomTokenListObject : JsObject
         get
         {
             for (var i = 0; i < _list.Count; i++)
+            {
                 yield return JsPropertyKey.String(i.ToString(CultureInfo.InvariantCulture));
-            foreach (var k in base.OwnPropertyKeys) yield return k;
+            }
+
+            foreach (var k in base.OwnPropertyKeys)
+            {
+                yield return k;
+            }
         }
     }
 }

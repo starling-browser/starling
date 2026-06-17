@@ -80,7 +80,10 @@ public class WptTests
             {
                 noResult++;
                 Bump("no-result", rel);
-                if (noResultSamples.Count < 40) noResultSamples.Add($"{rel} :: {res.Detail}");
+                if (noResultSamples.Count < 40)
+                {
+                    noResultSamples.Add($"{rel} :: {res.Detail}");
+                }
             }
             else if (res.Subtests.Count == 0)
             {
@@ -116,20 +119,33 @@ public class WptTests
         report.AppendLine();
         report.AppendLine("By area (pass/total subtests):");
         foreach (var (cat, cc) in byCat)
+        {
             report.AppendLine($"  {cc.pass,7}/{cc.total,-7} {100d * cc.pass / Math.Max(1, cc.total),6:F1}%  {cat}");
+        }
+
         report.AppendLine();
         // Impact-ranked root-cause histogram (Phase 0). The full list goes to
         // causes.txt; the top slice is inlined for at-a-glance triage.
         var rankedCauses = causes.OrderByDescending(kv => kv.Value.count).ThenBy(kv => kv.Key, StringComparer.Ordinal).ToList();
         report.AppendLine($"Top failure causes (subtests; full list → causes.txt):");
         foreach (var kv in rankedCauses.Take(25))
+        {
             report.AppendLine($"  {kv.Value.count,6}  {kv.Key,-34}  e.g. {kv.Value.example}");
+        }
+
         report.AppendLine();
         report.AppendLine($"Failure samples ({failSamples.Count} shown):");
-        foreach (var s in failSamples) report.AppendLine("  " + s);
+        foreach (var s in failSamples)
+        {
+            report.AppendLine("  " + s);
+        }
+
         report.AppendLine();
         report.AppendLine($"No-result samples ({noResultSamples.Count} shown) — reftests, load errors, or testharness.js not running:");
-        foreach (var s in noResultSamples) report.AppendLine("  " + s);
+        foreach (var s in noResultSamples)
+        {
+            report.AppendLine("  " + s);
+        }
 
         var enc = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
         var reportPath = Path.Combine(resultsDir, "summary.txt");
@@ -142,7 +158,9 @@ public class WptTests
         TestContext.WriteLine("report: " + reportPath);
 
         if (floor > 0)
+        {
             Assert.IsTrue(rate >= floor, $"WPT pass rate {rate:F2}% < floor {floor:F2}% — see {reportPath}");
+        }
     }
 
     /// <summary>Map a failing subtest's message to a root-cause signature so
@@ -156,24 +174,60 @@ public class WptTests
     {
         var m = message ?? "";
         var mh = Regex.Match(m, @"method hint: '([^']+)'");
-        if (mh.Success) return "missing-method:" + mh.Groups[1].Value;
+        if (mh.Success)
+        {
+            return "missing-method:" + mh.Groups[1].Value;
+        }
+
         var nh = Regex.Match(m, @"new hint: '([^']+)'");
-        if (nh.Success) return "missing-ctor:" + nh.Groups[1].Value;
-        if (m.Contains("not a function", StringComparison.Ordinal)) return "missing-method:(unknown)";
-        if (m.Contains("not a constructor", StringComparison.Ordinal)) return "missing-ctor:(unknown)";
+        if (nh.Success)
+        {
+            return "missing-ctor:" + nh.Groups[1].Value;
+        }
+
+        if (m.Contains("not a function", StringComparison.Ordinal))
+        {
+            return "missing-method:(unknown)";
+        }
+
+        if (m.Contains("not a constructor", StringComparison.Ordinal))
+        {
+            return "missing-ctor:(unknown)";
+        }
+
         var am = Regex.Match(m, @"\bassert_[a-z_]+");
-        if (am.Success) return "assert:" + am.Value;
-        if (m.Contains("is not defined", StringComparison.Ordinal)) return "reference-error";
-        if (m.Contains("Test timed out", StringComparison.Ordinal)) return "timeout";
+        if (am.Success)
+        {
+            return "assert:" + am.Value;
+        }
+
+        if (m.Contains("is not defined", StringComparison.Ordinal))
+        {
+            return "reference-error";
+        }
+
+        if (m.Contains("Test timed out", StringComparison.Ordinal))
+        {
+            return "timeout";
+        }
+
         var trimmed = m.Trim();
-        if (trimmed.Length == 0) return "other:(empty)";
+        if (trimmed.Length == 0)
+        {
+            return "other:(empty)";
+        }
+
         return "other:" + (trimmed.Length > 48 ? trimmed[..48] : trimmed);
     }
 
     private static void RecordFail(List<string> samples, List<string> all, string rel, string? detail)
     {
         var line = $"{rel} :: {detail}";
-        if (samples.Count < 60) samples.Add(line);
+        if (samples.Count < 60)
+        {
+            samples.Add(line);
+        }
+
         all.Add(line);
     }
 }

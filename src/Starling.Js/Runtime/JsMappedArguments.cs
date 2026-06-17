@@ -57,12 +57,25 @@ public sealed class JsMappedArguments : JsObject
     private static bool TryIndex(string name, out int idx)
     {
         idx = -1;
-        if (name.Length == 0) return false;
+        if (name.Length == 0)
+        {
+            return false;
+        }
         // Reject leading zeros / signs / non-digits so "00", "+0", "1.0" are not
         // treated as array indices (their canonical strings differ).
-        if (name.Length > 1 && name[0] == '0') return false;
+        if (name.Length > 1 && name[0] == '0')
+        {
+            return false;
+        }
+
         for (var i = 0; i < name.Length; i++)
-            if (name[i] < '0' || name[i] > '9') return false;
+        {
+            if (name[i] < '0' || name[i] > '9')
+            {
+                return false;
+            }
+        }
+
         return int.TryParse(name, System.Globalization.NumberStyles.None,
             System.Globalization.CultureInfo.InvariantCulture, out idx);
     }
@@ -83,26 +96,41 @@ public sealed class JsMappedArguments : JsObject
     {
         var slot = _slotForIndex[idx];
         var cur = _locals[slot];
-        if (cur.IsObject && cur.AsObject is Cell cell) cell.Value = value;
-        else _locals[slot] = value;
+        if (cur.IsObject && cur.AsObject is Cell cell)
+        {
+            cell.Value = value;
+        }
+        else
+        {
+            _locals[slot] = value;
+        }
     }
 
     /// <summary>Remove the mapping for an index (map.[[Delete]](P)); the stored
     /// ordinary property, if any, is left untouched.</summary>
     private void Unmap(int idx)
     {
-        if (idx >= 0 && idx < _slotForIndex.Length) _slotForIndex[idx] = -1;
+        if (idx >= 0 && idx < _slotForIndex.Length)
+        {
+            _slotForIndex[idx] = -1;
+        }
     }
 
     // ----- §10.4.4.1 [[GetOwnProperty]] -----
     public override PropertyDescriptor? GetOwnPropertyDescriptor(string name)
     {
         var desc = base.GetOwnPropertyDescriptor(name);
-        if (desc is null) return null;
+        if (desc is null)
+        {
+            return null;
+        }
         // §10.4.4.1 step 4 — for a mapped index the reported value is the live
         // parameter value, overriding the (stale) stored slot.
         if (IsMapped(name) && TryIndex(name, out var idx))
+        {
             return desc.Value.WithValue(GetMapped(idx));
+        }
+
         return desc;
     }
 
@@ -110,7 +138,10 @@ public sealed class JsMappedArguments : JsObject
     public override JsValue Get(string name)
     {
         if (IsMapped(name) && TryIndex(name, out var idx))
+        {
             return GetMapped(idx);
+        }
+
         return base.Get(name);
     }
 
@@ -137,7 +168,11 @@ public sealed class JsMappedArguments : JsObject
     {
         var wasMapped = IsMapped(name);
         var result = base.Delete(name);
-        if (result && wasMapped && TryIndex(name, out var idx)) Unmap(idx);
+        if (result && wasMapped && TryIndex(name, out var idx))
+        {
+            Unmap(idx);
+        }
+
         return result;
     }
 
@@ -156,10 +191,12 @@ public sealed class JsMappedArguments : JsObject
     {
         var isMapped = IsMapped(name);
         if (!isMapped || !TryIndex(name, out var idx))
+        {
             // Unmapped indices, `length`, `callee`, etc. still need partial-field
             // merge so a probe like `{configurable:false}` does not clobber the
             // value/writable/enumerable a verifyProperty round-trip relies on.
             return DefinePartial(name, desc, present);
+        }
 
         // §10.4.4.2 steps 4-5 — a non-writable data redefinition that omits a new
         // [[Value]] must keep the current mapped value; fold the live value in so
@@ -172,7 +209,10 @@ public sealed class JsMappedArguments : JsObject
         }
 
         var allowed = DefinePartial(name, desc, present2);
-        if (!allowed) return false;
+        if (!allowed)
+        {
+            return false;
+        }
 
         // §10.4.4.2 step 8 — sync / unmap depending on the requested descriptor.
         if (desc.IsAccessor)
@@ -181,8 +221,15 @@ public sealed class JsMappedArguments : JsObject
         }
         else
         {
-            if (present.HasValue) SetMapped(idx, desc.Value);
-            if (present.HasWritable && !desc.Writable) Unmap(idx);
+            if (present.HasValue)
+            {
+                SetMapped(idx, desc.Value);
+            }
+
+            if (present.HasWritable && !desc.Writable)
+            {
+                Unmap(idx);
+            }
         }
         return true;
     }
@@ -203,7 +250,9 @@ public sealed class JsMappedArguments : JsObject
         PropertyDescriptor desc, JsObject descSource)
     {
         if (target is JsMappedArguments ma && !key.IsSymbol)
+        {
             return ma.DefineOwnPropertyMapped(key.AsString, desc, DescriptorFields.FromSource(descSource));
+        }
         // §10.1.6 OrdinaryDefineOwnProperty with the field-presence info threaded
         // through from §6.2.5.6 ToPropertyDescriptor — preserves attributes the
         // caller did NOT specify (e.g. defineProperty(o,'a',{value:11}) keeps
@@ -254,12 +303,36 @@ public readonly struct DescriptorFields
         bool configurable, bool get, bool set)
     {
         var f = F.None;
-        if (value) f |= F.Value;
-        if (writable) f |= F.Writable;
-        if (enumerable) f |= F.Enumerable;
-        if (configurable) f |= F.Configurable;
-        if (get) f |= F.Get;
-        if (set) f |= F.Set;
+        if (value)
+        {
+            f |= F.Value;
+        }
+
+        if (writable)
+        {
+            f |= F.Writable;
+        }
+
+        if (enumerable)
+        {
+            f |= F.Enumerable;
+        }
+
+        if (configurable)
+        {
+            f |= F.Configurable;
+        }
+
+        if (get)
+        {
+            f |= F.Get;
+        }
+
+        if (set)
+        {
+            f |= F.Set;
+        }
+
         return new DescriptorFields(f);
     }
 

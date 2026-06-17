@@ -40,7 +40,11 @@ public static class Globals
     internal static JsValue PerformEval(JsRealm realm, JsValue[] args)
     {
         var x = args.Length > 0 ? args[0] : JsValue.Undefined;
-        if (!x.IsString) return x;
+        if (!x.IsString)
+        {
+            return x;
+        }
+
         return RunGlobalSource(realm, x.AsString, "<eval>");
     }
 
@@ -69,9 +73,15 @@ public static class Globals
         // primary VM via its owner runtime and publish it for the eval so the
         // body resolves against THIS realm's global environment (§9.6 / §19.2.1).
         if (realm.ActiveVm is { } active)
+        {
             return active.RunEval(chunk);
+        }
+
         if (realm.OwnerRuntime is { } owner)
+        {
             return owner.WithActiveVm(vm => vm.RunEval(chunk));
+        }
+
         throw new JsThrow(realm.NewTypeError("eval requires an active execution context"));
     }
 
@@ -172,7 +182,10 @@ public static class Globals
             while (i < s.Length && s[i] == '%')
             {
                 if (i + 2 >= s.Length || !IsHex(s[i + 1]) || !IsHex(s[i + 2]))
+                {
                     throw new JsThrow(realm.NewUriError("URI malformed"));
+                }
+
                 bytes.Add((byte)((HexValue(s[i + 1]) << 4) | HexValue(s[i + 2])));
                 i += 3;
             }
@@ -180,9 +193,13 @@ public static class Globals
             try { decoded = utf8.GetString(bytes.ToArray()); }
             catch (DecoderFallbackException) { throw new JsThrow(realm.NewUriError("URI malformed")); }
             if (preserveReserved && decoded.Length == 1 && UriReserved.IndexOf(decoded[0], StringComparison.Ordinal) >= 0)
+            {
                 sb.Append(s, start, i - start);
+            }
             else
+            {
                 sb.Append(decoded);
+            }
         }
         return sb.ToString();
     }

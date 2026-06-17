@@ -23,7 +23,9 @@ internal sealed class H2FrameReader(Stream stream, int maxFrameSize)
     public async Task<RawFrame?> ReadFrameAsync(CancellationToken ct)
     {
         if (!await TryReadExactAsync(_header, ct).ConfigureAwait(false))
+        {
             return null; // clean EOF between frames
+        }
 
         var length = (_header[0] << 16) | (_header[1] << 8) | _header[2];
         var type = (H2FrameType)_header[3];
@@ -32,12 +34,16 @@ internal sealed class H2FrameReader(Stream stream, int maxFrameSize)
             ((_header[5] & 0x7f) << 24) | (_header[6] << 16) | (_header[7] << 8) | _header[8];
 
         if (length > maxFrameSize)
+        {
             throw new H2ConnectionException(
                 H2ErrorCode.FrameSizeError, $"frame length {length} exceeds max {maxFrameSize}");
+        }
 
         var payload = length == 0 ? [] : new byte[length];
         if (length > 0 && !await TryReadExactAsync(payload, ct).ConfigureAwait(false))
+        {
             return null; // truncated payload — treat as connection closed
+        }
 
         return new RawFrame(type, flags, streamId, payload);
     }
@@ -49,7 +55,10 @@ internal sealed class H2FrameReader(Stream stream, int maxFrameSize)
         {
             var n = await stream.ReadAsync(buffer[read..], ct).ConfigureAwait(false);
             if (n == 0)
+            {
                 return read == 0 ? false : throw new EndOfStreamException("truncated HTTP/2 frame");
+            }
+
             read += n;
         }
         return true;

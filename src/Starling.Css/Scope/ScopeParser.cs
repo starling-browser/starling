@@ -19,7 +19,9 @@ public static class ScopeParser
         foreach (var rule in sheet.Rules)
         {
             if (rule is AtRule { Name: "scope" } atRule)
+            {
                 yield return Parse(atRule);
+            }
         }
     }
 
@@ -38,8 +40,15 @@ public static class ScopeParser
             if (component is CssSimpleBlock { StartToken: CssTokenType.LeftParen } block)
             {
                 var text = SelectorText(block.Values);
-                if (blocksSeen == 0) start = text;
-                else end = text;
+                if (blocksSeen == 0)
+                {
+                    start = text;
+                }
+                else
+                {
+                    end = text;
+                }
+
                 blocksSeen++;
             }
         }

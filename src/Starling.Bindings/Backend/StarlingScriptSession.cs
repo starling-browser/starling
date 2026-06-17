@@ -185,7 +185,11 @@ internal sealed class StarlingScriptSession : IScriptSession
     /// <c>stack</c>.</summary>
     internal static string? ExtractJsStack(JsValue v)
     {
-        if (!v.IsObject) return null;
+        if (!v.IsObject)
+        {
+            return null;
+        }
+
         try
         {
             var stack = v.AsObject.Get("stack");
@@ -232,7 +236,11 @@ internal sealed class StarlingScriptSession : IScriptSession
             }
         });
 
-        if (captured is not null) throw captured;
+        if (captured is not null)
+        {
+            throw captured;
+        }
+
         await Task.CompletedTask.ConfigureAwait(false);
     }
 
@@ -329,7 +337,10 @@ internal sealed class StarlingScriptSession : IScriptSession
     {
         var type = script.GetAttribute("type");
         if (string.IsNullOrWhiteSpace(type))
+        {
             return string.IsNullOrWhiteSpace(script.GetAttribute("language"));
+        }
+
         var essence = type.Trim();
         return essence.Equals("text/javascript", StringComparison.OrdinalIgnoreCase)
             || essence.Equals("application/javascript", StringComparison.OrdinalIgnoreCase)
@@ -340,10 +351,16 @@ internal sealed class StarlingScriptSession : IScriptSession
     public void OnScriptElementConnected(Node scriptEl)
     {
         ArgumentNullException.ThrowIfNull(scriptEl);
-        if (scriptEl is not Element { LocalName: "script" } script) return;
+        if (scriptEl is not Element { LocalName: "script" } script)
+        {
+            return;
+        }
 
         // Data blocks (ld+json etc.) and non-classic types never run here.
-        if (!IsClassicJavascriptType(script)) return;
+        if (!IsClassicJavascriptType(script))
+        {
+            return;
+        }
 
         // Script-inserted external scripts (and any async-flagged script) are
         // async by default — defer them to the dynamic-script pump rather than
@@ -351,14 +368,22 @@ internal sealed class StarlingScriptSession : IScriptSession
         var hasSrc = !string.IsNullOrWhiteSpace(script.GetAttribute("src"));
         if (hasSrc || script.HasAttribute("async"))
         {
-            if (hasSrc) _dynamicRunner.EnqueueInjectedExternal(script);
+            if (hasSrc)
+            {
+                _dynamicRunner.EnqueueInjectedExternal(script);
+            }
+
             return;
         }
 
         // Inline non-async injected script: run synchronously on insertion so
         // its side effects are visible to the code that appended it.
         var inline = script.TextContent;
-        if (string.IsNullOrWhiteSpace(inline)) return;
+        if (string.IsNullOrWhiteSpace(inline))
+        {
+            return;
+        }
+
         var label = "<injected inline>";
         try
         {
@@ -374,14 +399,20 @@ internal sealed class StarlingScriptSession : IScriptSession
     public void MarkScriptStarted(Node scriptEl)
     {
         ArgumentNullException.ThrowIfNull(scriptEl);
-        if (scriptEl is Element script) _dynamicRunner.MarkStarted(script);
+        if (scriptEl is Element script)
+        {
+            _dynamicRunner.MarkStarted(script);
+        }
     }
 
     public bool DispatchEvent(EventTarget target, Event evt)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(evt);
-        if (_disposed) return false;
+        if (_disposed)
+        {
+            return false;
+        }
 
         var before = _document.MutationVersion;
         _runtime.WithActiveVm(() => target.DispatchEvent(evt));
@@ -391,8 +422,15 @@ internal sealed class StarlingScriptSession : IScriptSession
     public bool DispatchScrollEvents(IReadOnlyList<Element> scrolledElements, bool documentScrolled)
     {
         ArgumentNullException.ThrowIfNull(scrolledElements);
-        if (_disposed) return false;
-        if (scrolledElements.Count == 0 && !documentScrolled) return false;
+        if (_disposed)
+        {
+            return false;
+        }
+
+        if (scrolledElements.Count == 0 && !documentScrolled)
+        {
+            return false;
+        }
 
         // Same shape as DispatchEvent: run with the VM active so the bridged
         // JS listeners execute, drain the microtasks they queue on exit, and
@@ -407,7 +445,11 @@ internal sealed class StarlingScriptSession : IScriptSession
 
     public bool PumpFrame(long elapsedMs)
     {
-        if (_disposed) return false;
+        if (_disposed)
+        {
+            return false;
+        }
+
         if (!_liveStarted)
         {
             _liveStarted = true;
@@ -437,21 +479,29 @@ internal sealed class StarlingScriptSession : IScriptSession
             // still drains the realm microtask queue on WithActiveVm exit, so
             // promise/fetch completions are serviced regardless.
             if (advance > 0)
+            {
                 _loop.RunFrame(target);
+            }
         });
 
         // A script that set `src` on a <script> queues an off-thread fetch+run;
         // kick the drain (fire-and-forget — its completion re-enters via jobs the
         // next pump catches).
         if (_dynamicRunner.HasPending)
+        {
             _ = _dynamicRunner.DrainAsync(CancellationToken.None);
+        }
 
         return _document.MutationVersion != before;
     }
 
     public bool UpdateIntersectionObservations(double viewportX, double viewportY, double viewportWidth, double viewportHeight)
     {
-        if (_disposed) return false;
+        if (_disposed)
+        {
+            return false;
+        }
+
         var before = _document.MutationVersion;
         // WithActiveVm drains the microtask queue on exit, so the delivery
         // microtasks the update schedules run (observer callbacks fire) before
@@ -464,7 +514,11 @@ internal sealed class StarlingScriptSession : IScriptSession
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         ScriptSrcHook.Register(_runtime.Realm, null);
     }

@@ -50,10 +50,17 @@ public static class ColorParser
     {
         rest = raw;
         var noWs = FilterWhitespace(raw).ToList();
-        if (noWs.Count == 0) return false;
+        if (noWs.Count == 0)
+        {
+            return false;
+        }
+
         if (noWs[0] is not CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var kw } } ||
             !kw.Equals("from", StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
+
         rest = noWs.Skip(1).ToList();
         return true;
     }
@@ -68,7 +75,10 @@ public static class ColorParser
     private static bool TryParseRelative(string fn, IReadOnlyList<CssComponentValue> rest, out CssColor color)
     {
         color = CssColor.Transparent;
-        if (rest.Count == 0) return false;
+        if (rest.Count == 0)
+        {
+            return false;
+        }
 
         // The first component value is the origin color. It may be a function
         // (rgb(...), oklch(...), color(...)) or a single token (named / hex).
@@ -76,7 +86,10 @@ public static class ColorParser
         CssColor originColor;
         if (origin is CssFunction of)
         {
-            if (!TryParseFunction(of.Name, of.Values, out originColor)) return false;
+            if (!TryParseFunction(of.Name, of.Values, out originColor))
+            {
+                return false;
+            }
         }
         else if (origin is CssTokenValue tv && TryParseInline(new List<CssComponentValue> { tv }, out var inline))
         {
@@ -89,7 +102,10 @@ public static class ColorParser
 
         // Decompose the origin into the target space's channel symbol table.
         var symbols = DecomposeForFunction(fn, originColor);
-        if (symbols is null) return false;
+        if (symbols is null)
+        {
+            return false;
+        }
 
         // The remaining components are the channel expressions. Rewrite every
         // channel-keyword ident into a literal number token, then hand the
@@ -177,7 +193,10 @@ public static class ColorParser
     private static (double R, double G, double B) SrgbOf(CssColor c)
     {
         if (!c.HasWideGamutData)
+        {
             return (c.R / 255.0, c.G / 255.0, c.B / 255.0);
+        }
+
         var s1 = double.IsNaN(c.C1) ? 0 : c.C1;
         var s2 = double.IsNaN(c.C2) ? 0 : c.C2;
         var s3 = double.IsNaN(c.C3) ? 0 : c.C3;
@@ -189,7 +208,9 @@ public static class ColorParser
     private static (double, double, double) ComponentsIn(ColorSpace target, CssColor c)
     {
         if (c.HasWideGamutData && c.Space == target)
+        {
             return (double.IsNaN(c.C1) ? 0 : c.C1, double.IsNaN(c.C2) ? 0 : c.C2, double.IsNaN(c.C3) ? 0 : c.C3);
+        }
 
         double x, y, z;
         if (c.HasWideGamutData)
@@ -230,7 +251,9 @@ public static class ColorParser
     {
         color = CssColor.Transparent;
         if (!TryReadThreePlusAlpha(raw, out var c1, out var c2, out var c3, out var alpha, out _))
+        {
             return false;
+        }
 
         // rgb accepts numbers 0..255 OR percentages 0..100. We treat percentages
         // by scaling to 0..1 before clamping.
@@ -243,8 +266,16 @@ public static class ColorParser
 
     private static double NumToSrgbChannel(Component c)
     {
-        if (c.IsNone) return double.NaN;
-        if (c.IsPercentage) return Math.Clamp(c.Value / 100.0, 0.0, 1.0);
+        if (c.IsNone)
+        {
+            return double.NaN;
+        }
+
+        if (c.IsPercentage)
+        {
+            return Math.Clamp(c.Value / 100.0, 0.0, 1.0);
+        }
+
         return Math.Clamp(c.Value / 255.0, 0.0, 1.0);
     }
 
@@ -254,7 +285,9 @@ public static class ColorParser
     {
         color = CssColor.Transparent;
         if (!TryReadThreePlusAlpha(raw, out var c1, out var c2, out var c3, out var alpha, out _))
+        {
             return false;
+        }
 
         var h = ReadAngle(c1);
         var s = c2.IsNone ? 0 : (c2.IsPercentage ? c2.Value / 100.0 : c2.Value);
@@ -277,7 +310,9 @@ public static class ColorParser
     {
         color = CssColor.Transparent;
         if (!TryReadThreePlusAlpha(raw, out var c1, out var c2, out var c3, out var alpha, out _))
+        {
             return false;
+        }
 
         var h = ReadAngle(c1);
         var w = c2.IsNone ? 0 : (c2.IsPercentage ? c2.Value / 100.0 : c2.Value);
@@ -300,7 +335,9 @@ public static class ColorParser
     {
         color = CssColor.Transparent;
         if (!TryReadThreePlusAlpha(raw, out var c1, out var c2, out var c3, out var alpha, out _))
+        {
             return false;
+        }
         // L is percentage 0..100 (modern), or raw 0..100.
         var L = c1.IsPercentage ? c1.Value : c1.Value;
         var a = c2.IsPercentage ? c2.Value * 1.25 : c2.Value; // 100% = 125
@@ -317,7 +354,10 @@ public static class ColorParser
     {
         color = CssColor.Transparent;
         if (!TryReadThreePlusAlpha(raw, out var c1, out var c2, out var c3, out var alpha, out _))
+        {
             return false;
+        }
+
         var L = c1.IsPercentage ? c1.Value : c1.Value;
         var c = c2.IsPercentage ? c2.Value * 1.5 : c2.Value; // 100% = 150
         var h = ReadAngle(c3);
@@ -333,7 +373,10 @@ public static class ColorParser
     {
         color = CssColor.Transparent;
         if (!TryReadThreePlusAlpha(raw, out var c1, out var c2, out var c3, out var alpha, out _))
+        {
             return false;
+        }
+
         var L = c1.IsPercentage ? c1.Value / 100.0 : c1.Value;
         var a = c2.IsPercentage ? c2.Value * 0.004 : c2.Value;
         var b = c3.IsPercentage ? c3.Value * 0.004 : c3.Value;
@@ -349,7 +392,10 @@ public static class ColorParser
     {
         color = CssColor.Transparent;
         if (!TryReadThreePlusAlpha(raw, out var c1, out var c2, out var c3, out var alpha, out _))
+        {
             return false;
+        }
+
         var L = c1.IsPercentage ? c1.Value / 100.0 : c1.Value;
         var c = c2.IsPercentage ? c2.Value * 0.004 : c2.Value;
         var h = ReadAngle(c3);
@@ -367,15 +413,30 @@ public static class ColorParser
     {
         color = CssColor.Transparent;
         var tokens = FilterWhitespace(raw).ToList();
-        if (tokens.Count == 0) return false;
-        if (tokens[0] is not CssTokenValue { Token: { Type: CssTokenType.Ident } } id) return false;
-        if (!TryParseSpace(id.Token.Value, out var space)) return false;
+        if (tokens.Count == 0)
+        {
+            return false;
+        }
+
+        if (tokens[0] is not CssTokenValue { Token: { Type: CssTokenType.Ident } } id)
+        {
+            return false;
+        }
+
+        if (!TryParseSpace(id.Token.Value, out var space))
+        {
+            return false;
+        }
 
         var rest = tokens.Skip(1).ToList();
         // Split on slash for alpha (modern only).
         var (channelTokens, alphaTokens) = SplitOnSlash(rest);
         var ch = channelTokens.Select(TokenToComponent).ToList();
-        if (ch.Count != 3) return false;
+        if (ch.Count != 3)
+        {
+            return false;
+        }
+
         var alpha = alphaTokens is null ? 1.0 : ComponentToFloat(TokenToComponent(alphaTokens[0]), 1.0);
         color = CssColor.FromComponents(space,
             ch[0].IsNone ? double.NaN : NormalizeColorChannel(ch[0], space, 0),
@@ -411,25 +472,46 @@ public static class ColorParser
         color = CssColor.Transparent;
         // Split args on commas at top level.
         var args = SplitTopLevelCommas(raw).ToList();
-        if (args.Count != 3) return false;
+        if (args.Count != 3)
+        {
+            return false;
+        }
 
         // arg0: "in <space>" optionally followed by "<hint> hue" per Color 5 §6.
         var ws0 = FilterWhitespace(args[0]).ToList();
-        if (ws0.Count < 2) return false;
+        if (ws0.Count < 2)
+        {
+            return false;
+        }
+
         if (ws0[0] is not CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var inKw } } || !inKw.Equals("in", StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
+
         if (ws0[1] is not CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var spaceName } })
+        {
             return false;
+        }
+
         if (!TryParseInterpolationSpace(spaceName, out var space))
+        {
             return false;
+        }
 
         var hueStrategy = HueInterpolation.Shorter;
         if (ws0.Count >= 4)
         {
             if (ws0[2] is not CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var hintName } })
+            {
                 return false;
+            }
+
             if (ws0[3] is not CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var hueKw } } || !hueKw.Equals("hue", StringComparison.OrdinalIgnoreCase))
+            {
                 return false;
+            }
+
             switch (hintName.ToLowerInvariant())
             {
                 case "shorter": hueStrategy = HueInterpolation.Shorter; break;
@@ -439,12 +521,22 @@ public static class ColorParser
                 default: return false;
             }
             var polar = space is ColorSpace.Hsl or ColorSpace.Hwb or ColorSpace.Lch or ColorSpace.Oklch;
-            if (!polar) return false;
+            if (!polar)
+            {
+                return false;
+            }
         }
 
         // arg1, arg2: color [percentage]?
-        if (!TryParseColorAndPercentage(args[1], out var ca, out var pa)) return false;
-        if (!TryParseColorAndPercentage(args[2], out var cb, out var pb)) return false;
+        if (!TryParseColorAndPercentage(args[1], out var ca, out var pa))
+        {
+            return false;
+        }
+
+        if (!TryParseColorAndPercentage(args[2], out var cb, out var pb))
+        {
+            return false;
+        }
 
         // Normalize percentages per Color 5 §6: if both omitted, 50/50; if one
         // omitted, infer from the other; if both >100 normalize.
@@ -452,7 +544,11 @@ public static class ColorParser
         else if (pa is null) { pa = 100 - pb!.Value; }
         else if (pb is null) { pb = 100 - pa.Value; }
         var sum = pa.Value + pb.Value;
-        if (sum <= 0) return false;
+        if (sum <= 0)
+        {
+            return false;
+        }
+
         var wA = pa.Value / sum;
         var wB = pb.Value / sum;
 
@@ -483,7 +579,10 @@ public static class ColorParser
         c = CssColor.Transparent;
         percentage = null;
         var ws = FilterWhitespace(arg).ToList();
-        if (ws.Count == 0) return false;
+        if (ws.Count == 0)
+        {
+            return false;
+        }
 
         // Trailing percentage?
         var lastIdx = ws.Count - 1;
@@ -493,7 +592,11 @@ public static class ColorParser
             ws.RemoveAt(lastIdx);
         }
         // Color may be a function or a single token.
-        if (ws.Count == 0) return false;
+        if (ws.Count == 0)
+        {
+            return false;
+        }
+
         return TryParseInline(ws, out c);
     }
 
@@ -515,7 +618,9 @@ public static class ColorParser
                 return true;
             }
             if (tokens[0] is CssFunction f)
+            {
                 return TryParseFunction(f.Name, f.Values, out color);
+            }
         }
         return false;
     }
@@ -570,25 +675,58 @@ public static class ColorParser
         {
             case HueInterpolation.Shorter:
                 diff = bH - aH;
-                while (diff > 180) diff -= 360;
-                while (diff < -180) diff += 360;
+                while (diff > 180)
+                {
+                    diff -= 360;
+                }
+
+                while (diff < -180)
+                {
+                    diff += 360;
+                }
+
                 break;
             case HueInterpolation.Longer:
                 diff = bH - aH;
-                while (diff > 180) diff -= 360;
-                while (diff < -180) diff += 360;
+                while (diff > 180)
+                {
+                    diff -= 360;
+                }
+
+                while (diff < -180)
+                {
+                    diff += 360;
+                }
                 // Take the long way around: flip 0->360 or 0->-360.
-                if (diff == 0) diff = 360;
-                else if (diff > 0) diff -= 360;
-                else diff += 360;
+                if (diff == 0)
+                {
+                    diff = 360;
+                }
+                else if (diff > 0)
+                {
+                    diff -= 360;
+                }
+                else
+                {
+                    diff += 360;
+                }
+
                 break;
             case HueInterpolation.Increasing:
                 diff = bH - aH;
-                if (diff < 0) diff += 360;
+                if (diff < 0)
+                {
+                    diff += 360;
+                }
+
                 break;
             case HueInterpolation.Decreasing:
                 diff = bH - aH;
-                if (diff > 0) diff -= 360;
+                if (diff > 0)
+                {
+                    diff -= 360;
+                }
+
                 break;
             default:
                 diff = bH - aH;
@@ -617,7 +755,9 @@ public static class ColorParser
             src1 = c.R / 255.0; src2 = c.G / 255.0; src3 = c.B / 255.0;
         }
         if (srcSpace == space)
+        {
             return (src1, src2, src3);
+        }
         // Otherwise go through XYZ-D65 → target.
         var (x, y, z) = ColorConversion.ToXyzD65(srcSpace, src1, src2, src3);
         return XyzToSpace(space, x, y, z);
@@ -640,7 +780,11 @@ public static class ColorParser
                 var (oL2, oa2, ob2) = ColorConversion.XyzD65ToOklab(x, y, z);
                 var oc = Math.Sqrt(oa2 * oa2 + ob2 * ob2);
                 var oh = Math.Atan2(ob2, oa2) * 180.0 / Math.PI;
-                if (oh < 0) oh += 360;
+                if (oh < 0)
+                {
+                    oh += 360;
+                }
+
                 return (oL2, oc, oh);
             case ColorSpace.Lab:
                 var (x50, y50, z50) = ColorConversion.XyzD65ToXyzD50(x, y, z);
@@ -651,7 +795,11 @@ public static class ColorParser
                 var (lL2, la2, lb3) = ColorConversion.XyzD50ToLab(x51, y51, z51);
                 var lc = Math.Sqrt(la2 * la2 + lb3 * lb3);
                 var lh = Math.Atan2(lb3, la2) * 180.0 / Math.PI;
-                if (lh < 0) lh += 360;
+                if (lh < 0)
+                {
+                    lh += 360;
+                }
+
                 return (lL2, lc, lh);
             case ColorSpace.Hsl:
                 var (sr, sg, sb) = ColorConversion.XyzD65ToSrgb(x, y, z);
@@ -674,7 +822,10 @@ public static class ColorParser
     {
         color = CssColor.Transparent;
         if (text.Length is not (3 or 4 or 6 or 8) || text.Any(c => !Uri.IsHexDigit(c)))
+        {
             return false;
+        }
+
         var expanded = text.Length switch
         {
             3 => string.Concat(text.Select(c => $"{c}{c}")) + "ff",
@@ -698,7 +849,10 @@ public static class ColorParser
     private static Component TokenToComponent(CssComponentValue v)
     {
         if (v is CssTokenValue { Token: { Type: CssTokenType.Ident, Value: "none" } })
+        {
             return new Component(0, false, true, false, CssAngleUnit.Degrees);
+        }
+
         if (v is CssTokenValue tv)
         {
             return tv.Token.Type switch
@@ -713,9 +867,20 @@ public static class ColorParser
         {
             // calc() etc. produce a numeric — reduce.
             var node = CalcEvaluator.ParseFunctionNode(f.Name, f.Values);
-            if (node is CalcNumber n) return new Component(n.Value, false, false, false, CssAngleUnit.Degrees);
-            if (node is CalcPercentage p) return new Component(p.Value, true, false, false, CssAngleUnit.Degrees);
-            if (node is CalcAngle a) return new Component(a.Value, false, false, true, a.Unit);
+            if (node is CalcNumber n)
+            {
+                return new Component(n.Value, false, false, false, CssAngleUnit.Degrees);
+            }
+
+            if (node is CalcPercentage p)
+            {
+                return new Component(p.Value, true, false, false, CssAngleUnit.Degrees);
+            }
+
+            if (node is CalcAngle a)
+            {
+                return new Component(a.Value, false, false, true, a.Unit);
+            }
         }
         return new Component(0, false, false, false, CssAngleUnit.Degrees);
     }
@@ -732,8 +897,16 @@ public static class ColorParser
 
     private static double ReadAngle(Component c)
     {
-        if (c.IsNone) return 0;
-        if (!c.IsAngle) return c.Value;
+        if (c.IsNone)
+        {
+            return 0;
+        }
+
+        if (!c.IsAngle)
+        {
+            return c.Value;
+        }
+
         return c.AngleUnit switch
         {
             CssAngleUnit.Degrees => c.Value,
@@ -746,7 +919,11 @@ public static class ColorParser
 
     private static double ComponentToFloat(Component c, double scale)
     {
-        if (c.IsNone) return double.NaN;
+        if (c.IsNone)
+        {
+            return double.NaN;
+        }
+
         return c.IsPercentage ? c.Value / 100.0 * scale : c.Value;
     }
 
@@ -772,23 +949,37 @@ public static class ColorParser
                 .Select(p => FilterWhitespace(p).ToList())
                 .Where(p => p.Count > 0)
                 .ToList();
-            if (parts.Count is < 3 or > 4) return false;
+            if (parts.Count is < 3 or > 4)
+            {
+                return false;
+            }
+
             c1 = TokenToComponent(parts[0][0]);
             c2 = TokenToComponent(parts[1][0]);
             c3 = TokenToComponent(parts[2][0]);
             if (parts.Count == 4)
+            {
                 alpha = ComponentToFloat(TokenToComponent(parts[3][0]), 1.0);
+            }
+
             return true;
         }
 
         // Modern: split on / for alpha.
         var (chTokens, alphaTokens) = SplitOnSlash(noWs);
-        if (chTokens.Count != 3) return false;
+        if (chTokens.Count != 3)
+        {
+            return false;
+        }
+
         c1 = TokenToComponent(chTokens[0]);
         c2 = TokenToComponent(chTokens[1]);
         c3 = TokenToComponent(chTokens[2]);
         if (alphaTokens is not null && alphaTokens.Count > 0)
+        {
             alpha = ComponentToFloat(TokenToComponent(alphaTokens[0]), 1.0);
+        }
+
         return true;
     }
 
@@ -825,9 +1016,13 @@ public static class ColorParser
                 continue;
             }
             if (seenSlash)
+            {
                 alpha!.Add(v);
+            }
             else
+            {
                 ch.Add(v);
+            }
         }
         return (ch, alpha);
     }

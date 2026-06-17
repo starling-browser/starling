@@ -134,7 +134,9 @@ public sealed class ScrollStateStore
     public (double X, double Y) GetStickyShift(Element element)
     {
         if (_sticky.Count == 0 || !_sticky.TryGetValue(element, out var e))
+        {
             return (0, 0);
+        }
 
         ref readonly var c = ref e.C;
         double offX, offY, portW, portH;
@@ -178,11 +180,20 @@ public sealed class ScrollStateStore
     {
         var target = position;
         if (endInset is { } e && target + size > portExtent - e)
+        {
             target = portExtent - e - size;
+        }
+
         if (startInset is { } st && target < st)
+        {
             target = st;
+        }
+
         var shift = target - position;
-        if (shift == 0) return 0;
+        if (shift == 0)
+        {
+            return 0;
+        }
 
         // Containing-block clamp; a box larger than its CB has no slack.
         var lo = -Math.Max(0, slackToStart);
@@ -195,9 +206,19 @@ public sealed class ScrollStateStore
     {
         get
         {
-            if (_root.Pending) return true;
+            if (_root.Pending)
+            {
+                return true;
+            }
+
             foreach (var kv in _entries)
-                if (kv.Value.Pending) return true;
+            {
+                if (kv.Value.Pending)
+                {
+                    return true;
+                }
+            }
+
             return false;
         }
     }
@@ -216,7 +237,13 @@ public sealed class ScrollStateStore
         rootPending = _root.Pending;
         _root.Pending = false;
         foreach (var kv in _entries)
-            if (kv.Value.Pending) targets.Add(kv.Key);
+        {
+            if (kv.Value.Pending)
+            {
+                targets.Add(kv.Key);
+            }
+        }
+
         foreach (var el in targets)
         {
             var e = _entries[el];
@@ -243,9 +270,15 @@ public sealed class ScrollStateStore
         // A box with no measured geometry clamps to (0,0); skip materializing
         // an all-zero entry for it (reconcile would drop it anyway).
         var moved = WriteEntry(ref e, x, y);
-        if (moved) OffsetVersion++;
+        if (moved)
+        {
+            OffsetVersion++;
+        }
+
         if (moved || existed)
+        {
             _entries[element] = e;
+        }
     }
 
     /// <summary>Root-scroller variant of <see cref="Write"/>. The shells sync
@@ -253,7 +286,10 @@ public sealed class ScrollStateStore
     public void WriteRoot(double x, double y)
     {
         AssertNotInLayoutPass();
-        if (WriteEntry(ref _root, x, y)) OffsetVersion++;
+        if (WriteEntry(ref _root, x, y))
+        {
+            OffsetVersion++;
+        }
     }
 
     /// <summary>
@@ -285,7 +321,10 @@ public sealed class ScrollStateStore
     /// clamped rather than letting the gate go negative.</summary>
     internal void EndLayoutPass()
     {
-        if (_layoutPassDepth > 0) _layoutPassDepth--;
+        if (_layoutPassDepth > 0)
+        {
+            _layoutPassDepth--;
+        }
     }
 
     /// <summary>Record a scroll container's fresh geometry. Offsets and the
@@ -329,13 +368,25 @@ public sealed class ScrollStateStore
     /// re-recorded by EVERY pass, so the generation test is exact for both.</summary>
     private void SweepStickyEntries()
     {
-        if (_sticky.Count == 0) return;
+        if (_sticky.Count == 0)
+        {
+            return;
+        }
+
         _scratch.Clear();
         foreach (var kv in _sticky)
+        {
             if (kv.Value.Generation != _generation)
+            {
                 _scratch.Add(kv.Key);
+            }
+        }
+
         foreach (var el in _scratch)
+        {
             _sticky.Remove(el);
+        }
+
         _scratch.Clear();
     }
 
@@ -351,19 +402,33 @@ public sealed class ScrollStateStore
     internal void ReconcileAfterLayout()
     {
         SweepStickyEntries();
-        if (ClampEntry(ref _root)) OffsetVersion++;
+        if (ClampEntry(ref _root))
+        {
+            OffsetVersion++;
+        }
 
-        if (_entries.Count == 0) return;
+        if (_entries.Count == 0)
+        {
+            return;
+        }
+
         _scratch.Clear();
         foreach (var kv in _entries)
+        {
             _scratch.Add(kv.Key);
+        }
+
         foreach (var el in _scratch)
         {
             var e = _entries[el];
             if (e.Generation != _generation)
             {
                 _entries.Remove(el);
-                if (e.X != 0 || e.Y != 0) OffsetVersion++;
+                if (e.X != 0 || e.Y != 0)
+                {
+                    OffsetVersion++;
+                }
+
                 continue;
             }
             if (ClampEntry(ref e))
@@ -386,12 +451,22 @@ public sealed class ScrollStateStore
     internal void ClampAllEntries()
     {
         SweepStickyEntries();
-        if (ClampEntry(ref _root)) OffsetVersion++;
+        if (ClampEntry(ref _root))
+        {
+            OffsetVersion++;
+        }
 
-        if (_entries.Count == 0) return;
+        if (_entries.Count == 0)
+        {
+            return;
+        }
+
         _scratch.Clear();
         foreach (var kv in _entries)
+        {
             _scratch.Add(kv.Key);
+        }
+
         foreach (var el in _scratch)
         {
             var e = _entries[el];
@@ -411,7 +486,9 @@ public sealed class ScrollStateStore
     {
         into.Clear();
         foreach (var kv in _entries)
+        {
             into.Add(kv.Key);
+        }
     }
 
     /// <summary>Drop one entry — the scoped-pass equivalent of the
@@ -419,7 +496,9 @@ public sealed class ScrollStateStore
     internal void RemoveEntry(Element element)
     {
         if (_entries.Remove(element, out var e) && (e.X != 0 || e.Y != 0))
+        {
             OffsetVersion++; // a dropped entry reads as offset (0,0) from now on
+        }
     }
 
     /// <summary>Total <see cref="RecordGeometry"/> calls over this store's
@@ -437,11 +516,23 @@ public sealed class ScrollStateStore
     /// Returns true when the offset moved (flag set).</summary>
     private static bool WriteEntry(ref Entry e, double x, double y)
     {
-        if (double.IsNaN(x)) x = 0;
-        if (double.IsNaN(y)) y = 0;
+        if (double.IsNaN(x))
+        {
+            x = 0;
+        }
+
+        if (double.IsNaN(y))
+        {
+            y = 0;
+        }
+
         var nx = Math.Clamp(x, 0, Math.Max(0, e.OverW - e.PortW));
         var ny = Math.Clamp(y, 0, Math.Max(0, e.OverH - e.PortH));
-        if (nx == e.X && ny == e.Y) return false;
+        if (nx == e.X && ny == e.Y)
+        {
+            return false;
+        }
+
         e.X = nx;
         e.Y = ny;
         e.Pending = true;
@@ -454,7 +545,11 @@ public sealed class ScrollStateStore
     {
         var nx = Math.Clamp(e.X, 0, Math.Max(0, e.OverW - e.PortW));
         var ny = Math.Clamp(e.Y, 0, Math.Max(0, e.OverH - e.PortH));
-        if (nx == e.X && ny == e.Y) return false;
+        if (nx == e.X && ny == e.Y)
+        {
+            return false;
+        }
+
         e.X = nx;
         e.Y = ny;
         e.Pending = true;
@@ -470,7 +565,9 @@ public sealed class ScrollStateStore
     private void AssertNotInLayoutPass()
     {
         if (_layoutPassDepth > 0)
+        {
             throw new InvalidOperationException(
                 "ScrollStateStore offset write during a layout pass. Scroll offsets are paint/hit-test state; layout must never read or write them (browser-plan/scroll-model.md).");
+        }
     }
 }

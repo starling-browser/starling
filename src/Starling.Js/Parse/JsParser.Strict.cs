@@ -43,13 +43,22 @@ public ref partial struct JsParser
     /// parameters. No-op when not strict.</summary>
     private void CheckBindingIdentifier(string name, JsPosition pos)
     {
-        if (!_strict) return;
+        if (!_strict)
+        {
+            return;
+        }
+
         if (name is "eval" or "arguments")
+        {
             throw new JsParseException(
                 $"'{name}' may not be used as a binding identifier in strict mode", pos);
+        }
+
         if (IsStrictReservedWord(name))
+        {
             throw new JsParseException(
                 $"'{name}' is a reserved word and may not be used as a binding identifier in strict mode", pos);
+        }
     }
 
     /// <summary>§12.9.3 / B.1.2 — in strict code a legacy octal integer
@@ -60,8 +69,10 @@ public ref partial struct JsParser
     private void CheckLegacyOctalLiteral(JsToken t)
     {
         if (_strict && t.LegacyOctal)
+        {
             throw new JsParseException(
                 "octal literals and octal escape sequences are not allowed in strict mode", t.Start);
+        }
     }
 
     /// <summary>§13.5.1.1 — true when an expression is a bare (possibly
@@ -77,17 +88,24 @@ public ref partial struct JsParser
     private void CheckClassBindingName(Identifier name)
     {
         if (name.Name is "eval" or "arguments")
+        {
             throw new JsParseException(
                 $"'{name.Name}' may not be used as a class name", name.Start);
+        }
+
         if (IsStrictReservedWord(name.Name))
+        {
             throw new JsParseException(
                 $"'{name.Name}' is a reserved word and may not be used as a class name", name.Start);
+        }
         // §15.7.1 — in an async context (e.g. a class static initialization
         // block) `await` is the AwaitExpression keyword and may not be a class
         // BindingIdentifier (`static { class await {} }`).
         if (_inAsync && name.Name == "await")
+        {
             throw new JsParseException(
                 "'await' may not be used as a class name in an async context", name.Start);
+        }
     }
 
     /// <summary>§13.3.1.1 / §14.3.1 — recursively check every BindingIdentifier
@@ -96,7 +114,11 @@ public ref partial struct JsParser
     /// <c>var</c>/<c>let</c>/<c>const</c> and catch-clause binding names.</summary>
     private void CheckPatternBindingNames(Expression target)
     {
-        if (!_strict) return;
+        if (!_strict)
+        {
+            return;
+        }
+
         switch (target)
         {
             case Identifier id:
@@ -108,13 +130,27 @@ public ref partial struct JsParser
             case ArrayPattern arr:
                 foreach (var el in arr.Elements)
                 {
-                    if (el is ArrayPatternBindingElement be) CheckPatternBindingNames(be.Target);
-                    else if (el is ArrayPatternRestElement re) CheckPatternBindingNames(re.Target);
+                    if (el is ArrayPatternBindingElement be)
+                    {
+                        CheckPatternBindingNames(be.Target);
+                    }
+                    else if (el is ArrayPatternRestElement re)
+                    {
+                        CheckPatternBindingNames(re.Target);
+                    }
                 }
                 break;
             case ObjectPattern obj:
-                foreach (var prop in obj.Properties) CheckPatternBindingNames(prop.Target);
-                if (obj.Rest is not null) CheckPatternBindingNames(obj.Rest.Argument);
+                foreach (var prop in obj.Properties)
+                {
+                    CheckPatternBindingNames(prop.Target);
+                }
+
+                if (obj.Rest is not null)
+                {
+                    CheckPatternBindingNames(obj.Rest.Argument);
+                }
+
                 break;
             case RestElement rest:
                 CheckPatternBindingNames(rest.Argument);
@@ -127,7 +163,11 @@ public ref partial struct JsParser
     /// <c>arguments</c>. No-op when not strict.</summary>
     private void CheckAssignmentTarget(Expression target, JsPosition pos)
     {
-        if (!_strict) return;
+        if (!_strict)
+        {
+            return;
+        }
+
         switch (target)
         {
             case Identifier { Name: "eval" or "arguments" } id:
@@ -143,13 +183,27 @@ public ref partial struct JsParser
             case ArrayPattern arr:
                 foreach (var el in arr.Elements)
                 {
-                    if (el is ArrayPatternBindingElement be) CheckAssignmentTarget(be.Target, be.Target.Start);
-                    else if (el is ArrayPatternRestElement re) CheckAssignmentTarget(re.Target, re.Target.Start);
+                    if (el is ArrayPatternBindingElement be)
+                    {
+                        CheckAssignmentTarget(be.Target, be.Target.Start);
+                    }
+                    else if (el is ArrayPatternRestElement re)
+                    {
+                        CheckAssignmentTarget(re.Target, re.Target.Start);
+                    }
                 }
                 break;
             case ObjectPattern obj:
-                foreach (var prop in obj.Properties) CheckAssignmentTarget(prop.Target, prop.Target.Start);
-                if (obj.Rest is not null) CheckAssignmentTarget(obj.Rest.Argument, obj.Rest.Argument.Start);
+                foreach (var prop in obj.Properties)
+                {
+                    CheckAssignmentTarget(prop.Target, prop.Target.Start);
+                }
+
+                if (obj.Rest is not null)
+                {
+                    CheckAssignmentTarget(obj.Rest.Argument, obj.Rest.Argument.Start);
+                }
+
                 break;
         }
     }
@@ -170,7 +224,9 @@ public ref partial struct JsParser
         var forbidDuplicates = strict || !simple || forceDuplicateCheck;
         HashSet<string>? seen = forbidDuplicates ? new HashSet<string>(StringComparer.Ordinal) : null;
         foreach (var p in @params)
+        {
             ValidateParameterElement(p, strict, forbidDuplicates, seen);
+        }
     }
 
     private void ValidateParameterElement(Expression p, bool strict, bool forbidDuplicates, HashSet<string>? seen)
@@ -178,10 +234,17 @@ public ref partial struct JsParser
         switch (p)
         {
             case Identifier id:
-                if (strict) CheckBindingIdentifier(id.Name, id.Start);
+                if (strict)
+                {
+                    CheckBindingIdentifier(id.Name, id.Start);
+                }
+
                 if (forbidDuplicates && seen is not null && !seen.Add(id.Name))
+                {
                     throw new JsParseException(
                         $"duplicate parameter name '{id.Name}'", id.Start);
+                }
+
                 break;
             case AssignmentPattern ap:
                 ValidateParameterElement(ap.Target, strict, forbidDuplicates, seen);
@@ -193,12 +256,23 @@ public ref partial struct JsParser
                 ValidateParameterElement(re.Argument, strict, forbidDuplicates, seen);
                 break;
             case ArrayPattern arr:
-                foreach (var el in arr.Elements) ValidateArrayPatternElement(el, strict, forbidDuplicates, seen);
+                foreach (var el in arr.Elements)
+                {
+                    ValidateArrayPatternElement(el, strict, forbidDuplicates, seen);
+                }
+
                 break;
             case ObjectPattern obj:
                 foreach (var prop in obj.Properties)
+                {
                     ValidateParameterElement(prop.Target, strict, forbidDuplicates, seen);
-                if (obj.Rest is not null) ValidateParameterElement(obj.Rest, strict, forbidDuplicates, seen);
+                }
+
+                if (obj.Rest is not null)
+                {
+                    ValidateParameterElement(obj.Rest, strict, forbidDuplicates, seen);
+                }
+
                 break;
         }
     }
@@ -222,7 +296,13 @@ public ref partial struct JsParser
     private static bool AreSimpleParams(IReadOnlyList<Expression> @params)
     {
         foreach (var p in @params)
-            if (p is not Identifier) return false;
+        {
+            if (p is not Identifier)
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -268,7 +348,10 @@ public ref partial struct JsParser
             // The directive prologue can flip this body to strict.
             ScanDirectivePrologue(body, isProgram: false);
             while (!Check(JsTokenKind.RBrace) && !Check(JsTokenKind.EndOfFile))
+            {
                 body.Add(ParseStatement());
+            }
+
             var end = _current.End;
             Expect(JsTokenKind.RBrace, "expected '}' to close block");
             // §15.2.1 — the FunctionBody's own lexical/var early errors.
@@ -293,7 +376,9 @@ public ref partial struct JsParser
     private void CheckUseStrictSimpleParams(IReadOnlyList<Expression> @params, JsPosition pos)
     {
         if (_lastBodyContainsUseStrict && !AreSimpleParams(@params))
+        {
             throw new JsParseException(
                 "a function with a non-simple parameter list may not declare \"use strict\"", pos);
+        }
     }
 }

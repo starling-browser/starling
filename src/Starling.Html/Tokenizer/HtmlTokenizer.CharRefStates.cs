@@ -71,10 +71,17 @@ public sealed partial class HtmlTokenizer
     private void FlushBufferedAsCharacters()
     {
         if (IsReturnStateAttribute())
+        {
             _attrValue.Append(_tempBuffer);
+        }
         else
+        {
             for (var i = 0; i < _tempBuffer.Length; i++)
+            {
                 _emitted.Enqueue(new CharacterToken(_tempBuffer[i]));
+            }
+        }
+
         _tempBuffer.Clear();
     }
 
@@ -82,7 +89,10 @@ public sealed partial class HtmlTokenizer
     {
         if (IsReturnStateAttribute())
         {
-            if (cp <= 0xFFFF) _attrValue.Append((char)cp);
+            if (cp <= 0xFFFF)
+            {
+                _attrValue.Append((char)cp);
+            }
             else
             {
                 _attrValue.Append(char.ConvertFromUtf32(cp));
@@ -132,10 +142,21 @@ public sealed partial class HtmlTokenizer
         for (var i = 0; i < 31; i++)
         {
             var pk = _stream.PeekAt(i);
-            if (pk == -1) break;
-            if (!IsAsciiAlphanumeric(pk) && pk != ';') break;
+            if (pk == -1)
+            {
+                break;
+            }
+
+            if (!IsAsciiAlphanumeric(pk) && pk != ';')
+            {
+                break;
+            }
+
             candidate.Append((char)pk);
-            if (pk == ';') break;
+            if (pk == ';')
+            {
+                break;
+            }
         }
 
         var span = candidate.ToString();
@@ -162,7 +183,10 @@ public sealed partial class HtmlTokenizer
         // stream past the remaining matched chars.
         var matchLen = best.Value.Length;
         _stream.Advance(matchLen - 1);
-        for (var i = 0; i < matchLen - 1; i++) TrackPosition(span[i + 1]);
+        for (var i = 0; i < matchLen - 1; i++)
+        {
+            TrackPosition(span[i + 1]);
+        }
 
         var matched = span[..matchLen];
         var lastIsSemicolon = matched.EndsWith(';');
@@ -192,7 +216,9 @@ public sealed partial class HtmlTokenizer
         _tempBuffer.Clear();
         EmitDecodedCodePoint(best.Value.CodePoint1);
         if (best.Value.CodePoint2 is int cp2)
+        {
             EmitDecodedCodePoint(cp2);
+        }
 
         _state = _returnState;
     }
@@ -204,8 +230,15 @@ public sealed partial class HtmlTokenizer
     {
         if (IsAsciiAlphanumeric(c))
         {
-            if (IsReturnStateAttribute()) _attrValue.Append((char)c);
-            else _emitted.Enqueue(new CharacterToken(c));
+            if (IsReturnStateAttribute())
+            {
+                _attrValue.Append((char)c);
+            }
+            else
+            {
+                _emitted.Enqueue(new CharacterToken(c));
+            }
+
             return;
         }
         if (c == ';')
@@ -294,7 +327,11 @@ public sealed partial class HtmlTokenizer
     private void Accum(int digit, int radix)
     {
         // Saturate at 0x110000 to detect overflow without unbounded growth.
-        if (_charRefOverflowed) return;
+        if (_charRefOverflowed)
+        {
+            return;
+        }
+
         _charRefCode = (uint)(_charRefCode * radix + digit);
         if (_charRefCode > 0x10FFFF)
         {
@@ -346,7 +383,10 @@ public sealed partial class HtmlTokenizer
         _tempBuffer.Clear();
         EmitDecodedCodePoint(code);
         _state = _returnState;
-        if (reconsume >= 0) _reconsume = reconsume;
+        if (reconsume >= 0)
+        {
+            _reconsume = reconsume;
+        }
     }
 
     /// <summary>Dispatcher hook — unreachable in practice since
@@ -390,7 +430,11 @@ public sealed partial class HtmlTokenizer
     private static bool IsNonCharacter(int cp)
     {
         // U+FDD0..U+FDEF and any code point ending in FFFE/FFFF
-        if (cp >= 0xFDD0 && cp <= 0xFDEF) return true;
+        if (cp >= 0xFDD0 && cp <= 0xFDEF)
+        {
+            return true;
+        }
+
         var low = cp & 0xFFFF;
         return low == 0xFFFE || low == 0xFFFF;
     }

@@ -63,7 +63,10 @@ public sealed class ConsolePanel : Grid, IDisposable
 
         // Snapshot first so the panel shows recent activity on open; then live.
         foreach (var record in stream.Logs.Snapshot())
+        {
             AppendRow(record);
+        }
+
         UpdateCount();
 
         _subscription = stream.Logs.Subscribe();
@@ -88,10 +91,16 @@ public sealed class ConsolePanel : Grid, IDisposable
 
     private void AppendRow(LogRecord record)
     {
-        if (_filter is { } f && record.Level != f) return;
+        if (_filter is { } f && record.Level != f)
+        {
+            return;
+        }
+
         _rows.Children.Add(BuildRow(record));
         while (_rows.Children.Count > MaxRows)
+        {
             _rows.Children.RemoveAt(0);
+        }
     }
 
     private Control BuildRow(LogRecord r)
@@ -210,7 +219,11 @@ public sealed class ConsolePanel : Grid, IDisposable
         _rows.Children.Clear();
         foreach (var record in _stream.Logs.Snapshot())
         {
-            if (_filter is { } f && record.Level != f) continue;
+            if (_filter is { } f && record.Level != f)
+            {
+                continue;
+            }
+
             _rows.Children.Add(BuildRow(record));
         }
         UpdateCount();
@@ -247,13 +260,41 @@ public sealed class ConsolePanel : Grid, IDisposable
         // Mirrors the activity-name lookup in PerformancePanel; logger names
         // emit by area like "Starling.paint", "Starling.layout", etc.
         var lower = fullCategory.ToLowerInvariant();
-        if (lower.Contains("paint")) return Category.Paint;
-        if (lower.Contains("layout")) return Category.Layout;
-        if (lower.Contains("css") || lower.Contains("style")) return Category.Css;
-        if (lower.Contains("js")) return Category.Js;
-        if (lower.Contains("html") || lower.Contains("parse")) return Category.Html;
-        if (lower.Contains("gc")) return Category.Gc;
-        if (lower.Contains("net") || lower.Contains("http")) return Category.Net;
+        if (lower.Contains("paint"))
+        {
+            return Category.Paint;
+        }
+
+        if (lower.Contains("layout"))
+        {
+            return Category.Layout;
+        }
+
+        if (lower.Contains("css") || lower.Contains("style"))
+        {
+            return Category.Css;
+        }
+
+        if (lower.Contains("js"))
+        {
+            return Category.Js;
+        }
+
+        if (lower.Contains("html") || lower.Contains("parse"))
+        {
+            return Category.Html;
+        }
+
+        if (lower.Contains("gc"))
+        {
+            return Category.Gc;
+        }
+
+        if (lower.Contains("net") || lower.Contains("http"))
+        {
+            return Category.Net;
+        }
+
         return Category.Idle;
     }
 

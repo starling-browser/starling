@@ -26,7 +26,9 @@ public static class KeyframesParser
         foreach (var rule in sheet.Rules)
         {
             if (rule is AtRule atRule && IsKeyframes(atRule.Name) && TryParse(atRule, out var keyframes))
+            {
                 yield return keyframes!;
+            }
         }
     }
 
@@ -34,17 +36,30 @@ public static class KeyframesParser
     {
         ArgumentNullException.ThrowIfNull(rule);
         keyframes = null;
-        if (!IsKeyframes(rule.Name)) return false;
+        if (!IsKeyframes(rule.Name))
+        {
+            return false;
+        }
 
         var name = ExtractName(rule.Prelude);
-        if (string.IsNullOrEmpty(name)) return false;
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
 
         var frames = new List<Keyframe>();
         foreach (var nested in rule.Rules)
         {
-            if (nested is not StyleRule style) continue;
+            if (nested is not StyleRule style)
+            {
+                continue;
+            }
+
             var offsets = ParseKeyframeSelectors(style.Prelude);
-            if (offsets.Count == 0) continue;
+            if (offsets.Count == 0)
+            {
+                continue;
+            }
 
             var declarations = new List<KeyframeDeclaration>(style.Declarations.Count);
             TimingFunction? segmentTiming = null;
@@ -70,7 +85,9 @@ public static class KeyframesParser
             }
 
             foreach (var offset in offsets)
+            {
                 frames.Add(new Keyframe(offset, declarations, segmentTiming));
+            }
         }
 
         // Stable sort by offset so consumers can binary-search or step linearly.
@@ -89,9 +106,14 @@ public static class KeyframesParser
         foreach (var component in prelude)
         {
             if (component is CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var ident } })
+            {
                 return ident;
+            }
+
             if (component is CssTokenValue { Token: { Type: CssTokenType.String, Value: var quoted } })
+            {
                 return quoted;
+            }
         }
         return string.Empty;
     }
@@ -103,9 +125,17 @@ public static class KeyframesParser
         var current = new List<CssToken>();
         foreach (var component in prelude)
         {
-            if (component is not CssTokenValue tv) continue;
+            if (component is not CssTokenValue tv)
+            {
+                continue;
+            }
+
             var token = tv.Token;
-            if (token.Type == CssTokenType.Whitespace) continue;
+            if (token.Type == CssTokenType.Whitespace)
+            {
+                continue;
+            }
+
             if (token.Type == CssTokenType.Comma)
             {
                 AddIfValid(current, offsets);
@@ -120,7 +150,11 @@ public static class KeyframesParser
 
     private static void AddIfValid(List<CssToken> tokens, List<double> offsets)
     {
-        if (tokens.Count != 1) return;
+        if (tokens.Count != 1)
+        {
+            return;
+        }
+
         var t = tokens[0];
         switch (t.Type)
         {
@@ -133,7 +167,11 @@ public static class KeyframesParser
             case CssTokenType.Percentage:
                 var pct = t.Number / 100.0;
                 // §4: keyframe selectors outside [0,1] are invalid — drop them.
-                if (pct is >= 0 and <= 1) offsets.Add(pct);
+                if (pct is >= 0 and <= 1)
+                {
+                    offsets.Add(pct);
+                }
+
                 break;
         }
     }

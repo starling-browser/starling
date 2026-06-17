@@ -79,7 +79,11 @@ internal sealed class Shape
         lock (_gate)
         {
             _transitions ??= new Dictionary<TransitionKey, Shape>();
-            if (_transitions.TryGetValue(tk, out var existing)) return existing;
+            if (_transitions.TryGetValue(tk, out var existing))
+            {
+                return existing;
+            }
+
             var child = new Shape(this, key, flags);
             _transitions[tk] = child;
             return child;
@@ -123,14 +127,22 @@ internal sealed class Shape
     public bool TryGet(string key, out ShapeProp prop)
     {
         var t = _table;
-        if (t is not null) return t.TryGetValue(key, out prop);
+        if (t is not null)
+        {
+            return t.TryGetValue(key, out prop);
+        }
+
         return TryGetSlow(key, out prop);
     }
 
     public bool Contains(string key)
     {
         var t = _table;
-        if (t is not null) return t.ContainsKey(key);
+        if (t is not null)
+        {
+            return t.ContainsKey(key);
+        }
+
         return TryGetSlow(key, out _);
     }
 
@@ -141,7 +153,9 @@ internal sealed class Shape
         {
             var n = ++_lookups;
             if (n >= SlotCount || n >= FlattenLookupCap)
+            {
                 return Flatten().TryGetValue(key, out prop);
+            }
         }
 
         // Chain walk — allocation-free. Each link holds the one key it added
@@ -159,7 +173,10 @@ internal sealed class Shape
             }
             s = s._parent!;
             var t = s._table;
-            if (t is not null) return t.TryGetValue(key, out prop);
+            if (t is not null)
+            {
+                return t.TryGetValue(key, out prop);
+            }
         }
         prop = default;
         return false;
@@ -172,14 +189,31 @@ internal sealed class Shape
     {
         lock (_gate)
         {
-            if (_table is not null) return _table;
+            if (_table is not null)
+            {
+                return _table;
+            }
+
             var anchor = _parent;
-            while (anchor is not null && anchor._table is null) anchor = anchor._parent;
+            while (anchor is not null && anchor._table is null)
+            {
+                anchor = anchor._parent;
+            }
+
             var t = new Dictionary<string, ShapeProp>(SlotCount, StringComparer.Ordinal);
             if (anchor?._table is { } src)
-                foreach (var kv in src) t.Add(kv.Key, kv.Value);
+            {
+                foreach (var kv in src)
+                {
+                    t.Add(kv.Key, kv.Value);
+                }
+            }
+
             for (var s = this; !ReferenceEquals(s, anchor) && s._key is not null; s = s._parent!)
+            {
                 t.Add(s._key, new ShapeProp(s.AddedSlot, s._flags));
+            }
+
             _table = t;
             return t;
         }
@@ -190,7 +224,11 @@ internal sealed class Shape
     /// flattened table. For bulk exports (dictionary-mode migration).</summary>
     public ShapeProp[] OrderedProps()
     {
-        if (SlotCount == 0) return System.Array.Empty<ShapeProp>();
+        if (SlotCount == 0)
+        {
+            return System.Array.Empty<ShapeProp>();
+        }
+
         var props = new ShapeProp[SlotCount];
         var s = this;
         while (s._key is not null)
@@ -205,7 +243,11 @@ internal sealed class Shape
     /// transition chain from root to here, oldest first.</summary>
     public IReadOnlyList<string> OrderedKeys()
     {
-        if (SlotCount == 0) return System.Array.Empty<string>();
+        if (SlotCount == 0)
+        {
+            return System.Array.Empty<string>();
+        }
+
         var keys = new string[SlotCount];
         var s = this;
         while (s._key is not null)

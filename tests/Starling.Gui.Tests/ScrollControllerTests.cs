@@ -45,10 +45,19 @@ public sealed class ScrollControllerTests
 
         static LayoutBox? Find(LayoutBox box, Starling.Dom.Element el)
         {
-            if (ReferenceEquals(box.Element, el)) return box;
+            if (ReferenceEquals(box.Element, el))
+            {
+                return box;
+            }
+
             foreach (var child in box.Children)
+            {
                 if (Find(child, el) is { } hit)
+                {
                     return hit;
+                }
+            }
+
             return null;
         }
     }

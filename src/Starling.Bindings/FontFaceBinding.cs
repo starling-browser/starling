@@ -46,13 +46,18 @@ internal static class FontFaceBinding
     private static FontFaceSet GetOrBuildSet(Document doc)
     {
         if (SetPerDocument.TryGetValue(doc, out var existing))
+        {
             return existing;
+        }
 
         var set = new FontFaceSet();
         foreach (var el in doc.DescendantElements())
         {
             if (!el.LocalName.Equals("style", StringComparison.OrdinalIgnoreCase))
+            {
                 continue;
+            }
+
             var sheet = CssParser.ParseStyleSheet(el.TextContent ?? string.Empty, StyleOrigin.Author);
             foreach (var rule in FontFaceParser.ParseAll(sheet))
             {
@@ -84,7 +89,10 @@ internal static class FontFaceBinding
         EventTargetBinding.DefineMethod(realm, obj, "add", (_, args) =>
         {
             if (args.Length > 0 && args[0].IsObject && ModelByJs.TryGetValue(args[0].AsObject, out var face))
+            {
                 set.Add(face);
+            }
+
             return JsValue.Object(obj);
         }, length: 1);
 
@@ -100,7 +108,11 @@ internal static class FontFaceBinding
 
         EventTargetBinding.DefineMethod(realm, obj, "check", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.False;
+            if (args.Length == 0)
+            {
+                return JsValue.False;
+            }
+
             var font = JsValue.ToStringValue(args[0]);
             var text = args.Length > 1 && !args[1].IsNullish ? JsValue.ToStringValue(args[1]) : null;
             return set.Check(font, text) ? JsValue.True : JsValue.False;
@@ -118,14 +130,20 @@ internal static class FontFaceBinding
             {
                 face.Load();
                 if (stripped.Contains(face.Family, StringComparison.OrdinalIgnoreCase))
+                {
                     matched.Add(JsValue.Object(BuildFontFace(realm, face)));
+                }
             }
             return FetchBinding.ResolvedPromise(realm, JsValue.Object(new JsArray(realm, matched)));
         }, length: 1);
 
         EventTargetBinding.DefineMethod(realm, obj, "forEach", (_, args) =>
         {
-            if (args.Length == 0 || !AbstractOperations.IsCallable(args[0])) return JsValue.Undefined;
+            if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
+                return JsValue.Undefined;
+            }
+
             foreach (var face in set.Faces)
             {
                 var js = JsValue.Object(BuildFontFace(realm, face));
@@ -136,7 +154,9 @@ internal static class FontFaceBinding
 
         // EventTarget surface — inert (no loading/loadingdone events fired yet).
         foreach (var m in new[] { "addEventListener", "removeEventListener" })
+        {
             EventTargetBinding.DefineMethod(realm, obj, m, (_, _) => JsValue.Undefined, length: 2);
+        }
 
         return obj;
     }
@@ -146,7 +166,10 @@ internal static class FontFaceBinding
         var ctor = new JsNativeFunction(realm, "FontFace", 2, (_, args) =>
         {
             if (args.Length < 2)
+            {
                 throw new JsThrow(realm.NewTypeError("FontFace requires family and source arguments"));
+            }
+
             var family = JsValue.ToStringValue(args[0]);
             var source = JsValue.ToStringValue(args[1]);
             var desc = args.Length > 2 && args[2].IsObject ? args[2].AsObject : null;
@@ -168,7 +191,9 @@ internal static class FontFaceBinding
     private static JsObject BuildFontFace(JsRealm realm, FontFaceModel face)
     {
         if (JsByModel.TryGetValue(face, out var existing))
+        {
             return existing;
+        }
 
         var o = new JsObject(realm.ObjectPrototype);
         EventTargetBinding.DefineAccessor(realm, o, "family", (_, _) => JsValue.String(face.Family));
@@ -201,7 +226,11 @@ internal static class FontFaceBinding
 
     private static string DescOr(JsObject? desc, string name, string fallback)
     {
-        if (desc is null) return fallback;
+        if (desc is null)
+        {
+            return fallback;
+        }
+
         var v = desc.Get(name);
         return v.IsNullish ? fallback : JsValue.ToStringValue(v);
     }

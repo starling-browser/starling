@@ -20,7 +20,11 @@ public sealed class DictionaryEmitter(WebIdlModel model, TypeMapper mapper, ClrM
         var needed = new SortedSet<string>(StringComparer.Ordinal);
         foreach (string name in interfaceNames)
         {
-            if (!model.Interfaces.TryGetValue(name, out var iface)) continue;
+            if (!model.Interfaces.TryGetValue(name, out var iface))
+            {
+                continue;
+            }
+
             foreach (var member in iface.Members)
             {
                 switch (member)
@@ -28,7 +32,11 @@ public sealed class DictionaryEmitter(WebIdlModel model, TypeMapper mapper, ClrM
                     case IdlAttribute a: CollectDicts(a.Type, needed); break;
                     case IdlOperation op:
                         CollectDicts(op.ReturnType, needed);
-                        foreach (var arg in op.Arguments) CollectDicts(arg.Type, needed);
+                        foreach (var arg in op.Arguments)
+                        {
+                            CollectDicts(arg.Type, needed);
+                        }
+
                         break;
                 }
             }
@@ -39,12 +47,26 @@ public sealed class DictionaryEmitter(WebIdlModel model, TypeMapper mapper, ClrM
         while (work.Count > 0)
         {
             string dn = work.Dequeue();
-            if (!model.Dictionaries.TryGetValue(dn, out var dict)) continue;
+            if (!model.Dictionaries.TryGetValue(dn, out var dict))
+            {
+                continue;
+            }
+
             if (dict.Inherits is { } baseName && model.Dictionaries.ContainsKey(baseName) && needed.Add(baseName))
+            {
                 work.Enqueue(baseName);
+            }
+
             foreach (var m in dict.Members)
+            {
                 foreach (string found in DictsIn(m.Type))
-                    if (needed.Add(found)) work.Enqueue(found);
+                {
+                    if (needed.Add(found))
+                    {
+                        work.Enqueue(found);
+                    }
+                }
+            }
         }
 
         var sb = new StringBuilder();
@@ -61,7 +83,10 @@ public sealed class DictionaryEmitter(WebIdlModel model, TypeMapper mapper, ClrM
         count = 0;
         foreach (string dn in needed)
         {
-            if (!model.Dictionaries.TryGetValue(dn, out var dict)) continue;
+            if (!model.Dictionaries.TryGetValue(dn, out var dict))
+            {
+                continue;
+            }
 
             string baseClause = dict.Inherits is { } b && needed.Contains(b) ? $" : {b}" : "";
             sb.AppendLine();
@@ -72,13 +97,21 @@ public sealed class DictionaryEmitter(WebIdlModel model, TypeMapper mapper, ClrM
             var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var m in dict.Members)
             {
-                if (!seen.Add(m.Name)) continue;
+                if (!seen.Add(m.Name))
+                {
+                    continue;
+                }
+
                 string baseType = FieldBaseType(m.Type);
                 string prop = Pascal(m.Name);
                 if (m.Required)
+                {
                     sb.AppendLine(CultureInfo.InvariantCulture, $"    public required {baseType} {prop} {{ get; init; }}");
+                }
                 else
+                {
                     sb.AppendLine(CultureInfo.InvariantCulture, $"    public {baseType}? {prop} {{ get; init; }}");
+                }
             }
             sb.AppendLine("}");
             count++;
@@ -92,7 +125,10 @@ public sealed class DictionaryEmitter(WebIdlModel model, TypeMapper mapper, ClrM
     private string FieldBaseType(IdlType type)
     {
         var r = model.ResolveTypedef(type);
-        if (r.IsUnion) return TypeMapper.JsValue;
+        if (r.IsUnion)
+        {
+            return TypeMapper.JsValue;
+        }
 
         var mapped = mapper.Map(r, TypePosition.Member);
         return mapped.Kind switch
@@ -109,18 +145,35 @@ public sealed class DictionaryEmitter(WebIdlModel model, TypeMapper mapper, ClrM
 
     private void CollectDicts(IdlType type, SortedSet<string> set)
     {
-        foreach (string d in DictsIn(type)) set.Add(d);
+        foreach (string d in DictsIn(type))
+        {
+            set.Add(d);
+        }
     }
 
     private IEnumerable<string> DictsIn(IdlType type)
     {
         var r = model.ResolveTypedef(type);
         if (!r.IsUnion && r.TypeArgs.Count == 0 && model.Dictionaries.ContainsKey(r.Name))
+        {
             yield return r.Name;
+        }
+
         foreach (var m in r.Union)
-            foreach (string d in DictsIn(m)) yield return d;
+        {
+            foreach (string d in DictsIn(m))
+            {
+                yield return d;
+            }
+        }
+
         foreach (var arg in r.TypeArgs)
-            foreach (string d in DictsIn(arg)) yield return d;
+        {
+            foreach (string d in DictsIn(arg))
+            {
+                yield return d;
+            }
+        }
     }
 
     private static string Pascal(string name) =>

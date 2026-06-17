@@ -122,7 +122,9 @@ public static class PropertyRegistry
     public static bool TryGetPropertyId(string name, out PropertyId id)
     {
         if (Names.TryGetValue(name, out id))
+        {
             return true;
+        }
 
         // CSS Masking 1 / CSS Backgrounds 3: browsers ship mask-* and
         // background-clip:text behind the -webkit- prefix. The WebkitAliases
@@ -130,7 +132,9 @@ public static class PropertyRegistry
         // a single O(1) lookup.
         if (name.StartsWith(WebkitPrefix, StringComparison.Ordinal)
             && WebkitAliases.TryGetValue(name, out id))
+        {
             return true;
+        }
 
         return false;
     }
@@ -152,7 +156,9 @@ public static class PropertyRegistry
     {
         ArgumentNullException.ThrowIfNull(declaration);
         if (declaration.Name.StartsWith("--", StringComparison.Ordinal))
+        {
             yield break;
+        }
 
         var name = declaration.Name.ToLowerInvariant();
         // font-family idents are family names, not CSS keywords — the value
@@ -164,7 +170,9 @@ public static class PropertyRegistry
             ? FontFamilyValueParser.Parse(declaration.Value)
             : CssValueParser.ParseList(declaration.Value).ToList();
         foreach (var parsed in Expand(name, values, declaration.Important))
+        {
             yield return parsed;
+        }
     }
 
     public static CssValue InitialValue(PropertyId id)
@@ -403,7 +411,9 @@ public static class PropertyRegistry
         bool important)
     {
         if (values.Count == 0)
+        {
             yield break;
+        }
 
         // CSS Variables L1 §3.7 — when a shorthand contains var(), every longhand
         // it maps to is set to a pending-substitution value; the shorthand cannot
@@ -412,15 +422,20 @@ public static class PropertyRegistry
             && values.Any(ContainsVarReference))
         {
             foreach (var longhand in longhands)
+            {
                 yield return new PropertyDeclaration(
                     longhand,
                     new CssPendingSubstitution(name, values, longhand),
                     important);
+            }
+
             yield break;
         }
 
         foreach (var item in ExpandResolved(name, values, important))
+        {
             yield return item;
+        }
     }
 
     /// <summary>
@@ -435,10 +450,15 @@ public static class PropertyRegistry
         bool important)
     {
         if (values.Count == 0)
+        {
             yield break;
+        }
+
         var list = values as List<CssValue> ?? values.ToList();
         foreach (var item in ExpandSwitch(name, list, important))
+        {
             yield return item;
+        }
     }
 
     private static IEnumerable<PropertyDeclaration> ExpandSwitch(
@@ -450,31 +470,52 @@ public static class PropertyRegistry
         {
             case "margin":
                 foreach (var item in Box(PropertyId.MarginTop, PropertyId.MarginRight, PropertyId.MarginBottom, PropertyId.MarginLeft, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "padding":
                 // CSS Box Model 3 §4: padding must be non-negative — a negative
                 // component makes the whole shorthand invalid (dropped).
                 if (values.Any(IsNegativeLengthValue))
+                {
                     break;
+                }
+
                 foreach (var item in Box(PropertyId.PaddingTop, PropertyId.PaddingRight, PropertyId.PaddingBottom, PropertyId.PaddingLeft, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-width":
                 foreach (var item in Box(PropertyId.BorderTopWidth, PropertyId.BorderRightWidth, PropertyId.BorderBottomWidth, PropertyId.BorderLeftWidth, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-style":
                 foreach (var item in Box(PropertyId.BorderTopStyle, PropertyId.BorderRightStyle, PropertyId.BorderBottomStyle, PropertyId.BorderLeftStyle, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-color":
                 foreach (var item in Box(PropertyId.BorderTopColor, PropertyId.BorderRightColor, PropertyId.BorderBottomColor, PropertyId.BorderLeftColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-radius":
                 foreach (var item in Box(PropertyId.BorderTopLeftRadius, PropertyId.BorderTopRightRadius, PropertyId.BorderBottomRightRadius, PropertyId.BorderBottomLeftRadius, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "overflow":
                 yield return new PropertyDeclaration(PropertyId.OverflowX, values[0], important);
@@ -485,16 +526,25 @@ public static class PropertyRegistry
             // (system font keywords set all longhands from UA metrics).
             case "font":
                 foreach (var item in ExpandFont(values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "background":
                 foreach (var item in ExpandBackground(values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "mask":
             case "-webkit-mask":
                 foreach (var item in ExpandMask(values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border":
                 foreach (var value in values)
@@ -502,17 +552,23 @@ public static class PropertyRegistry
                     if (IsBorderStyle(value))
                     {
                         foreach (var item in Box(PropertyId.BorderTopStyle, PropertyId.BorderRightStyle, PropertyId.BorderBottomStyle, PropertyId.BorderLeftStyle, [value], important))
+                        {
                             yield return item;
+                        }
                     }
                     else if (IsColorLike(value))
                     {
                         foreach (var item in Box(PropertyId.BorderTopColor, PropertyId.BorderRightColor, PropertyId.BorderBottomColor, PropertyId.BorderLeftColor, [value], important))
+                        {
                             yield return item;
+                        }
                     }
                     else
                     {
                         foreach (var item in Box(PropertyId.BorderTopWidth, PropertyId.BorderRightWidth, PropertyId.BorderBottomWidth, PropertyId.BorderLeftWidth, [value], important))
+                        {
                             yield return item;
+                        }
                     }
                 }
                 break;
@@ -539,10 +595,19 @@ public static class PropertyRegistry
                     CssValue? colWidth = null, colCount = null;
                     foreach (var value in values)
                     {
-                        if (value is CssNumber) colCount = value;
-                        else if (value is CssLength) colWidth = value;
+                        if (value is CssNumber)
+                        {
+                            colCount = value;
+                        }
+                        else if (value is CssLength)
+                        {
+                            colWidth = value;
+                        }
                         else if (value is CssKeyword { Name: "auto" }) { /* applies to whichever is unset */ }
-                        else colWidth ??= value;
+                        else
+                        {
+                            colWidth ??= value;
+                        }
                     }
                     yield return new PropertyDeclaration(PropertyId.ColumnWidth, colWidth ?? new CssKeyword("auto"), important);
                     yield return new PropertyDeclaration(PropertyId.ColumnCount, colCount ?? new CssKeyword("auto"), important);
@@ -554,9 +619,18 @@ public static class PropertyRegistry
                     CssValue? rColor = null, rStyle = null, rWidth = null;
                     foreach (var value in values)
                     {
-                        if (IsBorderStyle(value)) rStyle = value;
-                        else if (IsColorLike(value)) rColor = value;
-                        else rWidth = value;
+                        if (IsBorderStyle(value))
+                        {
+                            rStyle = value;
+                        }
+                        else if (IsColorLike(value))
+                        {
+                            rColor = value;
+                        }
+                        else
+                        {
+                            rWidth = value;
+                        }
                     }
                     yield return new PropertyDeclaration(PropertyId.ColumnRuleColor, rColor ?? new CssKeyword("currentColor"), important);
                     yield return new PropertyDeclaration(PropertyId.ColumnRuleStyle, rStyle ?? new CssKeyword("none"), important);
@@ -570,9 +644,18 @@ public static class PropertyRegistry
                     CssValue? oColor = null, oStyle = null, oWidth = null;
                     foreach (var value in values)
                     {
-                        if (IsBorderStyle(value)) oStyle = value;
-                        else if (IsColorLike(value)) oColor = value;
-                        else oWidth = value;
+                        if (IsBorderStyle(value))
+                        {
+                            oStyle = value;
+                        }
+                        else if (IsColorLike(value))
+                        {
+                            oColor = value;
+                        }
+                        else
+                        {
+                            oWidth = value;
+                        }
                     }
                     yield return new PropertyDeclaration(PropertyId.OutlineColor, oColor ?? new CssKeyword("auto"), important);
                     yield return new PropertyDeclaration(PropertyId.OutlineStyle, oStyle ?? new CssKeyword("none"), important);
@@ -583,11 +666,17 @@ public static class PropertyRegistry
             // ---- Flexbox shorthands ----
             case "flex":
                 foreach (var item in ExpandFlex(values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "flex-flow":
                 foreach (var item in ExpandFlexFlow(values, important))
+                {
                     yield return item;
+                }
+
                 break;
 
             // ---- Gap shorthands ----
@@ -610,23 +699,38 @@ public static class PropertyRegistry
             // TODO(lane-B): Refine grid-template / grid shorthand once track-list value parser exists.
             case "grid-template":
                 foreach (var item in ExpandGridTemplate(values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "grid":
                 foreach (var item in ExpandGrid(values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "grid-column":
                 foreach (var item in ExpandSlashPair(PropertyId.GridColumnStart, PropertyId.GridColumnEnd, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "grid-row":
                 foreach (var item in ExpandSlashPair(PropertyId.GridRowStart, PropertyId.GridRowEnd, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "grid-area":
                 foreach (var item in ExpandGridArea(values, important))
+                {
                     yield return item;
+                }
+
                 break;
 
             // ---- Place-* shorthands ----
@@ -646,113 +750,194 @@ public static class PropertyRegistry
             // ---- Logical: margin/padding 2-value shorthands ----
             case "margin-inline":
                 foreach (var item in TwoValue(PropertyId.MarginInlineStart, PropertyId.MarginInlineEnd, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "margin-block":
                 foreach (var item in TwoValue(PropertyId.MarginBlockStart, PropertyId.MarginBlockEnd, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "padding-inline":
                 foreach (var item in TwoValue(PropertyId.PaddingInlineStart, PropertyId.PaddingInlineEnd, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "padding-block":
                 foreach (var item in TwoValue(PropertyId.PaddingBlockStart, PropertyId.PaddingBlockEnd, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "inset":
                 foreach (var item in Box(PropertyId.Top, PropertyId.Right, PropertyId.Bottom, PropertyId.Left, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "inset-inline":
                 foreach (var item in TwoValue(PropertyId.InsetInlineStart, PropertyId.InsetInlineEnd, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "inset-block":
                 foreach (var item in TwoValue(PropertyId.InsetBlockStart, PropertyId.InsetBlockEnd, values, important))
+                {
                     yield return item;
+                }
+
                 break;
 
             // ---- Logical: border shorthands ----
             case "border-inline-width":
                 foreach (var item in TwoValue(PropertyId.BorderInlineStartWidth, PropertyId.BorderInlineEndWidth, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-inline-style":
                 foreach (var item in TwoValue(PropertyId.BorderInlineStartStyle, PropertyId.BorderInlineEndStyle, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-inline-color":
                 foreach (var item in TwoValue(PropertyId.BorderInlineStartColor, PropertyId.BorderInlineEndColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-block-width":
                 foreach (var item in TwoValue(PropertyId.BorderBlockStartWidth, PropertyId.BorderBlockEndWidth, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-block-style":
                 foreach (var item in TwoValue(PropertyId.BorderBlockStartStyle, PropertyId.BorderBlockEndStyle, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-block-color":
                 foreach (var item in TwoValue(PropertyId.BorderBlockStartColor, PropertyId.BorderBlockEndColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-inline-start":
                 foreach (var item in ExpandBorderSide(PropertyId.BorderInlineStartWidth, PropertyId.BorderInlineStartStyle, PropertyId.BorderInlineStartColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-inline-end":
                 foreach (var item in ExpandBorderSide(PropertyId.BorderInlineEndWidth, PropertyId.BorderInlineEndStyle, PropertyId.BorderInlineEndColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-block-start":
                 foreach (var item in ExpandBorderSide(PropertyId.BorderBlockStartWidth, PropertyId.BorderBlockStartStyle, PropertyId.BorderBlockStartColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-block-end":
                 foreach (var item in ExpandBorderSide(PropertyId.BorderBlockEndWidth, PropertyId.BorderBlockEndStyle, PropertyId.BorderBlockEndColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-inline":
                 foreach (var item in ExpandBorderSide(PropertyId.BorderInlineStartWidth, PropertyId.BorderInlineStartStyle, PropertyId.BorderInlineStartColor, values, important))
+                {
                     yield return item;
+                }
+
                 foreach (var item in ExpandBorderSide(PropertyId.BorderInlineEndWidth, PropertyId.BorderInlineEndStyle, PropertyId.BorderInlineEndColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-block":
                 foreach (var item in ExpandBorderSide(PropertyId.BorderBlockStartWidth, PropertyId.BorderBlockStartStyle, PropertyId.BorderBlockStartColor, values, important))
+                {
                     yield return item;
+                }
+
                 foreach (var item in ExpandBorderSide(PropertyId.BorderBlockEndWidth, PropertyId.BorderBlockEndStyle, PropertyId.BorderBlockEndColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
 
             // ---- Physical border-side shorthands (border-top, border-right, border-bottom, border-left) ----
             case "border-top":
                 foreach (var item in ExpandBorderSide(PropertyId.BorderTopWidth, PropertyId.BorderTopStyle, PropertyId.BorderTopColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-right":
                 foreach (var item in ExpandBorderSide(PropertyId.BorderRightWidth, PropertyId.BorderRightStyle, PropertyId.BorderRightColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-bottom":
                 foreach (var item in ExpandBorderSide(PropertyId.BorderBottomWidth, PropertyId.BorderBottomStyle, PropertyId.BorderBottomColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "border-left":
                 foreach (var item in ExpandBorderSide(PropertyId.BorderLeftWidth, PropertyId.BorderLeftStyle, PropertyId.BorderLeftColor, values, important))
+                {
                     yield return item;
+                }
+
                 break;
 
             // ---- Scroll-margin / scroll-padding 4-value shorthands ----
             case "scroll-margin":
                 foreach (var item in Box(PropertyId.ScrollMarginTop, PropertyId.ScrollMarginRight, PropertyId.ScrollMarginBottom, PropertyId.ScrollMarginLeft, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "scroll-padding":
                 foreach (var item in Box(PropertyId.ScrollPaddingTop, PropertyId.ScrollPaddingRight, PropertyId.ScrollPaddingBottom, PropertyId.ScrollPaddingLeft, values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "overscroll-behavior":
                 yield return new PropertyDeclaration(PropertyId.OverscrollBehaviorX, values[0], important);
@@ -762,7 +947,10 @@ public static class PropertyRegistry
             // ---- Text decoration shorthand ----
             case "text-decoration":
                 foreach (var item in ExpandTextDecoration(values, important))
+                {
                     yield return item;
+                }
+
                 break;
 
             // ---- Text shadow (CSS Text Decoration 3 §5) ----
@@ -776,24 +964,36 @@ public static class PropertyRegistry
             // existing consumers (and serialization) still see it.
             case "white-space":
                 foreach (var item in ExpandWhiteSpace(values, important))
+                {
                     yield return item;
+                }
+
                 break;
 
             // ---- List shorthand ----
             case "list-style":
                 foreach (var item in ExpandListStyle(values, important))
+                {
                     yield return item;
+                }
+
                 break;
 
             // ---- Transition / Animation shorthands (simplified: single layer only) ----
             // TODO(lane-B): Multi-layer comma-separated transition/animation requires CssValueList splitting on top-level commas.
             case "transition":
                 foreach (var item in ExpandTransition(values, important))
+                {
                     yield return item;
+                }
+
                 break;
             case "animation":
                 foreach (var item in ExpandAnimation(values, important))
+                {
                     yield return item;
+                }
+
                 break;
 
             // CSS Display 3 §2.1: the two-value `display` syntax
@@ -821,9 +1021,13 @@ public static class PropertyRegistry
                         _ => null,
                     };
                     if (normalized is not null)
+                    {
                         yield return new PropertyDeclaration(PropertyId.Display, new CssKeyword(normalized), important);
+                    }
                     else
+                    {
                         yield return new PropertyDeclaration(PropertyId.Display, new CssValueList(values), important);
+                    }
                 }
                 break;
             // CSS Compositing 1 §5.2: `background-blend-mode` is a comma-separated
@@ -842,9 +1046,13 @@ public static class PropertyRegistry
                 {
                     var clipPath = CssBasicShapeParser.TryParseClipPath(values);
                     if (clipPath is not null)
+                    {
                         yield return new PropertyDeclaration(PropertyId.ClipPath, clipPath, important);
+                    }
                     else if (values.Count == 1)
+                    {
                         yield return new PropertyDeclaration(PropertyId.ClipPath, values[0], important);
+                    }
                 }
                 break;
 
@@ -857,7 +1065,10 @@ public static class PropertyRegistry
                     // see IsValidLonghandValue — so only properties with an
                     // explicit rule reject anything.
                     if (values.Count == 1 && !IsValidLonghandValue(id, value))
+                    {
                         break;
+                    }
+
                     yield return new PropertyDeclaration(id, value, important);
                 }
                 break;
@@ -870,7 +1081,10 @@ public static class PropertyRegistry
     internal static bool IsValidLonghandValue(PropertyId id, CssValue value)
     {
         if (value is CssKeyword { Name: "inherit" or "initial" or "unset" or "revert" or "revert-layer" })
+        {
             return true;
+        }
+
         return id switch
         {
             // CSS Overscroll Behavior 1 §2: auto | contain | none.
@@ -948,7 +1162,9 @@ public static class PropertyRegistry
         // optional `/ line-height` then the required font-family.
         var sizeIdx = values.FindIndex(IsFontSizeValue);
         if (sizeIdx < 0)
+        {
             yield break; // no font-size → invalid shorthand, dropped.
+        }
 
         CssValue? style = null, weight = null, stretch = null;
         for (var i = 0; i < sizeIdx; i++)
@@ -973,12 +1189,17 @@ public static class PropertyRegistry
 
         var familyValues = values.Skip(idx).ToList();
         if (familyValues.Count == 0)
+        {
             yield break; // font-family is required.
+        }
 
         yield return new PropertyDeclaration(PropertyId.FontStyle, style ?? new CssKeyword("normal"), important);
         yield return new PropertyDeclaration(PropertyId.FontWeight, weight ?? new CssKeyword("normal"), important);
         if (stretch is not null)
+        {
             yield return new PropertyDeclaration(PropertyId.FontStretch, stretch, important);
+        }
+
         yield return new PropertyDeclaration(PropertyId.FontSize, values[sizeIdx], important);
         yield return new PropertyDeclaration(PropertyId.LineHeight, lineHeight ?? new CssKeyword("normal"), important);
         yield return new PropertyDeclaration(PropertyId.FontFamily,
@@ -1006,7 +1227,9 @@ public static class PropertyRegistry
         // resets it to its initial value.
         var layers = SplitTopLevelCommas(values);
         if (layers.Count == 0)
+        {
             yield break;
+        }
 
         // Per-layer accumulators for each layered longhand. Background-color is
         // a single value taken from the final layer only.
@@ -1024,7 +1247,9 @@ public static class PropertyRegistry
             var isFinal = i == layers.Count - 1;
             var (parsed, layerColor) = ParseBackgroundLayer(layers[i], isFinal);
             if (isFinal && layerColor is not null)
+            {
                 color = layerColor;
+            }
 
             images.Add(parsed.Image);
             positions.Add(parsed.Position);
@@ -1104,18 +1329,30 @@ public static class PropertyRegistry
             }
 
             if (image is null && IsBackgroundImage(v))
+            {
                 image = v;
+            }
             else if (repeat is null && v is CssKeyword rk && IsBackgroundRepeatKeyword(rk.Name))
+            {
                 repeat = v;
+            }
             else if (attachment is null && v is CssKeyword ak && IsBackgroundAttachmentKeyword(ak.Name))
+            {
                 attachment = v;
+            }
             else if (v is CssKeyword bk && IsBackgroundBoxKeyword(bk.Name))
+            {
                 boxes.Add(v);
+            }
             else if (v is CssLength or CssPercentage or CssNumber
                 || (v is CssKeyword pk && IsBackgroundPositionKeyword(pk.Name)))
+            {
                 positionValues.Add(v);
+            }
             else if (allowColor && color is null && IsColorLike(v))
+            {
                 color = v;
+            }
         }
 
         var size = sizeValues.Count switch
@@ -1171,18 +1408,30 @@ public static class PropertyRegistry
             }
 
             if (image is null && IsBackgroundImage(v))
+            {
                 image = v;
+            }
             else if (mode is null && v is CssKeyword mk && IsMaskModeKeyword(mk.Name))
+            {
                 mode = v;
+            }
             else if (repeat is null && v is CssKeyword rk && IsBackgroundRepeatKeyword(rk.Name))
+            {
                 repeat = v;
+            }
             else if (composite is null && v is CssKeyword ck && IsMaskCompositeKeyword(ck.Name))
+            {
                 composite = v;
+            }
             else if (v is CssKeyword bk && IsMaskGeometryBoxKeyword(bk.Name))
+            {
                 boxes.Add(v);
+            }
             else if (v is CssLength or CssPercentage or CssNumber
                 || (v is CssKeyword pk && IsBackgroundPositionKeyword(pk.Name)))
+            {
                 positionValues.Add(v);
+            }
         }
 
         var size = sizeValues.Count switch { 0 => new CssKeyword("auto"), 1 => sizeValues[0], _ => new CssValueList(sizeValues) };
@@ -1286,7 +1535,9 @@ public static class PropertyRegistry
 
         // single number means flex-grow only; basis becomes 0.
         if (values.Count == 1 && seenGrow && !seenBasis)
+        {
             basis = new CssLength(0, CssLengthUnit.Px);
+        }
 
         yield return new PropertyDeclaration(PropertyId.FlexGrow, grow, important);
         yield return new PropertyDeclaration(PropertyId.FlexShrink, shrink, important);
@@ -1303,9 +1554,13 @@ public static class PropertyRegistry
             if (v is CssKeyword k)
             {
                 if (k.Name is "row" or "row-reverse" or "column" or "column-reverse")
+                {
                     yield return new PropertyDeclaration(PropertyId.FlexDirection, v, important);
+                }
                 else if (k.Name is "nowrap" or "wrap" or "wrap-reverse")
+                {
                     yield return new PropertyDeclaration(PropertyId.FlexWrap, v, important);
+                }
             }
         }
     }
@@ -1320,7 +1575,9 @@ public static class PropertyRegistry
         var startValue = before.Count == 1 ? before[0] : new CssValueList(before);
         yield return new PropertyDeclaration(start, startValue, important);
         if (after is null)
+        {
             yield return new PropertyDeclaration(end, startValue, important);
+        }
         else
         {
             var endValue = after.Count == 1 ? after[0] : new CssValueList(after);
@@ -1332,7 +1589,10 @@ public static class PropertyRegistry
     {
         var idx = values.FindIndex(v => v is CssKeyword { Name: "/" });
         if (idx < 0)
+        {
             return (values, null);
+        }
+
         return (values.Take(idx).ToList(), values.Skip(idx + 1).ToList());
     }
 
@@ -1349,7 +1609,9 @@ public static class PropertyRegistry
                 current = [];
             }
             else
+            {
                 current.Add(v);
+            }
         }
         parts.Add(current);
 
@@ -1398,7 +1660,9 @@ public static class PropertyRegistry
     {
         // TODO(lane-B): Full grid shorthand parsing — for now route as grid-template.
         foreach (var item in ExpandGridTemplate(values, important))
+        {
             yield return item;
+        }
     }
 
     private static IEnumerable<PropertyDeclaration> ExpandBorderSide(
@@ -1411,11 +1675,17 @@ public static class PropertyRegistry
         foreach (var value in values)
         {
             if (IsBorderStyle(value))
+            {
                 yield return new PropertyDeclaration(styleId, value, important);
+            }
             else if (IsColorLike(value))
+            {
                 yield return new PropertyDeclaration(colorId, value, important);
+            }
             else
+            {
                 yield return new PropertyDeclaration(widthId, value, important);
+            }
         }
     }
 
@@ -1426,18 +1696,30 @@ public static class PropertyRegistry
             if (v is CssKeyword k)
             {
                 if (k.Name is "none" or "underline" or "overline" or "line-through" or "blink")
+                {
                     yield return new PropertyDeclaration(PropertyId.TextDecorationLine, v, important);
+                }
                 else if (k.Name is "solid" or "double" or "dotted" or "dashed" or "wavy")
+                {
                     yield return new PropertyDeclaration(PropertyId.TextDecorationStyle, v, important);
+                }
                 else if (IsColorLike(v))
+                {
                     yield return new PropertyDeclaration(PropertyId.TextDecorationColor, v, important);
+                }
                 else
+                {
                     yield return new PropertyDeclaration(PropertyId.TextDecorationLine, v, important);
+                }
             }
             else if (IsColorLike(v))
+            {
                 yield return new PropertyDeclaration(PropertyId.TextDecorationColor, v, important);
+            }
             else if (v is CssLength or CssPercentage)
+            {
                 yield return new PropertyDeclaration(PropertyId.TextDecorationThickness, v, important);
+            }
         }
     }
 
@@ -1454,7 +1736,9 @@ public static class PropertyRegistry
     private static CssTextShadow ParseTextShadow(List<CssValue> values)
     {
         if (values.Count == 1 && values[0] is CssKeyword { Name: "none" })
+        {
             return CssTextShadow.None;
+        }
 
         var layers = new List<CssTextShadowLayer>();
         foreach (var layer in SplitTopLevelCommas(values))
@@ -1486,7 +1770,9 @@ public static class PropertyRegistry
             }
 
             if (malformed || lengths.Count is < 2 or > 3)
+            {
                 continue;
+            }
 
             var offsetX = lengths[0];
             var offsetY = lengths[1];
@@ -1546,17 +1832,26 @@ public static class PropertyRegistry
             else if (v is CssKeyword k)
             {
                 if (k.Name is "inside" or "outside")
+                {
                     position ??= v;
+                }
                 else if (k.Name == "none")
                 {
                     // First none → type; a second none → image (per §2.5).
                     if (!sawNone) { type ??= new CssKeyword("none"); sawNone = true; }
-                    else image ??= new CssKeyword("none");
+                    else
+                    {
+                        image ??= new CssKeyword("none");
+                    }
                 }
                 else if (IsListStyleTypeKeyword(k.Name))
+                {
                     type ??= v;
+                }
                 else
+                {
                     type ??= v; // custom @counter-style names etc.
+                }
             }
             else if (v is CssString)
             {
@@ -1591,14 +1886,22 @@ public static class PropertyRegistry
                     sawDuration = true;
                 }
                 else
+                {
                     yield return new PropertyDeclaration(PropertyId.TransitionDelay, v, important);
+                }
             }
             else if (v is CssKeyword k && IsTimingFunctionKeyword(k.Name))
+            {
                 yield return new PropertyDeclaration(PropertyId.TransitionTimingFunction, v, important);
+            }
             else if (v is CssFunctionValue f && IsTimingFunctionName(f.Name))
+            {
                 yield return new PropertyDeclaration(PropertyId.TransitionTimingFunction, v, important);
+            }
             else if (v is CssKeyword propKw)
+            {
                 yield return new PropertyDeclaration(PropertyId.TransitionProperty, propKw, important);
+            }
         }
     }
 
@@ -1629,8 +1932,14 @@ public static class PropertyRegistry
             {
                 if (v is CssTime || v is CssDimension { Unit: "s" or "ms" })
                 {
-                    if (duration is null) duration = v;
-                    else delay ??= v;
+                    if (duration is null)
+                    {
+                        duration = v;
+                    }
+                    else
+                    {
+                        delay ??= v;
+                    }
                 }
                 else if (v is CssNumber)
                 {
@@ -1639,26 +1948,44 @@ public static class PropertyRegistry
                 else if (v is CssKeyword k)
                 {
                     if (k.Name is "infinite")
+                    {
                         iteration ??= v;
+                    }
                     else if (IsTimingFunctionKeyword(k.Name))
+                    {
                         timing ??= v;
+                    }
                     else if (k.Name is "normal" or "reverse" or "alternate" or "alternate-reverse")
+                    {
                         direction ??= v;
+                    }
                     else if (k.Name is "forwards" or "backwards" or "both")
+                    {
                         fill ??= v;
+                    }
                     else if (k.Name is "none")
                     {
                         // Ambiguous: name "none" or fill-mode "none". Per spec
                         // §4.1 the first encountered keyword that fits an
                         // un-set slot wins; prefer fill-mode if not yet set,
                         // else name.
-                        if (fill is null) fill = v;
-                        else name ??= k.Name;
+                        if (fill is null)
+                        {
+                            fill = v;
+                        }
+                        else
+                        {
+                            name ??= k.Name;
+                        }
                     }
                     else if (k.Name is "running" or "paused")
+                    {
                         playState ??= v;
+                    }
                     else
+                    {
                         name ??= k.Name;
+                    }
                 }
                 else if (v is CssFunctionValue f && IsTimingFunctionName(f.Name))
                 {
@@ -1677,7 +2004,9 @@ public static class PropertyRegistry
         }
 
         if (names.Count == 0)
+        {
             yield break;
+        }
 
         yield return Emit(PropertyId.AnimationName, names, important);
         yield return Emit(PropertyId.AnimationDuration, durations, important);
@@ -1713,7 +2042,10 @@ public static class PropertyRegistry
         // values after it) but keep empty intermediates so the layer index
         // matches author intent.
         if (layers.Count > 0 && layers[^1].Count == 0)
+        {
             layers.RemoveAt(layers.Count - 1);
+        }
+
         return layers;
     }
 
@@ -1842,7 +2174,10 @@ public static class PropertyRegistry
         for (var i = 0; i < name.Length; i++)
         {
             if (i > 0 && char.IsUpper(name[i]))
+            {
                 chars.Add('-');
+            }
+
             chars.Add(char.ToLowerInvariant(name[i]));
         }
 

@@ -53,9 +53,15 @@ public static class ProxyCtor
     private static JsProxy MakeProxy(JsRealm realm, JsValue target, JsValue handler)
     {
         if (!target.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Cannot create proxy with a non-object as target"));
+        }
+
         if (!handler.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Cannot create proxy with a non-object as handler"));
+        }
+
         return new JsProxy(realm, target.AsObject, handler.AsObject);
     }
 }

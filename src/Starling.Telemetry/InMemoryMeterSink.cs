@@ -48,14 +48,19 @@ public sealed class InMemoryMeterSink : IDisposable
     public InMemoryMeterSink(bool attachListener, params string[] meters)
     {
         _meters = new HashSet<string>(meters, StringComparer.Ordinal);
-        if (!attachListener) return;
+        if (!attachListener)
+        {
+            return;
+        }
 
         _listener = new MeterListener
         {
             InstrumentPublished = (instrument, listener) =>
             {
                 if (_meters.Contains(instrument.Meter.Name))
+                {
                     listener.EnableMeasurementEvents(instrument);
+                }
             },
         };
         // One callback per primitive numeric type; route them all through
@@ -77,7 +82,10 @@ public sealed class InMemoryMeterSink : IDisposable
             var result = new MeterRecord[_count];
             var start = (_head - _count + Capacity) % Capacity;
             for (var i = 0; i < _count; i++)
+            {
                 result[i] = _buffer[(start + i) % Capacity];
+            }
+
             return result;
         }
     }
@@ -129,19 +137,30 @@ public sealed class InMemoryMeterSink : IDisposable
         {
             _buffer[_head] = record;
             _head = (_head + 1) % Capacity;
-            if (_count < Capacity) _count++;
+            if (_count < Capacity)
+            {
+                _count++;
+            }
         }
         foreach (var subscriber in _subscribers)
+        {
             subscriber.Writer.TryWrite(record);
+        }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         _listener?.Dispose();
         foreach (var subscriber in _subscribers)
+        {
             subscriber.Writer.TryComplete();
+        }
     }
 
     public sealed class Subscription : IDisposable

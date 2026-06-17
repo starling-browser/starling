@@ -43,11 +43,24 @@ public sealed class RegexPikeVm
         {
             RegexMatch? m;
             if (needSlow)
+            {
                 m = ExecSlow(input, pos);
+            }
             else
+            {
                 m = ExecPike(input, pos);
-            if (m is not null) return m;
-            if (sticky) return null;
+            }
+
+            if (m is not null)
+            {
+                return m;
+            }
+
+            if (sticky)
+            {
+                return null;
+            }
+
             pos = AdvanceInputIndex(input, pos);
         }
         return null;
@@ -59,7 +72,10 @@ public sealed class RegexPikeVm
             || index + 1 >= input.Length
             || !char.IsHighSurrogate(input[index])
             || !char.IsLowSurrogate(input[index + 1]))
+        {
             return index + 1;
+        }
+
         return index + 2;
     }
 
@@ -87,7 +103,13 @@ public sealed class RegexPikeVm
     private static bool HasBackrefOrLookaround(RegexProgram p)
     {
         foreach (var i in p.Code)
-            if (i.Op == RegexOp.Backref || i.Op == RegexOp.Lookaround) return true;
+        {
+            if (i.Op == RegexOp.Backref || i.Op == RegexOp.Lookaround)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -99,10 +121,14 @@ public sealed class RegexPikeVm
     private bool TryMarkPc(int pc, int programSize)
     {
         if (_visitGen.Length < programSize)
+        {
             Array.Resize(ref _visitGen, Math.Max(programSize, 16));
+        }
 
         if (_visitGen[pc] == _currentGen)
+        {
             return false;
+        }
 
         _visitGen[pc] = _currentGen;
         return true;
@@ -141,7 +167,11 @@ public sealed class RegexPikeVm
         // "not captured", so it must start all -1 (default int[] is all-zero,
         // which would mis-report non-participating groups as the empty span 0,0).
         var initialSlots = new int[slotCount];
-        for (var i = 0; i < slotCount; i++) initialSlots[i] = -1;
+        for (var i = 0; i < slotCount; i++)
+        {
+            initialSlots[i] = -1;
+        }
+
         AddThread(_curr, input, start, initialSlots);
         // Threads queued into _next represent the next input position, so their
         // epsilon-closure dedup must not share the generation used to build
@@ -222,11 +252,18 @@ public sealed class RegexPikeVm
         AfterCurr:
             // If we already matched at this position and there are no further
             // higher-priority continuations queued in next, stop here.
-            if (pos >= input.Length) break;
+            if (pos >= input.Length)
+            {
+                break;
+            }
+
             pos += charLen;
             (_curr, _next) = (_next, _curr);
             _next.Clear();
-            if (_curr.Count == 0) break;
+            if (_curr.Count == 0)
+            {
+                break;
+            }
             // New wave of threads arrived at the advanced position: fresh gen for
             // its epsilon-closure dedup (mimics original per-pos seen.Clear()).
             if (++_currentGen == 0)
@@ -240,8 +277,16 @@ public sealed class RegexPikeVm
 
     private bool CaseFoldEquals(int a, int b)
     {
-        if (a == b) return true;
-        if (a > 0xFFFF || b > 0xFFFF) return false;
+        if (a == b)
+        {
+            return true;
+        }
+
+        if (a > 0xFFFF || b > 0xFFFF)
+        {
+            return false;
+        }
+
         var ca = (char)a; var cb = (char)b;
         return char.ToLowerInvariant(ca) == char.ToLowerInvariant(cb)
             || char.ToUpperInvariant(ca) == char.ToUpperInvariant(cb);
@@ -335,7 +380,11 @@ public sealed class RegexPikeVm
             }
             // Current branch terminated (seen-dedup, assert failure, or
             // list.Add). Pop the next deferred branch; done when empty.
-            if (deferred is null || deferred.Count == 0) return;
+            if (deferred is null || deferred.Count == 0)
+            {
+                return;
+            }
+
             t = deferred.Pop();
         }
     }
@@ -352,7 +401,11 @@ public sealed class RegexPikeVm
         // slots[0]/slots[1] hold group 0 (full match). If unset (rare), fall
         // back to (matchStart, matchEnd).
         var captures = new int[slots.Length];
-        for (var i = 0; i < slots.Length; i++) captures[i] = slots[i];
+        for (var i = 0; i < slots.Length; i++)
+        {
+            captures[i] = slots[i];
+        }
+
         if (captures.Length >= 2 && (captures[0] < 0 || captures[1] < 0))
         {
             captures[0] = matchStart;
@@ -373,7 +426,11 @@ public sealed class RegexPikeVm
     {
         int slotCount = (_prog.CaptureCount + 1) * 2;
         var slots = new int[slotCount];
-        for (var i = 0; i < slotCount; i++) slots[i] = -1;
+        for (var i = 0; i < slotCount; i++)
+        {
+            slots[i] = -1;
+        }
+
         if (TryMatch(_prog, input, start, 0, slots, out var endPos, out var finalSlots))
         {
             return MakeMatchFromSlots(input, start, endPos, finalSlots);
@@ -488,7 +545,11 @@ public sealed class RegexPikeVm
                     case RegexOp.Backref:
                         {
                             var idx = ins.Arg1;
-                            if (idx * 2 + 1 >= slots.Length) goto Fail;
+                            if (idx * 2 + 1 >= slots.Length)
+                            {
+                                goto Fail;
+                            }
+
                             var s = slots[idx * 2];
                             var e = slots[idx * 2 + 1];
                             if (s < 0 || e < 0)
@@ -498,7 +559,11 @@ public sealed class RegexPikeVm
                                 continue;
                             }
                             var len = e - s;
-                            if (pos + len > input.Length) goto Fail;
+                            if (pos + len > input.Length)
+                            {
+                                goto Fail;
+                            }
+
                             var brMatched = true;
                             for (var k = 0; k < len; k++)
                             {
@@ -510,7 +575,11 @@ public sealed class RegexPikeVm
                                 }
                                 else if (a != b) { brMatched = false; break; }
                             }
-                            if (!brMatched) goto Fail;
+                            if (!brMatched)
+                            {
+                                goto Fail;
+                            }
+
                             pos += len;
                             pc++;
                             continue;
@@ -531,7 +600,11 @@ public sealed class RegexPikeVm
                                 matched = false;
                                 for (var i = 0; i <= pos; i++)
                                 {
-                                    for (var k = 0; k < subSlotCount; k++) subSlots[k] = -1;
+                                    for (var k = 0; k < subSlotCount; k++)
+                                    {
+                                        subSlots[k] = -1;
+                                    }
+
                                     if (TryMatch(sub, input, i, 0, subSlots, out var endP, out _) && endP == pos)
                                     {
                                         matched = true; break;
@@ -541,7 +614,11 @@ public sealed class RegexPikeVm
                             else
                             {
                                 var subSlots = new int[(sub.CaptureCount + 1) * 2];
-                                for (var k = 0; k < subSlots.Length; k++) subSlots[k] = -1;
+                                for (var k = 0; k < subSlots.Length; k++)
+                                {
+                                    subSlots[k] = -1;
+                                }
+
                                 matched = TryMatch(sub, input, pos, 0, subSlots, out _, out _);
                             }
                             if (matched != negative) { pc++; continue; }

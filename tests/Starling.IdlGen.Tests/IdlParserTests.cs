@@ -242,7 +242,10 @@ public class IdlParserTests
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx")))
+        {
             dir = dir.Parent;
+        }
+
         return dir?.FullName ?? throw new InvalidOperationException("repo root not found");
     }
 }

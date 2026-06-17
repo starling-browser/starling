@@ -95,10 +95,24 @@ internal static class TokenEquality
     public static bool AttrsEqual(
         IReadOnlyList<HtmlAttribute> a, IReadOnlyList<HtmlAttribute> b)
     {
-        if (ReferenceEquals(a, b)) return true;
-        if (a.Count != b.Count) return false;
+        if (ReferenceEquals(a, b))
+        {
+            return true;
+        }
+
+        if (a.Count != b.Count)
+        {
+            return false;
+        }
+
         for (var i = 0; i < a.Count; i++)
-            if (!a[i].Equals(b[i])) return false;
+        {
+            if (!a[i].Equals(b[i]))
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -108,7 +122,11 @@ internal static class TokenEquality
         var hc = new HashCode();
         hc.Add(name);
         hc.Add(selfClosing);
-        foreach (var a in attrs) hc.Add(a);
+        foreach (var a in attrs)
+        {
+            hc.Add(a);
+        }
+
         return hc.ToHashCode();
     }
 

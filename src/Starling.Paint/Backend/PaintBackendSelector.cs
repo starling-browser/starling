@@ -36,7 +36,9 @@ internal static class PaintBackendSelector
     internal static PaintBackendKind Parse(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
+        {
             return PaintBackendKind.ImageSharpWebGpu;
+        }
 
         return raw.Trim().ToLowerInvariant() switch
         {
@@ -68,7 +70,10 @@ internal static class PaintBackendSelector
     internal static IPaintBackendFactory FactoryFor(PaintBackendKind kind)
     {
         if (Registered.TryGetValue(kind, out var registered))
+        {
             return registered;
+        }
+
         return kind switch
         {
             PaintBackendKind.ImageSharp => new ImageSharpPaintBackendFactory(useWebGpu: false),

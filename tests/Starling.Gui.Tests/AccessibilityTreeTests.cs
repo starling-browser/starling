@@ -27,8 +27,12 @@ public sealed class AccessibilityTreeTests
     {
         yield return node;
         foreach (var c in node.Children)
+        {
             foreach (var n in Flatten(c))
+            {
                 yield return n;
+            }
+        }
     }
 
     private static IEnumerable<AccessibilityNode> Nodes(string html)

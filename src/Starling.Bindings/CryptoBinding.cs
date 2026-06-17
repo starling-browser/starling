@@ -35,7 +35,10 @@ public static class CryptoBinding
     {
         ArgumentNullException.ThrowIfNull(runtime);
         var realm = runtime.Realm;
-        if (realm.GlobalObject.HasOwn("crypto")) return;
+        if (realm.GlobalObject.HasOwn("crypto"))
+        {
+            return;
+        }
 
         var crypto = new JsObject(realm.ObjectPrototype);
 
@@ -61,19 +64,25 @@ public static class CryptoBinding
     private static JsValue GetRandomValues(JsRealm realm, JsValue[] args)
     {
         if (args.Length == 0 || !args[0].IsObject || args[0].AsObject is not JsTypedArray ta)
+        {
             throw new JsThrow(realm.NewTypeError("getRandomValues requires a TypedArray argument"));
+        }
 
         // Float32Array / Float64Array are not integer typed arrays — reject per spec.
         if (ta.Kind is JsTypedArrayKind.Float32 or JsTypedArrayKind.Float64)
+        {
             throw new JsThrow(realm.NewTypeError(
                 $"getRandomValues: {ta.ConstructorName} is not an integer typed array"));
+        }
 
         // Spec §10.1.2 step 2: if byteLength > 65536 throw QuotaExceededError.
         // We model this as a RangeError (closest JS built-in) with the right
         // message; real DOMException is a larger surface not yet implemented.
         if (ta.ByteLength > 65536)
+        {
             throw new JsThrow(realm.NewRangeError(
                 $"getRandomValues: byte length {ta.ByteLength} exceeds the 65536-byte quota"));
+        }
 
         // Fill the underlying ArrayBuffer bytes that back this view.
         var span = ta.Buffer.GetSpan(ta.ByteOffset, ta.ByteLength);

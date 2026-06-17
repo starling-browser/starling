@@ -84,7 +84,10 @@ public sealed class StarlingHttpClient : IDisposable
     {
         var parsed = global::Starling.Url.UrlParser.Parse(url);
         if (parsed.IsErr)
+        {
             return Task.FromResult(Result<HttpResponse, NetworkError>.Err(NetworkError.BadUrl));
+        }
+
         return SendAsync(HttpRequest.Get(parsed.Value), ct);
     }
 
@@ -99,15 +102,21 @@ public sealed class StarlingHttpClient : IDisposable
         var url = request.Url;
 
         if (!url.IsHttp && !url.IsHttps)
+        {
             return Result<HttpResponse, NetworkError>.Err(NetworkError.UnsupportedScheme);
+        }
 
         if (string.IsNullOrEmpty(url.Host))
+        {
             return Result<HttpResponse, NetworkError>.Err(NetworkError.BadUrl);
+        }
 
         var port = url.Port ?? url.DefaultPort
             ?? (url.IsHttps ? 443 : url.IsHttp ? 80 : 0);
         if (port is < 1 or > 65535)
+        {
             return Result<HttpResponse, NetworkError>.Err(NetworkError.BadUrl);
+        }
 
         var origin = OriginKey.Create(url.IsHttps ? "https" : "http", url.Host, port);
 
@@ -116,7 +125,9 @@ public sealed class StarlingHttpClient : IDisposable
         // the H2 header builder honour an existing User-Agent header, so this is
         // the single wire-side source of truth. See StarlingHttpClientOptions.
         if (!request.Headers.Contains("User-Agent"))
+        {
             request.Headers.Set("User-Agent", _options.UserAgent);
+        }
 
         using var requestCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         requestCts.CancelAfter(_options.RequestTimeout);
@@ -194,7 +205,9 @@ public sealed class StarlingHttpClient : IDisposable
                     fresh, origin, _loggerFactory.CreateLogger<H2Connection>(), c => _h2.Remove(origin, c), requestCts.Token).ConfigureAwait(false);
                 var winner = _h2.Adopt(origin, conn);
                 if (!ReferenceEquals(winner, conn))
+                {
                     await conn.DisposeAsync().ConfigureAwait(false); // lost the race; use the incumbent
+                }
 
                 var h2Fresh = await SendOverH2Async(
                     winner, request, url, reused: false, requestCts.Token).ConfigureAwait(false);
@@ -331,7 +344,9 @@ public sealed class StarlingHttpClient : IDisposable
             // advertise "h2, http/1.1", so either is expected; an empty/absent
             // ALPN falls back to HTTP/1.1.
             if (tlsResult.Value.NegotiatedApplicationProtocol is { Length: > 0 } alpn)
+            {
                 Activity.Current?.SetTag("tls.alpn", alpn);
+            }
 
             return Result<IHttpTransport, NetworkError>.Ok(
                 PooledHttpTransport.ForTls(origin, tcp, tlsResult.Value));
@@ -367,7 +382,9 @@ public sealed class StarlingHttpClient : IDisposable
                     .WriteAsync(request, transport.Stream, ct)
                     .ConfigureAwait(false);
                 if (!request.Body.IsEmpty)
+                {
                     StarlingTelemetry.Counter("net.http.bytes_out", request.Body.Length);
+                }
             }
 
             Result<HttpResponse, HttpError> parseResult;
@@ -377,7 +394,9 @@ public sealed class StarlingHttpClient : IDisposable
                 parseResult = await _options.ResponseParser
                     .ParseAsync(transport.Stream, ct).ConfigureAwait(false);
                 if (parseResult.IsOk)
+                {
                     Activity.Current?.SetTag("http.status_code", parseResult.Value.StatusCode);
+                }
             }
 
             if (parseResult.IsErr)
@@ -388,7 +407,9 @@ public sealed class StarlingHttpClient : IDisposable
                 // on a fresh dial in that case; for everything else (or on
                 // a fresh transport) surface the protocol failure.
                 if (fromPool && parseResult.Error == HttpError.UnexpectedEof)
+                {
                     return TransportSendOutcome.Unused();
+                }
 
                 await SafeDisposeAsync(transport).ConfigureAwait(false);
                 return TransportSendOutcome.Used(
@@ -454,7 +475,10 @@ public sealed class StarlingHttpClient : IDisposable
         ApplyRequestCookies(request, url);
         Activity.Current?.SetTag("connection.reused", reused);
         Activity.Current?.SetTag("network.protocol.version", "2");
-        if (reused) StarlingTelemetry.Counter("net.http.connection_reused", 1);
+        if (reused)
+        {
+            StarlingTelemetry.Counter("net.http.connection_reused", 1);
+        }
 
         Result<HttpResponse, NetworkError> result;
         using (var span = StarlingTelemetry.Span("net", "h2_request"))
@@ -464,7 +488,9 @@ public sealed class StarlingHttpClient : IDisposable
         }
 
         if (reused && result.IsErr && result.Error == NetworkError.TransportFailure)
+        {
             return null;
+        }
 
         if (result.IsOk)
         {
@@ -485,7 +511,9 @@ public sealed class StarlingHttpClient : IDisposable
         {
             var cookieHeader = jar.BuildCookieHeader(url);
             if (cookieHeader.Length > 0)
+            {
                 request.Headers.Set("Cookie", cookieHeader);
+            }
         }
     }
 
@@ -496,7 +524,9 @@ public sealed class StarlingHttpClient : IDisposable
         {
             var setCookies = response.Headers.GetAll("Set-Cookie");
             if (setCookies.Count > 0)
+            {
                 jar.StoreFromHeaders(url, setCookies);
+            }
         }
     }
 
@@ -508,7 +538,11 @@ public sealed class StarlingHttpClient : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         // Synchronously dispose the pool and any HTTP/2 connections. Both only
         // await socket teardowns, which are non-blocking; .GetAwaiter()

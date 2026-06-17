@@ -93,21 +93,36 @@ public sealed class TableLayoutTests
 
     private static Box.Box? FindBox(Box.Box root, string localName)
     {
-        if (root.Element?.LocalName == localName) return root;
+        if (root.Element?.LocalName == localName)
+        {
+            return root;
+        }
+
         foreach (var child in root.Children)
         {
             var hit = FindBox(child, localName);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }
 
     private static IEnumerable<Box.Box> FindAll(Box.Box root, string localName)
     {
-        if (root.Element?.LocalName == localName) yield return root;
+        if (root.Element?.LocalName == localName)
+        {
+            yield return root;
+        }
+
         foreach (var child in root.Children)
+        {
             foreach (var hit in FindAll(child, localName))
+            {
                 yield return hit;
+            }
+        }
     }
 
     /// <summary>Sum each ancestor's <see cref="Box.Box.Frame"/> Y to get a
@@ -116,7 +131,10 @@ public sealed class TableLayoutTests
     {
         var y = 0d;
         for (var b = box; b is not null; b = b.Parent)
+        {
             y += b.Frame.Y;
+        }
+
         return y;
     }
 }

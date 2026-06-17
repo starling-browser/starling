@@ -16,7 +16,10 @@ public static class AttrResolver
     {
         var raw = lookup(attr.AttrName);
         if (raw is null)
+        {
             return attr.Fallback;
+        }
+
         var coerced = Coerce(raw, attr.TypeOrUnit);
         return coerced ?? attr.Fallback;
     }
@@ -52,15 +55,29 @@ public static class AttrResolver
 
         // Unit-keyed coercion: px, em, rem, %, deg, ms, s, hz, dpi, etc.
         if (TryUnitKeyword(t, out CssLengthUnit lenUnit))
+        {
             return TryParseDouble(trimmed, out var v) ? new CssLength(v, lenUnit) : null;
+        }
+
         if (TryAngleUnit(t, out CssAngleUnit angUnit))
+        {
             return TryParseDouble(trimmed, out var av) ? new CssAngle(av, angUnit) : null;
+        }
+
         if (TryTimeUnit(t, out CssTimeUnit timeUnit))
+        {
             return TryParseDouble(trimmed, out var tv) ? new CssTime(tv, timeUnit) : null;
+        }
+
         if (TryFrequencyUnit(t, out CssFrequencyUnit freqUnit))
+        {
             return TryParseDouble(trimmed, out var fv) ? new CssFrequency(fv, freqUnit) : null;
+        }
+
         if (TryResolutionUnit(t, out CssResolutionUnit resUnit))
+        {
             return TryParseDouble(trimmed, out var rv) ? new CssResolution(rv, resUnit) : null;
+        }
 
         // Unknown type identifier — fall back to string.
         return new CssString(raw);
@@ -71,24 +88,52 @@ public static class AttrResolver
         // Strip a trailing unit, then parse the number.
         var end = raw.Length;
         while (end > 0 && (char.IsLetter(raw[end - 1]) || raw[end - 1] == '%'))
+        {
             end--;
+        }
+
         var numberPart = raw[..end];
         var unitPart = raw[end..];
-        if (!TryParseDouble(numberPart, out var v)) return null;
-        if (string.IsNullOrEmpty(unitPart)) return new CssLength(v, defaultUnit);
-        if (unitPart == "%") return new CssPercentage(v);
+        if (!TryParseDouble(numberPart, out var v))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrEmpty(unitPart))
+        {
+            return new CssLength(v, defaultUnit);
+        }
+
+        if (unitPart == "%")
+        {
+            return new CssPercentage(v);
+        }
+
         if (TryUnitKeyword(unitPart.ToLowerInvariant(), out var lu))
+        {
             return new CssLength(v, lu);
+        }
+
         return null;
     }
 
     private static CssColor? TryParseColor(string raw)
     {
-        if (string.IsNullOrEmpty(raw)) return null;
+        if (string.IsNullOrEmpty(raw))
+        {
+            return null;
+        }
+
         if (raw.StartsWith('#') && ColorParser.TryParseHex(raw[1..], out var hex))
+        {
             return hex;
+        }
+
         if (NamedColors.TryGet(raw, out var named))
+        {
             return named;
+        }
+
         return null;
     }
 
@@ -98,7 +143,10 @@ public static class AttrResolver
     private static bool TryUnitKeyword(string s, out CssLengthUnit unit)
     {
         if (Enum.TryParse(s, ignoreCase: true, out unit))
+        {
             return true;
+        }
+
         unit = CssLengthUnit.Px;
         return false;
     }

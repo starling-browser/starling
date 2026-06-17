@@ -52,21 +52,35 @@ public sealed class ImageReplacedSizingTests
 
     private static ImageBox FindImage(Box.Box root)
     {
-        if (root is ImageBox img) return img;
+        if (root is ImageBox img)
+        {
+            return img;
+        }
+
         foreach (var child in root.Children)
         {
             var hit = TryFind(child);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         throw new InvalidOperationException("No ImageBox in tree");
 
         static ImageBox? TryFind(Box.Box b)
         {
-            if (b is ImageBox i) return i;
+            if (b is ImageBox i)
+            {
+                return i;
+            }
+
             foreach (var c in b.Children)
             {
                 var h = TryFind(c);
-                if (h is not null) return h;
+                if (h is not null)
+                {
+                    return h;
+                }
             }
             return null;
         }

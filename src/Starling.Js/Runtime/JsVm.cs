@@ -86,8 +86,16 @@ public sealed class JsVm
 
     private static JsValue[] RentArgs(int n)
     {
-        if (n == 0) return System.Array.Empty<JsValue>();
-        if (n > MaxPooledArgc) return new JsValue[n];
+        if (n == 0)
+        {
+            return System.Array.Empty<JsValue>();
+        }
+
+        if (n > MaxPooledArgc)
+        {
+            return new JsValue[n];
+        }
+
         var pools = t_argPools ??= new Stack<JsValue[]>?[MaxPooledArgc + 1];
         var pool = pools[n];
         return pool is { Count: > 0 } ? pool.Pop() : new JsValue[n];
@@ -96,11 +104,18 @@ public sealed class JsVm
     private static void ReturnArgs(JsValue[] args)
     {
         var n = args.Length;
-        if (n == 0 || n > MaxPooledArgc) return;
+        if (n == 0 || n > MaxPooledArgc)
+        {
+            return;
+        }
+
         System.Array.Clear(args, 0, n);
         var pools = t_argPools ??= new Stack<JsValue[]>?[MaxPooledArgc + 1];
         var pool = pools[n] ??= new Stack<JsValue[]>();
-        if (pool.Count < ArgPoolDepth) pool.Push(args);
+        if (pool.Count < ArgPoolDepth)
+        {
+            pool.Push(args);
+        }
     }
 
     private static string NullishLabel(JsValue value) => value.IsNull ? "null" : "undefined";
@@ -111,11 +126,31 @@ public sealed class JsVm
     private JsObject? PrimitivePrototype(JsValue v)
     {
         var r = _runtime.Realm;
-        if (v.IsString) return r.StringPrototype;
-        if (v.IsNumber) return r.NumberPrototype;
-        if (v.IsBoolean) return r.BooleanPrototype;
-        if (v.IsSymbol) return r.SymbolPrototype;
-        if (v.IsBigInt) return r.BigIntPrototype;
+        if (v.IsString)
+        {
+            return r.StringPrototype;
+        }
+
+        if (v.IsNumber)
+        {
+            return r.NumberPrototype;
+        }
+
+        if (v.IsBoolean)
+        {
+            return r.BooleanPrototype;
+        }
+
+        if (v.IsSymbol)
+        {
+            return r.SymbolPrototype;
+        }
+
+        if (v.IsBigInt)
+        {
+            return r.BigIntPrototype;
+        }
+
         return null;
     }
 
@@ -216,7 +251,10 @@ public sealed class JsVm
         bool inInitializer, ref EvalVarStore? callerVarStore)
     {
         var x = args.Length > 0 ? args[0] : JsValue.Undefined;
-        if (!x.IsString) return x;
+        if (!x.IsString)
+        {
+            return x;
+        }
 
         // §19.2.1.1 steps 4-6: derive the early-error context from the caller.
         // A [[HomeObject]] ⇒ the caller is a method (inMethod). A class
@@ -244,8 +282,10 @@ public sealed class JsVm
             // if ContainsArguments of StatementList is true." Throw before the body
             // runs (a pre-execution early error), so no side effect is observed.
             if (inInitializer && Bytecode.CaptureAnalysis.ContainsArgumentsInEvalBody(program.Body))
+            {
                 throw new JsThrow(_runtime.Realm.NewSyntaxError(
                     "'arguments' is not allowed in an eval call inside an initializer"));
+            }
 
             var evalIsStrict = callerStrict || program.Strict;
 
@@ -261,8 +301,10 @@ public sealed class JsVm
                 foreach (var vn in Parse.JsParser.EvalVarDeclaredNames(program))
                 {
                     if (callerScope.TryGet(vn, out var entry) && entry.IsLexical)
+                    {
                         throw new JsThrow(_runtime.Realm.NewSyntaxError(
                             "Identifier '" + vn + "' has already been declared"));
+                    }
                 }
             }
 
@@ -288,7 +330,9 @@ public sealed class JsVm
         // run the eval body against it so its DeclareEvalVar/StoreEvalVar land in
         // the caller's environment and its own reads/writes resolve there.
         if (injectVars)
+        {
             callerVarStore ??= new EvalVarStore();
+        }
 
         // Run on the caller's function (so super / this / new.target resolve)
         // with the caller scope installed so free identifiers reach the caller's
@@ -308,7 +352,10 @@ public sealed class JsVm
         // wp:M3-83 — §9.3.1 cross-realm execution (see CallFunctionForeignRealm).
         if (fn.Realm is { } fnRealm && !ReferenceEquals(fnRealm, _runtime.Realm)
             && fnRealm.OwnerRuntime is { } owner)
+        {
             return CallFunctionForeignRealm(owner, fn, thisValue, args);
+        }
+
         return CallFunctionLocal(fn, thisValue, args);
     }
 
@@ -340,14 +387,25 @@ public sealed class JsVm
         // only run via [[Construct]] with a real `this`, so neither is affected.
         if (thisValue.IsNullish && fn.ConstructorKind == ClassConstructorKind.None
             && !fn.Body.IsStrict)
+        {
             thisValue = JsValue.Object(_runtime.Realm.GlobalObject);
+        }
 
         if (fn.Kind == JsFunctionKind.Generator)
+        {
             return StartGeneratorBody(fn, thisValue, args);
+        }
+
         if (fn.Kind == JsFunctionKind.Async)
+        {
             return StartAsyncBody(fn, thisValue, args);
+        }
+
         if (fn.Kind == JsFunctionKind.AsyncGenerator)
+        {
             return StartAsyncGeneratorBody(fn, thisValue, args);
+        }
+
         return RunBarrier(fn.Body, args, thisValue, fn.Upvalues, drainMicrotasks: false,
                currentFunction: fn, newTarget: null,
                // wp:M3-73 — inherit the eval-introduced var store this closure
@@ -365,7 +423,10 @@ public sealed class JsVm
         // wp:M3-83 — §9.3.2 cross-realm construct (see ConstructFunctionForeignRealm).
         if (fn.Realm is { } fnRealm && !ReferenceEquals(fnRealm, _runtime.Realm)
             && fnRealm.OwnerRuntime is { } owner)
+        {
             return ConstructFunctionForeignRealm(owner, fn, args, newTarget);
+        }
+
         return ConstructFunctionLocal(fn, args, newTarget);
     }
 
@@ -405,7 +466,10 @@ public sealed class JsVm
     private JsValue ComputeConstructThis(JsFunction fn, JsObject newTarget)
     {
         if (fn.ConstructorKind == ClassConstructorKind.Derived)
+        {
             return JsValue.Object(_runtime.Realm.UninitializedThisSentinel);
+        }
+
         var protoSlot = newTarget.Get("prototype");
         var proto = protoSlot.IsObject ? protoSlot.AsObject : _runtime.Realm.ObjectPrototype;
         return JsValue.Object(_runtime.Realm.NewObjectWithProto(proto));
@@ -449,16 +513,24 @@ public sealed class JsVm
                         // any other closures over the same binding.
                         var slotVal = locals[b.Index];
                         if (slotVal.IsObject && slotVal.AsObject is Cell cell)
+                        {
                             entries.Add(new EvalScope.Entry { Name = b.Name, Cell = cell, IsLexical = b.IsLexical, IsConst = b.IsConst });
+                        }
                         else
+                        {
                             entries.Add(new EvalScope.Entry { Name = b.Name, Locals = locals, Slot = b.Index, IsLexical = b.IsLexical, IsConst = b.IsConst });
+                        }
+
                         break;
                     }
                 case Bytecode.EvalScopeDescriptor.Kind.Upvalue:
                     {
                         if (b.Index < upvalues.Count && upvalues[b.Index].IsObject
                             && upvalues[b.Index].AsObject is Cell upCell)
+                        {
                             entries.Add(new EvalScope.Entry { Name = b.Name, Cell = upCell, IsLexical = b.IsLexical, IsConst = b.IsConst });
+                        }
+
                         break;
                     }
             }
@@ -494,7 +566,9 @@ public sealed class JsVm
         // a barrier frame is a JS frame on the chain like any other.
         if (t_barrierDepth >= MaxBarrierDepth || t_frameDepth >= MaxFrameDepth ||
             !System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
             throw new JsThrow(_runtime.Realm.NewRangeError("Maximum call stack size exceeded"));
+        }
 
         // Publish this VM on the realm so native intrinsics (JSON.parse
         // reviver, JSON.stringify replacer/toJSON, etc.) can dispatch JS
@@ -533,7 +607,10 @@ public sealed class JsVm
             // (AbstractOperations.Call needs one for JsFunction). Only the
             // outermost (top-level Run) frame drains — nested calls do not.
             if (drainMicrotasks)
+            {
                 _runtime.DrainMicrotasks();
+            }
+
             return result;
         }
         finally
@@ -640,7 +717,9 @@ public sealed class JsVm
             // Bound by LocalCount, not Locals.Length: the rented array is
             // oversized, and slots past LocalCount are never read or cleared.
             for (var k = 0; k < args.Length && k < chunk.LocalCount; k++)
+            {
                 frame.Locals[k] = args[k];
+            }
 
             // wp:M3-73 — a non-strict function whose body/params contain a
             // direct eval eagerly allocates its var store at frame entry so
@@ -652,7 +731,9 @@ public sealed class JsVm
             // becomes this store's lookup parent so a free identifier resolves
             // own-env -> enclosing eval-env -> global.
             if (!frame.FrameStrict && chunk.HasDirectEval)
+            {
                 frame.FrameVarStore = new EvalVarStore { Parent = frameVarStore };
+            }
         }
         return frame;
     }
@@ -706,7 +787,9 @@ public sealed class JsVm
         while (true)
         {
             if ((stepCount++ & AbortCheckMask) == 0)
+            {
                 _runtime.AbortToken.ThrowIfCancellationRequested();
+            }
 
             JsThrow? rethrow = null;
             try
@@ -729,7 +812,9 @@ public sealed class JsVm
                     // replace) the frame's operand stack — reload the array too.
                     stack = frame.Stack;
                     if (parked)
+                    {
                         return continuationResult;
+                    }
                 }
 
                 var op = (Opcode)code[ip++];
@@ -802,8 +887,11 @@ public sealed class JsVm
                         {
                             var v = locals[ReadU16(code, ref ip)];
                             if (v.IsObject && ReferenceEquals(v.AsObject, _runtime.Realm.TdzSentinel))
+                            {
                                 throw new JsThrow(_runtime.Realm.NewReferenceError(
                                     "Cannot access a lexical binding before initialization"));
+                            }
+
                             Push(frame, ref stack, ref sp, ref maxSp, v);
                             break;
                         }
@@ -812,8 +900,11 @@ public sealed class JsVm
                             var cell = (Cell)locals[ReadU16(code, ref ip)].AsObject;
                             var v = cell.Value;
                             if (v.IsObject && ReferenceEquals(v.AsObject, _runtime.Realm.TdzSentinel))
+                            {
                                 throw new JsThrow(_runtime.Realm.NewReferenceError(
                                     "Cannot access a lexical binding before initialization"));
+                            }
+
                             Push(frame, ref stack, ref sp, ref maxSp, v);
                             break;
                         }
@@ -822,8 +913,11 @@ public sealed class JsVm
                             var cell = (Cell)locals[ReadU16(code, ref ip)].AsObject;
                             if (cell.Value.IsObject
                                 && ReferenceEquals(cell.Value.AsObject, _runtime.Realm.TdzSentinel))
+                            {
                                 throw new JsThrow(_runtime.Realm.NewReferenceError(
                                     "Cannot access a lexical binding before initialization"));
+                            }
+
                             cell.Value = Pop(stack, ref sp);
                             break;
                         }
@@ -832,11 +926,21 @@ public sealed class JsVm
                             var idx = ReadU16(code, ref ip);
                             var upV = frame.Upvalues[idx];
                             JsValue v;
-                            if (upV.IsObject && upV.AsObject is Cell c) v = c.Value;
-                            else v = upV;
+                            if (upV.IsObject && upV.AsObject is Cell c)
+                            {
+                                v = c.Value;
+                            }
+                            else
+                            {
+                                v = upV;
+                            }
+
                             if (v.IsObject && ReferenceEquals(v.AsObject, _runtime.Realm.TdzSentinel))
+                            {
                                 throw new JsThrow(_runtime.Realm.NewReferenceError(
                                     "Cannot access a lexical binding before initialization"));
+                            }
+
                             Push(frame, ref stack, ref sp, ref maxSp, v);
                             break;
                         }
@@ -846,8 +950,11 @@ public sealed class JsVm
                             var cell = (Cell)frame.Upvalues[idx].AsObject;
                             if (cell.Value.IsObject
                                 && ReferenceEquals(cell.Value.AsObject, _runtime.Realm.TdzSentinel))
+                            {
                                 throw new JsThrow(_runtime.Realm.NewReferenceError(
                                     "Cannot access a lexical binding before initialization"));
+                            }
+
                             cell.Value = Pop(stack, ref sp);
                             break;
                         }
@@ -955,7 +1062,10 @@ public sealed class JsVm
                             if (!globalObj.Has(name))
                             {
                                 if (realm.ThrowOnUnresolvedGlobalRead && !realm.LenientGlobalNames.Contains(name))
+                                {
                                     throw new JsThrow(realm.NewReferenceError(name + " is not defined"));
+                                }
+
                                 Push(frame, ref stack, ref sp, ref maxSp, JsValue.Undefined);
                                 break;
                             }
@@ -983,13 +1093,18 @@ public sealed class JsVm
                             // ReferenceError (no implicit global creation). Walk the
                             // prototype chain since inherited accessors/props count.
                             if (frame.FrameStrict && !globalObj.Has(name))
+                            {
                                 throw new JsThrow(_runtime.Realm.NewReferenceError(name + " is not defined"));
+                            }
                             // §10.1.9 — a strict assignment that the [[Set]] rejects
                             // (non-writable prop, accessor without setter) throws TypeError.
                             var ok = AbstractOperations.Set(this, globalObj, name, value, JsValue.Object(globalObj));
                             if (!ok && frame.FrameStrict)
+                            {
                                 throw new JsThrow(_runtime.Realm.NewTypeError(
                                     "Cannot assign to read-only property '" + name + "'"));
+                            }
+
                             break;
                         }
 
@@ -1095,14 +1210,18 @@ public sealed class JsVm
                                     if (sh is not null && o.SupportsInlineCache)
                                     {
                                         if (sh.TryGet(name, out var ownHit))
+                                        {
                                             chunk.Caches[cacheId] = new InlineCache { Shape = sh, Slot = ownHit.Slot };
+                                        }
                                         else if (o.Prototype is { Shape: { } dsh } dp && dp.SupportsInlineCache
                                             && dsh.TryGet(name, out var pp))
+                                        {
                                             // Property lives on the DIRECT prototype as fast
                                             // data (one hop). Multi-hop and accessor/dict
                                             // holders are left to the slow path.
                                             chunk.Caches[cacheId] = new InlineCache
                                             { Shape = sh, Slot = pp.Slot, Holder = dp, Epoch = JsObject.ProtoEpoch };
+                                        }
                                     }
                                     Push(frame, ref stack, ref sp, ref maxSp, result);
                                     break;
@@ -1120,7 +1239,9 @@ public sealed class JsVm
                                 // canonical indices, which arrive as computed access, never a
                                 // named LoadProperty, so no box is ever needed here.
                                 if (obj.IsString && name == "length")
+                                {
                                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Number(obj.AsString.Length));
+                                }
                                 else
                                 {
                                     var proto = PrimitivePrototype(obj);
@@ -1129,8 +1250,12 @@ public sealed class JsVm
                                         : AbstractOperations.Get(this, AbstractOperations.ToObject(_runtime.Realm, obj), name, obj));
                                 }
                             }
-                            else throw new JsThrow(_runtime.Realm.NewTypeError(
+                            else
+                            {
+                                throw new JsThrow(_runtime.Realm.NewTypeError(
                                 "Cannot read properties of " + NullishLabel(obj) + " (reading '" + name + "')"));
+                            }
+
                             break;
                         }
                     case Opcode.StoreProperty:
@@ -1175,8 +1300,10 @@ public sealed class JsVm
                                     if (!okIc)
                                     {
                                         if (frame.FrameStrict)
+                                        {
                                             throw new JsThrow(_runtime.Realm.NewTypeError(
                                                 "Cannot assign to read-only property '" + name + "'"));
+                                        }
                                     }
                                     else
                                     {
@@ -1197,8 +1324,10 @@ public sealed class JsVm
                                 // rejects (non-writable data prop, accessor without a
                                 // setter, or add to a non-extensible object) throws.
                                 if (!ok && frame.FrameStrict)
+                                {
                                     throw new JsThrow(_runtime.Realm.NewTypeError(
                                         "Cannot assign to read-only property '" + name + "'"));
+                                }
                             }
                             else if (obj.IsNullish)
                             {
@@ -1214,10 +1343,20 @@ public sealed class JsVm
                             var key = Pop(stack, ref sp);
                             var obj = Pop(stack, ref sp);
                             var propertyKey = AbstractOperations.ToPropertyKey(this, key);
-                            if (obj.IsObject) Push(frame, ref stack, ref sp, ref maxSp, AbstractOperations.Get(this, obj.AsObject, propertyKey));
-                            else if (!obj.IsNullish) Push(frame, ref stack, ref sp, ref maxSp, AbstractOperations.Get(this, AbstractOperations.ToObject(_runtime.Realm, obj), propertyKey, obj));
-                            else throw new JsThrow(_runtime.Realm.NewTypeError(
+                            if (obj.IsObject)
+                            {
+                                Push(frame, ref stack, ref sp, ref maxSp, AbstractOperations.Get(this, obj.AsObject, propertyKey));
+                            }
+                            else if (!obj.IsNullish)
+                            {
+                                Push(frame, ref stack, ref sp, ref maxSp, AbstractOperations.Get(this, AbstractOperations.ToObject(_runtime.Realm, obj), propertyKey, obj));
+                            }
+                            else
+                            {
+                                throw new JsThrow(_runtime.Realm.NewTypeError(
                                 "Cannot read properties of " + NullishLabel(obj) + " (reading '" + propertyKey + "')"));
+                            }
+
                             break;
                         }
                     case Opcode.ResolveComputedKey:
@@ -1229,9 +1368,12 @@ public sealed class JsVm
                             var rawKey = Pop(stack, ref sp);
                             var baseV = stack[sp - 1];
                             if (baseV.IsNullish)
+                            {
                                 throw new JsThrow(_runtime.Realm.NewTypeError(
                                     "Cannot read properties of " + (baseV.IsNull ? "null" : "undefined")
                                     + " (reading a computed property)"));
+                            }
+
                             var resolved = AbstractOperations.ToPropertyKey(this, rawKey);
                             Push(frame, ref stack, ref sp, ref maxSp, resolved.IsSymbol ? JsValue.Symbol(resolved.AsSymbol)
                                                    : JsValue.String(resolved.AsString));
@@ -1244,14 +1386,19 @@ public sealed class JsVm
                             var obj = Pop(stack, ref sp);
                             var pk = AbstractOperations.ToPropertyKey(this, key);
                             if (obj.IsNullish)
+                            {
                                 throw new JsThrow(_runtime.Realm.NewTypeError(
                                     "Cannot set property '" + pk + "' of " + NullishLabel(obj)));
+                            }
+
                             if (obj.IsObject)
                             {
                                 var ok = AbstractOperations.Set(this, obj.AsObject, pk, value);
                                 if (!ok && frame.FrameStrict)
+                                {
                                     throw new JsThrow(_runtime.Realm.NewTypeError(
                                         "Cannot assign to read-only property '" + pk + "'"));
+                                }
                             }
                             Push(frame, ref stack, ref sp, ref maxSp, value);
                             break;
@@ -1276,10 +1423,16 @@ public sealed class JsVm
                         {
                             var argc = code[ip++];
                             var callArgs = RentArgs(argc);
-                            for (var i = argc - 1; i >= 0; i--) callArgs[i] = Pop(stack, ref sp);
+                            for (var i = argc - 1; i >= 0; i--)
+                            {
+                                callArgs[i] = Pop(stack, ref sp);
+                            }
+
                             var callee = Pop(stack, ref sp);
                             if (!IsCallableValue(callee))
+                            {
                                 throw new JsThrow(JsValue.String(AtPos(chunk, ip, $"not a function: {JsValue.ToStringValue(callee)} (callee hint: '{_lastLoadName}')")));
+                            }
                             // wp:M3-84 Stage B — ordinary same-realm JsFunction:
                             // push a trampolined frame, no native recursion.
                             if (TryPushCall(callee, JsValue.Undefined, callArgs, frame, ip, sp, maxSp, out var pushed))
@@ -1297,11 +1450,18 @@ public sealed class JsVm
                         {
                             var argc = code[ip++];
                             var callArgs = RentArgs(argc);
-                            for (var i = argc - 1; i >= 0; i--) callArgs[i] = Pop(stack, ref sp);
+                            for (var i = argc - 1; i >= 0; i--)
+                            {
+                                callArgs[i] = Pop(stack, ref sp);
+                            }
+
                             var callee = Pop(stack, ref sp);
                             var receiver = Pop(stack, ref sp);
                             if (!IsCallableValue(callee))
+                            {
                                 throw new JsThrow(JsValue.String(AtPos(chunk, ip, $"not a function: {JsValue.ToStringValue(callee)} (method hint: '{_lastLoadName}')")));
+                            }
+
                             if (TryPushCall(callee, receiver, callArgs, frame, ip, sp, maxSp, out var pushed))
                             {
                                 frame = pushed;
@@ -1330,12 +1490,16 @@ public sealed class JsVm
                             // §14.11 / §10.2.1 — capture the active with-objects so the
                             // function body resolves free identifiers against them.
                             if (template.Body.CapturesWith && frame.WithStack is { Count: > 0 })
+                            {
                                 fn.CapturedWith = frame.WithStack.ToArray();
+                            }
                             // wp:M3-64 — §14.2 / §13.2.5: an arrow inherits the enclosing
                             // method's [[HomeObject]] lexically so `super.x` inside it
                             // resolves against the enclosing method's home object.
                             if (template.Body.IsArrow && frame.CurrentFunction?.HomeObject is { } h1)
+                            {
                                 fn.HomeObject = h1;
+                            }
                             // wp:M3-81 — §sec-performeval-rules-in-initializer: an arrow
                             // created while this frame is inside an initializer region (a
                             // parameter default or a field/static initializer) inherits the
@@ -1343,13 +1507,18 @@ public sealed class JsVm
                             // eval in its body still hits the ContainsArguments early error
                             // when the arrow is later invoked.
                             if (template.Body.IsArrow && frame.InitDepth > 0)
+                            {
                                 fn.InInitializer = true;
+                            }
                             // wp:M3-73 — snapshot the creating frame's eval-introduced var
                             // store so this closure resolves free identifiers through the
                             // vars a direct eval injected into the enclosing function's
                             // variable environment (spec scope chain) before the global.
                             if (frame.FrameVarStore is not null)
+                            {
                                 fn.CapturedEvalVarStore = frame.FrameVarStore;
+                            }
+
                             Push(frame, ref stack, ref sp, ref maxSp, JsValue.Object(fn));
                             break;
                         }
@@ -1364,7 +1533,10 @@ public sealed class JsVm
                             var nUpvalues = ReadU16(code, ref ip);
                             var template = (JsFunction)constants[idx]!;
                             var captured = new JsValue[nUpvalues];
-                            for (var i = nUpvalues - 1; i >= 0; i--) captured[i] = Pop(stack, ref sp);
+                            for (var i = nUpvalues - 1; i >= 0; i--)
+                            {
+                                captured[i] = Pop(stack, ref sp);
+                            }
                             // Per B2-2: closure also routes through CreateInstance so
                             // it inherits Function.prototype and gets a per-call
                             // `prototype` own-property.
@@ -1373,20 +1545,29 @@ public sealed class JsVm
                             // LoadFunction) so the closure body resolves free identifiers
                             // against the enclosing object Environment Records.
                             if (template.Body.CapturesWith && frame.WithStack is { Count: > 0 })
+                            {
                                 closure.CapturedWith = frame.WithStack.ToArray();
+                            }
                             // wp:M3-64 — an arrow closure inherits the enclosing method's
                             // [[HomeObject]] lexically for `super.x` (see LoadFunction).
                             if (template.Body.IsArrow && frame.CurrentFunction?.HomeObject is { } h2)
+                            {
                                 closure.HomeObject = h2;
+                            }
                             // wp:M3-81 — an arrow closure created inside an initializer
                             // region inherits the inside-initializer status (see
                             // LoadFunction) for the eval ContainsArguments early error.
                             if (template.Body.IsArrow && frame.InitDepth > 0)
+                            {
                                 closure.InInitializer = true;
+                            }
                             // wp:M3-73 — snapshot the creating frame's eval-introduced var
                             // store (see LoadFunction).
                             if (frame.FrameVarStore is not null)
+                            {
                                 closure.CapturedEvalVarStore = frame.FrameVarStore;
+                            }
+
                             Push(frame, ref stack, ref sp, ref maxSp, JsValue.Object(closure));
                             break;
                         }
@@ -1399,8 +1580,15 @@ public sealed class JsVm
                             // chained captures).
                             var idx = ReadU16(code, ref ip);
                             var upV = frame.Upvalues[idx];
-                            if (upV.IsObject && upV.AsObject is Cell c) Push(frame, ref stack, ref sp, ref maxSp, c.Value);
-                            else Push(frame, ref stack, ref sp, ref maxSp, upV); // legacy snapshot path — empty in practice
+                            if (upV.IsObject && upV.AsObject is Cell c)
+                            {
+                                Push(frame, ref stack, ref sp, ref maxSp, c.Value);
+                            }
+                            else
+                            {
+                                Push(frame, ref stack, ref sp, ref maxSp, upV); // legacy snapshot path — empty in practice
+                            }
+
                             break;
                         }
 
@@ -1422,10 +1610,17 @@ public sealed class JsVm
                         {
                             var argc = code[ip++];
                             var newArgs = RentArgs(argc);
-                            for (var i = argc - 1; i >= 0; i--) newArgs[i] = Pop(stack, ref sp);
+                            for (var i = argc - 1; i >= 0; i--)
+                            {
+                                newArgs[i] = Pop(stack, ref sp);
+                            }
+
                             var ctor = Pop(stack, ref sp);
                             if (!ctor.IsObject)
+                            {
                                 throw new JsThrow(JsValue.String(AtPos(chunk, ip, $"not a constructor: {JsValue.ToStringValue(ctor)} (new hint: '{_lastLoadName}')")));
+                            }
+
                             if (TryPushConstruct(ctor, newArgs, newTarget: null, frame, ip, sp, maxSp,
                                     FrameDisposition.Construct, out var pushed))
                             {
@@ -1444,19 +1639,31 @@ public sealed class JsVm
                     case Opcode.JumpIfTrue:
                         {
                             var d = ReadI32(code, ref ip);
-                            if (JsValue.ToBoolean(Pop(stack, ref sp))) ip += d;
+                            if (JsValue.ToBoolean(Pop(stack, ref sp)))
+                            {
+                                ip += d;
+                            }
+
                             break;
                         }
                     case Opcode.JumpIfFalse:
                         {
                             var d = ReadI32(code, ref ip);
-                            if (!JsValue.ToBoolean(Pop(stack, ref sp))) ip += d;
+                            if (!JsValue.ToBoolean(Pop(stack, ref sp)))
+                            {
+                                ip += d;
+                            }
+
                             break;
                         }
                     case Opcode.JumpIfNotNullish:
                         {
                             var d = ReadI32(code, ref ip);
-                            if (!Pop(stack, ref sp).IsNullish) ip += d;
+                            if (!Pop(stack, ref sp).IsNullish)
+                            {
+                                ip += d;
+                            }
+
                             break;
                         }
 
@@ -1475,9 +1682,17 @@ public sealed class JsVm
                     case Opcode.Return:
                         {
                             var rv = Pop(stack, ref sp);
-                            if (DivertReturnThroughFinally(frame.TryStack, rv, ref ip)) break;
+                            if (DivertReturnThroughFinally(frame.TryStack, rv, ref ip))
+                            {
+                                break;
+                            }
+
                             ReleaseFrame(frame, stack, maxSp);
-                            if (frame.IsBarrier) return rv;
+                            if (frame.IsBarrier)
+                            {
+                                return rv;
+                            }
+
                             var popped = frame;
                             frame = popped.Caller!;
                             t_current = frame;
@@ -1487,9 +1702,17 @@ public sealed class JsVm
                         }
                     case Opcode.ReturnUndefined:
                         {
-                            if (DivertReturnThroughFinally(frame.TryStack, JsValue.Undefined, ref ip)) break;
+                            if (DivertReturnThroughFinally(frame.TryStack, JsValue.Undefined, ref ip))
+                            {
+                                break;
+                            }
+
                             ReleaseFrame(frame, stack, maxSp);
-                            if (frame.IsBarrier) return JsValue.Undefined;
+                            if (frame.IsBarrier)
+                            {
+                                return JsValue.Undefined;
+                            }
+
                             var popped = frame;
                             frame = popped.Caller!;
                             t_current = frame;
@@ -1523,7 +1746,10 @@ public sealed class JsVm
                     case Opcode.LeaveTry:
                         {
                             if (frame.TryStack is not { Count: > 0 } tryStack)
+                            {
                                 throw new InvalidOperationException("LeaveTry with empty try-frame stack");
+                            }
+
                             var tf = tryStack.Peek();
                             if (tf.FinallyPc != -1 && tf.Phase != TryPhase.RunningFinally)
                             {
@@ -1542,7 +1768,10 @@ public sealed class JsVm
                     case Opcode.EndFinally:
                         {
                             if (frame.TryStack is not { Count: > 0 } tryStack)
+                            {
                                 throw new InvalidOperationException("EndFinally with empty try-frame stack");
+                            }
+
                             var tf = tryStack.Pop();
                             switch (tf.Pending)
                             {
@@ -1556,9 +1785,17 @@ public sealed class JsVm
                                         // finalizers pops the frame exactly like the
                                         // Return opcode above.
                                         var rv = tf.PendingValue;
-                                        if (DivertReturnThroughFinally(frame.TryStack, rv, ref ip)) break;
+                                        if (DivertReturnThroughFinally(frame.TryStack, rv, ref ip))
+                                        {
+                                            break;
+                                        }
+
                                         ReleaseFrame(frame, stack, maxSp);
-                                        if (frame.IsBarrier) return rv;
+                                        if (frame.IsBarrier)
+                                        {
+                                            return rv;
+                                        }
+
                                         var popped = frame;
                                         frame = popped.Caller!;
                                         t_current = frame;
@@ -1600,7 +1837,10 @@ public sealed class JsVm
                             // stack for the following property loads).
                             var v = stack[sp - 1];
                             if (v.IsNullish)
+                            {
                                 throw new JsThrow(_runtime.Realm.NewTypeError("Cannot destructure null or undefined"));
+                            }
+
                             break;
                         }
 
@@ -1623,7 +1863,10 @@ public sealed class JsVm
                             // as the loop sentinel.
                             var top = stack[sp - 1];
                             if (!top.IsObject || top.AsObject is not Starling.Js.Intrinsics.JsIteratorRecordHandle handle)
+                            {
                                 throw new InvalidOperationException("IteratorStep expects an iterator-record handle on the stack");
+                            }
+
                             var step = AbstractOperations.IteratorStep(_runtime.Realm, this, ref handle.Record);
                             Push(frame, ref stack, ref sp, ref maxSp, step ?? JsValue.Undefined);
                             break;
@@ -1638,7 +1881,10 @@ public sealed class JsVm
                             // WITHOUT calling next() again.
                             var top = stack[sp - 1];
                             if (!top.IsObject || top.AsObject is not Starling.Js.Intrinsics.JsIteratorRecordHandle handle)
+                            {
                                 throw new InvalidOperationException("IteratorBindNext expects an iterator-record handle on the stack");
+                            }
+
                             if (handle.Record.Done)
                             {
                                 Push(frame, ref stack, ref sp, ref maxSp, JsValue.Undefined);
@@ -1802,10 +2048,13 @@ public sealed class JsVm
                             // the body resumes here on the first real next()/drive.
                             // If suspension is null (defensive), it's a no-op.
                             if (frame.Suspension is not null)
+                            {
                                 return FlushAndSuspend(frame, ip, sp, maxSp,
                                     ContinuationResumeAction.IgnoreResume,
                                     JsValue.Undefined,
                                     kind: 0);
+                            }
+
                             break;
                         }
                     case Opcode.YieldDelegate:
@@ -1814,7 +2063,10 @@ public sealed class JsVm
                             // iterator parked this frame — return without
                             // releasing the pooled stack (the snapshot owns it).
                             if (ExecYieldDelegate(frame, ref stack, ref ip, ref sp, ref maxSp, out var ydParked))
+                            {
                                 return ydParked;
+                            }
+
                             break;
                         }
 
@@ -1822,7 +2074,9 @@ public sealed class JsVm
                         // Cold opcode — dispatched out-of-line so its arm's
                         // locals don't enlarge this frame (see DispatchCold).
                         if (!DispatchCold(op, frame, ref stack, locals, ref ip, ref sp, ref maxSp))
+                        {
                             throw new InvalidOperationException($"opcode {op} not implemented in VM");
+                        }
                         // wp:M3-84 Stage B — CallSuperCtor (inside DispatchCold)
                         // may have pushed a trampolined callee frame; detect the
                         // switch and reload the hot cache.
@@ -1880,7 +2134,10 @@ public sealed class JsVm
                         }
                         tryStack.Pop();
                     }
-                    if (handled) break;
+                    if (handled)
+                    {
+                        break;
+                    }
                     // Unhandled in this frame — release it. A barrier frame
                     // rethrows to the native caller; a trampolined frame
                     // unwinds into its JS caller and keeps walking.
@@ -1911,7 +2168,9 @@ public sealed class JsVm
                 }
             }
             if (rethrow is not null)
+            {
                 throw rethrow;
+            }
         }
     }
 
@@ -1948,8 +2207,11 @@ public sealed class JsVm
                         // §13.3.1.1 — reading a caller lexical binding still in
                         // its TDZ throws ReferenceError.
                         if (v.IsObject && ReferenceEquals(v.AsObject, _runtime.Realm.TdzSentinel))
+                        {
                             throw new JsThrow(_runtime.Realm.NewReferenceError(
                                 "Cannot access '" + name + "' before initialization"));
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, v);
                         break;
                     }
@@ -1958,7 +2220,10 @@ public sealed class JsVm
                     if (!globalObj.Has(name))
                     {
                         if (realm.ThrowOnUnresolvedGlobalRead && !realm.LenientGlobalNames.Contains(name))
+                        {
                             throw new JsThrow(realm.NewReferenceError(name + " is not defined"));
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, JsValue.Undefined);
                         break;
                     }
@@ -1975,18 +2240,27 @@ public sealed class JsVm
                     if (frame.EvalScope is not null && frame.EvalScope.TryGet(name, out var entry))
                     {
                         if (entry.IsConst)
+                        {
                             throw new JsThrow(_runtime.Realm.NewTypeError(
                                 "Assignment to constant variable '" + name + "'"));
+                        }
+
                         entry.Write(value);
                         break;
                     }
                     var globalObj = _runtime.Realm.GlobalObject;
                     if (frame.FrameStrict && !globalObj.Has(name))
+                    {
                         throw new JsThrow(_runtime.Realm.NewReferenceError(name + " is not defined"));
+                    }
+
                     var ok2 = AbstractOperations.Set(this, globalObj, name, value, JsValue.Object(globalObj));
                     if (!ok2 && frame.FrameStrict)
+                    {
                         throw new JsThrow(_runtime.Realm.NewTypeError(
                             "Cannot assign to read-only property '" + name + "'"));
+                    }
+
                     break;
                 }
             // gap:script-top-var-not-global — idempotent CreateGlobalVarBinding
@@ -2101,9 +2375,14 @@ public sealed class JsVm
                     var value = Pop(stack, ref sp);
                     var obj = Pop(stack, ref sp);
                     if (value.IsObject)
+                    {
                         obj.AsObject.SetPrototypeOf(value.AsObject);
+                    }
                     else if (value.IsNull)
+                    {
                         obj.AsObject.SetPrototypeOf(null);
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, obj);
                     break;
                 }
@@ -2147,7 +2426,11 @@ public sealed class JsVm
                     var descIdx = ReadU16(code, ref ip);
                     var argc = code[ip++];
                     var callArgs = new JsValue[argc];
-                    for (var i = argc - 1; i >= 0; i--) callArgs[i] = Pop(stack, ref sp);
+                    for (var i = argc - 1; i >= 0; i--)
+                    {
+                        callArgs[i] = Pop(stack, ref sp);
+                    }
+
                     var callee = Pop(stack, ref sp);
                     var intrinsic = _runtime.Realm.EvalFunction;
                     if (intrinsic is not null && callee.IsObject
@@ -2175,7 +2458,10 @@ public sealed class JsVm
                         break;
                     }
                     if (!IsCallableValue(callee))
+                    {
                         throw new JsThrow(JsValue.String(AtPos(chunk, ip, $"not a function: {JsValue.ToStringValue(callee)} (callee hint: 'eval')")));
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, AbstractOperations.Call(this, callee, JsValue.Undefined, callArgs));
                     break;
                 }
@@ -2195,7 +2481,10 @@ public sealed class JsVm
                         var source = (string)constants[srcIdx]!;
                         var flagsStr = (string)constants[flagsIdx]!;
                         if (!RegexFlagParser.TryParse(flagsStr, out var flags, out var flagErr))
+                        {
                             throw new JsThrow(_runtime.Realm.NewSyntaxError(flagErr!));
+                        }
+
                         try
                         {
                             compiled = Starling.Js.Runtime.Regex.RegexBackendSelector.CompileCached(source, flags);
@@ -2244,8 +2533,11 @@ public sealed class JsVm
                         // properties exist matching the key. For null/undefined
                         // the spec throws TypeError.
                         if (receiver.IsNullish)
+                        {
                             throw new JsThrow(_runtime.Realm.NewTypeError(
                                 "Cannot convert undefined or null to object"));
+                        }
+
                         var boxed = AbstractOperations.ToObject(_runtime.Realm, receiver);
                         Push(frame, ref stack, ref sp, ref maxSp, JsValue.Boolean(boxed.Delete(AbstractOperations.ToPropertyKey(this, key))));
                         break;
@@ -2255,8 +2547,11 @@ public sealed class JsVm
                     // §13.5.1.2 — in strict code, `delete` of a non-configurable
                     // own property is a TypeError (sloppy returns false instead).
                     if (!deleted && frame.FrameStrict)
+                    {
                         throw new JsThrow(_runtime.Realm.NewTypeError(
                             "Cannot delete property '" + delKey + "'"));
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Boolean(deleted));
                     break;
                 }
@@ -2294,11 +2589,16 @@ public sealed class JsVm
                         // not the data-only fast path. Mirror that here so accessor
                         // properties are spread by their getter's return value.
                         foreach (var key in srcObj.EnumerableKeys())
+                        {
                             AbstractOperations.Set(this, dstObj, key,
                                 AbstractOperations.Get(this, srcObj, key));
+                        }
+
                         foreach (var key in srcObj.EnumerableSymbolKeys())
+                        {
                             AbstractOperations.Set(this, dstObj, JsPropertyKey.Symbol(key),
                                 AbstractOperations.Get(this, srcObj, JsPropertyKey.Symbol(key)));
+                        }
                     }
                     break;
                 }
@@ -2311,13 +2611,18 @@ public sealed class JsVm
                     var srcObj = src.IsObject ? src.AsObject : (!src.IsNullish ? AbstractOperations.ToObject(_runtime.Realm, src) : null);
                     var len = 0;
                     if (srcObj is not null)
+                    {
                         len = Math.Max(0, (int)Math.Truncate(JsValue.ToNumber(
                             AbstractOperations.Get(this, srcObj, "length"))));
+                    }
+
                     if (srcObj is not null)
                     {
                         for (var i = start; i < len; i++)
+                        {
                             result.Push(AbstractOperations.Get(this, srcObj,
                                 i.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                        }
                     }
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Object(result));
                     break;
@@ -2328,7 +2633,9 @@ public sealed class JsVm
                     if (handleV.IsObject && handleV.AsObject is Starling.Js.Intrinsics.JsIteratorRecordHandle h)
                     {
                         if (!h.Record.Done)
+                        {
                             AbstractOperations.IteratorClose(this, h.Record, isThrowing: false);
+                        }
                     }
                     break;
                 }
@@ -2338,13 +2645,20 @@ public sealed class JsVm
                     // into a fresh dense array, driving the iterator to Done.
                     var top = stack[sp - 1];
                     if (!top.IsObject || top.AsObject is not Starling.Js.Intrinsics.JsIteratorRecordHandle handle)
+                    {
                         throw new InvalidOperationException("IteratorRest expects an iterator-record handle on the stack");
+                    }
+
                     var rest = new JsArray(_runtime.Realm);
                     var n = 0;
                     while (!handle.Record.Done)
                     {
                         var step = AbstractOperations.IteratorStep(_runtime.Realm, this, ref handle.Record);
-                        if (step is null) break;
+                        if (step is null)
+                        {
+                            break;
+                        }
+
                         rest.Set(n.ToString(System.Globalization.CultureInfo.InvariantCulture),
                             AbstractOperations.IteratorValue(this, step.Value));
                         n++;
@@ -2401,7 +2715,10 @@ public sealed class JsVm
                     // Peek the record handle (loop keeps it across iterations).
                     var top = stack[sp - 1];
                     if (!top.IsObject || top.AsObject is not Starling.Js.Intrinsics.JsIteratorRecordHandle handle)
+                    {
                         throw new InvalidOperationException("AsyncIteratorNext expects an async-iterator-record handle");
+                    }
+
                     var resultV = AbstractOperations.Call(this, handle.Record.NextMethod,
                         handle.Record.Iterator, Array.Empty<JsValue>());
                     if (handle.SyncWrapped)
@@ -2479,20 +2796,45 @@ public sealed class JsVm
                         {
                             foreach (var k in current.EnumerableKeys())
                             {
-                                if (shadowed.Contains(k)) continue;
-                                if (!emitted.Add(k)) continue;
-                                if (JsArray.IsArrayIndex(k, out var idx)) intKeys[idx] = k;
-                                else strKeys.Add(k);
+                                if (shadowed.Contains(k))
+                                {
+                                    continue;
+                                }
+
+                                if (!emitted.Add(k))
+                                {
+                                    continue;
+                                }
+
+                                if (JsArray.IsArrayIndex(k, out var idx))
+                                {
+                                    intKeys[idx] = k;
+                                }
+                                else
+                                {
+                                    strKeys.Add(k);
+                                }
                             }
                             // Any own key (enumerable or not) on this level
                             // shadows same-named keys further up the proto
                             // chain — per OrdinaryOwnPropertyKeys, all own
                             // names appear regardless of enumerability.
-                            foreach (var k in current.Keys) shadowed.Add(k);
+                            foreach (var k in current.Keys)
+                            {
+                                shadowed.Add(k);
+                            }
+
                             current = current.Prototype;
                         }
-                        foreach (var pair in intKeys) snapshot.Push(JsValue.String(pair.Value));
-                        foreach (var k in strKeys) snapshot.Push(JsValue.String(k));
+                        foreach (var pair in intKeys)
+                        {
+                            snapshot.Push(JsValue.String(pair.Value));
+                        }
+
+                        foreach (var k in strKeys)
+                        {
+                            snapshot.Push(JsValue.String(k));
+                        }
                     }
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Object(snapshot));
                     break;
@@ -2504,12 +2846,19 @@ public sealed class JsVm
                     var iterable = Pop(stack, ref sp);
                     var targetV = stack[sp - 1];
                     if (!targetV.IsObject || targetV.AsObject is not JsArray targetArr)
+                    {
                         throw new InvalidOperationException("SpreadIterable target must be a JsArray");
+                    }
+
                     var record = AbstractOperations.GetIterator(_runtime.Realm, this, iterable);
                     while (true)
                     {
                         var step = AbstractOperations.IteratorStep(_runtime.Realm, this, ref record);
-                        if (step is null) break;
+                        if (step is null)
+                        {
+                            break;
+                        }
+
                         targetArr.Push(AbstractOperations.IteratorValue(this, step.Value));
                     }
                     break;
@@ -2521,7 +2870,10 @@ public sealed class JsVm
                     for (var i = 0; i < excludedCount; i++)
                     {
                         var key = AbstractOperations.ToPropertyKey(this, Pop(stack, ref sp));
-                        if (!key.IsSymbol) excluded.Add(key.AsString);
+                        if (!key.IsSymbol)
+                        {
+                            excluded.Add(key.AsString);
+                        }
                     }
                     var src = Pop(stack, ref sp);
                     var result = _runtime.Realm.NewOrdinaryObject();
@@ -2532,17 +2884,25 @@ public sealed class JsVm
                     {
                         var srcObj = src.AsObject;
                         foreach (var key in srcObj.EnumerableKeys())
+                        {
                             if (!excluded.Contains(key))
+                            {
                                 AbstractOperations.Set(this, result, key,
                                     AbstractOperations.Get(this, srcObj, key));
+                            }
+                        }
                     }
                     else if (!src.IsNullish)
                     {
                         var srcObj = AbstractOperations.ToObject(_runtime.Realm, src);
                         foreach (var key in srcObj.EnumerableKeys())
+                        {
                             if (!excluded.Contains(key))
+                            {
                                 AbstractOperations.Set(this, result, key,
                                     AbstractOperations.Get(this, srcObj, key));
+                            }
+                        }
                     }
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Object(result));
                     break;
@@ -2550,8 +2910,11 @@ public sealed class JsVm
             case Opcode.LoadHomeObject:
                 {
                     if (frame.CurrentFunction?.HomeObject is null)
+                    {
                         throw new JsThrow(_runtime.Realm.NewSyntaxError(
                             "'super' keyword unexpected here"));
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Object(frame.CurrentFunction.HomeObject));
                     break;
                 }
@@ -2586,8 +2949,11 @@ public sealed class JsVm
                     var loader = _runtime.Realm.ModuleLoader;
                     var meta = loader?.ResolveMetaForUrl(chunk.SourcePath ?? chunk.Name);
                     if (meta is null)
+                    {
                         throw new JsThrow(_runtime.Realm.NewSyntaxError(
                             "import.meta is only valid inside a module"));
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Object(meta));
                     break;
                 }
@@ -2600,7 +2966,10 @@ public sealed class JsVm
                     var start = ReadU16(code, ref ip);
                     var rest = new JsArray(_runtime.Realm);
                     for (var i = start; i < frame.Args.Length; i++)
+                    {
                         rest.Push(frame.Args[i]);
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Object(rest));
                     break;
                 }
@@ -2614,9 +2983,14 @@ public sealed class JsVm
                     var slot = ReadU16(code, ref ip);
                     var argObj = JsValue.Object(_runtime.Realm.CreateArgumentsObject(frame.Args, frame.FrameStrict));
                     if (locals[slot].IsObject && locals[slot].AsObject is Cell cell)
+                    {
                         cell.Value = argObj;
+                    }
                     else
+                    {
                         locals[slot] = argObj;
+                    }
+
                     break;
                 }
             case Opcode.MakeMappedArguments:
@@ -2644,9 +3018,14 @@ public sealed class JsVm
                     var argObj = JsValue.Object(_runtime.Realm.CreateMappedArgumentsObject(
                         frame.Args, locals, slotForIndex, frame.CurrentFunction));
                     if (locals[slot].IsObject && locals[slot].AsObject is Cell cell)
+                    {
                         cell.Value = argObj;
+                    }
                     else
+                    {
                         locals[slot] = argObj;
+                    }
+
                     break;
                 }
             case Opcode.BindCallee:
@@ -2662,9 +3041,14 @@ public sealed class JsVm
                         ? JsValue.Undefined
                         : JsValue.Object(frame.CurrentFunction);
                     if (locals[slot].IsObject && locals[slot].AsObject is Cell cell)
+                    {
                         cell.Value = calleeVal;
+                    }
                     else
+                    {
                         locals[slot] = calleeVal;
+                    }
+
                     break;
                 }
             // ----- with statement (§14.11 / §9.1.1.2) -----
@@ -2679,7 +3063,11 @@ public sealed class JsVm
                 }
             case Opcode.PopWith:
                 {
-                    if (frame.WithStack is { Count: > 0 }) frame.WithStack.RemoveAt(frame.WithStack.Count - 1);
+                    if (frame.WithStack is { Count: > 0 })
+                    {
+                        frame.WithStack.RemoveAt(frame.WithStack.Count - 1);
+                    }
+
                     break;
                 }
             case Opcode.WithLoadOrMiss:
@@ -2722,8 +3110,11 @@ public sealed class JsVm
                         var value = Pop(stack, ref sp);
                         var ok = AbstractOperations.Set(this, obj, name, value, JsValue.Object(obj));
                         if (!ok && frame.FrameStrict)
+                        {
                             throw new JsThrow(_runtime.Realm.NewTypeError(
                                 "Cannot assign to read-only property '" + name + "'"));
+                        }
+
                         ip += miss;
                     }
                     // miss: leave the value on the stack for the static store.
@@ -2738,8 +3129,11 @@ public sealed class JsVm
                     {
                         var ok = obj.Delete(name);
                         if (!ok && frame.FrameStrict)
+                        {
                             throw new JsThrow(_runtime.Realm.NewTypeError(
                                 "Cannot delete property '" + name + "'"));
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, JsValue.Boolean(ok));
                         ip += miss;
                     }
@@ -2784,8 +3178,11 @@ public sealed class JsVm
                         var baseObj = captured.AsObject;
                         var ok = AbstractOperations.Set(this, baseObj, name, value, captured);
                         if (!ok && frame.FrameStrict)
+                        {
                             throw new JsThrow(_runtime.Realm.NewTypeError(
                                 "Cannot assign to read-only property '" + name + "'"));
+                        }
+
                         ip += miss;
                     }
                     // miss (captured is undefined): leave the value on the stack
@@ -2802,12 +3199,18 @@ public sealed class JsVm
                     // The super-ctor is the [[Prototype]] of the *constructor*
                     // itself — and currentFunction IS the constructor here.
                     if (frame.CurrentFunction is null)
+                    {
                         throw new JsThrow(_runtime.Realm.NewSyntaxError(
                             "'super(...)' may only be used inside a derived class constructor"));
+                    }
+
                     var superCtor = frame.CurrentFunction.Prototype; // [[Prototype]] of the function
                     if (superCtor is null || !AbstractOperations.IsConstructor(JsValue.Object(superCtor)))
+                    {
                         throw new JsThrow(_runtime.Realm.NewTypeError(
                             "Super constructor is not a constructor"));
+                    }
+
                     var nt = frame.NewTarget ?? frame.CurrentFunction;
                     // wp:M3-84 Stage B — a plain same-realm parent constructor is
                     // trampolined like New. The dispatch loop detects the frame
@@ -2816,7 +3219,10 @@ public sealed class JsVm
                     // the push, so return immediately.
                     if (TryPushConstruct(JsValue.Object(superCtor), ctorArgs, nt, frame,
                             ip, sp, maxSp, FrameDisposition.SuperCtor, out _))
+                    {
                         return true;
+                    }
+
                     var constructed = AbstractOperations.Construct(this,
                         JsValue.Object(superCtor), ctorArgs, nt);
                     Push(frame, ref stack, ref sp, ref maxSp, constructed);
@@ -2827,7 +3233,10 @@ public sealed class JsVm
                     var idx = ReadU16(code, ref ip);
                     var name = (string)constants[idx]!;
                     if (frame.CurrentFunction?.HomeObject is null)
+                    {
                         throw new JsThrow(_runtime.Realm.NewSyntaxError("'super' keyword unexpected here"));
+                    }
+
                     var superProto = frame.CurrentFunction.HomeObject.Prototype;
                     if (superProto is null)
                     {
@@ -2843,7 +3252,9 @@ public sealed class JsVm
                     var name = (string)constants[idx]!;
                     var value = Pop(stack, ref sp);
                     if (frame.CurrentFunction?.HomeObject is null)
+                    {
                         throw new JsThrow(_runtime.Realm.NewSyntaxError("'super' keyword unexpected here"));
+                    }
                     // §13.3.4 / §9.1.1.4 PutValue with a Super Reference: the
                     // [[Set]] runs against the super base (GetPrototypeOf([[HomeObject]]))
                     // with the receiver = `this`. So a setter found on the super
@@ -2851,7 +3262,10 @@ public sealed class JsVm
                     // the own data property on the receiver, not the prototype.
                     var superBase = frame.CurrentFunction.HomeObject.Prototype;
                     if (superBase is not null)
+                    {
                         AbstractOperations.Set(this, superBase, name, value, frame.ThisV);
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, value);
                     break;
                 }
@@ -2862,7 +3276,10 @@ public sealed class JsVm
                     // (§13.3.7.2 GetSuperBase + §13.3.4 MakeSuperPropertyReference).
                     var key = Pop(stack, ref sp);
                     if (frame.CurrentFunction?.HomeObject is null)
+                    {
                         throw new JsThrow(_runtime.Realm.NewSyntaxError("'super' keyword unexpected here"));
+                    }
+
                     var propertyKey = AbstractOperations.ToPropertyKey(this, key);
                     var superProto = frame.CurrentFunction.HomeObject.Prototype;
                     if (superProto is null)
@@ -2882,11 +3299,17 @@ public sealed class JsVm
                     var value = Pop(stack, ref sp);
                     var key = Pop(stack, ref sp);
                     if (frame.CurrentFunction?.HomeObject is null)
+                    {
                         throw new JsThrow(_runtime.Realm.NewSyntaxError("'super' keyword unexpected here"));
+                    }
+
                     var propertyKey = AbstractOperations.ToPropertyKey(this, key);
                     var superBase = frame.CurrentFunction.HomeObject.Prototype;
                     if (superBase is not null)
+                    {
                         AbstractOperations.Set(this, superBase, propertyKey, value, frame.ThisV);
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, value);
                     break;
                 }
@@ -2917,8 +3340,11 @@ public sealed class JsVm
                     if (getDesc is { IsAccessor: true } ga)
                     {
                         if (ga.Getter is null)
+                        {
                             throw new JsThrow(_runtime.Realm.NewTypeError(
                                 $"'{name}' was defined without a getter"));
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, AbstractOperations.Call(this, JsValue.Object(ga.Getter), receiver, Array.Empty<JsValue>()));
                     }
                     else
@@ -2950,8 +3376,11 @@ public sealed class JsVm
                     if (setDesc is { IsAccessor: true } sa)
                     {
                         if (sa.Setter is null)
+                        {
                             throw new JsThrow(_runtime.Realm.NewTypeError(
                                 $"'{name}' was defined without a setter"));
+                        }
+
                         AbstractOperations.Call(this, JsValue.Object(sa.Setter), receiver, new[] { value });
                     }
                     else if (setDesc is { IsAccessor: false } && !ownsField)
@@ -2975,10 +3404,16 @@ public sealed class JsVm
                     var value = Pop(stack, ref sp);
                     var receiver = Pop(stack, ref sp);
                     if (!receiver.IsObject)
+                    {
                         throw new JsThrow(_runtime.Realm.NewTypeError("Cannot define private field on non-object"));
+                    }
+
                     if (receiver.AsObject.HasOwn(name))
+                    {
                         throw new JsThrow(_runtime.Realm.NewTypeError(
                             "Cannot initialize the same private member twice on the same object"));
+                    }
+
                     receiver.AsObject.DefineOwnProperty(name,
                         PropertyDescriptor.Data(value, writable: true, enumerable: false, configurable: false));
                     // §7.3.28 PrivateFieldAdd installs the private element onto
@@ -2996,8 +3431,10 @@ public sealed class JsVm
                     // §13.10.1 step 4 — a non-object right operand is a TypeError
                     // (not `false`).
                     if (!operand.IsObject)
+                    {
                         throw new JsThrow(_runtime.Realm.NewTypeError(
                             "Cannot use 'in' operator to search for a private name in a non-object"));
+                    }
                     // §13.10.1 / §7.3.x — `#x in obj` is true iff obj ITSELF carries
                     // the brand for #x (per-object set, never prototype-walked). A
                     // subclass constructor or a Proxy wrapping an instance does not
@@ -3008,7 +3445,11 @@ public sealed class JsVm
             case Opcode.LoadCallerArgs:
                 {
                     var arr = new JsArray(_runtime.Realm);
-                    foreach (var a in frame.Args) arr.Push(a);
+                    foreach (var a in frame.Args)
+                    {
+                        arr.Push(a);
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Object(arr));
                     break;
                 }
@@ -3024,7 +3465,10 @@ public sealed class JsVm
                     if (frame.CurrentFunction?.InstancePrivateBrands is { } brands && frame.ThisV.IsObject)
                     {
                         var brandObj = frame.ThisV.AsObject;
-                        foreach (var b in brands) brandObj.AddPrivateBrand(b);
+                        foreach (var b in brands)
+                        {
+                            brandObj.AddPrivateBrand(b);
+                        }
                     }
                     var inits = frame.CurrentFunction?.InstanceFieldInitializers;
                     if (inits is not null)
@@ -3067,7 +3511,11 @@ public sealed class JsVm
                     {
                         var n = staticBlocks[i].UpvalueCount;
                         var ups = new JsValue[n];
-                        for (var k = n - 1; k >= 0; k--) ups[k] = Pop(stack, ref sp);
+                        for (var k = n - 1; k >= 0; k--)
+                        {
+                            ups[k] = Pop(stack, ref sp);
+                        }
+
                         staticBlockUpvalues[i] = ups;
                     }
                     // wp:M3-04f — computed keys were pushed (already ToPropertyKey-
@@ -3080,7 +3528,11 @@ public sealed class JsVm
                     {
                         var n = template.Fields[i].UpvalueCount;
                         var ups = new JsValue[n];
-                        for (var k = n - 1; k >= 0; k--) ups[k] = Pop(stack, ref sp);
+                        for (var k = n - 1; k >= 0; k--)
+                        {
+                            ups[k] = Pop(stack, ref sp);
+                        }
+
                         fieldUpvalues[i] = ups;
                         fieldComputedKeys[i] = template.Fields[i].IsComputed ? Pop(stack, ref sp) : JsValue.Undefined;
                     }
@@ -3090,14 +3542,25 @@ public sealed class JsVm
                     {
                         var n = template.Methods[i].UpvalueCount;
                         var ups = new JsValue[n];
-                        for (var k = n - 1; k >= 0; k--) ups[k] = Pop(stack, ref sp);
+                        for (var k = n - 1; k >= 0; k--)
+                        {
+                            ups[k] = Pop(stack, ref sp);
+                        }
+
                         methodUpvalues[i] = ups;
                         methodComputedKeys[i] = template.Methods[i].IsComputed ? Pop(stack, ref sp) : JsValue.Undefined;
                     }
                     var ctorUps = new JsValue[template.ConstructorUpvalueCount];
-                    for (var k = template.ConstructorUpvalueCount - 1; k >= 0; k--) ctorUps[k] = Pop(stack, ref sp);
+                    for (var k = template.ConstructorUpvalueCount - 1; k >= 0; k--)
+                    {
+                        ctorUps[k] = Pop(stack, ref sp);
+                    }
+
                     JsValue baseClassValue = JsValue.Undefined;
-                    if (template.HasExtends) baseClassValue = Pop(stack, ref sp);
+                    if (template.HasExtends)
+                    {
+                        baseClassValue = Pop(stack, ref sp);
+                    }
 
                     // §15.7.14 — the inner class-name binding (a named
                     // class expression's `Inner` cell) must hold the
@@ -3108,7 +3571,9 @@ public sealed class JsVm
                     // right moment.
                     Cell? selfNameCell = null;
                     if (template.SelfNameSlot >= 0)
+                    {
                         selfNameCell = (Cell)locals[template.SelfNameSlot].AsObject;
+                    }
 
                     var classCtor = BuildClassRuntime(template, baseClassValue,
                         ctorUps, methodUpvalues, fieldUpvalues, staticBlockUpvalues,
@@ -3138,7 +3603,11 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     if (a.IsBigInt || b.IsBigInt)
                     {
-                        if (!(a.IsBigInt && b.IsBigInt)) throw BigIntOps.MixedTypeError(_runtime.Realm, "-");
+                        if (!(a.IsBigInt && b.IsBigInt))
+                        {
+                            throw BigIntOps.MixedTypeError(_runtime.Realm, "-");
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, BigIntOps.Subtract(a.AsBigInt, b.AsBigInt));
                         break;
                     }
@@ -3150,7 +3619,11 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     if (a.IsBigInt || b.IsBigInt)
                     {
-                        if (!(a.IsBigInt && b.IsBigInt)) throw BigIntOps.MixedTypeError(_runtime.Realm, "*");
+                        if (!(a.IsBigInt && b.IsBigInt))
+                        {
+                            throw BigIntOps.MixedTypeError(_runtime.Realm, "*");
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, BigIntOps.Multiply(a.AsBigInt, b.AsBigInt));
                         break;
                     }
@@ -3162,7 +3635,11 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     if (a.IsBigInt || b.IsBigInt)
                     {
-                        if (!(a.IsBigInt && b.IsBigInt)) throw BigIntOps.MixedTypeError(_runtime.Realm, "/");
+                        if (!(a.IsBigInt && b.IsBigInt))
+                        {
+                            throw BigIntOps.MixedTypeError(_runtime.Realm, "/");
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, BigIntOps.Divide(_runtime.Realm, a.AsBigInt, b.AsBigInt));
                         break;
                     }
@@ -3174,7 +3651,11 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     if (a.IsBigInt || b.IsBigInt)
                     {
-                        if (!(a.IsBigInt && b.IsBigInt)) throw BigIntOps.MixedTypeError(_runtime.Realm, "%");
+                        if (!(a.IsBigInt && b.IsBigInt))
+                        {
+                            throw BigIntOps.MixedTypeError(_runtime.Realm, "%");
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, BigIntOps.Remainder(_runtime.Realm, a.AsBigInt, b.AsBigInt));
                         break;
                     }
@@ -3192,7 +3673,11 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     if (a.IsBigInt || b.IsBigInt)
                     {
-                        if (!(a.IsBigInt && b.IsBigInt)) throw BigIntOps.MixedTypeError(_runtime.Realm, "**");
+                        if (!(a.IsBigInt && b.IsBigInt))
+                        {
+                            throw BigIntOps.MixedTypeError(_runtime.Realm, "**");
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, BigIntOps.Pow(_runtime.Realm, a.AsBigInt, b.AsBigInt));
                         break;
                     }
@@ -3211,7 +3696,10 @@ public sealed class JsVm
                     var v = ToNumericOperand(Pop(stack, ref sp));
                     // §13.5.4: unary + on a BigInt throws TypeError.
                     if (v.IsBigInt)
+                    {
                         throw new JsThrow(_runtime.Realm.NewTypeError("Cannot convert a BigInt value to a number"));
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Number(JsValue.ToNumber(v)));
                     break;
                 }
@@ -3221,7 +3709,11 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     if (a.IsBigInt || b.IsBigInt)
                     {
-                        if (!(a.IsBigInt && b.IsBigInt)) throw BigIntOps.MixedTypeError(_runtime.Realm, "|");
+                        if (!(a.IsBigInt && b.IsBigInt))
+                        {
+                            throw BigIntOps.MixedTypeError(_runtime.Realm, "|");
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, BigIntOps.BitwiseOr(a.AsBigInt, b.AsBigInt));
                         break;
                     }
@@ -3232,7 +3724,11 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     if (a.IsBigInt || b.IsBigInt)
                     {
-                        if (!(a.IsBigInt && b.IsBigInt)) throw BigIntOps.MixedTypeError(_runtime.Realm, "&");
+                        if (!(a.IsBigInt && b.IsBigInt))
+                        {
+                            throw BigIntOps.MixedTypeError(_runtime.Realm, "&");
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, BigIntOps.BitwiseAnd(a.AsBigInt, b.AsBigInt));
                         break;
                     }
@@ -3243,7 +3739,11 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     if (a.IsBigInt || b.IsBigInt)
                     {
-                        if (!(a.IsBigInt && b.IsBigInt)) throw BigIntOps.MixedTypeError(_runtime.Realm, "^");
+                        if (!(a.IsBigInt && b.IsBigInt))
+                        {
+                            throw BigIntOps.MixedTypeError(_runtime.Realm, "^");
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, BigIntOps.BitwiseXor(a.AsBigInt, b.AsBigInt));
                         break;
                     }
@@ -3260,7 +3760,11 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     if (a.IsBigInt || b.IsBigInt)
                     {
-                        if (!(a.IsBigInt && b.IsBigInt)) throw BigIntOps.MixedTypeError(_runtime.Realm, "<<");
+                        if (!(a.IsBigInt && b.IsBigInt))
+                        {
+                            throw BigIntOps.MixedTypeError(_runtime.Realm, "<<");
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, BigIntOps.ShiftLeft(_runtime.Realm, a.AsBigInt, b.AsBigInt));
                         break;
                     }
@@ -3271,7 +3775,11 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     if (a.IsBigInt || b.IsBigInt)
                     {
-                        if (!(a.IsBigInt && b.IsBigInt)) throw BigIntOps.MixedTypeError(_runtime.Realm, ">>");
+                        if (!(a.IsBigInt && b.IsBigInt))
+                        {
+                            throw BigIntOps.MixedTypeError(_runtime.Realm, ">>");
+                        }
+
                         Push(frame, ref stack, ref sp, ref maxSp, BigIntOps.ShiftRight(_runtime.Realm, a.AsBigInt, b.AsBigInt));
                         break;
                     }
@@ -3282,7 +3790,10 @@ public sealed class JsVm
                     var b = Pop(stack, ref sp); var a = Pop(stack, ref sp); a = ToNumericOperand(a); b = ToNumericOperand(b);
                     // §13.10.4 — BigInts have no unsigned right shift; throw TypeError.
                     if (a.IsBigInt || b.IsBigInt)
+                    {
                         throw new JsThrow(_runtime.Realm.NewTypeError("BigInts have no unsigned right shift, use >> instead"));
+                    }
+
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Number((uint)ToInt32(a) >> (ToInt32(b) & 31))); break;
                 }
             default:
@@ -3348,10 +3859,13 @@ public sealed class JsVm
                     var rhs = Pop(stack, ref sp);
                     var key = Pop(stack, ref sp);
                     if (!rhs.IsObject)
+                    {
                         throw new JsThrow(_runtime.Realm.NewTypeError(
                             "Cannot use 'in' operator to search for '"
                             + JsValue.ToStringValue(key) + "' in "
                             + JsValue.ToStringValue(rhs)));
+                    }
+
                     var pk = AbstractOperations.ToPropertyKey(this, key);
                     Push(frame, ref stack, ref sp, ref maxSp, JsValue.Boolean(AbstractOperations.HasProperty(rhs.AsObject, pk)));
                     break;
@@ -3422,9 +3936,16 @@ public sealed class JsVm
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Push(CallFrame frame, ref JsValue[] stack, ref int sp, ref int maxSp, JsValue v)
     {
-        if (sp >= stack.Length) GrowStack(frame, ref stack, sp, maxSp);
+        if (sp >= stack.Length)
+        {
+            GrowStack(frame, ref stack, sp, maxSp);
+        }
+
         stack[sp++] = v;
-        if (sp > maxSp) maxSp = sp;
+        if (sp > maxSp)
+        {
+            maxSp = sp;
+        }
     }
 
     /// <summary>Out-of-line grow path for <see cref="Push"/> /
@@ -3441,7 +3962,11 @@ public sealed class JsVm
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void GrowStack(CallFrame frame, ref JsValue[] stack, int sp, int maxSp)
     {
-        if (stack.Length >= MaxStack) throw new StackOverflowException("JS stack overflow");
+        if (stack.Length >= MaxStack)
+        {
+            throw new StackOverflowException("JS stack overflow");
+        }
+
         var grown = ArrayPool<JsValue>.Shared.Rent(Math.Min(stack.Length * 2, MaxStack));
         System.Array.Copy(stack, grown, sp);
         Finish(stack, maxSp, JsValue.Undefined);
@@ -3476,7 +4001,11 @@ public sealed class JsVm
     /// snapshot keeps the pooled array until the body completes.</summary>
     private static JsValue Finish(JsValue[] stack, int maxSp, JsValue result)
     {
-        if (maxSp > 0) System.Array.Clear(stack, 0, maxSp);
+        if (maxSp > 0)
+        {
+            System.Array.Clear(stack, 0, maxSp);
+        }
+
         ArrayPool<JsValue>.Shared.Return(stack);
         return result;
     }
@@ -3501,10 +4030,18 @@ public sealed class JsVm
     /// suspended frame's snapshot keeps its locals until the body completes.</summary>
     private static void ReleaseLocals(CallFrame frame)
     {
-        if (frame.LocalsEscaped) return;
+        if (frame.LocalsEscaped)
+        {
+            return;
+        }
+
         var locals = frame.Locals;
         var n = frame.Chunk.LocalCount;
-        if (n > 0) System.Array.Clear(locals, 0, n);
+        if (n > 0)
+        {
+            System.Array.Clear(locals, 0, n);
+        }
+
         ArrayPool<JsValue>.Shared.Return(locals);
     }
 
@@ -3537,9 +4074,21 @@ public sealed class JsVm
     private bool IsTrampolinable(JsValue callee, out JsFunction fn)
     {
         fn = null!;
-        if (!callee.IsObject || callee.AsObject is not JsFunction f) return false;
-        if (f.Kind != JsFunctionKind.Normal) return false;
-        if (f.Realm is { } fnRealm && !ReferenceEquals(fnRealm, _runtime.Realm)) return false;
+        if (!callee.IsObject || callee.AsObject is not JsFunction f)
+        {
+            return false;
+        }
+
+        if (f.Kind != JsFunctionKind.Normal)
+        {
+            return false;
+        }
+
+        if (f.Realm is { } fnRealm && !ReferenceEquals(fnRealm, _runtime.Realm))
+        {
+            return false;
+        }
+
         fn = f;
         return true;
     }
@@ -3556,15 +4105,24 @@ public sealed class JsVm
         CallFrame caller, int ip, int sp, int maxSp, out CallFrame pushed)
     {
         pushed = null!;
-        if (!IsTrampolinable(callee, out var fn)) return false;
+        if (!IsTrampolinable(callee, out var fn))
+        {
+            return false;
+        }
+
         if (t_frameDepth >= MaxFrameDepth)
+        {
             throw new JsThrow(_runtime.Realm.NewRangeError("Maximum call stack size exceeded"));
+        }
         // §10.2.1.2 OrdinaryCallBindThis — same sloppy-this coercion as
         // CallFunctionLocal: a sloppy function called with nullish `this`
         // binds the global object.
         if (thisValue.IsNullish && fn.ConstructorKind == ClassConstructorKind.None
             && !fn.Body.IsStrict)
+        {
             thisValue = JsValue.Object(_runtime.Realm.GlobalObject);
+        }
+
         var callee_frame = CreateFrame(fn.Body, args, thisValue, fn.Upvalues, fn,
             newTarget: null, suspension: null, evalScope: null,
             frameVarStore: fn.CapturedEvalVarStore); // wp:M3-73
@@ -3589,9 +4147,16 @@ public sealed class JsVm
         out CallFrame pushed)
     {
         pushed = null!;
-        if (!IsTrampolinable(ctor, out var fn)) return false;
+        if (!IsTrampolinable(ctor, out var fn))
+        {
+            return false;
+        }
+
         if (t_frameDepth >= MaxFrameDepth)
+        {
             throw new JsThrow(_runtime.Realm.NewRangeError("Maximum call stack size exceeded"));
+        }
+
         newTarget ??= fn;
         var thisVal = ComputeConstructThis(fn, newTarget);
         var callee_frame = CreateFrame(fn.Body, args, thisVal, fn.Upvalues, fn,
@@ -3620,7 +4185,11 @@ public sealed class JsVm
     {
         Finish(stack, maxSp, JsValue.Undefined);
         ReleaseLocals(frame);
-        if (frame.ReleaseArgsOnPop) ReturnArgs(frame.Args);
+        if (frame.ReleaseArgsOnPop)
+        {
+            ReturnArgs(frame.Args);
+        }
+
         t_frameDepth--;
     }
 
@@ -3640,10 +4209,17 @@ public sealed class JsVm
     [MethodImpl(MethodImplOptions.NoInlining)]
     private JsValue CoerceConstructReturn(CallFrame frame, JsValue rv)
     {
-        if (rv.IsObject) return rv;
+        if (rv.IsObject)
+        {
+            return rv;
+        }
+
         if (frame.CurrentFunction is { ConstructorKind: ClassConstructorKind.Derived })
+        {
             return frame.DerivedThis ?? throw new JsThrow(_runtime.Realm.NewReferenceError(
                 "Must call super constructor in derived class before returning from derived constructor"));
+        }
+
         return frame.ThisV;
     }
 
@@ -3665,7 +4241,9 @@ public sealed class JsVm
         var source = chunk.SourcePath ?? chunk.Name ?? "<unknown>";
         var function = currentFunction?.Name;
         if (string.IsNullOrEmpty(function))
+        {
             function = "<anonymous>";
+        }
 
         ex.AddStackFrame(new JsStackFrame(function!, source, pos?.Line, pos?.Col));
         AttachGeneratedStack(ex);
@@ -3677,12 +4255,19 @@ public sealed class JsVm
     /// object's @@unscopables list.</summary>
     private bool WithHasBinding(JsObject obj, string name)
     {
-        if (!AbstractOperations.HasProperty(obj, name)) return false;
+        if (!AbstractOperations.HasProperty(obj, name))
+        {
+            return false;
+        }
+
         var unscopables = AbstractOperations.Get(this, obj, JsPropertyKey.Symbol(Intrinsics.SymbolCtor.Unscopables));
         if (unscopables.IsObject)
         {
             var blocked = AbstractOperations.Get(this, unscopables.AsObject, name);
-            if (JsValue.ToBoolean(blocked)) return false;
+            if (JsValue.ToBoolean(blocked))
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -3692,9 +4277,19 @@ public sealed class JsVm
     /// applies).</summary>
     private JsObject? FindWithBinding(List<JsObject>? withStack, string name)
     {
-        if (withStack is null) return null;
+        if (withStack is null)
+        {
+            return null;
+        }
+
         for (var i = withStack.Count - 1; i >= 0; i--)
-            if (WithHasBinding(withStack[i], name)) return withStack[i];
+        {
+            if (WithHasBinding(withStack[i], name))
+            {
+                return withStack[i];
+            }
+        }
+
         return null;
     }
 
@@ -3725,7 +4320,10 @@ public sealed class JsVm
     private static JsValue SuspendCurrent(CallFrame frame, ContinuationResumeAction action, JsValue yielded, int kind)
     {
         if (frame.Suspension is not { } suspension)
+        {
             throw new InvalidOperationException("Cannot suspend without a suspended frame");
+        }
+
         suspension.Suspend(SnapshotFrame(frame), yielded, kind, action);
         return JsValue.Undefined;
     }
@@ -3748,15 +4346,26 @@ public sealed class JsVm
     {
         var stack = frame.Stack;
         var sp = frame.Sp;
-        if (sp >= stack.Length) GrowStack(frame, ref stack, sp, frame.MaxSp);
+        if (sp >= stack.Length)
+        {
+            GrowStack(frame, ref stack, sp, frame.MaxSp);
+        }
+
         stack[sp++] = v;
         frame.Sp = sp;
-        if (sp > frame.MaxSp) frame.MaxSp = sp;
+        if (sp > frame.MaxSp)
+        {
+            frame.MaxSp = sp;
+        }
     }
 
     private static void ApplyResumeToStack(CallFrame frame)
     {
-        if (frame.Suspension is not { } suspension) return;
+        if (frame.Suspension is not { } suspension)
+        {
+            return;
+        }
+
         var resume = suspension.ConsumeResume();
         suspension.ClearContinuation();
         switch (resume.Kind)
@@ -3774,7 +4383,10 @@ public sealed class JsVm
     private YieldDelegateStep SuspendYieldDelegateAwait(CallFrame frame, YieldDelegateContinuation yd, JsValue value, bool processingReturn)
     {
         if (yd.SyncWrapped)
+        {
             value = JsValue.Object(WrapSyncIteratorResult(value));
+        }
+
         yd.Phase = YieldDelegatePhase.AwaitInnerResult;
         yd.ProcessingReturnResult = processingReturn;
         _ = SuspendCurrent(frame, ContinuationResumeAction.YieldDelegate, value, kind: 1);
@@ -3791,10 +4403,12 @@ public sealed class JsVm
     private YieldDelegateStep ProcessYieldDelegateInnerResult(CallFrame frame, YieldDelegateContinuation yd, JsValue innerResult)
     {
         if (!innerResult.IsObject)
+        {
             throw new JsThrow(_runtime.Realm.NewTypeError(
                 yd.ProcessingReturnResult
                     ? "iterator.return() did not return an object"
                     : "iterator.next() did not return an object"));
+        }
 
         var done = JsValue.ToBoolean(AbstractOperations.Get(this, innerResult.AsObject, "done"));
         var value = AbstractOperations.Get(this, innerResult.AsObject, "value");
@@ -3818,23 +4432,39 @@ public sealed class JsVm
             if (yd.Phase == YieldDelegatePhase.AwaitInnerResult)
             {
                 if (frame.Suspension is not { } awaitSusp)
+                {
                     throw new InvalidOperationException("Yield delegate await without suspended frame");
+                }
+
                 var resume = awaitSusp.ConsumeResume();
                 awaitSusp.ClearResumeAction();
                 yd.Phase = YieldDelegatePhase.CallInner;
                 if (resume.Kind == ResumeCompletionKind.Throw)
+                {
                     throw new JsThrow(resume.Value);
+                }
+
                 if (resume.Kind == ResumeCompletionKind.Return)
+                {
                     throw new JsReturnSentinel(resume.Value);
+                }
+
                 var step = ProcessYieldDelegateInnerResult(frame, yd, resume.Value);
-                if (step.Suspended || step.Completed) return step;
+                if (step.Suspended || step.Completed)
+                {
+                    return step;
+                }
+
                 continue;
             }
 
             if (yd.Phase == YieldDelegatePhase.AfterOuterYield)
             {
                 if (frame.Suspension is not { } yieldSusp)
+                {
                     throw new InvalidOperationException("Yield delegate resume without suspended frame");
+                }
+
                 var resume = yieldSusp.ConsumeResume();
                 yieldSusp.ClearResumeAction();
                 yd.Phase = YieldDelegatePhase.CallInner;
@@ -3873,7 +4503,9 @@ public sealed class JsVm
                     {
                         var ret = AbstractOperations.GetMethod(this, yd.InnerIterator, "return");
                         if (!ret.IsUndefined && !ret.IsNull)
+                        {
                             _ = AbstractOperations.Call(this, ret, yd.InnerIterator, Array.Empty<JsValue>());
+                        }
                     }
                     else
                     {
@@ -3889,7 +4521,9 @@ public sealed class JsVm
             {
                 var retM = AbstractOperations.GetMethod(this, yd.InnerIterator, "return");
                 if (retM.IsUndefined || retM.IsNull)
+                {
                     throw new JsReturnSentinel(yd.Received);
+                }
 
                 yd.PendingOuterReturn = true;
                 processingReturn = true;
@@ -3902,10 +4536,15 @@ public sealed class JsVm
             yd.ProcessingReturnResult = processingReturn;
 
             if (yd.IsAsync)
+            {
                 return SuspendYieldDelegateAwait(frame, yd, innerResult, processingReturn);
+            }
 
             var result = ProcessYieldDelegateInnerResult(frame, yd, innerResult);
-            if (result.Suspended || result.Completed) return result;
+            if (result.Suspended || result.Completed)
+            {
+                return result;
+            }
         }
     }
 
@@ -3916,7 +4555,10 @@ public sealed class JsVm
     private bool RunContinuationPrelude(CallFrame frame, out JsValue result)
     {
         result = JsValue.Undefined;
-        if (frame.Suspension is not { } suspension) return false;
+        if (frame.Suspension is not { } suspension)
+        {
+            return false;
+        }
 
         switch (suspension.ResumeAction)
         {
@@ -3932,14 +4574,24 @@ public sealed class JsVm
                     var resume = suspension.ConsumeResume();
                     suspension.ClearContinuation();
                     if (resume.Kind == ResumeCompletionKind.Throw)
+                    {
                         throw new JsThrow(resume.Value);
+                    }
+
                     if (resume.Kind == ResumeCompletionKind.Return)
+                    {
                         throw new JsReturnSentinel(resume.Value);
+                    }
+
                     result = SuspendCurrent(frame, ContinuationResumeAction.PushResume, resume.Value, kind: 0);
                     return true;
                 }
             case ContinuationResumeAction.YieldDelegate:
-                if (suspension.YieldDelegate is null) return false;
+                if (suspension.YieldDelegate is null)
+                {
+                    return false;
+                }
+
                 try
                 {
                     var step = RunYieldDelegateContinuation(frame, suspension.YieldDelegate);
@@ -3964,11 +4616,21 @@ public sealed class JsVm
 
     private void AttachGeneratedStack(JsThrow ex)
     {
-        if (!ex.Value.IsObject) return;
+        if (!ex.Value.IsObject)
+        {
+            return;
+        }
 
         var error = ex.Value.AsObject;
-        if (!IsErrorObject(error, _runtime.Realm)) return;
-        if (error.HasOwn("stack") && !ex.GeneratedStackAttached) return;
+        if (!IsErrorObject(error, _runtime.Realm))
+        {
+            return;
+        }
+
+        if (error.HasOwn("stack") && !ex.GeneratedStackAttached)
+        {
+            return;
+        }
 
         error.DefineOwnProperty("stack",
             PropertyDescriptor.Data(JsValue.String(FormatJsStack(error, ex.StackFrames)),
@@ -3979,7 +4641,13 @@ public sealed class JsVm
     private static bool IsErrorObject(JsObject obj, JsRealm realm)
     {
         for (var cur = obj; cur is not null; cur = cur.Prototype)
-            if (ReferenceEquals(cur, realm.ErrorPrototype)) return true;
+        {
+            if (ReferenceEquals(cur, realm.ErrorPrototype))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -4017,9 +4685,18 @@ public sealed class JsVm
         var messageV = error.Get("message");
         var message = messageV.IsUndefined ? "" : JsValue.ToStringValue(messageV);
 
-        if (name.Length == 0) sb.Append(message);
-        else if (message.Length == 0) sb.Append(name);
-        else sb.Append(name).Append(": ").Append(message);
+        if (name.Length == 0)
+        {
+            sb.Append(message);
+        }
+        else if (message.Length == 0)
+        {
+            sb.Append(name);
+        }
+        else
+        {
+            sb.Append(name).Append(": ").Append(message);
+        }
     }
 
     /// <summary>§14.15 — divert a return through any enclosing finalizer.
@@ -4027,7 +4704,11 @@ public sealed class JsVm
     /// EnterTry): nothing to divert through.</summary>
     private static bool DivertReturnThroughFinally(Stack<TryFrame>? tryStack, JsValue value, ref int ip)
     {
-        if (tryStack is null) return false;
+        if (tryStack is null)
+        {
+            return false;
+        }
+
         while (tryStack.Count > 0)
         {
             var frame = tryStack.Peek();
@@ -4095,10 +4776,17 @@ public sealed class JsVm
     private static JsValue[] ExtractApplyArgs(JsValue argsArrV)
     {
         if (!argsArrV.IsObject || argsArrV.AsObject is not JsArray arr)
+        {
             throw new InvalidOperationException("CallApply expects an Array of args on the stack");
+        }
+
         var n = arr.Length;
         var dst = RentArgs(n);
-        for (var i = 0; i < n; i++) dst[i] = arr[i];
+        for (var i = 0; i < n; i++)
+        {
+            dst[i] = arr[i];
+        }
+
         return dst;
     }
 
@@ -4111,13 +4799,22 @@ public sealed class JsVm
         a = AbstractOperations.ToPrimitive(this, a);
         b = AbstractOperations.ToPrimitive(this, b);
         if (a.IsSymbol || b.IsSymbol)
+        {
             throw new JsThrow(_runtime.Realm.NewTypeError("Cannot convert a Symbol value to a string"));
+        }
+
         if (a.IsString || b.IsString)
+        {
             return JsValue.String(JsValue.ToStringValue(a) + JsValue.ToStringValue(b));
+        }
+
         if (a.IsBigInt || b.IsBigInt)
         {
             if (!(a.IsBigInt && b.IsBigInt))
+            {
                 throw BigIntOps.MixedTypeError(_runtime.Realm, "+");
+            }
+
             return BigIntOps.Add(a.AsBigInt, b.AsBigInt);
         }
         return JsValue.Number(JsValue.ToNumber(a) + JsValue.ToNumber(b));
@@ -4130,8 +4827,11 @@ public sealed class JsVm
     private bool InstanceofOperator(JsValue value, JsValue target)
     {
         if (!target.IsObject)
+        {
             throw new JsThrow(_runtime.Realm.NewTypeError(
                 "Right-hand side of 'instanceof' is not an object"));
+        }
+
         var targetObj = target.AsObject;
         // §13.10.2 step 2: invoke the well-known method if defined anywhere
         // on the prototype chain.
@@ -4140,26 +4840,48 @@ public sealed class JsVm
         if (!hasInstance.IsUndefined && !hasInstance.IsNull)
         {
             if (!AbstractOperations.IsCallable(hasInstance))
+            {
                 throw new JsThrow(_runtime.Realm.NewTypeError(
                     "Symbol.hasInstance method is not callable"));
+            }
+
             var result = AbstractOperations.Call(this, hasInstance, target, new[] { value });
             return JsValue.ToBoolean(result);
         }
         // §10.4.6.4 OrdinaryHasInstance.
         if (!AbstractOperations.IsCallable(target))
+        {
             throw new JsThrow(_runtime.Realm.NewTypeError(
                 "Right-hand side of 'instanceof' is not callable"));
+        }
         // Unwrap bound functions: instanceof checks against the bound target.
         var unwrapped = targetObj;
-        while (unwrapped is JsBoundFunction bf) unwrapped = bf.Target;
-        if (!value.IsObject) return false;
+        while (unwrapped is JsBoundFunction bf)
+        {
+            unwrapped = bf.Target;
+        }
+
+        if (!value.IsObject)
+        {
+            return false;
+        }
+
         var proto = AbstractOperations.Get(this, unwrapped, "prototype");
         if (!proto.IsObject)
+        {
             throw new JsThrow(_runtime.Realm.NewTypeError(
                 "Function has non-object prototype in instanceof check"));
+        }
+
         var protoObj = proto.AsObject;
         for (var p = value.AsObject.Prototype; p is not null; p = p.Prototype)
-            if (ReferenceEquals(p, protoObj)) return true;
+        {
+            if (ReferenceEquals(p, protoObj))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -4167,14 +4889,36 @@ public sealed class JsVm
     /// coercion. The value-only helper cannot call user JS methods.</summary>
     private bool AbstractEquals(JsValue a, JsValue b)
     {
-        if (a.Kind == b.Kind) return JsValue.StrictEquals(a, b);
-        if (a.IsNullish && b.IsNullish) return true;
-        if (a.IsBoolean) return AbstractEquals(JsValue.Number(a.AsBool ? 1 : 0), b);
-        if (b.IsBoolean) return AbstractEquals(a, JsValue.Number(b.AsBool ? 1 : 0));
+        if (a.Kind == b.Kind)
+        {
+            return JsValue.StrictEquals(a, b);
+        }
+
+        if (a.IsNullish && b.IsNullish)
+        {
+            return true;
+        }
+
+        if (a.IsBoolean)
+        {
+            return AbstractEquals(JsValue.Number(a.AsBool ? 1 : 0), b);
+        }
+
+        if (b.IsBoolean)
+        {
+            return AbstractEquals(a, JsValue.Number(b.AsBool ? 1 : 0));
+        }
+
         if (a.IsObject && IsPrimitiveComparableToObject(b))
+        {
             return AbstractEquals(AbstractOperations.ToPrimitive(this, a), b);
+        }
+
         if (b.IsObject && IsPrimitiveComparableToObject(a))
+        {
             return AbstractEquals(a, AbstractOperations.ToPrimitive(this, b));
+        }
+
         return JsValue.AbstractEquals(a, b);
     }
 
@@ -4208,29 +4952,53 @@ public sealed class JsVm
     private bool? LessThanPrimitives(JsValue a, JsValue b)
     {
         if (a.IsString && b.IsString)
+        {
             return string.CompareOrdinal(a.AsString, b.AsString) < 0;
+        }
+
         if (a.IsBigInt && b.IsString)
         {
             if (!JsValue.TryStringToBigInt(b.AsString, out var rhs))
+            {
                 return null;
+            }
+
             return a.AsBigInt < rhs;
         }
         if (a.IsString && b.IsBigInt)
         {
             if (!JsValue.TryStringToBigInt(a.AsString, out var lhs))
+            {
                 return null;
+            }
+
             return lhs < b.AsBigInt;
         }
 
         a = AbstractOperations.ToNumeric(_runtime.Realm, a);
         b = AbstractOperations.ToNumeric(_runtime.Realm, b);
-        if (a.IsBigInt && b.IsBigInt) return BigIntOps.LessThan(a.AsBigInt, b.AsBigInt);
-        if (a.IsBigInt && b.IsNumber) return BigIntLessThanNumber(a.AsBigInt, b.AsNumber);
-        if (a.IsNumber && b.IsBigInt) return NumberLessThanBigInt(a.AsNumber, b.AsBigInt);
+        if (a.IsBigInt && b.IsBigInt)
+        {
+            return BigIntOps.LessThan(a.AsBigInt, b.AsBigInt);
+        }
+
+        if (a.IsBigInt && b.IsNumber)
+        {
+            return BigIntLessThanNumber(a.AsBigInt, b.AsNumber);
+        }
+
+        if (a.IsNumber && b.IsBigInt)
+        {
+            return NumberLessThanBigInt(a.AsNumber, b.AsBigInt);
+        }
 
         var ad = a.AsNumber;
         var bd = b.AsNumber;
-        if (double.IsNaN(ad) || double.IsNaN(bd)) return null;
+        if (double.IsNaN(ad) || double.IsNaN(bd))
+        {
+            return null;
+        }
+
         return ad < bd;
     }
 
@@ -4239,23 +5007,53 @@ public sealed class JsVm
     /// flooring the double on the BigInt's side.</summary>
     private static bool? BigIntLessThanNumber(System.Numerics.BigInteger a, double n)
     {
-        if (double.IsNaN(n)) return null;
-        if (double.IsPositiveInfinity(n)) return true;
-        if (double.IsNegativeInfinity(n)) return false;
+        if (double.IsNaN(n))
+        {
+            return null;
+        }
+
+        if (double.IsPositiveInfinity(n))
+        {
+            return true;
+        }
+
+        if (double.IsNegativeInfinity(n))
+        {
+            return false;
+        }
         // Compare exactly when the double is an integer; otherwise compare to
         // floor(n) and decide by the fractional sign (n > floor(n) ⇒ a < n
         // iff a ≤ floor(n)).
-        if (n == Math.Truncate(n)) return a < new System.Numerics.BigInteger(n);
+        if (n == Math.Truncate(n))
+        {
+            return a < new System.Numerics.BigInteger(n);
+        }
+
         var floor = new System.Numerics.BigInteger(Math.Floor(n));
         return a <= floor;
     }
 
     private static bool? NumberLessThanBigInt(double n, System.Numerics.BigInteger b)
     {
-        if (double.IsNaN(n)) return null;
-        if (double.IsPositiveInfinity(n)) return false;
-        if (double.IsNegativeInfinity(n)) return true;
-        if (n == Math.Truncate(n)) return new System.Numerics.BigInteger(n) < b;
+        if (double.IsNaN(n))
+        {
+            return null;
+        }
+
+        if (double.IsPositiveInfinity(n))
+        {
+            return false;
+        }
+
+        if (double.IsNegativeInfinity(n))
+        {
+            return true;
+        }
+
+        if (n == Math.Truncate(n))
+        {
+            return new System.Numerics.BigInteger(n) < b;
+        }
         // n is not an integer: n < b iff ceil(n) ≤ b
         var ceil = new System.Numerics.BigInteger(Math.Ceiling(n));
         return ceil <= b;
@@ -4264,7 +5062,11 @@ public sealed class JsVm
     private static int ToInt32(JsValue v)
     {
         var d = JsValue.ToNumber(v);
-        if (double.IsNaN(d) || double.IsInfinity(d) || d == 0) return 0;
+        if (double.IsNaN(d) || double.IsInfinity(d) || d == 0)
+        {
+            return 0;
+        }
+
         var i = Math.Truncate(d);
         var mod = i - Math.Floor(i / 4294967296.0) * 4294967296.0;
         return unchecked((int)(uint)mod);
@@ -4317,9 +5119,18 @@ public sealed class JsVm
             {
                 parentCtor = baseClassValue.AsObject;
                 var protoSlot = parentCtor.Get("prototype");
-                if (protoSlot.IsObject) parentProto = protoSlot.AsObject;
-                else if (protoSlot.IsNull) parentProto = null;
-                else throw new JsThrow(realm.NewTypeError("Class extends value's prototype is not an object or null"));
+                if (protoSlot.IsObject)
+                {
+                    parentProto = protoSlot.AsObject;
+                }
+                else if (protoSlot.IsNull)
+                {
+                    parentProto = null;
+                }
+                else
+                {
+                    throw new JsThrow(realm.NewTypeError("Class extends value's prototype is not an object or null"));
+                }
             }
             else
             {
@@ -4361,7 +5172,9 @@ public sealed class JsVm
         // Static inheritance: constructor's [[Prototype]] = parent ctor (or
         // Function.prototype for base classes — already wired by CreateInstance).
         if (parentCtor is not null)
+        {
             ctorInstance.SetPrototypeOf(parentCtor);
+        }
 
         ctorInstance.HomeObject = protoObj;
 
@@ -4383,8 +5196,11 @@ public sealed class JsVm
                 // §15.7.10 — a static class method/accessor may not be named
                 // "prototype" (a computed key resolving to it → TypeError).
                 if (m.IsStatic && keyPk.IsString && keyPk.AsString == "prototype")
+                {
                     throw new JsThrow(realm.NewTypeError(
                         "Classes may not have a static property named 'prototype'"));
+                }
+
                 StampMethodName(fnInstance, keyPk, m.Kind);
                 InstallMethodOrAccessor(owner, keyPk, m.Kind, fnInstance);
             }
@@ -4408,7 +5224,9 @@ public sealed class JsVm
             }
         }
         if (instancePrivateBrands is not null)
+        {
             ctorInstance.InstancePrivateBrands = instancePrivateBrands;
+        }
 
         // §15.7.14 — for a class *declaration*, bind the class name to the
         // constructor BEFORE static elements run, so `static { … C … }` blocks
@@ -4416,8 +5234,10 @@ public sealed class JsVm
         // name. (Class expressions keep their inner name scoped to the body;
         // BindNameToGlobal is false for them, so this does not leak.)
         if (template.BindNameToGlobal && template.Name.Length > 0)
+        {
             AbstractOperations.Set(this, realm.GlobalObject, template.Name,
                 JsValue.Object(ctorInstance), JsValue.Object(realm.GlobalObject));
+        }
 
         // §15.7.14 — for a named class expression, initialize the inner
         // class-name binding to the constructor here, BEFORE static field
@@ -4428,7 +5248,9 @@ public sealed class JsVm
         // closures formed later); both writes target the same cell, so this is
         // idempotent.
         if (selfNameCell is not null)
+        {
             selfNameCell.Value = JsValue.Object(ctorInstance);
+        }
 
         // Static fields + static blocks: run in interleaved declaration order
         // per ES2022. Field thunks and static-block thunks both invoked with
@@ -4452,8 +5274,10 @@ public sealed class JsVm
                 {
                     // §15.7.10 — a static field may not be named "prototype".
                     if (sck.IsString && sck.AsString == "prototype")
+                    {
                         throw new JsThrow(realm.NewTypeError(
                             "Classes may not have a static property named 'prototype'"));
+                    }
                     // Static computed field: the thunk (when present) returns the
                     // initializer value; absent initializer ⇒ undefined.
                     var value = JsValue.Undefined;
@@ -4531,7 +5355,9 @@ public sealed class JsVm
             }
         }
         if (instanceFieldInits.Count > 0)
+        {
             ctorInstance.InstanceFieldInitializers = instanceFieldInits;
+        }
 
         // Static blocks — run with this=constructor.
         for (var i = 0; i < template.StaticBlocks.Count; i++)
@@ -4554,13 +5380,20 @@ public sealed class JsVm
         var realm = _runtime.Realm;
 
         var rawItems = new JsValue[tmpl.Raw.Count];
-        for (var i = 0; i < rawItems.Length; i++) rawItems[i] = JsValue.String(tmpl.Raw[i]);
+        for (var i = 0; i < rawItems.Length; i++)
+        {
+            rawItems[i] = JsValue.String(tmpl.Raw[i]);
+        }
+
         var rawArr = new JsArray(realm, rawItems);
         FreezeOwnProperties(rawArr);
 
         var cookedItems = new JsValue[tmpl.Cooked.Count];
         for (var i = 0; i < cookedItems.Length; i++)
+        {
             cookedItems[i] = tmpl.Cooked[i] is { } s ? JsValue.String(s) : JsValue.Undefined;
+        }
+
         var cooked = new JsArray(realm, cookedItems);
         cooked.DefineOwnProperty("raw",
             PropertyDescriptor.Data(JsValue.Object(rawArr), writable: false, enumerable: false, configurable: false));
@@ -4574,7 +5407,11 @@ public sealed class JsVm
         foreach (var key in new List<JsPropertyKey>(obj.OwnPropertyKeys))
         {
             var d = obj.GetOwnPropertyDescriptor(key);
-            if (d is null) continue;
+            if (d is null)
+            {
+                continue;
+            }
+
             var desc = d.Value;
             obj.DefineOwnProperty(key, desc.IsAccessor
                 ? PropertyDescriptor.Accessor(desc.Getter, desc.Setter, desc.Enumerable, configurable: false)
@@ -4593,11 +5430,18 @@ public sealed class JsVm
     private static (PropertyDescriptor? Desc, bool Own) FindPrivateDescriptor(JsObject obj, string name)
     {
         var own = obj.GetOwnPropertyDescriptor(name);
-        if (own is not null) return (own, true);
+        if (own is not null)
+        {
+            return (own, true);
+        }
+
         for (var o = obj.Prototype; o is not null; o = o.Prototype)
         {
             var d = o.GetOwnPropertyDescriptor(name);
-            if (d is not null) return (d, false);
+            if (d is not null)
+            {
+                return (d, false);
+            }
         }
         return (null, false);
     }
@@ -4679,11 +5523,19 @@ public sealed class JsVm
 
     private static void StampInferredFunctionName(JsValue target, string name)
     {
-        if (!target.IsObject || target.AsObject is not JsFunction fn) return;
+        if (!target.IsObject || target.AsObject is not JsFunction fn)
+        {
+            return;
+        }
+
         var cur = fn.GetOwnPropertyDescriptor("name");
         var isAnon = cur is null
             || (cur.Value.IsData && cur.Value.Value.IsString && cur.Value.Value.AsString.Length == 0);
-        if (!isAnon) return;
+        if (!isAnon)
+        {
+            return;
+        }
+
         fn.DefineOwnProperty("name",
             PropertyDescriptor.Data(JsValue.String(name), writable: false, enumerable: false, configurable: true));
     }
@@ -4750,7 +5602,9 @@ public sealed class JsVm
                 drainMicrotasks: false, currentFunction: fnCopy, newTarget: null,
                 suspension: frame);
             if (!frame.Suspended)
+            {
                 frame.SetReturnValue(rv);
+            }
         });
         // §15.5.2 EvaluateGeneratorBody — FunctionDeclarationInstantiation (the
         // parameter-binding prologue) runs synchronously here, BEFORE the
@@ -4758,7 +5612,11 @@ public sealed class JsVm
         // PrologueEnd marker; a throw from param destructuring / defaults /
         // RequireObjectCoercible / iterator protocol propagates to the caller
         // now (no generator object is produced).
-        if (fn.Body.HasPrologue) RunPrologue(frame);
+        if (fn.Body.HasPrologue)
+        {
+            RunPrologue(frame);
+        }
+
         return JsValue.Object(gen);
     }
 
@@ -4773,7 +5631,9 @@ public sealed class JsVm
     {
         frame.Resume(JsValue.Undefined);
         if (frame.Completed && frame.ThrewUncaught)
+        {
             throw new JsThrow(frame.ReturnValue);
+        }
     }
 
     /// <summary>Invoke an async function — set up an outer Promise and a
@@ -4798,7 +5658,9 @@ public sealed class JsVm
                 drainMicrotasks: false, currentFunction: fnCopy, newTarget: null,
                 suspension: frame);
             if (!frame.Suspended)
+            {
                 frame.SetReturnValue(rv);
+            }
         });
 
         // §27.7.5.2 AsyncFunctionStart — FunctionDeclarationInstantiation (the
@@ -4809,7 +5671,9 @@ public sealed class JsVm
         // if it threw, reject `outer` and skip driving the body. Synthetic async
         // bodies without a marker (top-level-await module wrappers) skip this.
         if (fn.Body.HasPrologue && RunPrologueAsync(state))
+        {
             return JsValue.Object(outer);
+        }
 
         // Drive the frame synchronously on this thread, riding each await
         // suspension via the microtask queue. The first Resume kicks off the
@@ -4875,16 +5739,30 @@ public sealed class JsVm
         {
             var v = args.Length > 0 ? args[0] : JsValue.Undefined;
             state.Frame.Resume(v, withThrow: false);
-            if (state.Frame.Completed) SettleAsync(state);
-            else ScheduleAwait(state);
+            if (state.Frame.Completed)
+            {
+                SettleAsync(state);
+            }
+            else
+            {
+                ScheduleAwait(state);
+            }
+
             return JsValue.Undefined;
         }, isConstructor: false);
         var onReject = new JsNativeFunction("", (thisV, args) =>
         {
             var r = args.Length > 0 ? args[0] : JsValue.Undefined;
             state.Frame.Resume(r, withThrow: true);
-            if (state.Frame.Completed) SettleAsync(state);
-            else ScheduleAwait(state);
+            if (state.Frame.Completed)
+            {
+                SettleAsync(state);
+            }
+            else
+            {
+                ScheduleAwait(state);
+            }
+
             return JsValue.Undefined;
         }, isConstructor: false);
 
@@ -4896,13 +5774,21 @@ public sealed class JsVm
 
     private void SettleAsync(JsAsyncFunctionState state)
     {
-        if (state.Settled) return;
+        if (state.Settled)
+        {
+            return;
+        }
+
         state.Settled = true;
         var realm = _runtime.Realm;
         if (state.Frame.ThrewUncaught)
+        {
             Starling.Js.Intrinsics.PromiseCtor.Reject(realm, state.OuterPromise, state.Frame.ReturnValue);
+        }
         else
+        {
             Starling.Js.Intrinsics.PromiseCtor.Resolve(realm, state.OuterPromise, state.Frame.ReturnValue);
+        }
     }
 
     /// <summary>wp:M3-04g — invoke an <c>async function*</c>. Sets up a
@@ -4929,12 +5815,18 @@ public sealed class JsVm
                 drainMicrotasks: false, currentFunction: fnCopy, newTarget: null,
                 suspension: frame);
             if (!frame.Suspended)
+            {
                 frame.SetReturnValue(rv);
+            }
         });
         // §27.4 EvaluateAsyncGeneratorBody — like sync generators, the parameter-
         // binding prologue runs synchronously at call time and a throw propagates
         // to the caller before the async-generator object is produced.
-        if (fn.Body.HasPrologue) RunPrologue(frame);
+        if (fn.Body.HasPrologue)
+        {
+            RunPrologue(frame);
+        }
+
         return JsValue.Object(gen);
     }
 
@@ -4947,7 +5839,9 @@ public sealed class JsVm
     {
         var realm = _runtime.Realm;
         if (iterable.IsNullish)
+        {
             throw new JsThrow(realm.NewTypeError("value is not async iterable"));
+        }
 
         var asyncMethod = AbstractOperations.GetMethod(this, iterable,
             Starling.Js.Intrinsics.SymbolCtor.AsyncIterator);
@@ -4955,7 +5849,10 @@ public sealed class JsVm
         {
             var iter = AbstractOperations.Call(this, asyncMethod, iterable, Array.Empty<JsValue>());
             if (!iter.IsObject)
+            {
                 throw new JsThrow(realm.NewTypeError("async iterator method did not return an object"));
+            }
+
             var nextMethod = AbstractOperations.Get(this, iter.AsObject, "next");
             return new Starling.Js.Intrinsics.JsIteratorRecordHandle(
                 new IteratorRecord(iter, nextMethod, Done: false));
@@ -4974,7 +5871,10 @@ public sealed class JsVm
     {
         var realm = _runtime.Realm;
         if (!syncResult.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("iterator.next() did not return an object"));
+        }
+
         var done = JsValue.ToBoolean(AbstractOperations.Get(this, syncResult.AsObject, "done"));
         var value = AbstractOperations.Get(this, syncResult.AsObject, "value");
 
@@ -5015,8 +5915,15 @@ public sealed class JsVm
     /// head request's promise.</summary>
     private void AsyncGeneratorDrainQueue(JsAsyncGenerator gen)
     {
-        if (gen.Draining) return;            // a resume is already in flight
-        if (gen.Queue.Count == 0) return;    // nothing to do
+        if (gen.Draining)
+        {
+            return;            // a resume is already in flight
+        }
+
+        if (gen.Queue.Count == 0)
+        {
+            return;    // nothing to do
+        }
 
         var realm = _runtime.Realm;
         var req = gen.Queue.Peek();
@@ -5053,10 +5960,15 @@ public sealed class JsVm
             gen.Done = true;
             gen.Queue.Dequeue();
             if (req.Kind == AsyncGeneratorRequestKind.Throw)
+            {
                 PromiseCtor.Reject(realm, req.Capability, req.Value);
+            }
             else
+            {
                 PromiseCtor.Resolve(realm, req.Capability,
                     IteratorIntrinsics.MakeResult(realm, req.Value, done: true));
+            }
+
             AsyncGeneratorDrainQueue(gen);
             return;
         }
@@ -5094,10 +6006,14 @@ public sealed class JsVm
             gen.Done = true;
             var req = gen.Queue.Dequeue();
             if (frame.ThrewUncaught)
+            {
                 PromiseCtor.Reject(realm, req.Capability, frame.ReturnValue);
+            }
             else
+            {
                 PromiseCtor.Resolve(realm, req.Capability,
                     IteratorIntrinsics.MakeResult(realm, frame.ReturnValue, done: true));
+            }
             // Drive remaining requests against the now-done state.
             AsyncGeneratorDrainQueue(gen);
             return;
@@ -5180,7 +6096,11 @@ public sealed class JsThrow : Exception
 
     internal void AddStackFrame(JsStackFrame frame)
     {
-        if (StackFrames.Count > 0 && StackFrames[^1].Equals(frame)) return;
+        if (StackFrames.Count > 0 && StackFrames[^1].Equals(frame))
+        {
+            return;
+        }
+
         StackFrames.Add(frame);
     }
 }

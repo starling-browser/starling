@@ -39,29 +39,50 @@ public static class CookieBinding
 
         var realm = runtime.Realm;
         if (realm.DocumentPrototype is null)
+        {
             throw new InvalidOperationException("NodeBindings.Install must run before CookieBinding.Install");
+        }
 
         if (jar is not null)
         {
-            if (DocToJar.TryGetValue(document, out _)) DocToJar.Remove(document);
+            if (DocToJar.TryGetValue(document, out _))
+            {
+                DocToJar.Remove(document);
+            }
+
             DocToJar.Add(document, jar);
         }
 
-        if (realm.DocumentPrototype.HasOwn("cookie")) return;
+        if (realm.DocumentPrototype.HasOwn("cookie"))
+        {
+            return;
+        }
 
         EventTargetBinding.DefineAccessor(realm, realm.DocumentPrototype, "cookie",
             (thisV, _) =>
             {
                 var (j, url) = Resolve(thisV);
-                if (j is null || url is null) return JsValue.String("");
+                if (j is null || url is null)
+                {
+                    return JsValue.String("");
+                }
+
                 return JsValue.String(j.BuildCookieHeader(url));
             },
             (thisV, args) =>
             {
                 var raw = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
-                if (string.IsNullOrEmpty(raw)) return JsValue.Undefined;
+                if (string.IsNullOrEmpty(raw))
+                {
+                    return JsValue.Undefined;
+                }
+
                 var (j, url) = Resolve(thisV);
-                if (j is null || url is null) return JsValue.Undefined;
+                if (j is null || url is null)
+                {
+                    return JsValue.Undefined;
+                }
+
                 j.StoreFromHeaders(url, new[] { raw });
                 return JsValue.Undefined;
             });
@@ -70,10 +91,22 @@ public static class CookieBinding
     private static (CookieJar? Jar, StarlingUrl? Url) Resolve(JsValue thisV)
     {
         var doc = DomWrappers.UnwrapDocument(thisV);
-        if (doc is null) return (null, null);
-        if (!DocToJar.TryGetValue(doc, out var jar)) return (null, null);
+        if (doc is null)
+        {
+            return (null, null);
+        }
+
+        if (!DocToJar.TryGetValue(doc, out var jar))
+        {
+            return (null, null);
+        }
+
         var urlStr = WindowBinding.UrlForDocumentOrNull(doc);
-        if (urlStr is null) return (jar, null);
+        if (urlStr is null)
+        {
+            return (jar, null);
+        }
+
         var parsed = UrlParser.Parse(urlStr);
         return parsed.IsOk ? (jar, parsed.Value) : (jar, null);
     }

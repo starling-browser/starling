@@ -109,7 +109,11 @@ public class Element : Node
         get => _inputValue;
         set
         {
-            if (string.Equals(_inputValue, value, StringComparison.Ordinal)) return;
+            if (string.Equals(_inputValue, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
             _inputValue = value;
             OnTreeMutated();
             // The synthesized label box reads InputValue, but unlike an attribute
@@ -147,9 +151,13 @@ public class Element : Node
         var lname = name.ToLowerInvariant();
         var existing = Attributes.GetNamedItem(lname);
         if (existing is not null)
+        {
             existing.Value = value; // mutate in-place so AttrNode identity is preserved
+        }
         else
+        {
             Attributes.SetNamedItem(new AttrNode(lname, value));
+        }
     }
 
     public bool HasAttribute(string name)
@@ -180,9 +188,13 @@ public class Element : Node
         var ns = string.IsNullOrEmpty(@namespace) ? null : @namespace;
         var existing = Attributes.GetNamedItemNS(ns, NamedNodeMap.LocalNameOf(qualifiedName));
         if (existing is not null)
+        {
             existing.Value = value; // mutate in-place
+        }
         else
+        {
             Attributes.SetNamedItemNS(AttrNode.CreateNamespaced(qualifiedName, ns, value));
+        }
     }
 
     public bool HasAttributeNS(string? @namespace, string localName)
@@ -204,8 +216,13 @@ public class Element : Node
         ArgumentNullException.ThrowIfNull(name);
         var list = new List<Element>();
         foreach (var d in DescendantElements())
+        {
             if (name == "*" || d.LocalName.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
                 list.Add(d);
+            }
+        }
+
         return list;
     }
 
@@ -216,10 +233,19 @@ public class Element : Node
         ArgumentNullException.ThrowIfNull(names);
         var classes = names.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var list = new List<Element>();
-        if (classes.Length == 0) return list;
+        if (classes.Length == 0)
+        {
+            return list;
+        }
+
         foreach (var d in DescendantElements())
+        {
             if (classes.All(d.ClassList.Contains))
+            {
                 list.Add(d);
+            }
+        }
+
         return list;
     }
 
@@ -230,7 +256,11 @@ public class Element : Node
     public IReadOnlyList<string> GetAttributeNames()
     {
         var names = new List<string>(Attributes.Count);
-        foreach (var attr in Attributes) names.Add(attr.Name);
+        foreach (var attr in Attributes)
+        {
+            names.Add(attr.Name);
+        }
+
         return names;
     }
 
@@ -260,8 +290,16 @@ public class Element : Node
         var ns = string.IsNullOrEmpty(@namespace) ? null : @namespace;
         foreach (var d in DescendantElements())
         {
-            if (!anyNs && !string.Equals(d.Namespace, ns, StringComparison.Ordinal)) continue;
-            if (!anyLocal && !d.LocalName.Equals(localName, StringComparison.Ordinal)) continue;
+            if (!anyNs && !string.Equals(d.Namespace, ns, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!anyLocal && !d.LocalName.Equals(localName, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             yield return d;
         }
     }

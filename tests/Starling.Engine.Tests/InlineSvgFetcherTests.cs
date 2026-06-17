@@ -57,7 +57,13 @@ public sealed class InlineSvgFetcherTests
         var px = resolved.Source.Pixels.Span;
         int blue = 0;
         for (int i = 0; i < px.Length; i += 4)
-            if (px[i + 3] > 0 && px[i + 2] > 150 && px[i] < 80) blue++;
+        {
+            if (px[i + 3] > 0 && px[i + 2] > 150 && px[i] < 80)
+            {
+                blue++;
+            }
+        }
+
         blue.Should().BeGreaterThan(0);
 
         int center = (12 * resolved.Source.Width + 12) * 4;

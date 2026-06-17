@@ -17,14 +17,19 @@ public sealed record ComplexSelector(IReadOnlyList<ComplexSelectorPart> Parts)
     {
         get
         {
-            if (Parts.Count == 0) return null;
+            if (Parts.Count == 0)
+            {
+                return null;
+            }
             // Indexed loop: this property is read once per selector match, and foreach
             // over the interface-typed list boxes a List enumerator each time.
             var simples = RightmostCompound.SimpleSelectors;
             for (var i = 0; i < simples.Count; i++)
             {
                 if (simples[i] is PseudoElementSelector pe)
+                {
                     return pe.Kind;
+                }
             }
             return null;
         }
@@ -161,9 +166,17 @@ public readonly record struct Specificity(int Ids, int Classes, int Types) : ICo
     public int CompareTo(Specificity other)
     {
         var ids = Ids.CompareTo(other.Ids);
-        if (ids != 0) return ids;
+        if (ids != 0)
+        {
+            return ids;
+        }
+
         var classes = Classes.CompareTo(other.Classes);
-        if (classes != 0) return classes;
+        if (classes != 0)
+        {
+            return classes;
+        }
+
         return Types.CompareTo(other.Types);
     }
 
@@ -176,11 +189,15 @@ public sealed record NthPattern(int A, int B)
     public bool Matches(int oneBasedIndex)
     {
         if (A == 0)
+        {
             return oneBasedIndex == B;
+        }
 
         var difference = oneBasedIndex - B;
         if (difference % A != 0)
+        {
             return false;
+        }
 
         return difference / A >= 0;
     }

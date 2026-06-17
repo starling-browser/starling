@@ -76,43 +76,70 @@ public static class LayoutVerifier
     private static LayoutDivergence? Compare(Box.Box e, Box.Box a, string path, double eps)
     {
         if (e.Kind != a.Kind)
+        {
             return new LayoutDivergence(path, e.Element ?? a.Element, "Kind", e.Kind.ToString(), a.Kind.ToString());
+        }
 
         if (RectDiff(e.Frame, a.Frame, eps) is { } rf)
+        {
             return new LayoutDivergence(path, e.Element, "Frame." + rf, Fmt(e.Frame), Fmt(a.Frame));
+        }
+
         if (EdgeDiff(e.Margin, a.Margin, eps) is { } mf)
+        {
             return new LayoutDivergence(path, e.Element, "Margin." + mf, Fmt(e.Margin), Fmt(a.Margin));
+        }
+
         if (EdgeDiff(e.Padding, a.Padding, eps) is { } pf)
+        {
             return new LayoutDivergence(path, e.Element, "Padding." + pf, Fmt(e.Padding), Fmt(a.Padding));
+        }
+
         if (EdgeDiff(e.Border, a.Border, eps) is { } bf)
+        {
             return new LayoutDivergence(path, e.Element, "Border." + bf, Fmt(e.Border), Fmt(a.Border));
+        }
 
         // Text leaves carry their own value-typed line fragments — the glyph-run
         // payload incremental layout reuses wholesale — so compare them too.
         if (e is TextBox et && a is TextBox at)
         {
             if (!string.Equals(et.Text, at.Text, StringComparison.Ordinal))
+            {
                 return new LayoutDivergence(path, null, "Text", Quote(et.Text), Quote(at.Text));
+            }
+
             if (et.Fragments.Count != at.Fragments.Count)
+            {
                 return new LayoutDivergence(path, null, "Fragments.Count",
                     et.Fragments.Count.ToString(CultureInfo.InvariantCulture),
                     at.Fragments.Count.ToString(CultureInfo.InvariantCulture));
+            }
+
             for (var i = 0; i < et.Fragments.Count; i++)
+            {
                 if (FragmentDiff(et.Fragments[i], at.Fragments[i], eps) is { } ff)
+                {
                     return new LayoutDivergence(path, null, $"Fragments[{i}].{ff.Field}", ff.Expected, ff.Actual);
+                }
+            }
         }
 
         if (e.Children.Count != a.Children.Count)
+        {
             return new LayoutDivergence(path, e.Element, "ChildCount",
                 e.Children.Count.ToString(CultureInfo.InvariantCulture),
                 a.Children.Count.ToString(CultureInfo.InvariantCulture));
+        }
 
         for (var i = 0; i < e.Children.Count; i++)
         {
             var child = e.Children[i];
             var childPath = path + " > " + ChildLabel(child, i);
             if (Compare(child, a.Children[i], childPath, eps) is { } d)
+            {
                 return d;
+            }
         }
 
         return null;
@@ -122,19 +149,51 @@ public static class LayoutVerifier
 
     private static string? RectDiff(Rect e, Rect a, double eps)
     {
-        if (!Near(e.X, a.X, eps)) return "X";
-        if (!Near(e.Y, a.Y, eps)) return "Y";
-        if (!Near(e.Width, a.Width, eps)) return "Width";
-        if (!Near(e.Height, a.Height, eps)) return "Height";
+        if (!Near(e.X, a.X, eps))
+        {
+            return "X";
+        }
+
+        if (!Near(e.Y, a.Y, eps))
+        {
+            return "Y";
+        }
+
+        if (!Near(e.Width, a.Width, eps))
+        {
+            return "Width";
+        }
+
+        if (!Near(e.Height, a.Height, eps))
+        {
+            return "Height";
+        }
+
         return null;
     }
 
     private static string? EdgeDiff(Edges e, Edges a, double eps)
     {
-        if (!Near(e.Top, a.Top, eps)) return "Top";
-        if (!Near(e.Right, a.Right, eps)) return "Right";
-        if (!Near(e.Bottom, a.Bottom, eps)) return "Bottom";
-        if (!Near(e.Left, a.Left, eps)) return "Left";
+        if (!Near(e.Top, a.Top, eps))
+        {
+            return "Top";
+        }
+
+        if (!Near(e.Right, a.Right, eps))
+        {
+            return "Right";
+        }
+
+        if (!Near(e.Bottom, a.Bottom, eps))
+        {
+            return "Bottom";
+        }
+
+        if (!Near(e.Left, a.Left, eps))
+        {
+            return "Left";
+        }
+
         return null;
     }
 
@@ -142,12 +201,35 @@ public static class LayoutVerifier
         TextFragment e, TextFragment a, double eps)
     {
         if (!string.Equals(e.Text, a.Text, StringComparison.Ordinal))
+        {
             return ("Text", Quote(e.Text), Quote(a.Text));
-        if (!Near(e.X, a.X, eps)) return ("X", Num(e.X), Num(a.X));
-        if (!Near(e.Y, a.Y, eps)) return ("Y", Num(e.Y), Num(a.Y));
-        if (!Near(e.Width, a.Width, eps)) return ("Width", Num(e.Width), Num(a.Width));
-        if (!Near(e.Height, a.Height, eps)) return ("Height", Num(e.Height), Num(a.Height));
-        if (!Near(e.Baseline, a.Baseline, eps)) return ("Baseline", Num(e.Baseline), Num(a.Baseline));
+        }
+
+        if (!Near(e.X, a.X, eps))
+        {
+            return ("X", Num(e.X), Num(a.X));
+        }
+
+        if (!Near(e.Y, a.Y, eps))
+        {
+            return ("Y", Num(e.Y), Num(a.Y));
+        }
+
+        if (!Near(e.Width, a.Width, eps))
+        {
+            return ("Width", Num(e.Width), Num(a.Width));
+        }
+
+        if (!Near(e.Height, a.Height, eps))
+        {
+            return ("Height", Num(e.Height), Num(a.Height));
+        }
+
+        if (!Near(e.Baseline, a.Baseline, eps))
+        {
+            return ("Baseline", Num(e.Baseline), Num(a.Baseline));
+        }
+
         return null;
     }
 

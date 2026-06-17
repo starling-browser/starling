@@ -52,7 +52,10 @@ public sealed class InMemoryActivitySink : IDisposable
     public InMemoryActivitySink(bool attachListener, params string[] sources)
     {
         _sources = new HashSet<string>(sources, StringComparer.Ordinal);
-        if (!attachListener) return;
+        if (!attachListener)
+        {
+            return;
+        }
 
         _listener = new ActivityListener
         {
@@ -82,7 +85,10 @@ public sealed class InMemoryActivitySink : IDisposable
             var result = new ActivityRecord[_count];
             var start = (_head - _count + Capacity) % Capacity;
             for (var i = 0; i < _count; i++)
+            {
                 result[i] = _buffer[(start + i) % Capacity];
+            }
+
             return result;
         }
     }
@@ -104,7 +110,10 @@ public sealed class InMemoryActivitySink : IDisposable
         // Snapshot the tag list once — Activity.TagObjects is a struct enumerator
         // that re-walks the linked list every call.
         var tags = new List<KeyValuePair<string, object?>>();
-        foreach (var t in activity.TagObjects) tags.Add(t);
+        foreach (var t in activity.TagObjects)
+        {
+            tags.Add(t);
+        }
 
         var record = new ActivityRecord(
             activity.StartTimeUtc,
@@ -126,19 +135,30 @@ public sealed class InMemoryActivitySink : IDisposable
         {
             _buffer[_head] = record;
             _head = (_head + 1) % Capacity;
-            if (_count < Capacity) _count++;
+            if (_count < Capacity)
+            {
+                _count++;
+            }
         }
         foreach (var subscriber in _subscribers)
+        {
             subscriber.Writer.TryWrite(record);
+        }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         _listener?.Dispose();
         foreach (var subscriber in _subscribers)
+        {
             subscriber.Writer.TryComplete();
+        }
     }
 
     public sealed class Subscription : IDisposable

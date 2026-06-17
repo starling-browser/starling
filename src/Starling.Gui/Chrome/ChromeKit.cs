@@ -24,7 +24,10 @@ public static class ChromeKit
             Spacing = 6,
             VerticalAlignment = VerticalAlignment.Center,
         };
-        foreach (var c in children) stack.Children.Add(c);
+        foreach (var c in children)
+        {
+            stack.Children.Add(c);
+        }
 
         return new Border
         {
@@ -102,7 +105,9 @@ public static class ChromeKit
         control.PointerReleased += (_, e) =>
         {
             if (e.InitialPressMouseButton == MouseButton.Left)
+            {
                 onClick();
+            }
         };
     }
 }

@@ -7,11 +7,19 @@ internal static class StarlingDefaultPrompts
     public static IEnumerable<IMcpPromptProvider> ForToolGroups(IReadOnlyList<IMcpToolGroup> groups)
     {
         if (groups.Any(g => g.HasTool("browser_inspect")))
+        {
             yield return BrowserPrompts.Instance;
+        }
+
         if (groups.Any(g => g.HasTool("browser_telemetry_describe")))
+        {
             yield return TelemetryPrompts.Instance;
+        }
+
         if (groups.Any(g => g.HasTool("lag_overview")))
+        {
             yield return LagPrompts.Instance;
+        }
     }
 
     private sealed class BrowserPrompts : IMcpPromptProvider

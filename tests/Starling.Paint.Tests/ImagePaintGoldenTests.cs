@@ -79,7 +79,10 @@ public sealed class ImagePaintGoldenTests
             for (var y = 0; y < rows.Height; y++)
             {
                 var row = rows.GetRowSpan(y);
-                for (var x = 0; x < row.Length; x++) row[x] = color;
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = color;
+                }
             }
         });
         return image;
@@ -98,7 +101,13 @@ public sealed class ImagePaintGoldenTests
     private static Element FindById(Document document, string id)
     {
         foreach (var img in document.GetElementsByTagName("img"))
-            if (img.Id == id) return img;
+        {
+            if (img.Id == id)
+            {
+                return img;
+            }
+        }
+
         throw new InvalidOperationException($"No <img id='{id}'> in fixture");
     }
 

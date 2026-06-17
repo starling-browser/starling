@@ -52,7 +52,10 @@ public sealed class HoverDisplayListTests
             // subtree — text inherits color from its element ancestor.
             for (var p = box; p is not null; p = p.Parent)
             {
-                if (ReferenceEquals(p.Element, anchor)) return hoverStyle;
+                if (ReferenceEquals(p.Element, anchor))
+                {
+                    return hoverStyle;
+                }
             }
             return null;
         });
@@ -88,7 +91,12 @@ public sealed class HoverDisplayListTests
     private static IEnumerable<CssColor> TextColors(PaintList list)
     {
         foreach (var item in list.Items)
-            if (item is DrawText dt) yield return dt.Color;
+        {
+            if (item is DrawText dt)
+            {
+                yield return dt.Color;
+            }
+        }
     }
 
     private static bool IsBlue(CssColor c) => c.B > 200 && c.R < 50 && c.G < 50;
@@ -97,7 +105,10 @@ public sealed class HoverDisplayListTests
     private static Element? FindFirstAnchor(Document document)
     {
         foreach (var a in document.GetElementsByTagName("a"))
+        {
             return a;
+        }
+
         return null;
     }
 }

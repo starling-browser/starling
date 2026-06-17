@@ -140,8 +140,15 @@ public sealed class OutlineAndBorderStyleTests
         for (var py = 26; py < 92; py++)
         {
             var (r, g, b, _) = bmp.GetPixel(138, py);
-            if (b == 255 && r == 0) bluePixels++;
-            if (r == 255 && g == 255 && b == 255) whiteOnRight++;
+            if (b == 255 && r == 0)
+            {
+                bluePixels++;
+            }
+
+            if (r == 255 && g == 255 && b == 255)
+            {
+                whiteOnRight++;
+            }
         }
         bluePixels.Should().BeGreaterThan(0, "a dashed side paints dashes");
         whiteOnRight.Should().BeGreaterThan(0, "a dashed side leaves gaps");
@@ -152,8 +159,15 @@ public sealed class OutlineAndBorderStyleTests
         for (var px = 32; px < 128; px++)
         {
             var (r, g, b, _) = bmp.GetPixel(px, 97);
-            if (g == 128 && r == 0) greenPixels++;
-            if (r == 255 && g == 255 && b == 255) whiteOnBottom++;
+            if (g == 128 && r == 0)
+            {
+                greenPixels++;
+            }
+
+            if (r == 255 && g == 255 && b == 255)
+            {
+                whiteOnBottom++;
+            }
         }
         greenPixels.Should().BeGreaterThan(0, "a dotted side paints dots");
         whiteOnBottom.Should().BeGreaterThan(0, "a dotted side leaves space between dots");
@@ -289,8 +303,15 @@ public sealed class OutlineAndBorderStyleTests
         var clipIndex = -1;
         for (var i = 0; i < items.Count; i++)
         {
-            if (ringIndex < 0 && items[i] is StrokeRoundedRect) ringIndex = i;
-            if (clipIndex < 0 && items[i] is PushClip) clipIndex = i;
+            if (ringIndex < 0 && items[i] is StrokeRoundedRect)
+            {
+                ringIndex = i;
+            }
+
+            if (clipIndex < 0 && items[i] is PushClip)
+            {
+                clipIndex = i;
+            }
         }
         ringIndex.Should().BeGreaterThanOrEqualTo(0, "the outline ring is emitted");
         clipIndex.Should().BeGreaterThanOrEqualTo(0, "overflow:hidden emits a clip bracket");

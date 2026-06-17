@@ -77,7 +77,10 @@ public sealed class JsGlobalObject : JsObject
     /// with the real intrinsic and populates its prototype. Idempotent.</summary>
     private void Materialize(string name)
     {
-        if (!_lazy.TryGetValue(name, out var installer)) return;
+        if (!_lazy.TryGetValue(name, out var installer))
+        {
+            return;
+        }
         // Clear this name AND any cluster siblings sharing the same thunk before
         // running, so the shared installer runs once and re-entry is impossible.
         RemoveLazyAndSiblings(name, installer);
@@ -92,10 +95,20 @@ public sealed class JsGlobalObject : JsObject
         _lazy.Remove(name);
         List<string>? siblings = null;
         foreach (var pair in _lazy)
+        {
             if (ReferenceEquals(pair.Value, installer))
+            {
                 (siblings ??= new List<string>()).Add(pair.Key);
+            }
+        }
+
         if (siblings is not null)
-            foreach (var s in siblings) _lazy.Remove(s);
+        {
+            foreach (var s in siblings)
+            {
+                _lazy.Remove(s);
+            }
+        }
     }
 
     /// <summary>Drop a single deferred name (no sibling sweep) — used when the
@@ -107,13 +120,21 @@ public sealed class JsGlobalObject : JsObject
 
     public override JsValue Get(string name)
     {
-        if (_lazy.ContainsKey(name)) Materialize(name);
+        if (_lazy.ContainsKey(name))
+        {
+            Materialize(name);
+        }
+
         return base.Get(name);
     }
 
     public override PropertyDescriptor? GetOwnPropertyDescriptor(string name)
     {
-        if (_lazy.ContainsKey(name)) Materialize(name);
+        if (_lazy.ContainsKey(name))
+        {
+            Materialize(name);
+        }
+
         return base.GetOwnPropertyDescriptor(name);
     }
 

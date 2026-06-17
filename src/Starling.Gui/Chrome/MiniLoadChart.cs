@@ -73,7 +73,9 @@ public static class MiniLoadChart
         global::Avalonia.Automation.AutomationProperties.SetName(border, $"Page load · {totalMs:0}ms · open Performance");
 
         if (onClick is not null)
+        {
             ChromeKit.AttachClick(border, onClick);
+        }
 
         return border;
     }

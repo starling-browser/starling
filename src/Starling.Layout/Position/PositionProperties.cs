@@ -47,8 +47,16 @@ internal readonly record struct Inset
     /// <summary>Resolve this inset against a containing-block basis (in px).</summary>
     public double? Resolve(double basisPx)
     {
-        if (IsAuto) return null;
-        if (IsPercentage) return basisPx * Percentage / 100d;
+        if (IsAuto)
+        {
+            return null;
+        }
+
+        if (IsPercentage)
+        {
+            return basisPx * Percentage / 100d;
+        }
+
         return Px;
     }
 }

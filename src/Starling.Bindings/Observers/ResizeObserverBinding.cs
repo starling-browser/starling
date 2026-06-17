@@ -34,7 +34,10 @@ public static class ResizeObserverBinding
         ArgumentNullException.ThrowIfNull(runtime);
         ArgumentNullException.ThrowIfNull(document);
         var realm = runtime.Realm;
-        if (realm.ResizeObserverConstructor is not null) return;
+        if (realm.ResizeObserverConstructor is not null)
+        {
+            return;
+        }
 
         var proto = new JsObject(realm.ObjectPrototype);
         realm.ResizeObserverPrototype = proto;
@@ -45,7 +48,10 @@ public static class ResizeObserverBinding
             var state = ResolveState(thisV)
                 ?? throw new JsThrow(realm.NewTypeError("Illegal invocation: observe called on non-ResizeObserver"));
             if (args.Length == 0 || DomWrappers.UnwrapElement(args[0]) is not { } el)
+            {
                 throw new JsThrow(realm.NewTypeError("ResizeObserver.observe: target must be an Element"));
+            }
+
             var box = "content-box";
             if (args.Length > 1 && args[1].IsObject)
             {
@@ -54,10 +60,14 @@ public static class ResizeObserverBinding
                 {
                     var s = JsValue.ToStringValue(b);
                     if (s is "content-box" or "border-box" or "device-pixel-content-box")
+                    {
                         box = s;
+                    }
                     else
+                    {
                         throw new JsThrow(realm.NewTypeError(
                             "ResizeObserver.observe: invalid box option (must be content-box, border-box, or device-pixel-content-box)"));
+                    }
                 }
             }
             state.AddTarget(el, box);
@@ -67,8 +77,16 @@ public static class ResizeObserverBinding
         EventTargetBinding.DefineMethod(realm, proto, "unobserve", (thisV, args) =>
         {
             var state = ResolveState(thisV);
-            if (state is null || args.Length == 0) return JsValue.Undefined;
-            if (DomWrappers.UnwrapElement(args[0]) is { } el) state.RemoveTarget(el);
+            if (state is null || args.Length == 0)
+            {
+                return JsValue.Undefined;
+            }
+
+            if (DomWrappers.UnwrapElement(args[0]) is { } el)
+            {
+                state.RemoveTarget(el);
+            }
+
             return JsValue.Undefined;
         }, length: 1);
 
@@ -81,7 +99,10 @@ public static class ResizeObserverBinding
         var ctor = new JsNativeFunction(realm, "ResizeObserver", 1, (thisV, args) =>
         {
             if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
                 throw new JsThrow(realm.NewTypeError("ResizeObserver requires a callback function"));
+            }
+
             var inst = new JsObject(proto);
             States.Add(inst, new ResizeObserverState(runtime, inst, args[0]));
             return JsValue.Object(inst);
@@ -131,7 +152,9 @@ internal sealed class ResizeObserverState
     public void RemoveTarget(Element target)
     {
         for (var i = 0; i < _targets.Count; i++)
+        {
             if (ReferenceEquals(_targets[i].Target, target)) { _targets.RemoveAt(i); return; }
+        }
     }
 
     public void Disconnect() => _targets.Clear();

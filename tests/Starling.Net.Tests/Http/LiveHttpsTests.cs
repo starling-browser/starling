@@ -13,7 +13,9 @@ public class LiveHttpsTests
     public async Task GET_example_com_returns_200_and_HTML_body()
     {
         if (Environment.GetEnvironmentVariable("STARLING_LIVE_HTTP_TESTS") != "1")
+        {
             return;
+        }
 
         using var client = new StarlingHttpClient(new StarlingHttpClientOptions
         {
@@ -36,7 +38,9 @@ public class LiveHttpsTests
     public async Task GET_over_http2_upgrades_via_alpn_and_returns_200()
     {
         if (Environment.GetEnvironmentVariable("STARLING_LIVE_HTTP_TESTS") != "1")
+        {
             return;
+        }
 
         // Default ALPN is "h2, http/1.1"; a modern CDN negotiates h2.
         using var client = new StarlingHttpClient(new StarlingHttpClientOptions

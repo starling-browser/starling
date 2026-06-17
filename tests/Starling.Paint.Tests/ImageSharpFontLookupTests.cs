@@ -161,7 +161,12 @@ public sealed class ImageSharpFontLookupTests
             {
                 var styles = family.GetAvailableStyles().Span;
                 for (var i = 0; i < styles.Length; i++)
-                    if (styles[i] == style) return true;
+                {
+                    if (styles[i] == style)
+                    {
+                        return true;
+                    }
+                }
             }
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)

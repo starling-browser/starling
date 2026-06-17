@@ -130,11 +130,16 @@ public sealed class Painter
                 // Span it so that cost is attributable.
                 IPaintBackend backend;
                 using (StarlingTelemetry.Span("paint", "raster.backend_init"))
+                {
                     backend = PaintBackendSelector.Create(_fonts, webFonts);
+                }
+
                 using (backend)
+                {
                     return clipViewport is { } clip
                         ? backend.Render(displayList, clip)
                         : backend.Render(displayList, viewport);
+                }
             }
             catch (Exception ex)
             {
@@ -184,11 +189,16 @@ public sealed class Painter
             {
                 IPaintBackend backend;
                 using (StarlingTelemetry.Span("paint", "raster.backend_init"))
+                {
                     backend = PaintBackendSelector.Create(_fonts, webFonts);
+                }
+
                 using (backend)
+                {
                     return clipViewport is { } clip
                         ? backend.Render(displayList, clip)
                         : backend.Render(displayList, viewport);
+                }
             }
             catch (Exception ex)
             {
@@ -268,7 +278,9 @@ public sealed class Painter
 
         StyleEngine style;
         using (StarlingTelemetry.Span("paint", "style_cascade"))
+        {
             style = CreateStyleEngine(document, viewport, defaultFontSize, externalStylesheet, _loggerFactory, colorScheme);
+        }
 
         var measurer = PaintBackendSelector.CreateMeasurer(_fonts, webFonts);
         try
@@ -280,7 +292,10 @@ public sealed class Painter
             var layoutEngine = new LayoutEngineImpl(style, measurer, images, _loggerFactory, ct) { ScrollState = scrollState };
             Starling.Layout.Box.BlockBox root;
             using (StarlingTelemetry.Span("paint", "layout"))
+            {
                 root = layoutEngine.LayoutDocument(document, viewport, nowMs);
+            }
+
             return (root, style);
         }
         finally
@@ -322,7 +337,9 @@ public sealed class Painter
             var layoutEngine = new LayoutEngineImpl(style, measurer, images, _loggerFactory) { ScrollState = scrollState };
             Starling.Layout.Box.BlockBox root;
             using (StarlingTelemetry.Span("paint", "layout"))
+            {
                 root = layoutEngine.LayoutDocument(document, viewport, nowMs);
+            }
 
             PaintList displayList;
             using (StarlingTelemetry.Span("paint", "display_list"))
@@ -338,11 +355,16 @@ public sealed class Painter
             {
                 IPaintBackend backend;
                 using (StarlingTelemetry.Span("paint", "raster.backend_init"))
+                {
                     backend = PaintBackendSelector.Create(_fonts, webFonts);
+                }
+
                 using (backend)
+                {
                     return clipViewport is { } clip
                         ? backend.Render(displayList, clip)
                         : backend.Render(displayList, viewport);
+                }
             }
         }
         finally
@@ -373,7 +395,9 @@ public sealed class Painter
 
         var measurer = GetOrCreateIncrementalMeasurer(webFonts);
         using (StarlingTelemetry.Span("paint", "layout.incremental"))
+        {
             return session.Layout(document, viewport, measurer, nowMs, ct);
+        }
     }
 
     // Measurer cache for the incremental relayout path. Building an
@@ -423,7 +447,9 @@ public sealed class Painter
     {
         ArgumentNullException.ThrowIfNull(document);
         using (StarlingTelemetry.Span("paint", "style_cascade.standalone"))
+        {
             return CreateStyleEngine(document, viewport, defaultFontSize, externalStylesheet, _loggerFactory, colorScheme);
+        }
     }
 
     private StyleEngine CreateStyleEngine(
@@ -500,7 +526,11 @@ public sealed class Painter
             // inside <noscript> must not join the cascade: x.com's no-JS block
             // is `#react-root{display:none!important}` + a white body — applying
             // it blanks the whole app.
-            if (element.LocalName == "noscript") return;
+            if (element.LocalName == "noscript")
+            {
+                return;
+            }
+
             if (element.LocalName == "style")
             {
                 var source = element.TextContent;
@@ -528,12 +558,16 @@ public sealed class Painter
             {
                 var sheet = externalStylesheet(element);
                 if (sheet is not null)
+                {
                     style.AddStyleSheet(sheet);
+                }
             }
         }
 
         for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+        {
             AddAuthorStylesheets(child, externalStylesheet, style, loggerFactory);
+        }
     }
 }
 

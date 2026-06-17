@@ -226,12 +226,22 @@ public class JsRecursionDepthTests
     private static int MaxDepth(int hi)
     {
         var lo = 1;
-        if (!Works(lo)) return 0;
+        if (!Works(lo))
+        {
+            return 0;
+        }
+
         while (lo < hi)
         {
             var mid = lo + (hi - lo + 1) / 2;
-            if (Works(mid)) lo = mid;
-            else hi = mid - 1;
+            if (Works(mid))
+            {
+                lo = mid;
+            }
+            else
+            {
+                hi = mid - 1;
+            }
         }
         return lo;
     }

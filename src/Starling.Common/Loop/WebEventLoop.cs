@@ -32,7 +32,10 @@ public sealed class WebEventLoop
     public int SetTimeout(Action callback, int delayMilliseconds)
     {
         ArgumentNullException.ThrowIfNull(callback);
-        if (delayMilliseconds < 0) delayMilliseconds = 0;
+        if (delayMilliseconds < 0)
+        {
+            delayMilliseconds = 0;
+        }
 
         var task = new TimerTask(_nextTimerId++, callback, Cancelled: false);
         _timers.Enqueue(task, new TimerKey(_nowMs + delayMilliseconds, _sequence++));
@@ -54,7 +57,10 @@ public sealed class WebEventLoop
         }
 
         foreach (var (task, key) in kept)
+        {
             _timers.Enqueue(task, key);
+        }
+
         return removed;
     }
 
@@ -87,7 +93,10 @@ public sealed class WebEventLoop
     public void AdvanceBy(int milliseconds)
     {
         if (milliseconds < 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(milliseconds), "Cannot move event-loop time backwards.");
+        }
+
         RunFrame(_nowMs + milliseconds);
     }
 
@@ -103,7 +112,10 @@ public sealed class WebEventLoop
     public void RunFrame(long nowMs)
     {
         if (nowMs < _nowMs)
+        {
             throw new ArgumentOutOfRangeException(nameof(nowMs), "Cannot move event-loop time backwards.");
+        }
+
         _nowMs = nowMs;
         RunUntilIdle();
 
@@ -114,7 +126,11 @@ public sealed class WebEventLoop
             var timestamp = (double)nowMs;
             foreach (var cb in snapshot)
             {
-                if (cb.Cancelled) continue;
+                if (cb.Cancelled)
+                {
+                    continue;
+                }
+
                 cb.Callback(timestamp);
                 DrainMicrotasks();
             }
@@ -137,7 +153,9 @@ public sealed class WebEventLoop
     private void DrainMicrotasks()
     {
         while (_microtasks.TryDequeue(out var callback))
+        {
             callback();
+        }
     }
 
     private readonly record struct TimerTask(int Id, Action Callback, bool Cancelled);

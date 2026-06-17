@@ -12,12 +12,18 @@ public static class Disassembler
     public static string Disassemble(Chunk chunk)
     {
         var sb = new StringBuilder();
-        if (chunk.Name is not null) sb.Append("# chunk: ").AppendLine(chunk.Name);
+        if (chunk.Name is not null)
+        {
+            sb.Append("# chunk: ").AppendLine(chunk.Name);
+        }
+
         if (chunk.Constants.Count > 0)
         {
             sb.AppendLine("# constants:");
             for (var k = 0; k < chunk.Constants.Count; k++)
+            {
                 sb.Append("  ").Append(k).Append(": ").AppendLine(FormatConstant(chunk.Constants[k]));
+            }
         }
         sb.AppendLine("# code:");
 
@@ -141,7 +147,11 @@ public static class Disassembler
                         {
                             var ps = BinaryPrimitives.ReadUInt16LittleEndian(code.AsSpan(i, 2));
                             i += 2;
-                            if (p > 0) sb.Append(',');
+                            if (p > 0)
+                            {
+                                sb.Append(',');
+                            }
+
                             sb.Append(ps == 0xFFFF ? "-" : ps.ToString());
                         }
                         sb.Append(']');

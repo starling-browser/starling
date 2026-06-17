@@ -42,16 +42,25 @@ internal sealed class HpackDecoder
             {
                 // §6.1 Indexed Header Field.
                 if (!HpackInteger.TryDecode(block, ref offset, 7, out var index) || index == 0)
+                {
                     return false;
+                }
+
                 if (!Resolve(index, out var name, out var value))
+                {
                     return false;
+                }
+
                 fields.Add(new HpackHeaderField(name, value, NeverIndexed: false));
             }
             else if ((b & 0x40) != 0)
             {
                 // §6.2.1 Literal Header Field with Incremental Indexing.
                 if (!ReadLiteral(block, ref offset, 6, out var name, out var value))
+                {
                     return false;
+                }
+
                 _dynamic.Add(name, value, name.Length, value.Length);
                 fields.Add(new HpackHeaderField(name, value, NeverIndexed: false));
             }
@@ -59,9 +68,15 @@ internal sealed class HpackDecoder
             {
                 // §6.3 Dynamic Table Size Update.
                 if (!HpackInteger.TryDecode(block, ref offset, 5, out var newSize))
+                {
                     return false;
+                }
+
                 if (newSize > _maxAllowedTableSize)
+                {
                     return false;
+                }
+
                 _dynamic.Resize(newSize);
             }
             else
@@ -69,7 +84,10 @@ internal sealed class HpackDecoder
                 // §6.2.2 (0x00) without indexing, §6.2.3 (0x10) never indexed.
                 var neverIndexed = (b & 0x10) != 0;
                 if (!ReadLiteral(block, ref offset, 4, out var name, out var value))
+                {
                     return false;
+                }
+
                 fields.Add(new HpackHeaderField(name, value, neverIndexed));
             }
         }
@@ -85,12 +103,16 @@ internal sealed class HpackDecoder
         value = string.Empty;
 
         if (!HpackInteger.TryDecode(block, ref offset, namePrefixBits, out var nameIndex))
+        {
             return false;
+        }
 
         if (nameIndex == 0)
         {
             if (!TryReadString(block, ref offset, out name))
+            {
                 return false;
+            }
         }
         else if (!Resolve(nameIndex, out name, out _))
         {
@@ -104,7 +126,10 @@ internal sealed class HpackDecoder
     private bool Resolve(int index, out string name, out string value)
     {
         if (index <= HpackStaticTable.Count)
+        {
             return HpackStaticTable.TryGet(index, out name, out value);
+        }
+
         return _dynamic.TryGet(index - HpackStaticTable.Count, out name, out value);
     }
 
@@ -112,13 +137,21 @@ internal sealed class HpackDecoder
     private static bool TryReadString(ReadOnlySpan<byte> block, ref int offset, out string result)
     {
         result = string.Empty;
-        if (offset >= block.Length) return false;
+        if (offset >= block.Length)
+        {
+            return false;
+        }
 
         var huffman = (block[offset] & 0x80) != 0;
         if (!HpackInteger.TryDecode(block, ref offset, 7, out var length))
+        {
             return false;
+        }
+
         if (length < 0 || offset + length > block.Length)
+        {
             return false;
+        }
 
         var raw = block.Slice(offset, length);
         offset += length;
@@ -126,7 +159,10 @@ internal sealed class HpackDecoder
         if (huffman)
         {
             if (!HpackHuffman.TryDecode(raw, out var decoded))
+            {
                 return false;
+            }
+
             result = Encoding.Latin1.GetString(decoded);
         }
         else

@@ -26,12 +26,19 @@ public sealed class JsMapIterator : JsObject
 
     public JsValue Next(JsRealm realm)
     {
-        if (_done) return IteratorIntrinsics.MakeResult(realm, JsValue.Undefined, done: true);
+        if (_done)
+        {
+            return IteratorIntrinsics.MakeResult(realm, JsValue.Undefined, done: true);
+        }
 
         while (_nextIndex < _map.SlotCount)
         {
             var index = _nextIndex++;
-            if (!_map.TryGetSlot(index, out var key, out var value)) continue;
+            if (!_map.TryGetSlot(index, out var key, out var value))
+            {
+                continue;
+            }
+
             return _kind switch
             {
                 MapIteratorKind.Key => IteratorIntrinsics.MakeResult(realm, key, done: false),

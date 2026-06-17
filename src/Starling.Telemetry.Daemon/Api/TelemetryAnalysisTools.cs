@@ -60,8 +60,15 @@ internal sealed class TelemetryAnalysisTools(TelemetryAnalyzer analyzer) : IMcpT
     {
         if (args.ValueKind == JsonValueKind.Object && args.TryGetProperty(name, out var v))
         {
-            if (v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i)) return i;
-            if (v.ValueKind == JsonValueKind.String && int.TryParse(v.GetString(), out var j)) return j;
+            if (v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i))
+            {
+                return i;
+            }
+
+            if (v.ValueKind == JsonValueKind.String && int.TryParse(v.GetString(), out var j))
+            {
+                return j;
+            }
         }
         return def;
     }

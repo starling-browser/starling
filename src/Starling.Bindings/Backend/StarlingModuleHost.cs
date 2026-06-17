@@ -54,17 +54,25 @@ internal sealed class StarlingModuleHost : IModuleHost
 
     public string? Resolve(string specifier, string? referrer)
     {
-        if (_inlineSources.ContainsKey(specifier)) return specifier;
+        if (_inlineSources.ContainsKey(specifier))
+        {
+            return specifier;
+        }
 
         StarlingUrl baseUrl = _documentUrl;
         if (referrer is not null)
         {
             if (_inlineBases.TryGetValue(referrer, out var inlineBase))
+            {
                 baseUrl = inlineBase;
+            }
             else
             {
                 var parsedReferrer = UrlParser.Parse(referrer);
-                if (parsedReferrer.IsOk) baseUrl = parsedReferrer.Value;
+                if (parsedReferrer.IsOk)
+                {
+                    baseUrl = parsedReferrer.Value;
+                }
             }
         }
 
@@ -74,11 +82,22 @@ internal sealed class StarlingModuleHost : IModuleHost
 
     public string? FetchSource(string resolvedUrl)
     {
-        if (_inlineSources.TryGetValue(resolvedUrl, out var inline)) return inline;
-        if (_primed.TryGetValue(resolvedUrl, out var primed)) return primed;
+        if (_inlineSources.TryGetValue(resolvedUrl, out var inline))
+        {
+            return inline;
+        }
+
+        if (_primed.TryGetValue(resolvedUrl, out var primed))
+        {
+            return primed;
+        }
 
         var parsed = UrlParser.Parse(resolvedUrl);
-        if (parsed.IsErr) return null;
+        if (parsed.IsErr)
+        {
+            return null;
+        }
+
         return _fetch(parsed.Value, _ct).GetAwaiter().GetResult();
     }
 }

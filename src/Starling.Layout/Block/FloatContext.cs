@@ -26,8 +26,13 @@ internal sealed class FloatContext
     {
         var edge = 0d;
         foreach (var f in _left)
+        {
             if (y >= f.Y && y < f.Bottom)
+            {
                 edge = Math.Max(edge, f.Right);
+            }
+        }
+
         return edge;
     }
 
@@ -36,8 +41,13 @@ internal sealed class FloatContext
     {
         var edge = _containerWidth;
         foreach (var f in _right)
+        {
             if (y >= f.Y && y < f.Bottom)
+            {
                 edge = Math.Min(edge, f.X);
+            }
+        }
+
         return edge;
     }
 
@@ -75,9 +85,21 @@ internal sealed class FloatContext
     {
         var y = 0d;
         if (side == "left" || side == "both")
-            foreach (var f in _left) y = Math.Max(y, f.Bottom);
+        {
+            foreach (var f in _left)
+            {
+                y = Math.Max(y, f.Bottom);
+            }
+        }
+
         if (side == "right" || side == "both")
-            foreach (var f in _right) y = Math.Max(y, f.Bottom);
+        {
+            foreach (var f in _right)
+            {
+                y = Math.Max(y, f.Bottom);
+            }
+        }
+
         return y;
     }
 
@@ -88,8 +110,16 @@ internal sealed class FloatContext
     public double MaxFloatBottom()
     {
         var y = 0d;
-        foreach (var f in _left) y = Math.Max(y, f.Bottom);
-        foreach (var f in _right) y = Math.Max(y, f.Bottom);
+        foreach (var f in _left)
+        {
+            y = Math.Max(y, f.Bottom);
+        }
+
+        foreach (var f in _right)
+        {
+            y = Math.Max(y, f.Bottom);
+        }
+
         return y;
     }
 
@@ -103,12 +133,31 @@ internal sealed class FloatContext
         {
             var next = double.PositiveInfinity;
             foreach (var f in _left)
-                if (f.Bottom > y && f.Bottom < next) next = f.Bottom;
+            {
+                if (f.Bottom > y && f.Bottom < next)
+                {
+                    next = f.Bottom;
+                }
+            }
+
             foreach (var f in _right)
-                if (f.Bottom > y && f.Bottom < next) next = f.Bottom;
-            if (double.IsPositiveInfinity(next)) break;
+            {
+                if (f.Bottom > y && f.Bottom < next)
+                {
+                    next = f.Bottom;
+                }
+            }
+
+            if (double.IsPositiveInfinity(next))
+            {
+                break;
+            }
+
             y = next;
-            if (++safety > 10_000) break;
+            if (++safety > 10_000)
+            {
+                break;
+            }
         }
         return y;
     }

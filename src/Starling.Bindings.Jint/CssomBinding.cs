@@ -32,7 +32,10 @@ internal static class CssomBinding
         var engine = ctx.Engine;
         var docProto = ctx.Wrappers.DocumentPrototype;
         var elProto = ctx.Wrappers.ElementPrototype;
-        if (docProto is null || elProto is null) return;
+        if (docProto is null || elProto is null)
+        {
+            return;
+        }
 
         // document.styleSheets
         JintInterop.DefineAccessor(engine, docProto, "styleSheets", (t, _) =>
@@ -43,14 +46,24 @@ internal static class CssomBinding
 
         // element.sheet (CSSOM §6.5) — only <style> elements carry inline CSS.
         if (!elProto.HasOwnProperty("sheet"))
+        {
             JintInterop.DefineAccessor(engine, elProto, "sheet", (t, _) => StyleElementSheetAccessor(ctx, t));
+        }
     }
 
     private static JsValue StyleElementSheetAccessor(JintBackendContext ctx, JsValue thisV)
     {
         var el = ctx.Wrappers.UnwrapElement(thisV);
-        if (el is null) return JsValue.Null;
-        if (!el.LocalName.Equals("style", StringComparison.OrdinalIgnoreCase)) return JsValue.Null;
+        if (el is null)
+        {
+            return JsValue.Null;
+        }
+
+        if (!el.LocalName.Equals("style", StringComparison.OrdinalIgnoreCase))
+        {
+            return JsValue.Null;
+        }
+
         var source = el.TextContent ?? string.Empty;
         var entry = SheetPerStyleElement.GetValue(el, static _ => new StyleElementSheet());
         if (entry.Sheet is null || !string.Equals(entry.Source, source, StringComparison.Ordinal))
@@ -64,7 +77,11 @@ internal static class CssomBinding
 
     private static List<CssomStyleSheet> GetOrBuildSheets(Document doc)
     {
-        if (SheetsPerDocument.TryGetValue(doc, out var existing)) return existing;
+        if (SheetsPerDocument.TryGetValue(doc, out var existing))
+        {
+            return existing;
+        }
+
         var list = new List<CssomStyleSheet>();
         foreach (var el in doc.DescendantElements())
         {
@@ -83,12 +100,19 @@ internal static class CssomBinding
         var engine = ctx.Engine;
         var obj = new JsObject(engine);
         for (var i = 0; i < sheets.Count; i++)
+        {
             obj.FastSetProperty(i.ToString(CultureInfo.InvariantCulture),
                 new PropertyDescriptor(BuildStyleSheet(ctx, sheets[i]), writable: false, enumerable: true, configurable: true));
+        }
+
         obj.FastSetProperty("length", new PropertyDescriptor(JintInterop.Num(sheets.Count), writable: false, enumerable: false, configurable: true));
         JintInterop.DefineMethod(engine, obj, "item", (_, a) =>
         {
-            if (a.Length == 0) return JsValue.Null;
+            if (a.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var idx = (int)TypeConverter.ToNumber(a[0]);
             return idx >= 0 && idx < sheets.Count ? BuildStyleSheet(ctx, sheets[idx]) : JsValue.Null;
         }, 1);
@@ -124,9 +148,17 @@ internal static class CssomBinding
         obj.FastSetProperty("length", new PropertyDescriptor(JintInterop.Num(rules.Count), writable: false, enumerable: false, configurable: true));
         JintInterop.DefineMethod(engine, obj, "item", (_, a) =>
         {
-            if (a.Length == 0) return JsValue.Null;
+            if (a.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var idx = (int)TypeConverter.ToNumber(a[0]);
-            if (idx < 0 || idx >= rules.Count) return JsValue.Null;
+            if (idx < 0 || idx >= rules.Count)
+            {
+                return JsValue.Null;
+            }
+
             return rules[idx] is { } r ? BuildStyleRule(ctx, r) : BuildAtRulePlaceholder(ctx, sheet.AtRuleNameAt(idx));
         }, 1);
         return obj;
@@ -165,7 +197,7 @@ internal static class CssomBinding
         var obj = new JsObject(engine);
         JintInterop.DefineAccessor(engine, obj, "selectorText",
             (_, _) => JintInterop.Str(rule.SelectorTextRaw),
-            (_, a) => { if (a.Length > 0) rule.TrySetSelectorText(TypeConverter.ToString(a[0])); return JsValue.Undefined; });
+            (_, a) => { if (a.Length > 0) { rule.TrySetSelectorText(TypeConverter.ToString(a[0])); } return JsValue.Undefined; });
         JintInterop.DefineAccessor(engine, obj, "style", (_, _) => BuildDeclaration(ctx, rule.Style));
         JintInterop.DefineAccessor(engine, obj, "cssText", (_, _) =>
         {
@@ -195,7 +227,11 @@ internal static class CssomBinding
             (_, a) => JintInterop.Str(a.Length == 0 ? "" : block.GetPropertyPriority(TypeConverter.ToString(a[0]))), 1);
         JintInterop.DefineMethod(engine, obj, "setProperty", (_, a) =>
         {
-            if (a.Length < 2) return JsValue.Undefined;
+            if (a.Length < 2)
+            {
+                return JsValue.Undefined;
+            }
+
             var name = TypeConverter.ToString(a[0]);
             var value = TypeConverter.ToString(a[1]);
             var priority = a.Length > 2 && !a[2].IsNull() && !a[2].IsUndefined() ? TypeConverter.ToString(a[2]) : null;
@@ -216,9 +252,11 @@ internal static class CssomBinding
                 (_, _) => JintInterop.Str(block.GetPropertyValue(k)),
                 (_, a) => { block.SetProperty(k, a.Length > 0 ? TypeConverter.ToString(a[0]) : "", null); return JsValue.Undefined; });
             if (camel != k)
+            {
                 JintInterop.DefineAccessor(engine, obj, camel,
                     (_, _) => JintInterop.Str(block.GetPropertyValue(k)),
                     (_, a) => { block.SetProperty(k, a.Length > 0 ? TypeConverter.ToString(a[0]) : "", null); return JsValue.Undefined; });
+            }
         }
         return obj;
     }

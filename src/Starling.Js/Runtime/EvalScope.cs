@@ -47,8 +47,14 @@ internal sealed class EvalScope
 
         public void Write(JsValue v)
         {
-            if (Cell is { } c) c.Value = v;
-            else Locals![Slot] = v;
+            if (Cell is { } c)
+            {
+                c.Value = v;
+            }
+            else
+            {
+                Locals![Slot] = v;
+            }
         }
     }
 
@@ -60,7 +66,9 @@ internal sealed class EvalScope
         // Innermost-first wins: entries are supplied innermost scope first, so
         // only add the first occurrence of each name (shadowing).
         foreach (var e in entries)
+        {
             _byName.TryAdd(e.Name, e);
+        }
     }
 
     /// <summary>The full set of caller binding names visible to the eval'd code

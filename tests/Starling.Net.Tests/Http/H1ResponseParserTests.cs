@@ -91,7 +91,10 @@ public class H1ResponseParserTests
         var payload = Encoding.UTF8.GetBytes("compressed text body");
         using var compressedStream = new MemoryStream();
         using (var gz = new GZipStream(compressedStream, CompressionLevel.Fastest, leaveOpen: true))
+        {
             gz.Write(payload);
+        }
+
         var compressed = compressedStream.ToArray();
 
         var head = $"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Length: {compressed.Length}\r\n\r\n";
@@ -113,7 +116,10 @@ public class H1ResponseParserTests
         var payload = Encoding.UTF8.GetBytes("the standard chunked + gzip combo most CDNs send");
         using var ms = new MemoryStream();
         using (var gz = new GZipStream(ms, CompressionLevel.Fastest, leaveOpen: true))
+        {
             gz.Write(payload);
+        }
+
         var compressed = ms.ToArray();
 
         // Chunk the compressed bytes in two halves.

@@ -62,7 +62,14 @@ public static class IntersectionObserverBinding
     internal static void Register(Document doc, IntersectionObserverState state)
     {
         var list = DocStates.GetValue(doc, static _ => new List<WeakReference<IntersectionObserverState>>());
-        foreach (var w in list) if (w.TryGetTarget(out var s) && ReferenceEquals(s, state)) return;
+        foreach (var w in list)
+        {
+            if (w.TryGetTarget(out var s) && ReferenceEquals(s, state))
+            {
+                return;
+            }
+        }
+
         list.Add(new WeakReference<IntersectionObserverState>(state));
     }
 
@@ -76,7 +83,11 @@ public static class IntersectionObserverBinding
     public static bool UpdateForDocument(Document doc, LayoutRect viewport)
     {
         ArgumentNullException.ThrowIfNull(doc);
-        if (!DocStates.TryGetValue(doc, out var list)) return false;
+        if (!DocStates.TryGetValue(doc, out var list))
+        {
+            return false;
+        }
+
         var any = false;
         for (var i = list.Count - 1; i >= 0; i--)
         {
@@ -103,7 +114,10 @@ public static class IntersectionObserverBinding
         registry.ViewportWidth = viewportWidth;
         registry.ViewportHeight = viewportHeight;
 
-        if (realm.IntersectionObserverConstructor is not null) return;
+        if (realm.IntersectionObserverConstructor is not null)
+        {
+            return;
+        }
 
         var proto = new JsObject(realm.ObjectPrototype);
         realm.IntersectionObserverPrototype = proto;
@@ -120,7 +134,14 @@ public static class IntersectionObserverBinding
         {
             var s = ResolveState(thisV);
             var items = new List<JsValue>();
-            if (s is not null) foreach (var t in s.Thresholds) items.Add(JsValue.Number(t));
+            if (s is not null)
+            {
+                foreach (var t in s.Thresholds)
+                {
+                    items.Add(JsValue.Number(t));
+                }
+            }
+
             return JsValue.Object(new JsArray(realm, items));
         });
 
@@ -129,9 +150,15 @@ public static class IntersectionObserverBinding
             var state = ResolveState(thisV)
                 ?? throw new JsThrow(realm.NewTypeError("Illegal invocation: observe called on non-IntersectionObserver"));
             if (args.Length == 0 || DomWrappers.UnwrapElement(args[0]) is not { } el)
+            {
                 throw new JsThrow(realm.NewTypeError("IntersectionObserver.observe: target must be an Element"));
+            }
+
             state.AddTarget(el);
-            if (el.OwnerDocument is { } ownerDoc) Register(ownerDoc, state);
+            if (el.OwnerDocument is { } ownerDoc)
+            {
+                Register(ownerDoc, state);
+            }
             // Delivery is driven by the host: the settle pump (RunPending) fires a
             // target already in view, and UpdateForDocument fires on scroll/layout.
             return JsValue.Undefined;
@@ -140,8 +167,16 @@ public static class IntersectionObserverBinding
         EventTargetBinding.DefineMethod(realm, proto, "unobserve", (thisV, args) =>
         {
             var state = ResolveState(thisV);
-            if (state is null || args.Length == 0) return JsValue.Undefined;
-            if (DomWrappers.UnwrapElement(args[0]) is { } el) state.RemoveTarget(el);
+            if (state is null || args.Length == 0)
+            {
+                return JsValue.Undefined;
+            }
+
+            if (DomWrappers.UnwrapElement(args[0]) is { } el)
+            {
+                state.RemoveTarget(el);
+            }
+
             return JsValue.Undefined;
         }, length: 1);
 
@@ -160,7 +195,10 @@ public static class IntersectionObserverBinding
         var ctor = new JsNativeFunction(realm, "IntersectionObserver", 1, (thisV, args) =>
         {
             if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
                 throw new JsThrow(realm.NewTypeError("IntersectionObserver requires a callback function"));
+            }
+
             var (root, rootMargin, thresholds) = ParseOptions(realm, args.Length > 1 ? args[1] : JsValue.Undefined);
             var inst = new JsObject(proto);
             var state = new IntersectionObserverState(runtime, inst, args[0], root, rootMargin, thresholds);
@@ -185,9 +223,19 @@ public static class IntersectionObserverBinding
     /// whether the page has settled.</summary>
     public static bool HasPending(JsRuntime runtime)
     {
-        if (!Registries.TryGetValue(runtime, out var reg)) return false;
+        if (!Registries.TryGetValue(runtime, out var reg))
+        {
+            return false;
+        }
+
         foreach (var obs in reg.Live)
-            if (obs.HasPending(reg)) return true;
+        {
+            if (obs.HasPending(reg))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -198,11 +246,18 @@ public static class IntersectionObserverBinding
     /// pending — it no-ops and returns false.</summary>
     public static bool RunPending(JsRuntime runtime)
     {
-        if (!Registries.TryGetValue(runtime, out var reg)) return false;
+        if (!Registries.TryGetValue(runtime, out var reg))
+        {
+            return false;
+        }
+
         var delivered = false;
         // Snapshot the list: a callback may construct/destroy observers.
         foreach (var obs in reg.Live.ToArray())
+        {
             delivered |= obs.Deliver(reg);
+        }
+
         return delivered;
     }
 
@@ -215,21 +270,33 @@ public static class IntersectionObserverBinding
         var rootMargin = "0px 0px 0px 0px";
         IReadOnlyList<double> thresholds = new[] { 0.0 };
 
-        if (raw.IsUndefined || raw.IsNull) return (root, rootMargin, thresholds);
+        if (raw.IsUndefined || raw.IsNull)
+        {
+            return (root, rootMargin, thresholds);
+        }
+
         if (!raw.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("IntersectionObserver: options must be an object"));
+        }
+
         var o = raw.AsObject;
 
         var rootV = o.Get("root");
         if (!rootV.IsUndefined && !rootV.IsNull)
         {
-            if (DomWrappers.UnwrapElement(rootV) is { } el) root = el;
+            if (DomWrappers.UnwrapElement(rootV) is { } el)
+            {
+                root = el;
+            }
             // Document roots are spec-allowed too; we silently ignore non-Element roots for now.
         }
 
         var rm = o.Get("rootMargin");
         if (!rm.IsUndefined && !rm.IsNull)
+        {
             rootMargin = JsValue.ToStringValue(rm);
+        }
 
         var th = o.Get("threshold");
         if (!th.IsUndefined && !th.IsNull)
@@ -241,7 +308,10 @@ public static class IntersectionObserverBinding
                 {
                     var n = JsValue.ToNumber(arr[i]);
                     if (double.IsNaN(n) || n < 0 || n > 1)
+                    {
                         throw new JsThrow(realm.NewRangeError("IntersectionObserver: threshold values must be in [0, 1]"));
+                    }
+
                     list.Add(n);
                 }
                 thresholds = list;
@@ -250,7 +320,10 @@ public static class IntersectionObserverBinding
             {
                 var n = JsValue.ToNumber(th);
                 if (double.IsNaN(n) || n < 0 || n > 1)
+                {
                     throw new JsThrow(realm.NewRangeError("IntersectionObserver: threshold values must be in [0, 1]"));
+                }
+
                 thresholds = new[] { n };
             }
         }
@@ -288,7 +361,14 @@ internal sealed class IntersectionObserverState
 
     public void AddTarget(Element target)
     {
-        foreach (var t in _targets) if (ReferenceEquals(t, target)) return;
+        foreach (var t in _targets)
+        {
+            if (ReferenceEquals(t, target))
+            {
+                return;
+            }
+        }
+
         _targets.Add(target);
         // A re-observed target gets a fresh initial notification.
         _lastBucket[target] = -1;
@@ -297,7 +377,10 @@ internal sealed class IntersectionObserverState
     public void RemoveTarget(Element target)
     {
         for (var i = 0; i < _targets.Count; i++)
+        {
             if (ReferenceEquals(_targets[i], target)) { _targets.RemoveAt(i); break; }
+        }
+
         _lastBucket.Remove(target);
     }
 
@@ -331,7 +414,9 @@ internal sealed class IntersectionObserverState
         {
             var bucket = ComputeBucket(host, viewport, target, out _, out _, out _, out _);
             if (!_lastBucket.TryGetValue(target, out var last) || last != bucket)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -342,7 +427,11 @@ internal sealed class IntersectionObserverState
     /// callback fired.</summary>
     private bool DeliverAgainst(LayoutRect viewport, ILayoutHost? host = null)
     {
-        if (_targets.Count == 0) return false;
+        if (_targets.Count == 0)
+        {
+            return false;
+        }
+
         host ??= WindowBinding.LayoutHostForRealm(_runtime.Realm);
         var rootRect = ResolveRoot(host, viewport);
 
@@ -352,27 +441,41 @@ internal sealed class IntersectionObserverState
         foreach (var target in snapshot)
         {
             var bucket = ComputeBucket(host, viewport, target, out var intersecting, out var ratio, out var bounds, out var inter);
-            if (_lastBucket.TryGetValue(target, out var last) && last == bucket) continue;
+            if (_lastBucket.TryGetValue(target, out var last) && last == bucket)
+            {
+                continue;
+            }
+
             _lastBucket[target] = bucket;
             entries.Add((target, intersecting, ratio, bounds, inter));
         }
 
-        if (entries.Count == 0) return false;
+        if (entries.Count == 0)
+        {
+            return false;
+        }
 
         _runtime.WithActiveVm(() =>
         {
             var realm = _runtime.Realm;
             var jsEntries = new List<JsValue>(entries.Count);
             foreach (var e in entries)
+            {
                 jsEntries.Add(JsValue.Object(BuildEntry(realm, e.Target, e.Intersecting, e.Ratio, e.Bounds, e.Inter, rootRect)));
+            }
+
             var arr = JsValue.Object(new JsArray(realm, jsEntries));
             try
             {
                 var args = new[] { arr, JsValue.Object(_observerWrapper) };
                 if (_callback.IsObject && _callback.AsObject is JsFunction fn && realm.ActiveVm is { } vm)
+                {
                     vm.CallFunction(fn, JsValue.Object(_observerWrapper), args);
+                }
                 else
+                {
                     AbstractOperations.Call(realm.ActiveVm, _callback, JsValue.Object(_observerWrapper), args);
+                }
             }
             catch (JsThrow ex)
             {
@@ -416,7 +519,9 @@ internal sealed class IntersectionObserverState
             return BucketFor(ratio);
         }
         if (!host.TryGetBoundingClientRect(target, out bounds))
+        {
             return 0; // laid-out host, but this target has no box yet → not intersecting
+        }
 
         var root = ResolveRoot(host, viewport);
         var ix = Math.Max(bounds.Left, root.Left);
@@ -434,8 +539,19 @@ internal sealed class IntersectionObserverState
         // A target "is intersecting" once it meets the smallest configured
         // threshold. A threshold of 0 means any non-zero overlap.
         var minThreshold = double.MaxValue;
-        foreach (var t in Thresholds) if (t < minThreshold) minThreshold = t;
-        if (minThreshold == double.MaxValue) minThreshold = 0;
+        foreach (var t in Thresholds)
+        {
+            if (t < minThreshold)
+            {
+                minThreshold = t;
+            }
+        }
+
+        if (minThreshold == double.MaxValue)
+        {
+            minThreshold = 0;
+        }
+
         intersecting = interArea > 0 && ratio + 1e-9 >= minThreshold;
 
         return intersecting ? BucketFor(ratio) : 0;
@@ -444,7 +560,14 @@ internal sealed class IntersectionObserverState
     private int BucketFor(double ratio)
     {
         var bucket = 0;
-        foreach (var t in Thresholds) if (ratio + 1e-9 >= t) bucket++;
+        foreach (var t in Thresholds)
+        {
+            if (ratio + 1e-9 >= t)
+            {
+                bucket++;
+            }
+        }
+
         return Math.Max(bucket, 1);
     }
 
@@ -485,9 +608,17 @@ internal sealed class IntersectionObserverState
 
     public JsArray DrainRecords(JsRealm realm)
     {
-        if (_pending.Count == 0) return new JsArray(realm);
+        if (_pending.Count == 0)
+        {
+            return new JsArray(realm);
+        }
+
         var items = new List<JsValue>(_pending.Count);
-        foreach (var r in _pending) items.Add(JsValue.Object(r));
+        foreach (var r in _pending)
+        {
+            items.Add(JsValue.Object(r));
+        }
+
         _pending.Clear();
         return new JsArray(realm, items);
     }

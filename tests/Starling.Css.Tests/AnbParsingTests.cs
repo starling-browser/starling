@@ -22,7 +22,10 @@ public sealed class AnbParsingTests
         rule.TrySetSelectorText("foo");
         rule.TrySetSelectorText($":nth-child({anb})");
         var text = rule.SelectorTextRaw;
-        if (text == "foo") return "parse error";
+        if (text == "foo")
+        {
+            return "parse error";
+        }
         // text is ":nth-child(<X>)"; slice(11,-1) extracts <X>.
         return text.Substring(11, text.Length - 12);
     }

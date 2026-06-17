@@ -328,7 +328,11 @@ public sealed class IntersectionObserverTests
 
         public bool TryGetBoundingClientRect(Element element, out LayoutRect rect)
         {
-            if (_byElement.TryGetValue(element, out rect)) return true;
+            if (_byElement.TryGetValue(element, out rect))
+            {
+                return true;
+            }
+
             return Rects.TryGetValue(element.Id, out rect);
         }
 

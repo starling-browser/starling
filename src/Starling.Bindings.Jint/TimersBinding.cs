@@ -105,7 +105,10 @@ internal static class TimersBinding
         {
             var handler = args.Length > 0 ? args[0] : JsValue.Undefined;
             if (!IsCallable(handler))
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "setImmediate handler is not callable");
+            }
+
             var fwd = Forwarded(args, 1);
             var id = loop.SetTimeout(() => InvokeHandler(ctx, handler, fwd), 0);
             return JintInterop.Num(id);
@@ -113,7 +116,11 @@ internal static class TimersBinding
 
         JintInterop.DefineMethod(engine, engine.Global, "clearImmediate", (_, args) =>
         {
-            if (TryCoerceId(args, out var id)) loop.ClearTimeout(id);
+            if (TryCoerceId(args, out var id))
+            {
+                loop.ClearTimeout(id);
+            }
+
             return JsValue.Undefined;
         }, 1);
 
@@ -126,7 +133,10 @@ internal static class TimersBinding
         {
             var handler = args.Length > 0 ? args[0] : JsValue.Undefined;
             if (!IsCallable(handler))
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "queueMicrotask handler is not callable");
+            }
+
             loop.QueueMicrotask(() => InvokeHandler(ctx, handler, Array.Empty<JsValue>()));
             return JsValue.Undefined;
         }, 1);
@@ -139,7 +149,10 @@ internal static class TimersBinding
         {
             var handler = args.Length > 0 ? args[0] : JsValue.Undefined;
             if (!IsCallable(handler))
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "requestIdleCallback handler is not callable");
+            }
+
             var deadline = new JsObject(engine);
             JintInterop.DefineDataProp(deadline, "didTimeout", JsBoolean.False);
             JintInterop.DefineMethod(engine, deadline, "timeRemaining", (_, _) => JintInterop.Num(50), 0);
@@ -149,7 +162,11 @@ internal static class TimersBinding
 
         JintInterop.DefineMethod(engine, engine.Global, "cancelIdleCallback", (_, args) =>
         {
-            if (TryCoerceId(args, out var id)) loop.ClearTimeout(id);
+            if (TryCoerceId(args, out var id))
+            {
+                loop.ClearTimeout(id);
+            }
+
             return JsValue.Undefined;
         }, 1);
     }
@@ -158,15 +175,26 @@ internal static class TimersBinding
     {
         var handler = args.Length > 0 ? args[0] : JsValue.Undefined;
         if (!IsCallable(handler))
+        {
             throw new JavaScriptException(engine.Intrinsics.TypeError, "Timer handler is not callable");
+        }
 
         var delay = 0;
         if (args.Length > 1)
         {
             var d = TypeConverter.ToNumber(args[1]);
-            if (double.IsNaN(d) || d < 0) delay = 0;
-            else if (d > int.MaxValue) delay = int.MaxValue;
-            else delay = (int)d;
+            if (double.IsNaN(d) || d < 0)
+            {
+                delay = 0;
+            }
+            else if (d > int.MaxValue)
+            {
+                delay = int.MaxValue;
+            }
+            else
+            {
+                delay = (int)d;
+            }
         }
 
         return (handler, delay, Forwarded(args, 2));
@@ -174,7 +202,11 @@ internal static class TimersBinding
 
     private static JsValue[] Forwarded(JsValue[] args, int from)
     {
-        if (args.Length <= from) return Array.Empty<JsValue>();
+        if (args.Length <= from)
+        {
+            return Array.Empty<JsValue>();
+        }
+
         var forwarded = new JsValue[args.Length - from];
         Array.Copy(args, from, forwarded, 0, forwarded.Length);
         return forwarded;
@@ -183,10 +215,22 @@ internal static class TimersBinding
     private static bool TryCoerceId(JsValue[] args, out int id)
     {
         id = 0;
-        if (args.Length == 0) return false;
+        if (args.Length == 0)
+        {
+            return false;
+        }
+
         var n = TypeConverter.ToNumber(args[0]);
-        if (double.IsNaN(n) || double.IsInfinity(n)) return false;
-        if (n < int.MinValue || n > int.MaxValue) return false;
+        if (double.IsNaN(n) || double.IsInfinity(n))
+        {
+            return false;
+        }
+
+        if (n < int.MinValue || n > int.MaxValue)
+        {
+            return false;
+        }
+
         id = (int)n;
         return true;
     }

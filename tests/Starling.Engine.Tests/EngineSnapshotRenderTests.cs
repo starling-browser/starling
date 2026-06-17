@@ -68,7 +68,11 @@ public class EngineSnapshotRenderTests
             File.Exists(goldenPath).Should().BeTrue(
                 $"golden missing: {goldenPath}. Run with STARLING_UPDATE_GOLDENS=1 to regenerate.");
 
-            if (PngComparison.BytesEqual(output, goldenPath)) return;
+            if (PngComparison.BytesEqual(output, goldenPath))
+            {
+                return;
+            }
+
             var ssim = PngComparison.Ssim(output, goldenPath);
             ssim.Should().BeGreaterThanOrEqualTo(SsimFloor,
                 $"snapshot drift for {Host}; bytes differ and SSIM dropped to {ssim:F4}. " +
@@ -77,7 +81,10 @@ public class EngineSnapshotRenderTests
         }
         finally
         {
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -85,9 +92,15 @@ public class EngineSnapshotRenderTests
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx")))
+        {
             dir = dir.Parent;
+        }
+
         if (dir is null)
+        {
             throw new InvalidOperationException("Could not locate Starling.slnx walking up from the test binary.");
+        }
+
         return dir.FullName;
     }
 }

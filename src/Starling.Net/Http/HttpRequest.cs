@@ -21,7 +21,10 @@ public sealed class HttpRequest
         ReadOnlyMemory<byte> body = default)
     {
         if (string.IsNullOrWhiteSpace(method))
+        {
             throw new ArgumentException("Method required.", nameof(method));
+        }
+
         ArgumentNullException.ThrowIfNull(url);
 
         Method = method;

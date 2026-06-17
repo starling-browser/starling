@@ -43,7 +43,9 @@ public static class RegexBackendSelector
     internal static RegexBackendKind Parse(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
+        {
             return RegexBackendKind.DotNet;
+        }
 
         return raw.Trim().ToLowerInvariant() switch
         {

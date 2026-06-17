@@ -15,7 +15,10 @@ internal static class PositionParser
 {
     public static PositionedProps Parse(ComputedStyle? style)
     {
-        if (style is null) return PositionedProps.Static;
+        if (style is null)
+        {
+            return PositionedProps.Static;
+        }
 
         var kind = (style.Get(PropertyId.Position) is CssKeyword k ? k.Name : "static").ToLowerInvariant() switch
         {
@@ -58,7 +61,11 @@ internal static class PositionParser
     /// the full record.</summary>
     public static PositionKind ParseKind(ComputedStyle? style)
     {
-        if (style is null) return PositionKind.Static;
+        if (style is null)
+        {
+            return PositionKind.Static;
+        }
+
         return (style.Get(PropertyId.Position) is CssKeyword k ? k.Name : "static").ToLowerInvariant() switch
         {
             "relative" => PositionKind.Relative,

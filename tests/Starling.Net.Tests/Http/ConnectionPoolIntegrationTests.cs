@@ -279,9 +279,15 @@ internal sealed class KeepAliveStubServer : IDisposable
                             return;
                         }
                         pos += n;
-                        if (ContainsCrLfCrLf(buffer.AsSpan(0, pos))) break;
+                        if (ContainsCrLfCrLf(buffer.AsSpan(0, pos)))
+                        {
+                            break;
+                        }
                     }
-                    if (pos == 0) return;
+                    if (pos == 0)
+                    {
+                        return;
+                    }
 
                     var req = Encoding.ASCII.GetString(buffer, 0, pos);
                     Interlocked.Increment(ref _requests);
@@ -308,7 +314,9 @@ internal sealed class KeepAliveStubServer : IDisposable
         {
             if (data[i] == 0x0D && data[i + 1] == 0x0A &&
                 data[i + 2] == 0x0D && data[i + 3] == 0x0A)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -317,11 +325,19 @@ internal sealed class KeepAliveStubServer : IDisposable
     {
         var text = Encoding.ASCII.GetString(response);
         var headEnd = text.IndexOf("\r\n\r\n", StringComparison.Ordinal);
-        if (headEnd < 0) return true;
+        if (headEnd < 0)
+        {
+            return true;
+        }
+
         var head = text[..headEnd];
         foreach (var line in head.Split("\r\n"))
         {
-            if (!line.StartsWith("Connection:", StringComparison.OrdinalIgnoreCase)) continue;
+            if (!line.StartsWith("Connection:", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             return line.Contains("close", StringComparison.OrdinalIgnoreCase);
         }
         return false;

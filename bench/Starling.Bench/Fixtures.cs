@@ -17,8 +17,10 @@ internal static class Fixtures
     public static void RequireGitHubSnapshot()
     {
         if (!GitHubSnapshotExists)
+        {
             throw new InvalidOperationException(
                 "GitHub local snapshot missing. Run tools/snapshot-vendor/vendor-github-home.sh first.");
+        }
     }
 
     private static string LocateRepoRoot()
@@ -27,9 +29,15 @@ internal static class Fixtures
         while (dir is not null
             && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx"))
             && !File.Exists(Path.Combine(dir.FullName, "Starling.sln")))
+        {
             dir = dir.Parent;
+        }
+
         if (dir is null)
+        {
             throw new InvalidOperationException("Could not locate the Starling solution walking up from the bench binary.");
+        }
+
         return dir.FullName;
     }
 
@@ -118,8 +126,11 @@ internal static class Fixtures
         var sb = new System.Text.StringBuilder(paragraphs * 120 + 64);
         sb.Append("<!doctype html><html><body><main>");
         for (var i = 0; i < paragraphs; i++)
+        {
             sb.Append("<p>Paragraph ").Append(i)
               .Append(" has several words of body text that the engine must shape and wrap across the available width of the line box.</p>");
+        }
+
         sb.Append("</main></body></html>");
         return sb.ToString();
     }
@@ -129,9 +140,17 @@ internal static class Fixtures
     {
         var sb = new System.Text.StringBuilder(depth * 48 + 96);
         sb.Append("<!doctype html><html><body>");
-        for (var i = 0; i < depth; i++) sb.Append("<div class=\"f\">");
+        for (var i = 0; i < depth; i++)
+        {
+            sb.Append("<div class=\"f\">");
+        }
+
         sb.Append("<span>leaf</span>");
-        for (var i = 0; i < depth; i++) sb.Append("</div>");
+        for (var i = 0; i < depth; i++)
+        {
+            sb.Append("</div>");
+        }
+
         sb.Append("</body></html>");
         return sb.ToString();
     }
@@ -143,7 +162,11 @@ internal static class Fixtures
     {
         var sb = new System.Text.StringBuilder(boxes * 28 + 96);
         sb.Append("<!doctype html><html><body>");
-        for (var i = 0; i < boxes; i++) sb.Append("<div class=\"b\"></div>");
+        for (var i = 0; i < boxes; i++)
+        {
+            sb.Append("<div class=\"b\"></div>");
+        }
+
         sb.Append("</body></html>");
         return sb.ToString();
     }
@@ -168,7 +191,10 @@ internal static class Fixtures
         var sb = new System.Text.StringBuilder(boxes * 44 + 96);
         sb.Append("<!doctype html><html><body><main>");
         for (var i = 0; i < boxes; i++)
+        {
             sb.Append("<div class=\"anim\" id=\"box-").Append(i).Append("\">Box ").Append(i).Append("</div>");
+        }
+
         sb.Append("</main></body></html>");
         return sb.ToString();
     }
@@ -204,7 +230,11 @@ internal static class Fixtures
     {
         var sb = new System.Text.StringBuilder(boxes * 24 + 96);
         sb.Append("<!doctype html><html><body>");
-        for (var i = 0; i < boxes; i++) sb.Append("<div class=\"s\"></div>");
+        for (var i = 0; i < boxes; i++)
+        {
+            sb.Append("<div class=\"s\"></div>");
+        }
+
         sb.Append("</body></html>");
         return sb.ToString();
     }
@@ -229,9 +259,12 @@ internal static class Fixtures
         var sb = new System.Text.StringBuilder(cards * 96 + 96);
         sb.Append("<!doctype html><html><body><main>");
         for (var i = 0; i < cards; i++)
+        {
             sb.Append("<div class=\"card\" id=\"card-").Append(i).Append("\"><h3>Card ").Append(i)
               .Append("</h3><p>Card ").Append(i)
               .Append(" body text that the layer must shape and fill when its cache is cold.</p></div>");
+        }
+
         sb.Append("</main></body></html>");
         return sb.ToString();
     }

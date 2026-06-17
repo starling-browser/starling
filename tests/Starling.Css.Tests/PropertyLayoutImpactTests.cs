@@ -27,7 +27,9 @@ public sealed class PropertyLayoutImpactTests
             PropertyId.BoxShadow, PropertyId.Filter, PropertyId.ClipPath,
             PropertyId.BackgroundPosition, PropertyId.OutlineWidth, PropertyId.OutlineColor,
         })
+        {
             PropertyRegistry.AffectsLayout(id).Should().BeFalse($"{id} is paint/composite-only");
+        }
     }
 
     [TestMethod]
@@ -39,7 +41,9 @@ public sealed class PropertyLayoutImpactTests
             PropertyId.FontSize, PropertyId.LineHeight, PropertyId.Display,
             PropertyId.BorderTopWidth, PropertyId.Top, PropertyId.FlexBasis, PropertyId.LetterSpacing,
         })
+        {
             PropertyRegistry.AffectsLayout(id).Should().BeTrue($"{id} can move geometry");
+        }
     }
 
     [TestMethod]

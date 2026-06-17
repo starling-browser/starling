@@ -12,7 +12,10 @@ public static class DiagnosticsMode
     private static bool Enabled(string name)
     {
         var value = Environment.GetEnvironmentVariable(name);
-        if (string.IsNullOrWhiteSpace(value)) return false;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
 
         return value.Equals("1", StringComparison.OrdinalIgnoreCase)
             || value.Equals("true", StringComparison.OrdinalIgnoreCase)

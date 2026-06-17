@@ -90,7 +90,9 @@ internal static class ImageFormatSniffer
     {
         // Skip a UTF-8 BOM (EF BB BF) if present.
         if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+        {
             bytes = bytes[3..];
+        }
 
         // Skip ASCII leading whitespace (space, tab, CR, LF, FF).
         int i = 0;
@@ -102,7 +104,9 @@ internal static class ImageFormatSniffer
         }
         var rest = bytes[i..];
         if (rest.IsEmpty || rest[0] != (byte)'<')
+        {
             return false;
+        }
 
         // Decode an ASCII prefix for the prologue/root-element check. SVG markup
         // is ASCII at the top regardless of the declared encoding, so a bounded
@@ -123,11 +127,15 @@ internal static class ImageFormatSniffer
 
         // "<?xml" prologue — accept only if the document is plausibly SVG.
         if (StartsWith(head, "<?xml"))
+        {
             return ContainsSvgRoot(head);
+        }
 
         // "<!DOCTYPE svg" or "<!doctype svg".
         if (StartsWith(head, "<!DOCTYPE") || StartsWith(head, "<!doctype"))
+        {
             return ContainsToken(head, "svg");
+        }
 
         // "<svg" possibly followed by whitespace or '>' or ':' (namespaced).
         if (StartsWith(head, "<svg"))
@@ -140,7 +148,9 @@ internal static class ImageFormatSniffer
         // a generator comment). If the prefix is just a comment opener, accept
         // when "svg" appears nearby.
         if (StartsWith(head, "<!--"))
+        {
             return ContainsToken(head, "svg");
+        }
 
         return false;
     }

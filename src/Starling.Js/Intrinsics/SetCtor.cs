@@ -27,7 +27,10 @@ public static class SetCtor
             (newTarget, args) =>
             {
                 if (!IntrinsicHelpers.IsConstructInvocation(newTarget))
+                {
                     throw new JsThrow(realm.NewTypeError("Constructor Set requires 'new'"));
+                }
+
                 var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, proto);
                 return JsValue.Object(Construct(realm, instProto, args));
             },
@@ -104,18 +107,32 @@ public static class SetCtor
     private static JsSet Construct(JsRealm realm, JsObject instProto, JsValue[] args)
     {
         var set = new JsSet(realm);
-        if (!ReferenceEquals(instProto, realm.SetPrototype)) set.SetPrototypeOf(instProto);
-        if (args.Length == 0 || args[0].IsNullish) return set;
+        if (!ReferenceEquals(instProto, realm.SetPrototype))
+        {
+            set.SetPrototypeOf(instProto);
+        }
+
+        if (args.Length == 0 || args[0].IsNullish)
+        {
+            return set;
+        }
 
         var adder = AbstractOperations.Get(realm.ActiveVm, set, "add");
         if (!AbstractOperations.IsCallable(adder))
+        {
             throw new JsThrow(realm.NewTypeError("Set constructor add method is not callable"));
+        }
+
         var iterable = args[0];
         var record = AbstractOperations.GetIterator(realm, realm.ActiveVm, iterable);
         while (true)
         {
             var next = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-            if (next is null) break;
+            if (next is null)
+            {
+                break;
+            }
+
             JsValue value;
             try
             {
@@ -133,14 +150,21 @@ public static class SetCtor
 
     private static JsSet ThisSet(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is JsSet s) return s;
+        if (thisV.IsObject && thisV.AsObject is JsSet s)
+        {
+            return s;
+        }
+
         throw new JsThrow(realm.NewTypeError("Set.prototype method called on incompatible receiver"));
     }
 
     private static JsValue SetIteratorNext(JsRealm realm, JsValue thisV)
     {
         if (!thisV.IsObject || thisV.AsObject is not JsSetIterator it)
+        {
             throw new JsThrow(realm.NewTypeError("Set Iterator.prototype.next called on incompatible receiver"));
+        }
+
         return it.Next(realm);
     }
 
@@ -148,7 +172,10 @@ public static class SetCtor
     {
         var set = ThisSet(realm, thisV);
         if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+        {
             throw new JsThrow(realm.NewTypeError("Set.prototype.forEach requires a callback"));
+        }
+
         var cb = args[0];
         var thisArg = args.Length > 1 ? args[1] : JsValue.Undefined;
         foreach (var v in set.LiveValues())
@@ -178,19 +205,31 @@ public static class SetCtor
     private static SetRecord GetSetRecord(JsRealm realm, JsValue other)
     {
         if (!other.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("set-like argument must be an object"));
+        }
+
         var obj = other.AsObject;
         var rawSize = AbstractOperations.Get(realm.ActiveVm, obj, "size");
         var numSize = JsValue.ToNumber(rawSize);
         if (double.IsNaN(numSize))
+        {
             throw new JsThrow(realm.NewTypeError("set-like.size must be a number"));
+        }
+
         var size = numSize < 0 ? 0 : Math.Floor(numSize);
         var has = AbstractOperations.Get(realm.ActiveVm, obj, "has");
         if (!AbstractOperations.IsCallable(has))
+        {
             throw new JsThrow(realm.NewTypeError("set-like.has must be callable"));
+        }
+
         var keys = AbstractOperations.Get(realm.ActiveVm, obj, "keys");
         if (!AbstractOperations.IsCallable(keys))
+        {
             throw new JsThrow(realm.NewTypeError("set-like.keys must be callable"));
+        }
+
         return new SetRecord(obj, size, has, keys);
     }
 
@@ -198,10 +237,16 @@ public static class SetCtor
     {
         var iter = AbstractOperations.Call(realm.ActiveVm, rec.KeysFn, JsValue.Object(rec.Other), Array.Empty<JsValue>());
         if (!iter.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("set-like.keys() did not return an object"));
+        }
+
         var next = AbstractOperations.Get(realm.ActiveVm, iter.AsObject, "next");
         if (!AbstractOperations.IsCallable(next))
+        {
             throw new JsThrow(realm.NewTypeError("set-like.keys() iterator missing next"));
+        }
+
         return new IteratorRecord(iter, next, Done: false);
     }
 
@@ -210,13 +255,20 @@ public static class SetCtor
         var self = ThisSet(realm, thisV);
         var rec = GetSetRecord(realm, args.Length > 0 ? args[0] : JsValue.Undefined);
         var result = new JsSet(realm);
-        foreach (var v in self.LiveValues()) result.Add(v);
+        foreach (var v in self.LiveValues())
+        {
+            result.Add(v);
+        }
 
         var record = OpenKeysIterator(realm, rec);
         while (true)
         {
             var next = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-            if (next is null) break;
+            if (next is null)
+            {
+                break;
+            }
+
             result.Add(AbstractOperations.IteratorValue(realm.ActiveVm, next.Value));
         }
         return JsValue.Object(result);
@@ -235,7 +287,10 @@ public static class SetCtor
             foreach (var v in self.LiveValues())
             {
                 var inOther = AbstractOperations.Call(realm.ActiveVm, rec.HasFn, JsValue.Object(rec.Other), new[] { v });
-                if (JsValue.ToBoolean(inOther)) result.Add(v);
+                if (JsValue.ToBoolean(inOther))
+                {
+                    result.Add(v);
+                }
             }
         }
         else
@@ -244,9 +299,16 @@ public static class SetCtor
             while (true)
             {
                 var next = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-                if (next is null) break;
+                if (next is null)
+                {
+                    break;
+                }
+
                 var v = AbstractOperations.IteratorValue(realm.ActiveVm, next.Value);
-                if (self.Has(v)) result.Add(v);
+                if (self.Has(v))
+                {
+                    result.Add(v);
+                }
             }
         }
         return JsValue.Object(result);
@@ -263,17 +325,28 @@ public static class SetCtor
             foreach (var v in self.LiveValues())
             {
                 var inOther = AbstractOperations.Call(realm.ActiveVm, rec.HasFn, JsValue.Object(rec.Other), new[] { v });
-                if (!JsValue.ToBoolean(inOther)) result.Add(v);
+                if (!JsValue.ToBoolean(inOther))
+                {
+                    result.Add(v);
+                }
             }
         }
         else
         {
-            foreach (var v in self.LiveValues()) result.Add(v);
+            foreach (var v in self.LiveValues())
+            {
+                result.Add(v);
+            }
+
             var record = OpenKeysIterator(realm, rec);
             while (true)
             {
                 var next = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-                if (next is null) break;
+                if (next is null)
+                {
+                    break;
+                }
+
                 result.Delete(AbstractOperations.IteratorValue(realm.ActiveVm, next.Value));
             }
         }
@@ -285,16 +358,29 @@ public static class SetCtor
         var self = ThisSet(realm, thisV);
         var rec = GetSetRecord(realm, args.Length > 0 ? args[0] : JsValue.Undefined);
         var result = new JsSet(realm);
-        foreach (var v in self.LiveValues()) result.Add(v);
+        foreach (var v in self.LiveValues())
+        {
+            result.Add(v);
+        }
 
         var record = OpenKeysIterator(realm, rec);
         while (true)
         {
             var next = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-            if (next is null) break;
+            if (next is null)
+            {
+                break;
+            }
+
             var v = AbstractOperations.IteratorValue(realm.ActiveVm, next.Value);
-            if (result.Has(v)) result.Delete(v);
-            else result.Add(v);
+            if (result.Has(v))
+            {
+                result.Delete(v);
+            }
+            else
+            {
+                result.Add(v);
+            }
         }
         return JsValue.Object(result);
     }
@@ -303,11 +389,18 @@ public static class SetCtor
     {
         var self = ThisSet(realm, thisV);
         var rec = GetSetRecord(realm, args.Length > 0 ? args[0] : JsValue.Undefined);
-        if (self.Count > rec.Size) return JsValue.False;
+        if (self.Count > rec.Size)
+        {
+            return JsValue.False;
+        }
+
         foreach (var v in self.LiveValues())
         {
             var inOther = AbstractOperations.Call(realm.ActiveVm, rec.HasFn, JsValue.Object(rec.Other), new[] { v });
-            if (!JsValue.ToBoolean(inOther)) return JsValue.False;
+            if (!JsValue.ToBoolean(inOther))
+            {
+                return JsValue.False;
+            }
         }
         return JsValue.True;
     }
@@ -316,12 +409,20 @@ public static class SetCtor
     {
         var self = ThisSet(realm, thisV);
         var rec = GetSetRecord(realm, args.Length > 0 ? args[0] : JsValue.Undefined);
-        if (self.Count < rec.Size) return JsValue.False;
+        if (self.Count < rec.Size)
+        {
+            return JsValue.False;
+        }
+
         var record = OpenKeysIterator(realm, rec);
         while (true)
         {
             var next = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-            if (next is null) break;
+            if (next is null)
+            {
+                break;
+            }
+
             var v = AbstractOperations.IteratorValue(realm.ActiveVm, next.Value);
             if (!self.Has(v))
             {
@@ -342,7 +443,10 @@ public static class SetCtor
             foreach (var v in self.LiveValues())
             {
                 var inOther = AbstractOperations.Call(realm.ActiveVm, rec.HasFn, JsValue.Object(rec.Other), new[] { v });
-                if (JsValue.ToBoolean(inOther)) return JsValue.False;
+                if (JsValue.ToBoolean(inOther))
+                {
+                    return JsValue.False;
+                }
             }
         }
         else
@@ -351,7 +455,11 @@ public static class SetCtor
             while (true)
             {
                 var next = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-                if (next is null) break;
+                if (next is null)
+                {
+                    break;
+                }
+
                 var v = AbstractOperations.IteratorValue(realm.ActiveVm, next.Value);
                 if (self.Has(v))
                 {

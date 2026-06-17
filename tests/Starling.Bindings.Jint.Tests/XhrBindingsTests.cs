@@ -238,11 +238,20 @@ public sealed class XhrBindingsTests
         for (var i = 0; i < 50; i++)
         {
             ctx.Engine.Advanced.ProcessTasks();
-            if (ctx.DrainPosted()) ctx.Engine.Advanced.ProcessTasks();
+            if (ctx.DrainPosted())
+            {
+                ctx.Engine.Advanced.ProcessTasks();
+            }
+
             if (ctx.Loop.PendingTimerCount == 0 && ctx.Loop.PendingAnimationFrameCount == 0 && !ctx.HasPosted)
+            {
                 break;
+            }
+
             if (ctx.Loop.PendingTimerCount > 0 || ctx.Loop.PendingAnimationFrameCount > 0)
+            {
                 ctx.Loop.AdvanceBy(50);
+            }
         }
     }
 

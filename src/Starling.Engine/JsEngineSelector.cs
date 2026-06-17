@@ -36,7 +36,9 @@ internal static class JsEngineSelector
     internal static JsEngineKind Parse(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
+        {
             return JsEngineKind.Starling;
+        }
 
         return raw.Trim().ToLowerInvariant() switch
         {

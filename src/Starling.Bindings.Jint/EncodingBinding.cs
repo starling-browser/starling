@@ -64,7 +64,10 @@ internal static class EncodingBinding
             var label = a.Length > 3 && a[3].IsString() ? a[3].AsString() : "utf-8";
             var enc = ResolveEncoding(label) ?? Encoding.UTF8;
             if (fatal)
+            {
                 enc = (Encoding)enc.Clone();
+            }
+
             if (fatal)
             {
                 enc.DecoderFallback = DecoderFallback.ExceptionFallback;
@@ -129,8 +132,16 @@ internal static class EncodingBinding
     /// subarray decodes correctly. Empty for undefined/null/unknown input.</summary>
     private static byte[] ExtractBytes(JsValue v)
     {
-        if (v.IsUndefined() || v.IsNull()) return Array.Empty<byte>();
-        if (v.IsArrayBuffer() && v.AsArrayBuffer() is { } ab) return ab;
+        if (v.IsUndefined() || v.IsNull())
+        {
+            return Array.Empty<byte>();
+        }
+
+        if (v.IsArrayBuffer() && v.AsArrayBuffer() is { } ab)
+        {
+            return ab;
+        }
+
         if (v is ObjectInstance oi)
         {
             var bufVal = oi.Get("buffer");
@@ -139,7 +150,10 @@ internal static class EncodingBinding
                 var offset = ToInt(oi.Get("byteOffset"));
                 var length = ToInt(oi.Get("byteLength"));
                 if (offset == 0 && (length == 0 || length == backing.Length))
+                {
                     return backing;
+                }
+
                 if (offset >= 0 && length >= 0 && offset + length <= backing.Length)
                 {
                     var slice = new byte[length];

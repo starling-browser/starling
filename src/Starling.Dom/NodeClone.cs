@@ -43,9 +43,16 @@ public static class NodeClone
     {
         ArgumentNullException.ThrowIfNull(source);
         var clone = Shallow(source);
-        if (ReferenceEquals(clone, source)) return clone;
+        if (ReferenceEquals(clone, source))
+        {
+            return clone;
+        }
+
         for (var c = source.FirstChild; c is not null; c = c.NextSibling)
+        {
             clone.AppendChild(Deep(c));
+        }
+
         return clone;
     }
 
@@ -55,7 +62,10 @@ public static class NodeClone
             ? doc.CreateElementNS(el.Namespace, el.Prefix is null ? el.LocalName : el.Prefix + ":" + el.LocalName)
             : doc.CreateElement(el.LocalName);
         foreach (var attr in el.Attributes)
+        {
             clone.Attributes.SetNamedItemNS(attr.Clone());
+        }
+
         return clone;
     }
 }

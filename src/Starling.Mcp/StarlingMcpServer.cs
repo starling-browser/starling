@@ -54,7 +54,10 @@ public sealed class StarlingMcpServer : IAsyncDisposable
 
     public async Task StartAsync(CancellationToken ct = default)
     {
-        if (_app is not null) return;
+        if (_app is not null)
+        {
+            return;
+        }
 
         var endpoint = Endpoint;
         var ip = ResolveEndpointAddress(endpoint);
@@ -113,7 +116,10 @@ public sealed class StarlingMcpServer : IAsyncDisposable
     {
         var app = _app;
         _app = null;
-        if (app is null) return;
+        if (app is null)
+        {
+            return;
+        }
 
         await app.StopAsync().ConfigureAwait(false);
         await app.DisposeAsync().ConfigureAwait(false);
@@ -138,8 +144,16 @@ public sealed class StarlingMcpServer : IAsyncDisposable
 
     private static bool IsAllowedOrigin(string? origin)
     {
-        if (string.IsNullOrWhiteSpace(origin)) return false;
-        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+        if (string.IsNullOrWhiteSpace(origin))
+        {
+            return false;
+        }
+
+        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
         return uri.Scheme is "http" or "https" && IsLoopbackHost(uri.Host);
     }
 
@@ -152,18 +166,29 @@ public sealed class StarlingMcpServer : IAsyncDisposable
             _ => throw new InvalidOperationException("The MCP endpoint must use a loopback host."),
         };
         if (!IPAddress.IsLoopback(ip))
+        {
             throw new InvalidOperationException("The MCP endpoint must use a loopback host.");
+        }
+
         return ip;
     }
 
     private static void ValidateEndpoint(Uri endpoint)
     {
         if (endpoint.Scheme != Uri.UriSchemeHttp)
+        {
             throw new ArgumentException("MCP endpoint scheme must be http.", nameof(endpoint));
+        }
+
         if (!IsLoopbackHost(endpoint.Host))
+        {
             throw new ArgumentException("MCP endpoint must use a loopback host.", nameof(endpoint));
+        }
+
         if (string.IsNullOrEmpty(endpoint.AbsolutePath) || endpoint.AbsolutePath == "/")
+        {
             throw new ArgumentException("MCP endpoint must include a path, e.g. /mcp.", nameof(endpoint));
+        }
     }
 
     private static bool IsLoopbackHost(string host)

@@ -76,7 +76,11 @@ internal static class AnimationTraceProgram
             Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
             ActivityStopped = a =>
             {
-                if (a.OperationName != "paint.raster.command_record") return;
+                if (a.OperationName != "paint.raster.command_record")
+                {
+                    return;
+                }
+
                 frameData.LastReused = TagInt(a, "raster.text.shaped_reused");
                 frameData.LastRebuilt = TagInt(a, "raster.text.shaped_rebuilt");
                 frameData.LastChars = TagInt(a, "raster.text.chars");
@@ -109,7 +113,11 @@ internal static class AnimationTraceProgram
             frameData.Reset();
             using (backend.Render(list, viewport, scale)) { }
 
-            if (f < warmup) continue;
+            if (f < warmup)
+            {
+                continue;
+            }
+
             sumReused += frameData.LastReused;
             sumRebuilt += frameData.LastRebuilt;
             sumChars += frameData.LastChars;
@@ -139,9 +147,14 @@ internal static class AnimationTraceProgram
         Console.WriteLine($"raster.time.draw_text_ms mean/frame: {sumDrawMs / n:F3}   font_create_ms mean/frame: {sumFontMs / n:F3}");
         Console.WriteLine();
         if (meanRebuilt > meanReused)
+        {
             Console.WriteLine("VERDICT: shaped_rebuilt dominates — text IS re-shaped at paint time every frame (heavy path confirmed).");
+        }
         else
+        {
             Console.WriteLine("VERDICT: shaped_reused dominates — paint-time shaping is cached; the per-frame cost lives in relayout/raster, not reshape.");
+        }
+
         return 0;
     }
 

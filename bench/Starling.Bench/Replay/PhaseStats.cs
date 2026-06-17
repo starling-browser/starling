@@ -29,7 +29,9 @@ public readonly record struct PhaseStats(
         ArgumentNullException.ThrowIfNull(ticks);
         ArgumentNullException.ThrowIfNull(allocBytes);
         if (ticks.Length == 0)
+        {
             return default;
+        }
 
         var n = ticks.Length;
         var ms = new double[n];
@@ -41,8 +43,15 @@ public readonly record struct PhaseStats(
             var v = ticks[i] * 1000.0 / Stopwatch.Frequency;
             ms[i] = v;
             sum += v;
-            if (v > 16.666_67) dropped60++;
-            if (v > 8.333_33) dropped120++;
+            if (v > 16.666_67)
+            {
+                dropped60++;
+            }
+
+            if (v > 8.333_33)
+            {
+                dropped120++;
+            }
         }
         Array.Sort(ms);
 
@@ -51,7 +60,10 @@ public readonly record struct PhaseStats(
         for (var i = 0; i < n; i++)
         {
             allocSum += allocBytes[i];
-            if (allocBytes[i] > allocMax) allocMax = allocBytes[i];
+            if (allocBytes[i] > allocMax)
+            {
+                allocMax = allocBytes[i];
+            }
         }
 
         return new PhaseStats(
@@ -70,11 +82,19 @@ public readonly record struct PhaseStats(
     private static double Percentile(double[] sortedAsc, double p)
     {
         var n = sortedAsc.Length;
-        if (n == 1) return sortedAsc[0];
+        if (n == 1)
+        {
+            return sortedAsc[0];
+        }
+
         var rank = p / 100.0 * (n - 1);
         var lo = (int)Math.Floor(rank);
         var hi = (int)Math.Ceiling(rank);
-        if (lo == hi) return sortedAsc[lo];
+        if (lo == hi)
+        {
+            return sortedAsc[lo];
+        }
+
         return sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (rank - lo);
     }
 }

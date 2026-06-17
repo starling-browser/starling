@@ -31,9 +31,19 @@ public sealed class LayerPromotionTests
 {
     private static Box? Find(Box box, Element el)
     {
-        if (ReferenceEquals(box.Element, el)) return box;
+        if (ReferenceEquals(box.Element, el))
+        {
+            return box;
+        }
+
         foreach (var c in box.Children)
-            if (Find(c, el) is { } f) return f;
+        {
+            if (Find(c, el) is { } f)
+            {
+                return f;
+            }
+        }
+
         return null;
     }
 
@@ -127,8 +137,14 @@ public sealed class LayerPromotionTests
         if (box.Element is { } el && box.Style is { } cs)
         {
             var decls = AnimationCompositor.BuildDeclarations(cs);
-            if (decls.Count > 0) style.AnimationEngine.OnAnimationsCascaded(el, decls);
+            if (decls.Count > 0)
+            {
+                style.AnimationEngine.OnAnimationsCascaded(el, decls);
+            }
         }
-        foreach (var c in box.Children) PrimeAnimations(style, c);
+        foreach (var c in box.Children)
+        {
+            PrimeAnimations(style, c);
+        }
     }
 }

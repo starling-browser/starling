@@ -25,7 +25,11 @@ public static class RegexFlagParser
     {
         flags = RegexFlags.None;
         error = null;
-        if (string.IsNullOrEmpty(s)) return true;
+        if (string.IsNullOrEmpty(s))
+        {
+            return true;
+        }
+
         foreach (var c in s)
         {
             RegexFlags bit = c switch
@@ -64,14 +68,46 @@ public static class RegexFlagParser
     {
         var sb = new System.Text.StringBuilder();
         // Spec §22.2.6.4 ordering: d, g, i, m, s, u, v, y
-        if ((flags & RegexFlags.HasIndices) != 0) sb.Append('d');
-        if ((flags & RegexFlags.Global) != 0) sb.Append('g');
-        if ((flags & RegexFlags.IgnoreCase) != 0) sb.Append('i');
-        if ((flags & RegexFlags.Multiline) != 0) sb.Append('m');
-        if ((flags & RegexFlags.DotAll) != 0) sb.Append('s');
-        if ((flags & RegexFlags.Unicode) != 0) sb.Append('u');
-        if ((flags & RegexFlags.UnicodeSets) != 0) sb.Append('v');
-        if ((flags & RegexFlags.Sticky) != 0) sb.Append('y');
+        if ((flags & RegexFlags.HasIndices) != 0)
+        {
+            sb.Append('d');
+        }
+
+        if ((flags & RegexFlags.Global) != 0)
+        {
+            sb.Append('g');
+        }
+
+        if ((flags & RegexFlags.IgnoreCase) != 0)
+        {
+            sb.Append('i');
+        }
+
+        if ((flags & RegexFlags.Multiline) != 0)
+        {
+            sb.Append('m');
+        }
+
+        if ((flags & RegexFlags.DotAll) != 0)
+        {
+            sb.Append('s');
+        }
+
+        if ((flags & RegexFlags.Unicode) != 0)
+        {
+            sb.Append('u');
+        }
+
+        if ((flags & RegexFlags.UnicodeSets) != 0)
+        {
+            sb.Append('v');
+        }
+
+        if ((flags & RegexFlags.Sticky) != 0)
+        {
+            sb.Append('y');
+        }
+
         return sb.ToString();
     }
 }

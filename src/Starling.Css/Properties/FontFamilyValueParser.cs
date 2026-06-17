@@ -54,9 +54,20 @@ internal static class FontFamilyValueParser
         // Trim surrounding whitespace.
         var start = 0;
         var end = tokens.Count;
-        while (start < end && tokens[start].Type == CssTokenType.Whitespace) start++;
-        while (end > start && tokens[end - 1].Type == CssTokenType.Whitespace) end--;
-        if (start == end) return;
+        while (start < end && tokens[start].Type == CssTokenType.Whitespace)
+        {
+            start++;
+        }
+
+        while (end > start && tokens[end - 1].Type == CssTokenType.Whitespace)
+        {
+            end--;
+        }
+
+        if (start == end)
+        {
+            return;
+        }
 
         // A quoted family name is a single CssString token. Anything else is
         // a sequence of idents (possibly separated by whitespace) that we
@@ -73,9 +84,14 @@ internal static class FontFamilyValueParser
         {
             var tok = tokens[i];
             if (tok.Type == CssTokenType.Ident)
+            {
                 parts.Add(tok.Value);
+            }
         }
-        if (parts.Count == 0) return;
+        if (parts.Count == 0)
+        {
+            return;
+        }
 
         // Generic family keywords ("serif", "sans-serif", "monospace",
         // "cursive", "fantasy", "system-ui", ...) are case-insensitive and
@@ -84,9 +100,13 @@ internal static class FontFamilyValueParser
         var joined = string.Join(' ', parts);
         var lower = joined.ToLowerInvariant();
         if (IsGenericFamilyKeyword(lower))
+        {
             result.Add(new CssKeyword(lower));
+        }
         else
+        {
             result.Add(new CssKeyword(joined));
+        }
     }
 
     private static bool IsGenericFamilyKeyword(string name) => name switch

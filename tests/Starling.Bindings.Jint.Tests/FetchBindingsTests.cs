@@ -240,12 +240,24 @@ public sealed class FetchBindingsTests
         for (var i = 0; i < 1000; i++)
         {
             ctx.Engine.Advanced.ProcessTasks();
-            if (ctx.DrainPosted()) ctx.Engine.Advanced.ProcessTasks();
-            if (done()) return;
+            if (ctx.DrainPosted())
+            {
+                ctx.Engine.Advanced.ProcessTasks();
+            }
+
+            if (done())
+            {
+                return;
+            }
+
             if (ctx.Loop.PendingTimerCount > 0 || ctx.Loop.PendingAnimationFrameCount > 0)
+            {
                 ctx.Loop.AdvanceBy(1);
+            }
             else if (!ctx.HasPosted)
+            {
                 System.Threading.Thread.Sleep(1); // wait for the background HTTP/data task
+            }
         }
         ctx.Engine.Advanced.ProcessTasks();
     }

@@ -129,8 +129,13 @@ public sealed class SvgConformanceShapesTests
         int width = SvgRaster.OpaqueInRow(img, 20);
         int height = 0;
         for (int y = 0; y < img.Height; y++)
+        {
             if (SvgRaster.At(img, 20, y).A > 40)
+            {
                 height++;
+            }
+        }
+
         width.Should().BeGreaterThan(height + 6, "rx (18) far exceeds ry (6), so the ellipse is wider than tall");
     }
 

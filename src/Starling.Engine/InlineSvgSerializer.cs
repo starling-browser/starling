@@ -29,7 +29,11 @@ internal static class InlineSvgSerializer
             // Skip namespace declarations: the decoder ignores namespaces and a
             // bare `xmlns` round-trips fine, but `xmlns:foo` prefixed attrs add
             // nothing the local-name lookup uses.
-            if (attr.Name.StartsWith("xmlns:", StringComparison.Ordinal)) continue;
+            if (attr.Name.StartsWith("xmlns:", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             sb.Append(' ').Append(attr.Name).Append("=\"");
             AppendEscaped(sb, attr.Value, attribute: true);
             sb.Append('"');
@@ -59,7 +63,11 @@ internal static class InlineSvgSerializer
 
     private static void AppendEscaped(StringBuilder sb, string? value, bool attribute)
     {
-        if (string.IsNullOrEmpty(value)) return;
+        if (string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
         foreach (var c in value)
         {
             switch (c)

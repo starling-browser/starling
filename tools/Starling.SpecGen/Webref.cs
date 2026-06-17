@@ -56,7 +56,11 @@ public static class WebrefLoader
         {
             using var stream = File.OpenRead(path);
             var doc = JsonSerializer.Deserialize<WebrefCss>(stream, Options);
-            if (doc is null) continue;
+            if (doc is null)
+            {
+                continue;
+            }
+
             var specId = Path.GetFileNameWithoutExtension(path);
             results.Add((specId, doc));
         }

@@ -156,9 +156,16 @@ public class DoctypeStateTests
         while (true)
         {
             var tok = t.ReadToken();
-            if (tok is null) return tokens;
+            if (tok is null)
+            {
+                return tokens;
+            }
+
             tokens.Add(tok);
-            if (tok is EndOfFileToken) return tokens;
+            if (tok is EndOfFileToken)
+            {
+                return tokens;
+            }
         }
     }
 

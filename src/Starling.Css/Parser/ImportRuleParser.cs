@@ -16,13 +16,17 @@ public static class ImportRuleParser
     {
         importRule = null!;
         if (!atRule.Name.Equals("import", StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
 
         var prelude = atRule.Prelude;
         var pos = 0;
         SkipWs(prelude, ref pos);
         if (pos >= prelude.Count)
+        {
             return false;
+        }
 
         string? url = null;
         if (prelude[pos] is CssTokenValue { Token.Type: CssTokenType.Url } urlTok)
@@ -41,7 +45,9 @@ public static class ImportRuleParser
             pos++;
         }
         if (url is null)
+        {
             return false;
+        }
 
         SkipWs(prelude, ref pos);
         string? layerName = null;
@@ -71,7 +77,10 @@ public static class ImportRuleParser
 
         var remainder = new List<CssComponentValue>();
         for (var i = pos; i < prelude.Count; i++)
+        {
             remainder.Add(prelude[i]);
+        }
+
         var mqList = remainder.Count == 0
             ? MediaQueryList.All
             : MediaQueryParser.ParseList(remainder);
@@ -83,14 +92,21 @@ public static class ImportRuleParser
     private static void SkipWs(IReadOnlyList<CssComponentValue> values, ref int pos)
     {
         while (pos < values.Count && values[pos] is CssTokenValue { Token.Type: CssTokenType.Whitespace })
+        {
             pos++;
+        }
     }
 
     private static string? ExtractFirstString(IReadOnlyList<CssComponentValue> values)
     {
         foreach (var v in values)
+        {
             if (v is CssTokenValue { Token.Type: CssTokenType.String } s)
+            {
                 return s.Token.Value;
+            }
+        }
+
         return null;
     }
 
@@ -101,8 +117,14 @@ public static class ImportRuleParser
         {
             if (v is CssTokenValue tv)
             {
-                if (tv.Token.Type == CssTokenType.Ident) sb.Append(tv.Token.Value);
-                else if (tv.Token.Type == CssTokenType.Delim && tv.Token.Delimiter == '.') sb.Append('.');
+                if (tv.Token.Type == CssTokenType.Ident)
+                {
+                    sb.Append(tv.Token.Value);
+                }
+                else if (tv.Token.Type == CssTokenType.Delim && tv.Token.Delimiter == '.')
+                {
+                    sb.Append('.');
+                }
             }
         }
         return sb.Length == 0 ? null : sb.ToString();

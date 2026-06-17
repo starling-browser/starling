@@ -28,7 +28,11 @@ internal static class EventDispatcher
             //    CAPTURING_PHASE; the target runs at AT_TARGET (capture listeners).
             for (var i = path.Count - 1; i >= 0; i--)
             {
-                if (@event.PropagationStopped) break;
+                if (@event.PropagationStopped)
+                {
+                    break;
+                }
+
                 @event.EventPhase = i == 0 ? EventPhase.AtTarget : EventPhase.CapturingPhase;
                 InvokeListeners(path[i], @event, capture: true);
             }
@@ -38,8 +42,16 @@ internal static class EventDispatcher
             //    when the event bubbles.
             for (var i = 0; i < path.Count; i++)
             {
-                if (@event.PropagationStopped) break;
-                if (i > 0 && !@event.Bubbles) break;
+                if (@event.PropagationStopped)
+                {
+                    break;
+                }
+
+                if (i > 0 && !@event.Bubbles)
+                {
+                    break;
+                }
+
                 @event.EventPhase = i == 0 ? EventPhase.AtTarget : EventPhase.BubblingPhase;
                 InvokeListeners(path[i], @event, capture: false);
             }
@@ -64,7 +76,9 @@ internal static class EventDispatcher
         if (target is Node node)
         {
             for (var ancestor = node.ParentNode; ancestor is not null; ancestor = ancestor.ParentNode)
+            {
                 path.Add(ancestor);
+            }
         }
         return path;
     }
@@ -82,9 +96,20 @@ internal static class EventDispatcher
 
         foreach (var entry in listeners)
         {
-            if (entry.Removed) continue;
-            if (entry.Type != @event.Type) continue;
-            if (capture is not null && entry.Capture != capture.Value) continue;
+            if (entry.Removed)
+            {
+                continue;
+            }
+
+            if (entry.Type != @event.Type)
+            {
+                continue;
+            }
+
+            if (capture is not null && entry.Capture != capture.Value)
+            {
+                continue;
+            }
 
             if (entry.Once)
             {
@@ -109,10 +134,16 @@ internal static class EventDispatcher
                 @event.InPassiveListener = false;
             }
 
-            if (@event.ImmediatePropagationStopped) break;
+            if (@event.ImmediatePropagationStopped)
+            {
+                break;
+            }
         }
 
-        if (needsCompact) target.CompactListeners();
+        if (needsCompact)
+        {
+            target.CompactListeners();
+        }
     }
 }
 

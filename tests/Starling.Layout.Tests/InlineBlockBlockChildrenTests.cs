@@ -254,10 +254,18 @@ public sealed class InlineBlockBlockChildrenTests
 
     private static IEnumerable<Box.Box> FindAll(Box.Box root, string localName)
     {
-        if (root.Element?.LocalName == localName) yield return root;
+        if (root.Element?.LocalName == localName)
+        {
+            yield return root;
+        }
+
         foreach (var child in root.Children)
+        {
             foreach (var hit in FindAll(child, localName))
+            {
                 yield return hit;
+            }
+        }
     }
 
     private static TextFragment? FindTextFragment(Box.Box root, string contains)
@@ -265,24 +273,38 @@ public sealed class InlineBlockBlockChildrenTests
         if (root is TextBox tb)
         {
             foreach (var frag in tb.Fragments)
+            {
                 if (frag.Text.Contains(contains, StringComparison.Ordinal))
+                {
                     return frag;
+                }
+            }
         }
         foreach (var child in root.Children)
         {
             var hit = FindTextFragment(child, contains);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }
 
     private static Box.Box? FindBox(Box.Box root, string localName)
     {
-        if (root.Element?.LocalName == localName) return root;
+        if (root.Element?.LocalName == localName)
+        {
+            return root;
+        }
+
         foreach (var child in root.Children)
         {
             var hit = FindBox(child, localName);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }
@@ -291,11 +313,17 @@ public sealed class InlineBlockBlockChildrenTests
     {
         if (root.Element?.LocalName == "input" &&
             string.Equals(root.Element.GetAttribute("type"), type, StringComparison.OrdinalIgnoreCase))
+        {
             return root;
+        }
+
         foreach (var child in root.Children)
         {
             var hit = FindInputByType(child, type);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }
@@ -304,8 +332,12 @@ public sealed class InlineBlockBlockChildrenTests
     {
         if (box is TextBox tb) { yield return tb; yield break; }
         foreach (var child in box.Children)
+        {
             foreach (var inner in FlattenTextBoxes(child))
+            {
                 yield return inner;
+            }
+        }
     }
 
     /// <summary>Sum each ancestor's <see cref="Box.Box.Frame"/> Y to get a
@@ -314,7 +346,10 @@ public sealed class InlineBlockBlockChildrenTests
     {
         var y = 0d;
         for (var b = box; b is not null; b = b.Parent)
+        {
             y += b.Frame.Y;
+        }
+
         return y;
     }
 }

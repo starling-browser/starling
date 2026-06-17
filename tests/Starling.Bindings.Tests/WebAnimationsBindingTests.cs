@@ -114,9 +114,21 @@ public sealed class WebAnimationsBindingTests
         public string PlayState(int id)
         {
             var i = _byId[id];
-            if (i.IsCanceled) return "idle";
-            if (i.IsPaused) return "paused";
-            if (i.IsCompleted) return "finished";
+            if (i.IsCanceled)
+            {
+                return "idle";
+            }
+
+            if (i.IsPaused)
+            {
+                return "paused";
+            }
+
+            if (i.IsCompleted)
+            {
+                return "finished";
+            }
+
             return "running";
         }
 
@@ -150,7 +162,10 @@ public sealed class WebAnimationsBindingTests
         for (var n = 1; n <= maxTicks; n++)
         {
             host.Tick(n * stepMs);
-            if (Eval(rt, "result = a.playState;").AsString == "finished") return n;
+            if (Eval(rt, "result = a.playState;").AsString == "finished")
+            {
+                return n;
+            }
         }
         return -1;
     }

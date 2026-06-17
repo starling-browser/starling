@@ -21,7 +21,11 @@ public sealed class SurfaceManifestEmitter(WebIdlModel model, OverrideSet overri
         var members = new List<SurfaceMember>();
         foreach (var interfaceName in interfaceNames)
         {
-            if (!model.Interfaces.TryGetValue(interfaceName, out var iface)) continue;
+            if (!model.Interfaces.TryGetValue(interfaceName, out var iface))
+            {
+                continue;
+            }
+
             foreach (var member in iface.Members)
             {
                 switch (member)
@@ -143,7 +147,11 @@ public sealed class SurfaceManifestEmitter(WebIdlModel model, OverrideSet overri
         int count = 0;
         foreach (var arg in args)
         {
-            if (arg.Optional || arg.Variadic) break;
+            if (arg.Optional || arg.Variadic)
+            {
+                break;
+            }
+
             count++;
         }
         return count;
@@ -152,7 +160,9 @@ public sealed class SurfaceManifestEmitter(WebIdlModel model, OverrideSet overri
     private string TypeName(IdlType type)
     {
         if (type.IsUnion)
+        {
             return "(" + string.Join(" or ", type.Union.Select(TypeName)) + ")" + (type.Nullable ? "?" : "");
+        }
 
         string core = type.Name switch
         {

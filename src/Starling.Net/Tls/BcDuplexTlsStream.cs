@@ -59,7 +59,10 @@ internal sealed class BcDuplexTlsStream : Stream
         {
             var n = await transport.ReadAsync(cipher, ct).ConfigureAwait(false);
             if (n == 0)
+            {
                 throw new EndOfStreamException("peer closed during TLS handshake");
+            }
+
             protocol.OfferInput(cipher, 0, n);
             await PumpOutputAsync(protocol, transport, ct).ConfigureAwait(false); // e.g. client Finished
         }
@@ -70,7 +73,11 @@ internal sealed class BcDuplexTlsStream : Stream
     private static async Task PumpOutputAsync(TlsClientProtocol protocol, Stream transport, CancellationToken ct)
     {
         var available = protocol.GetAvailableOutputBytes();
-        if (available == 0) return;
+        if (available == 0)
+        {
+            return;
+        }
+
         var buf = new byte[available];
         var read = protocol.ReadOutput(buf, 0, available);
         await transport.WriteAsync(buf.AsMemory(0, read), ct).ConfigureAwait(false);
@@ -79,7 +86,10 @@ internal sealed class BcDuplexTlsStream : Stream
 
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
     {
-        if (buffer.IsEmpty) return 0;
+        if (buffer.IsEmpty)
+        {
+            return 0;
+        }
 
         while (true)
         {
@@ -106,7 +116,10 @@ internal sealed class BcDuplexTlsStream : Stream
             // 2. Otherwise pull ciphertext off the socket (outside the lock, so a
             //    concurrent write isn't blocked) and feed it to the protocol.
             var n = await _transport.ReadAsync(_cipherReadBuffer, ct).ConfigureAwait(false);
-            if (n == 0) return 0; // clean EOF
+            if (n == 0)
+            {
+                return 0; // clean EOF
+            }
 
             byte[]? outChunk = null;
             var outLen = 0;
@@ -123,13 +136,18 @@ internal sealed class BcDuplexTlsStream : Stream
                 }
             }
             if (outChunk is not null)
+            {
                 await SocketWriteAsync(outChunk.AsMemory(0, outLen), ct).ConfigureAwait(false);
+            }
         }
     }
 
     public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ct = default)
     {
-        if (buffer.IsEmpty) return;
+        if (buffer.IsEmpty)
+        {
+            return;
+        }
 
         byte[] cipher;
         int cipherLen;
@@ -180,7 +198,11 @@ internal sealed class BcDuplexTlsStream : Stream
 
     protected override void Dispose(bool disposing)
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         if (disposing)
         {

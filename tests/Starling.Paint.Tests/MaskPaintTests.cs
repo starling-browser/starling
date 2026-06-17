@@ -131,7 +131,10 @@ public sealed class MaskPaintTests
         // Fully-opaque white mask so the full fill survives — only radii matter.
         var buf = new byte[100 * 100 * 4];
         for (var i = 0; i < buf.Length; i += 4)
+        {
             buf[i] = buf[i + 1] = buf[i + 2] = buf[i + 3] = 255;
+        }
+
         using var mask = DecodedImage.FromBuffer(100, 100, buf);
 
         // 50px uniform radius on a 100px box → circle.
@@ -184,7 +187,10 @@ public sealed class MaskPaintTests
         // White mask: alpha=255 everywhere (all opaque), colour=white (luma≈1).
         var whiteBuf = new byte[40 * 40 * 4];
         for (var i = 0; i < whiteBuf.Length; i += 4)
+        {
             whiteBuf[i] = whiteBuf[i + 1] = whiteBuf[i + 2] = whiteBuf[i + 3] = 255;
+        }
+
         using var whiteMask = DecodedImage.FromBuffer(40, 40, whiteBuf);
 
         // Black mask: alpha=255 everywhere (fully opaque), colour=black (luma=0).
@@ -242,7 +248,10 @@ public sealed class MaskPaintTests
     {
         var whiteBuf = new byte[40 * 40 * 4];
         for (var i = 0; i < whiteBuf.Length; i += 4)
+        {
             whiteBuf[i] = whiteBuf[i + 1] = whiteBuf[i + 2] = whiteBuf[i + 3] = 255;
+        }
+
         using var whiteMask = DecodedImage.FromBuffer(40, 40, whiteBuf);
 
         using var backend = new ImageSharpBackend(FontResolver.Default, webFonts: null);

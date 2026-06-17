@@ -34,12 +34,17 @@ public class JsManyLocalsSlotTests
         sb.Append("  function read(){ return captured; }\n");
         // Push the function past 256 locals with plain function-expr vars.
         for (var i = 0; i < 300; i++)
+        {
             sb.Append($"  var v{i} = function(){{ return {i}; }};\n");
+        }
         // A second captured var declared AFTER the slot count crosses 256.
         sb.Append("  var late = 11;\n");
         sb.Append("  function readLate(){ return late; }\n");
         for (var i = 0; i < 300; i++)
+        {
             sb.Append($"  var w{i} = function(){{ return {i}; }};\n");
+        }
+
         sb.Append("  captured = 42;\n");
         sb.Append("  late = 99;\n");
         sb.Append("  return read() + readLate();\n");
@@ -59,7 +64,10 @@ public class JsManyLocalsSlotTests
         sb.Append("function outer(p){\n");
         sb.Append("  function read(){ return p; }\n");
         for (var i = 0; i < 300; i++)
+        {
             sb.Append($"  var v{i} = {i};\n");
+        }
+
         sb.Append("  p = 1234;\n");
         sb.Append("  return read();\n");
         sb.Append("}\n");
@@ -76,7 +84,9 @@ public class JsManyLocalsSlotTests
         var sb = new StringBuilder();
         sb.Append("function outer(){\n");
         for (var i = 0; i < 400; i++)
+        {
             sb.Append($"  var v{i} = {i};\n");
+        }
         // Sum the last few high-slot locals — if they aliased, the sum is wrong.
         sb.Append("  return v300 + v350 + v399;\n");
         sb.Append("}\n");

@@ -77,7 +77,9 @@ public sealed class CoreWebApiBindingsTests
         foreach (var m in new[] { "log", "info", "warn", "error", "debug", "trace", "dir", "table",
                                    "assert", "count", "countReset", "time", "timeEnd", "timeLog",
                                    "group", "groupCollapsed", "groupEnd", "clear" })
+        {
             e.Evaluate($"typeof console.{m}").AsString().Should().Be("function", $"console.{m}");
+        }
         // calling them must not throw
         e.Evaluate("(function(){ console.group('g'); console.count('x'); console.count('x'); console.countReset('x'); " +
                    "console.time('t'); console.timeEnd('t'); console.assert(true); console.groupEnd(); console.clear(); return 'ok'; })()")

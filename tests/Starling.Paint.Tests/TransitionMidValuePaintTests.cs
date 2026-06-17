@@ -81,7 +81,10 @@ public sealed class TransitionMidValuePaintTests
     private static Element? FindFirstDiv(Document document)
     {
         foreach (var d in document.GetElementsByTagName("div"))
+        {
             return d;
+        }
+
         return null;
     }
 }

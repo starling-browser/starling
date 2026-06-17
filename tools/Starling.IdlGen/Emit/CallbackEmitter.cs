@@ -24,7 +24,11 @@ public sealed class CallbackEmitter(WebIdlModel model, TypeMapper mapper, ClrMap
         var visitedDicts = new HashSet<string>(StringComparer.Ordinal);
         foreach (string name in interfaceNames)
         {
-            if (!model.Interfaces.TryGetValue(name, out var iface)) continue;
+            if (!model.Interfaces.TryGetValue(name, out var iface))
+            {
+                continue;
+            }
+
             foreach (var member in iface.Members)
             {
                 switch (member)
@@ -32,7 +36,11 @@ public sealed class CallbackEmitter(WebIdlModel model, TypeMapper mapper, ClrMap
                     case IdlAttribute a: Collect(a.Type, used, visitedDicts); break;
                     case IdlOperation op:
                         Collect(op.ReturnType, used, visitedDicts);
-                        foreach (var arg in op.Arguments) Collect(arg.Type, used, visitedDicts);
+                        foreach (var arg in op.Arguments)
+                        {
+                            Collect(arg.Type, used, visitedDicts);
+                        }
+
                         break;
                 }
             }
@@ -53,7 +61,10 @@ public sealed class CallbackEmitter(WebIdlModel model, TypeMapper mapper, ClrMap
         count = 0;
         foreach (string cbName in used)
         {
-            if (!model.Callbacks.TryGetValue(cbName, out var cb)) continue;
+            if (!model.Callbacks.TryGetValue(cbName, out var cb))
+            {
+                continue;
+            }
 
             string ret = ReturnType(cb.ReturnType);
             var pars = cb.Arguments.Select((a, i) => $"{ParamType(a.Type)} {ParamName(a.Name, i)}");
@@ -67,14 +78,22 @@ public sealed class CallbackEmitter(WebIdlModel model, TypeMapper mapper, ClrMap
     private string ReturnType(IdlType type)
     {
         var r = model.ResolveTypedef(type);
-        if (!r.IsUnion && r.TypeArgs.Count == 0 && r.Name is "undefined" or "void") return "void";
+        if (!r.IsUnion && r.TypeArgs.Count == 0 && r.Name is "undefined" or "void")
+        {
+            return "void";
+        }
+
         return ParamType(type);
     }
 
     private string ParamType(IdlType type)
     {
         var r = model.ResolveTypedef(type);
-        if (r.IsUnion) return TypeMapper.JsValue;
+        if (r.IsUnion)
+        {
+            return TypeMapper.JsValue;
+        }
+
         var mapped = mapper.Map(r, TypePosition.Parameter);
         return mapped.Kind switch
         {
@@ -88,7 +107,11 @@ public sealed class CallbackEmitter(WebIdlModel model, TypeMapper mapper, ClrMap
 
     private static string ParamName(string name, int index)
     {
-        if (string.IsNullOrEmpty(name)) return $"arg{index}";
+        if (string.IsNullOrEmpty(name))
+        {
+            return $"arg{index}";
+        }
+
         return CsKeywords.Contains(name) ? "@" + name : name;
     }
 
@@ -97,11 +120,26 @@ public sealed class CallbackEmitter(WebIdlModel model, TypeMapper mapper, ClrMap
         var r = model.ResolveTypedef(type);
         if (!r.IsUnion && r.TypeArgs.Count == 0)
         {
-            if (model.Callbacks.ContainsKey(r.Name)) used.Add(r.Name);
+            if (model.Callbacks.ContainsKey(r.Name))
+            {
+                used.Add(r.Name);
+            }
             else if (model.Dictionaries.TryGetValue(r.Name, out var dict) && visitedDicts.Add(r.Name))
-                foreach (var f in dict.Members) Collect(f.Type, used, visitedDicts);
+            {
+                foreach (var f in dict.Members)
+                {
+                    Collect(f.Type, used, visitedDicts);
+                }
+            }
         }
-        foreach (var m in r.Union) Collect(m, used, visitedDicts);
-        foreach (var arg in r.TypeArgs) Collect(arg, used, visitedDicts);
+        foreach (var m in r.Union)
+        {
+            Collect(m, used, visitedDicts);
+        }
+
+        foreach (var arg in r.TypeArgs)
+        {
+            Collect(arg, used, visitedDicts);
+        }
     }
 }

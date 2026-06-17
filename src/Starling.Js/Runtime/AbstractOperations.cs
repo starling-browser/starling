@@ -20,17 +20,28 @@ public static class AbstractOperations
 
     public static JsValue ToPrimitive(JsVm? vm, JsValue input, string hint = "default")
     {
-        if (input.Kind != JsValueKind.Object) return input;
+        if (input.Kind != JsValueKind.Object)
+        {
+            return input;
+        }
+
         var obj = input.AsObject;
         var exotic = Get(vm, obj, JsPropertyKey.Symbol(Starling.Js.Intrinsics.SymbolCtor.ToPrimitive));
         if (!exotic.IsUndefined && !exotic.IsNull)
         {
             if (!IsCallable(exotic))
+            {
                 throw new JsThrow(vm is not null
                     ? vm.Realm.NewTypeError("@@toPrimitive must be callable")
                     : JsValue.String("@@toPrimitive must be callable"));
+            }
+
             var r = Call(vm, exotic, input, new[] { JsValue.String(hint) });
-            if (r.Kind != JsValueKind.Object) return r;
+            if (r.Kind != JsValueKind.Object)
+            {
+                return r;
+            }
+
             throw new JsThrow(vm is not null
                 ? vm.Realm.NewTypeError("@@toPrimitive must return a primitive value")
                 : JsValue.String("@@toPrimitive must return a primitive value"));
@@ -45,13 +56,19 @@ public static class AbstractOperations
         if (IsCallable(m1))
         {
             var r = Call(vm, m1, input, Array.Empty<JsValue>());
-            if (r.Kind != JsValueKind.Object) return r;
+            if (r.Kind != JsValueKind.Object)
+            {
+                return r;
+            }
         }
         var m2 = Get(vm, obj, second);
         if (IsCallable(m2))
         {
             var r = Call(vm, m2, input, Array.Empty<JsValue>());
-            if (r.Kind != JsValueKind.Object) return r;
+            if (r.Kind != JsValueKind.Object)
+            {
+                return r;
+            }
         }
         // §13.4.10 step 5: neither method returned a primitive.
         throw new JsThrow(vm is not null
@@ -69,20 +86,29 @@ public static class AbstractOperations
     public static string ToStringJs(JsVm? vm, JsValue value)
     {
         if (value.IsSymbol)
+        {
             throw new JsThrow(vm is not null
                 ? vm.Realm.NewTypeError("Cannot convert a Symbol value to a string")
                 : JsValue.String("Cannot convert a Symbol value to a string"));
+        }
+
         if (value.Kind != JsValueKind.Object)
+        {
             return JsValue.ToStringValue(value);
+        }
+
         var prim = ToPrimitive(vm, value, "string");
         // After ToPrimitive an object can only remain if a custom @@toPrimitive
         // returned one; that path is a TypeError per ToPrimitive itself, so
         // prim is guaranteed primitive here. Symbols from ToPrimitive still
         // reject per step 2.
         if (prim.IsSymbol)
+        {
             throw new JsThrow(vm is not null
                 ? vm.Realm.NewTypeError("Cannot convert a Symbol value to a string")
                 : JsValue.String("Cannot convert a Symbol value to a string"));
+        }
+
         return JsValue.ToStringValue(prim);
     }
 
@@ -121,9 +147,16 @@ public static class AbstractOperations
         // valueOf/toString can be dispatched (else OrdinaryToPrimitive's Call
         // throws "VM required"). Covers compound-assignment / ++ / -- / unary.
         var prim = ToPrimitive(realm.ActiveVm, value, "number");
-        if (prim.IsBigInt) return prim;
+        if (prim.IsBigInt)
+        {
+            return prim;
+        }
+
         if (prim.IsSymbol)
+        {
             throw new JsThrow(realm.NewTypeError("Cannot convert a Symbol value to a number"));
+        }
+
         return JsValue.Number(JsValue.ToNumber(prim));
     }
 
@@ -137,7 +170,11 @@ public static class AbstractOperations
     /// (used by computed class/object keys — wp:M3-04f).</summary>
     public static JsPropertyKey ToPropertyKey(JsVm? vm, JsValue value)
     {
-        if (value.IsObject) value = ToPrimitive(vm, value, "string");
+        if (value.IsObject)
+        {
+            value = ToPrimitive(vm, value, "string");
+        }
+
         return value.IsSymbol ? JsPropertyKey.Symbol(value.AsSymbol)
             : JsPropertyKey.String(value.Kind == JsValueKind.String ? value.AsString : JsValue.ToStringValue(value));
     }
@@ -147,16 +184,28 @@ public static class AbstractOperations
     /// JsNativeFunction, a bound function, or a proxy whose target is callable.</summary>
     public static bool IsCallable(JsValue value)
     {
-        if (!value.IsObject) return false;
+        if (!value.IsObject)
+        {
+            return false;
+        }
+
         var obj = value.AsObject;
-        if (obj is JsProxy proxy) return !proxy.IsRevoked && proxy.TargetIsCallable;
+        if (obj is JsProxy proxy)
+        {
+            return !proxy.IsRevoked && proxy.TargetIsCallable;
+        }
+
         return obj is JsFunction or JsNativeFunction or JsBoundFunction;
     }
 
     /// <summary>§7.2.4 IsConstructor.</summary>
     public static bool IsConstructor(JsValue value)
     {
-        if (!value.IsObject) return false;
+        if (!value.IsObject)
+        {
+            return false;
+        }
+
         return value.AsObject switch
         {
             JsFunction => true,
@@ -175,7 +224,11 @@ public static class AbstractOperations
 
     public static JsValue Get(JsVm? vm, JsObject obj, JsPropertyKey key, JsValue receiver = default)
     {
-        if (receiver.IsUndefined) receiver = JsValue.Object(obj);
+        if (receiver.IsUndefined)
+        {
+            receiver = JsValue.Object(obj);
+        }
+
         return GetCore(vm, obj, key, receiver);
     }
 
@@ -190,25 +243,40 @@ public static class AbstractOperations
         // rather than virtual JsObject.Get(string), so dispatching via virtual
         // override is not enough.
         if (obj is JsProxy proxy)
+        {
             return proxy.GetWithReceiver(key, receiver);
+        }
         // §10.4.6.8 — a Module Namespace Exotic Object's [[Get]] returns the live
         // value of the exported binding (or "Module" for @@toStringTag); it does
         // not walk a prototype chain (it has none). Dispatch by type here so every
         // call site picks it up, mirroring the Proxy handling above.
         if (obj is JsModuleNamespace ns)
+        {
             return key.IsSymbol ? ns.Get(key.AsSymbol) : ns.Get(key.AsString);
+        }
         // ECMA-262 §25.2.5: integer-indexed exotic element access is handled
         // by the typed-array object before ordinary descriptor lookup.
         if (obj is JsTypedArray ta && key.IsString && IsCanonicalArrayIndex(key.AsString))
+        {
             return ta.Get(key.AsString);
+        }
+
         for (var o = obj; o is not null; o = o.Prototype)
         {
             var desc = o.GetOwnPropertyDescriptor(key);
-            if (desc is null) continue;
+            if (desc is null)
+            {
+                continue;
+            }
+
             var d = desc.Value;
             if (d.IsAccessor)
             {
-                if (d.Getter is null) return JsValue.Undefined;
+                if (d.Getter is null)
+                {
+                    return JsValue.Undefined;
+                }
+
                 return Call(vm, JsValue.Object(d.Getter), receiver, Array.Empty<JsValue>());
             }
             return d.Value;
@@ -237,7 +305,11 @@ public static class AbstractOperations
 
     public static bool Set(JsVm? vm, JsObject obj, JsPropertyKey key, JsValue value, JsValue receiver = default)
     {
-        if (receiver.IsUndefined) receiver = JsValue.Object(obj);
+        if (receiver.IsUndefined)
+        {
+            receiver = JsValue.Object(obj);
+        }
+
         return SetCore(vm, obj, key, value, receiver);
     }
 
@@ -249,35 +321,53 @@ public static class AbstractOperations
         // §10.5.9: Proxy exotic objects route writes through the [[Set]] internal
         // method (which consults the `set` trap). See note on Get above.
         if (obj is JsProxy proxy)
+        {
             return proxy.SetWithReceiver(key, value, receiver);
+        }
         // §10.4.6.9 — a Module Namespace Exotic Object's [[Set]] always returns
         // false: a strict assignment throws (the caller surfaces it), a sloppy one
         // silently no-ops. Dispatch by type so the boolean rejection is observed
         // everywhere (the void JsObject.Set override cannot signal it).
         if (obj is JsModuleNamespace)
+        {
             return false;
+        }
         // ECMA-262 §25.2.5 integer-indexed exotic writes go to the backing
         // ArrayBuffer instead of creating ordinary own properties.
         if (obj is JsTypedArray ta && key.IsString && IsCanonicalArrayIndex(key.AsString))
         {
             if (int.TryParse(key.AsString, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var index)
                 && index >= 0 && index < ta.Length)
+            {
                 ta.SetElement(index, value, vm?.Realm);
+            }
+
             return true;
         }
         // Find existing descriptor anywhere on the chain.
         for (var o = obj; o is not null; o = o.Prototype)
         {
             var desc = o.GetOwnPropertyDescriptor(key);
-            if (desc is null) continue;
+            if (desc is null)
+            {
+                continue;
+            }
+
             var d = desc.Value;
             if (d.IsAccessor)
             {
-                if (d.Setter is null) return false;
+                if (d.Setter is null)
+                {
+                    return false;
+                }
+
                 Call(vm, JsValue.Object(d.Setter), receiver, new[] { value });
                 return true;
             }
-            if (!d.Writable) return false;
+            if (!d.Writable)
+            {
+                return false;
+            }
             // §10.1.9.2 OrdinarySetWithOwnDescriptor: a writable data property
             // is updated on the *receiver*, not on the object that owns the
             // inherited descriptor. When the receiver differs from `obj` (super
@@ -289,19 +379,35 @@ public static class AbstractOperations
         // For the common case (receiver === obj) this is identical to the old
         // behavior; for super[...] = v / Reflect.set the property is created on
         // the receiver rather than the prototype that was walked.
-        if (!receiver.IsObject) return false;
+        if (!receiver.IsObject)
+        {
+            return false;
+        }
+
         var target = receiver.AsObject;
         if (target.HasOwn(key))
         {
             var existing = target.GetOwnPropertyDescriptor(key);
             // A receiver own accessor / non-writable data property blocks the
             // create-data path per §10.1.9.2 (CreateDataProperty would fail).
-            if (existing is { IsAccessor: true }) return false;
-            if (existing is { Writable: false }) return false;
+            if (existing is { IsAccessor: true })
+            {
+                return false;
+            }
+
+            if (existing is { Writable: false })
+            {
+                return false;
+            }
+
             target.Set(key, value);
             return true;
         }
-        if (!target.Extensible) return false;
+        if (!target.Extensible)
+        {
+            return false;
+        }
+
         return target.DefineOwnProperty(key, PropertyDescriptor.Data(value));
     }
 
@@ -310,7 +416,10 @@ public static class AbstractOperations
     public static JsValue Call(JsVm? vm, JsValue callee, JsValue thisValue, JsValue[] args)
     {
         if (!callee.IsObject)
+        {
             throw NotAFunction(vm, JsValue.ToStringValue(callee));
+        }
+
         return callee.AsObject switch
         {
             JsNativeFunction nat => CallNative(nat, thisValue, args),
@@ -354,7 +463,10 @@ public static class AbstractOperations
     public static JsValue Construct(JsVm? vm, JsValue ctor, JsValue[] args, JsObject? newTarget = null)
     {
         if (!IsConstructor(ctor))
+        {
             throw new JsThrow(JsValue.String($"not a constructor: {JsValue.ToStringValue(ctor)}"));
+        }
+
         newTarget ??= ctor.AsObject;
         return ctor.AsObject switch
         {
@@ -382,13 +494,24 @@ public static class AbstractOperations
     /// <summary>§7.2.10 SameValue — like StrictEqual but +0 ≠ -0 and NaN = NaN.</summary>
     public static bool SameValue(JsValue a, JsValue b)
     {
-        if (a.Kind != b.Kind) return false;
+        if (a.Kind != b.Kind)
+        {
+            return false;
+        }
+
         if (a.Kind == JsValueKind.Number)
         {
             var na = a.AsNumber; var nb = b.AsNumber;
-            if (double.IsNaN(na) && double.IsNaN(nb)) return true;
+            if (double.IsNaN(na) && double.IsNaN(nb))
+            {
+                return true;
+            }
+
             if (na == 0 && nb == 0)
+            {
                 return double.IsNegative(na) == double.IsNegative(nb);
+            }
+
             return na == nb;
         }
         return JsValue.StrictEquals(a, b);
@@ -397,11 +520,19 @@ public static class AbstractOperations
     /// <summary>§7.2.11 SameValueZero — SameValue but +0 = -0. Used by Map/Set.</summary>
     public static bool SameValueZero(JsValue a, JsValue b)
     {
-        if (a.Kind != b.Kind) return false;
+        if (a.Kind != b.Kind)
+        {
+            return false;
+        }
+
         if (a.Kind == JsValueKind.Number)
         {
             var na = a.AsNumber; var nb = b.AsNumber;
-            if (double.IsNaN(na) && double.IsNaN(nb)) return true;
+            if (double.IsNaN(na) && double.IsNaN(nb))
+            {
+                return true;
+            }
+
             return na == nb;
         }
         return JsValue.StrictEquals(a, b);
@@ -420,7 +551,9 @@ public static class AbstractOperations
     {
         ArgumentNullException.ThrowIfNull(realm);
         if (hint != "sync")
+        {
             throw new NotSupportedException("async iterator hint not supported yet");
+        }
         // §7.3.11: for primitive receivers we need to walk the wrapper
         // prototype (e.g. String.prototype[@@iterator]). Box via ToObject;
         // the iterator method is called with the original primitive as `this`
@@ -440,10 +573,16 @@ public static class AbstractOperations
             method = GetMethod(vm, JsValue.Object(boxed), Starling.Js.Intrinsics.SymbolCtor.Iterator);
         }
         if (method.IsUndefined || method.IsNull)
+        {
             throw new JsThrow(realm.NewTypeError("value is not iterable"));
+        }
+
         var iter = Call(vm, method, value, Array.Empty<JsValue>());
         if (!iter.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("iterator method did not return an object"));
+        }
+
         var nextMethod = Get(vm, iter.AsObject, "next");
         return new IteratorRecord(iter, nextMethod, Done: false);
     }
@@ -454,21 +593,32 @@ public static class AbstractOperations
         var args = value is null ? Array.Empty<JsValue>() : new[] { value.Value };
         var result = Call(vm, record.NextMethod, record.Iterator, args);
         if (!result.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("iterator.next() did not return an object"));
+        }
+
         return result;
     }
 
     /// <summary>§7.4.5 IteratorComplete.</summary>
     public static bool IteratorComplete(JsVm? vm, JsValue iteratorResult)
     {
-        if (!iteratorResult.IsObject) return true;
+        if (!iteratorResult.IsObject)
+        {
+            return true;
+        }
+
         return JsValue.ToBoolean(Get(vm, iteratorResult.AsObject, "done"));
     }
 
     /// <summary>§7.4.6 IteratorValue.</summary>
     public static JsValue IteratorValue(JsVm? vm, JsValue iteratorResult)
     {
-        if (!iteratorResult.IsObject) return JsValue.Undefined;
+        if (!iteratorResult.IsObject)
+        {
+            return JsValue.Undefined;
+        }
+
         return Get(vm, iteratorResult.AsObject, "value");
     }
 
@@ -511,7 +661,11 @@ public static class AbstractOperations
     /// error wins and any close error is swallowed (step 7).</summary>
     public static void IteratorClose(JsVm? vm, IteratorRecord record, bool isThrowing = false)
     {
-        if (!record.Iterator.IsObject) return;
+        if (!record.Iterator.IsObject)
+        {
+            return;
+        }
+
         JsValue ret;
         try
         {
@@ -520,10 +674,18 @@ public static class AbstractOperations
         catch
         {
             // Resolving `return` (a Get + IsCallable check) may itself throw.
-            if (isThrowing) return;
+            if (isThrowing)
+            {
+                return;
+            }
+
             throw;
         }
-        if (ret.IsUndefined || ret.IsNull) return;
+        if (ret.IsUndefined || ret.IsNull)
+        {
+            return;
+        }
+
         JsValue innerResult;
         try
         {
@@ -533,14 +695,20 @@ public static class AbstractOperations
         {
             // §7.4.10 step 7/8 — swallow only when the inner completion is
             // already a throw; otherwise the return() error propagates.
-            if (isThrowing) return;
+            if (isThrowing)
+            {
+                return;
+            }
+
             throw;
         }
         // §7.4.10 step 9 — only validated on a normal inner completion.
         if (!isThrowing && !innerResult.IsObject)
+        {
             throw new JsThrow(vm is not null
                 ? vm.Realm.NewTypeError("iterator return() result is not an object")
                 : JsValue.String("iterator return() result is not an object"));
+        }
     }
 
     /// <summary>§7.3.11 GetMethod — returns <see cref="JsValue.Undefined"/>
@@ -551,18 +719,28 @@ public static class AbstractOperations
         if (!value.IsObject)
         {
             // Primitives need to box to reach prototype methods (e.g. String[Symbol.iterator]).
-            if (value.IsNullish) return JsValue.Undefined;
+            if (value.IsNullish)
+            {
+                return JsValue.Undefined;
+            }
             // Caller is expected to ToObject before calling for primitives;
             // we don't have a realm reference, so just return undefined for
             // non-object primitives here.
             return JsValue.Undefined;
         }
         var v = Get(vm, value.AsObject, key);
-        if (v.IsUndefined || v.IsNull) return JsValue.Undefined;
+        if (v.IsUndefined || v.IsNull)
+        {
+            return JsValue.Undefined;
+        }
+
         if (!IsCallable(v))
+        {
             throw vm is not null
                 ? new JsThrow(vm.Realm.NewTypeError($"{key} is not a function"))
                 : new JsThrow(JsValue.String("property is not callable"));
+        }
+
         return v;
     }
 
@@ -571,16 +749,28 @@ public static class AbstractOperations
 
     private static bool IsCanonicalArrayIndex(string key)
     {
-        if (key.Length == 0 || key[0] == '-' || key.Contains('.', StringComparison.Ordinal)) return false;
+        if (key.Length == 0 || key[0] == '-' || key.Contains('.', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
         return int.TryParse(key, System.Globalization.NumberStyles.None,
             System.Globalization.CultureInfo.InvariantCulture, out _);
     }
 
     private static JsValue[] ConcatBoundArgs(IReadOnlyList<JsValue> bound, JsValue[] extra)
     {
-        if (bound.Count == 0) return extra;
+        if (bound.Count == 0)
+        {
+            return extra;
+        }
+
         var combined = new JsValue[bound.Count + extra.Length];
-        for (var i = 0; i < bound.Count; i++) combined[i] = bound[i];
+        for (var i = 0; i < bound.Count; i++)
+        {
+            combined[i] = bound[i];
+        }
+
         Array.Copy(extra, 0, combined, bound.Count, extra.Length);
         return combined;
     }

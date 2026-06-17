@@ -139,7 +139,9 @@ internal sealed class H2FrameWriter(Stream stream) : IDisposable
 
         await stream.WriteAsync(header, ct).ConfigureAwait(false);
         if (len > 0)
+        {
             await stream.WriteAsync(payload, ct).ConfigureAwait(false);
+        }
     }
 
     private static void WriteUInt32(Span<byte> dst, uint value)

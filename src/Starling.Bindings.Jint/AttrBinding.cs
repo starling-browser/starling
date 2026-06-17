@@ -28,7 +28,10 @@ internal static class AttrBinding
         var engine = ctx.Engine;
         var elProto = ctx.Wrappers.ElementPrototype;
         var docProto = ctx.Wrappers.DocumentPrototype;
-        if (elProto is null || docProto is null) return;
+        if (elProto is null || docProto is null)
+        {
+            return;
+        }
 
         // ---- NamedNodeMap.prototype --------------------------------------------
         var proto = new JsObject(engine);
@@ -47,21 +50,39 @@ internal static class AttrBinding
                 : JsValue.Null, 2);
         JintInterop.DefineMethod(engine, proto, "setNamedItem", (t, a) =>
         {
-            if (t is not JintNamedNodeMapObject m) return JsValue.Null;
+            if (t is not JintNamedNodeMapObject m)
+            {
+                return JsValue.Null;
+            }
+
             if (a.Length == 0 || ctx.Wrappers.Unwrap(a[0]) is not AttrNode attr)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "setNamedItem requires an Attr argument");
+            }
+
             return m.WrapAttr(m.Element.Attributes.SetNamedItem(attr));
         }, 1);
         JintInterop.DefineMethod(engine, proto, "setNamedItemNS", (t, a) =>
         {
-            if (t is not JintNamedNodeMapObject m) return JsValue.Null;
+            if (t is not JintNamedNodeMapObject m)
+            {
+                return JsValue.Null;
+            }
+
             if (a.Length == 0 || ctx.Wrappers.Unwrap(a[0]) is not AttrNode attr)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "setNamedItemNS requires an Attr argument");
+            }
+
             return m.WrapAttr(m.Element.Attributes.SetNamedItemNS(attr));
         }, 1);
         JintInterop.DefineMethod(engine, proto, "removeNamedItem", (t, a) =>
         {
-            if (t is not JintNamedNodeMapObject m) return JsValue.Null;
+            if (t is not JintNamedNodeMapObject m)
+            {
+                return JsValue.Null;
+            }
+
             var name = a.Length > 0 ? TypeConverter.ToString(a[0]) : "";
             var removed = m.Element.Attributes.GetNamedItem(name)
                 ?? throw DomExceptionBinding.Throw(ctx, "NotFoundError", "The node was not found.");
@@ -70,7 +91,11 @@ internal static class AttrBinding
         }, 1);
         JintInterop.DefineMethod(engine, proto, "removeNamedItemNS", (t, a) =>
         {
-            if (t is not JintNamedNodeMapObject m) return JsValue.Null;
+            if (t is not JintNamedNodeMapObject m)
+            {
+                return JsValue.Null;
+            }
+
             var ns = a.Length > 0 && !a[0].IsNull() && !a[0].IsUndefined() ? TypeConverter.ToString(a[0]) : null;
             var local = a.Length > 1 ? TypeConverter.ToString(a[1]) : "";
             var removed = m.Element.Attributes.GetNamedItemNS(ns, local)
@@ -83,41 +108,73 @@ internal static class AttrBinding
         // ---- Element Attr-node methods -----------------------------------------
         JintInterop.DefineMethod(engine, elProto, "getAttributeNode", (t, a) =>
         {
-            if (ctx.Wrappers.UnwrapElement(t) is not { } e || a.Length == 0) return JsValue.Null;
+            if (ctx.Wrappers.UnwrapElement(t) is not { } e || a.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var attr = e.Attributes.GetNamedItem(TypeConverter.ToString(a[0]));
             return attr is null ? JsValue.Null : ctx.Wrappers.Wrap(attr);
         }, 1);
         JintInterop.DefineMethod(engine, elProto, "getAttributeNodeNS", (t, a) =>
         {
-            if (ctx.Wrappers.UnwrapElement(t) is not { } e || a.Length < 2) return JsValue.Null;
+            if (ctx.Wrappers.UnwrapElement(t) is not { } e || a.Length < 2)
+            {
+                return JsValue.Null;
+            }
+
             var ns = a[0].IsNull() || a[0].IsUndefined() ? null : TypeConverter.ToString(a[0]);
             var attr = e.Attributes.GetNamedItemNS(ns, TypeConverter.ToString(a[1]));
             return attr is null ? JsValue.Null : ctx.Wrappers.Wrap(attr);
         }, 2);
         JintInterop.DefineMethod(engine, elProto, "setAttributeNode", (t, a) =>
         {
-            if (ctx.Wrappers.UnwrapElement(t) is not { } e || a.Length == 0) return JsValue.Null;
+            if (ctx.Wrappers.UnwrapElement(t) is not { } e || a.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             if (ctx.Wrappers.Unwrap(a[0]) is not AttrNode attr)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "setAttributeNode requires an Attr argument");
+            }
+
             var old = e.Attributes.SetNamedItem(attr);
             return old is null ? JsValue.Null : ctx.Wrappers.Wrap(old);
         }, 1);
         JintInterop.DefineMethod(engine, elProto, "setAttributeNodeNS", (t, a) =>
         {
-            if (ctx.Wrappers.UnwrapElement(t) is not { } e || a.Length == 0) return JsValue.Null;
+            if (ctx.Wrappers.UnwrapElement(t) is not { } e || a.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             if (ctx.Wrappers.Unwrap(a[0]) is not AttrNode attr)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "setAttributeNodeNS requires an Attr argument");
+            }
+
             var old = e.Attributes.SetNamedItemNS(attr);
             return old is null ? JsValue.Null : ctx.Wrappers.Wrap(old);
         }, 1);
         JintInterop.DefineMethod(engine, elProto, "removeAttributeNode", (t, a) =>
         {
-            if (ctx.Wrappers.UnwrapElement(t) is not { } e || a.Length == 0) return JsValue.Null;
+            if (ctx.Wrappers.UnwrapElement(t) is not { } e || a.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             if (ctx.Wrappers.Unwrap(a[0]) is not AttrNode attr)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError, "removeAttributeNode requires an Attr argument");
+            }
+
             var found = e.Attributes.GetNamedItem(attr.Name);
             if (found is null || !ReferenceEquals(found, attr))
+            {
                 throw DomExceptionBinding.Throw(ctx, "NotFoundError", "The node was not found.");
+            }
+
             e.Attributes.RemoveNamedItem(attr.Name);
             return ctx.Wrappers.Wrap(attr);
         }, 1);
@@ -128,7 +185,11 @@ internal static class AttrBinding
         JintInterop.DefineMethod(engine, docProto, "createAttribute", (_, a) =>
         {
             var name = a.Length > 0 ? TypeConverter.ToString(a[0]) : "";
-            if (name.Length == 0) throw DomExceptionBinding.Throw(ctx, "InvalidCharacterError", "createAttribute: empty name");
+            if (name.Length == 0)
+            {
+                throw DomExceptionBinding.Throw(ctx, "InvalidCharacterError", "createAttribute: empty name");
+            }
+
             return ctx.Wrappers.Wrap(new AttrNode(name.ToLowerInvariant()));
         }, 1);
     }
@@ -164,7 +225,10 @@ internal sealed class JintNamedNodeMapObject : ObjectInstance
     {
         _ctx = ctx;
         Element = element;
-        if (ctx.Wrappers.NamedNodeMapPrototype is { } p) Prototype = p;
+        if (ctx.Wrappers.NamedNodeMapPrototype is { } p)
+        {
+            Prototype = p;
+        }
     }
 
     public int Length => Element.Attributes.Count;
@@ -177,7 +241,13 @@ internal sealed class JintNamedNodeMapObject : ObjectInstance
     private bool IsOnPrototype(JsValue name)
     {
         for (var p = Prototype; p is not null; p = p.Prototype)
-            if (p.GetOwnProperty(name) != PropertyDescriptor.Undefined) return true;
+        {
+            if (p.GetOwnProperty(name) != PropertyDescriptor.Undefined)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -187,9 +257,14 @@ internal sealed class JintNamedNodeMapObject : ObjectInstance
         {
             var name = property.AsString();
             if (CollectionIndex.TryIndex(name, out var i))
+            {
                 return GetItem(i) is { } a ? _ctx.Wrappers.Wrap(a) : JsValue.Undefined;
+            }
+
             if (!IsOnPrototype(property) && Element.Attributes.GetNamedItem(name) is { } attr)
+            {
                 return _ctx.Wrappers.Wrap(attr);
+            }
         }
         return base.Get(property, receiver);
     }
@@ -202,11 +277,15 @@ internal sealed class JintNamedNodeMapObject : ObjectInstance
             if (CollectionIndex.TryIndex(name, out var i))
             {
                 if (GetItem(i) is { } a)
+                {
                     return new PropertyDescriptor(_ctx.Wrappers.Wrap(a), writable: false, enumerable: true, configurable: true);
+                }
             }
             else if (base.GetOwnProperty(property) == PropertyDescriptor.Undefined && !IsOnPrototype(property)
                      && Element.Attributes.GetNamedItem(name) is { } attr)
+            {
                 return new PropertyDescriptor(_ctx.Wrappers.Wrap(attr), writable: false, enumerable: true, configurable: true);
+            }
         }
         return base.GetOwnProperty(property);
     }
@@ -216,8 +295,15 @@ internal sealed class JintNamedNodeMapObject : ObjectInstance
         if (property.IsString())
         {
             var name = property.AsString();
-            if (CollectionIndex.TryIndex(name, out var i)) return i < Element.Attributes.Count;
-            if (!IsOnPrototype(property) && Element.Attributes.GetNamedItem(name) is not null) return true;
+            if (CollectionIndex.TryIndex(name, out var i))
+            {
+                return i < Element.Attributes.Count;
+            }
+
+            if (!IsOnPrototype(property) && Element.Attributes.GetNamedItem(name) is not null)
+            {
+                return true;
+            }
         }
         return base.HasProperty(property);
     }
@@ -226,8 +312,13 @@ internal sealed class JintNamedNodeMapObject : ObjectInstance
     {
         var keys = new List<JsValue>();
         if ((types & Types.String) != 0)
+        {
             for (var i = 0; i < Element.Attributes.Count; i++)
+            {
                 keys.Add(JintInterop.Str(i.ToString(CultureInfo.InvariantCulture)));
+            }
+        }
+
         keys.AddRange(base.GetOwnPropertyKeys(types));
         return keys;
     }

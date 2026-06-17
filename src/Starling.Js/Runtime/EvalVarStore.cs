@@ -47,7 +47,13 @@ internal sealed class EvalVarStore
     public bool TryGet(string name, out Cell cell)
     {
         for (var s = this; s is not null; s = s.Parent)
-            if (s._byName.TryGetValue(name, out cell!)) return true;
+        {
+            if (s._byName.TryGetValue(name, out cell!))
+            {
+                return true;
+            }
+        }
+
         cell = null!;
         return false;
     }
@@ -58,7 +64,11 @@ internal sealed class EvalVarStore
     /// cell either way.</summary>
     public Cell Declare(string name)
     {
-        if (_byName.TryGetValue(name, out var existing)) return existing;
+        if (_byName.TryGetValue(name, out var existing))
+        {
+            return existing;
+        }
+
         var cell = new Cell(JsValue.Undefined);
         _byName[name] = cell;
         return cell;
@@ -69,8 +79,14 @@ internal sealed class EvalVarStore
     /// declaration's hoisted function object.</summary>
     public void Set(string name, JsValue value)
     {
-        if (_byName.TryGetValue(name, out var cell)) cell.Value = value;
-        else _byName[name] = new Cell(value);
+        if (_byName.TryGetValue(name, out var cell))
+        {
+            cell.Value = value;
+        }
+        else
+        {
+            _byName[name] = new Cell(value);
+        }
     }
 
     /// <summary>Remove the binding (eval-introduced bindings are

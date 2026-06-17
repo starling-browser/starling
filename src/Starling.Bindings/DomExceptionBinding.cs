@@ -40,7 +40,10 @@ public static class DomExceptionBinding
     public static void Install(JsRealm realm)
     {
         ArgumentNullException.ThrowIfNull(realm);
-        if (realm.DomExceptionPrototype is not null) return; // idempotent
+        if (realm.DomExceptionPrototype is not null)
+        {
+            return; // idempotent
+        }
 
         var proto = new JsObject(realm.ObjectPrototype);
         realm.DomExceptionPrototype = proto;
@@ -50,12 +53,22 @@ public static class DomExceptionBinding
             var n = thisV.IsObject ? thisV.AsObject.Get("name") : JsValue.Undefined;
             var name = n.IsString ? n.AsString : "";
             foreach (var (cn, code) in NameCodes)
-                if (cn == name) return JsValue.Number(code);
+            {
+                if (cn == name)
+                {
+                    return JsValue.Number(code);
+                }
+            }
+
             return JsValue.Number(0);
         });
         EventTargetBinding.DefineMethod(realm, proto, "toString", (thisV, _) =>
         {
-            if (!thisV.IsObject) return JsValue.String("Error");
+            if (!thisV.IsObject)
+            {
+                return JsValue.String("Error");
+            }
+
             var name = thisV.AsObject.Get("name");
             var msg = thisV.AsObject.Get("message");
             var ns = name.IsString ? name.AsString : "Error";
@@ -63,7 +76,9 @@ public static class DomExceptionBinding
             return JsValue.String(ms.Length > 0 ? ns + ": " + ms : ns);
         }, length: 0);
         foreach (var (c, v) in Constants)
+        {
             proto.DefineOwnProperty(c, PropertyDescriptor.Data(JsValue.Number(v), writable: false, enumerable: true, configurable: false));
+        }
 
         var ctor = new JsNativeFunction(realm, "DOMException", 0, (_, args) =>
         {
@@ -76,7 +91,9 @@ public static class DomExceptionBinding
         proto.DefineOwnProperty("constructor",
             PropertyDescriptor.Data(JsValue.Object(ctor), writable: true, enumerable: false, configurable: true));
         foreach (var (c, v) in Constants)
+        {
             ctor.DefineOwnProperty(c, PropertyDescriptor.Data(JsValue.Number(v), writable: false, enumerable: true, configurable: false));
+        }
 
         realm.GlobalObject.DefineOwnProperty("DOMException",
             PropertyDescriptor.Data(JsValue.Object(ctor), writable: true, enumerable: false, configurable: true));

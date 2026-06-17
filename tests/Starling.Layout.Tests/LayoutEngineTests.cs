@@ -35,7 +35,9 @@ public sealed class LayoutEngineTests
 
         // Each div's frame should advance Y monotonically.
         for (var i = 1; i < divs.Count; i++)
+        {
             divs[i].Frame.Y.Should().BeGreaterThan(divs[i - 1].Frame.Y);
+        }
     }
 
     [TestMethod]
@@ -318,22 +320,36 @@ public sealed class LayoutEngineTests
 
     private static Box.Box? FindBox(Box.Box root, string localName)
     {
-        if (root.Element?.LocalName == localName) return root;
+        if (root.Element?.LocalName == localName)
+        {
+            return root;
+        }
+
         foreach (var child in root.Children)
         {
             var hit = FindBox(child, localName);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }
 
     private static Box.Box? FindBoxById(Box.Box root, string id)
     {
-        if (root.Element?.GetAttribute("id") == id) return root;
+        if (root.Element?.GetAttribute("id") == id)
+        {
+            return root;
+        }
+
         foreach (var child in root.Children)
         {
             var hit = FindBoxById(child, id);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }
@@ -342,14 +358,22 @@ public sealed class LayoutEngineTests
     {
         if (box is TextBox tb) { yield return tb; yield break; }
         foreach (var child in box.Children)
+        {
             foreach (var inner in FlattenTextBoxes(child))
+            {
                 yield return inner;
+            }
+        }
     }
 
     private static string AllText(Box.Box root)
     {
         var sb = new System.Text.StringBuilder();
-        foreach (var tb in FlattenTextBoxes(root)) sb.Append(tb.Text);
+        foreach (var tb in FlattenTextBoxes(root))
+        {
+            sb.Append(tb.Text);
+        }
+
         return sb.ToString();
     }
 
@@ -361,8 +385,15 @@ public sealed class LayoutEngineTests
 
         void Recurse(Box.Box b)
         {
-            if (b is TextBox tb) result.AddRange(tb.Fragments);
-            foreach (var c in b.Children) Recurse(c);
+            if (b is TextBox tb)
+            {
+                result.AddRange(tb.Fragments);
+            }
+
+            foreach (var c in b.Children)
+            {
+                Recurse(c);
+            }
         }
     }
 }

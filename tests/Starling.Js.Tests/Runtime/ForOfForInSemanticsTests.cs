@@ -255,7 +255,10 @@ public class ForOfForInSemanticsTests
                 if (ctor.IsObject)
                 {
                     var nm = AbstractOperations.Get(null, ctor.AsObject, "name");
-                    if (nm.IsString) return nm.AsString;
+                    if (nm.IsString)
+                    {
+                        return nm.AsString;
+                    }
                 }
                 var proto = t.Value.AsObject.Prototype;
                 if (proto is not null)
@@ -264,7 +267,10 @@ public class ForOfForInSemanticsTests
                     if (pc.IsObject)
                     {
                         var nm2 = AbstractOperations.Get(null, pc.AsObject, "name");
-                        if (nm2.IsString) return nm2.AsString;
+                        if (nm2.IsString)
+                        {
+                            return nm2.AsString;
+                        }
                     }
                 }
             }

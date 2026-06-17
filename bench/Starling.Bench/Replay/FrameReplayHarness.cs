@@ -140,7 +140,9 @@ public sealed class FrameReplayHarness : IDisposable
             ["display_list"] = PhaseStats.From(dlT, dlA),
         };
         if (_options.RunRaster)
+        {
             phases["raster"] = PhaseStats.From(raT, raA);
+        }
 
         var measure = new MeasureStats(
             MeanMeasureWidthCalls: mwSum / n,
@@ -183,7 +185,11 @@ public sealed class FrameReplayHarness : IDisposable
     {
         // Age the recently-mutated promotion window by one frame (mirrors the live
         // shell) before this frame records new mutations.
-        if (_options.Composite) _scenario.Document.DecayRecentMutations();
+        if (_options.Composite)
+        {
+            _scenario.Document.DecayRecentMutations();
+        }
+
         _scenario.MutateForFrame(frameIndex);
 
         var a0 = GC.GetAllocatedBytesForCurrentThread();
@@ -198,10 +204,15 @@ public sealed class FrameReplayHarness : IDisposable
         a0 = GC.GetAllocatedBytesForCurrentThread();
         sw.Restart();
         if (_session is not null)
+        {
             root = _session.Layout(_scenario.Document, _scenario.Viewport, _measurer, nowMs);
+        }
         else
+        {
             root = new LayoutEngine(_scenario.Style, _measurer)
                 .LayoutDocument(_scenario.Document, _scenario.Viewport, nowMs);
+        }
+
         sw.Stop();
         pt.LayoutTicks = sw.ElapsedTicks;
         pt.LayoutAlloc = GC.GetAllocatedBytesForCurrentThread() - a0;
@@ -254,10 +265,26 @@ public sealed class FrameReplayHarness : IDisposable
     // is actively animating — the live shell's predicate (LTF-01 / LTF-06).
     private bool Promote(Box box)
     {
-        if (box.Element is not { } el) return false;
-        if (_scenario.Document.WasRecentlyMutated(el)) return true;
-        foreach (var _ in _scenario.Style.AnimationEngine.ActiveProperties(el)) return true;
-        foreach (var _ in _scenario.Style.TransitionEngine.ActiveProperties(el)) return true;
+        if (box.Element is not { } el)
+        {
+            return false;
+        }
+
+        if (_scenario.Document.WasRecentlyMutated(el))
+        {
+            return true;
+        }
+
+        foreach (var _ in _scenario.Style.AnimationEngine.ActiveProperties(el))
+        {
+            return true;
+        }
+
+        foreach (var _ in _scenario.Style.TransitionEngine.ActiveProperties(el))
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -266,7 +293,10 @@ public sealed class FrameReplayHarness : IDisposable
         var count = 1;
         var children = layer.Children;
         for (var i = 0; i < children.Count; i++)
+        {
             count += CountLayers(children[i]);
+        }
+
         return count;
     }
 
@@ -298,7 +328,10 @@ public sealed class FrameReplayHarness : IDisposable
         var count = 1;
         var children = box.Children;
         for (var i = 0; i < children.Count; i++)
+        {
             count += CountBoxes(children[i]);
+        }
+
         return count;
     }
 

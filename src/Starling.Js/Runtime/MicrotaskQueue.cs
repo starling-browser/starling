@@ -55,7 +55,11 @@ public sealed class MicrotaskQueue
     /// jobs aren't reflected here — they live on the host loop.</summary>
     public int PendingCount
     {
-        get { lock (_lock) return _queue.Count; }
+        get { lock (_lock)
+            {
+                return _queue.Count;
+            }
+        }
     }
 
     /// <summary>Enqueue a job. Delegates to the host scheduler if one was
@@ -87,8 +91,15 @@ public sealed class MicrotaskQueue
             Action? job;
             lock (_lock)
             {
-                if (_hostScheduler is not null) return;
-                if (!_queue.TryDequeue(out job)) return;
+                if (_hostScheduler is not null)
+                {
+                    return;
+                }
+
+                if (!_queue.TryDequeue(out job))
+                {
+                    return;
+                }
             }
             try { job(); }
             catch (Exception ex) { UncaughtHandler(ex); }
@@ -107,12 +118,19 @@ public sealed class MicrotaskQueue
     /// </remarks>
     public void SetHostScheduler(Action<Action>? scheduler)
     {
-        lock (_lock) _hostScheduler = scheduler;
+        lock (_lock)
+        {
+            _hostScheduler = scheduler;
+        }
     }
 
     /// <summary>True when a host scheduler is currently installed.</summary>
     public bool HasHostScheduler
     {
-        get { lock (_lock) return _hostScheduler is not null; }
+        get { lock (_lock)
+            {
+                return _hostScheduler is not null;
+            }
+        }
     }
 }

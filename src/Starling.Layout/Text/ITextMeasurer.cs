@@ -41,19 +41,44 @@ public sealed record FontSpec(
 
     public bool Equals(FontSpec? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        if (Bold != other.Bold || Italic != other.Italic) return false;
-        if (Families.Count != other.Families.Count) return false;
+        if (other is null)
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        if (Bold != other.Bold || Italic != other.Italic)
+        {
+            return false;
+        }
+
+        if (Families.Count != other.Families.Count)
+        {
+            return false;
+        }
+
         for (var i = 0; i < Families.Count; i++)
         {
             if (!string.Equals(Families[i], other.Families[i], StringComparison.Ordinal))
+            {
                 return false;
+            }
         }
-        if (Variations.Count != other.Variations.Count) return false;
+        if (Variations.Count != other.Variations.Count)
+        {
+            return false;
+        }
+
         for (var i = 0; i < Variations.Count; i++)
         {
-            if (Variations[i] != other.Variations[i]) return false;
+            if (Variations[i] != other.Variations[i])
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -63,8 +88,16 @@ public sealed record FontSpec(
         var hash = new HashCode();
         hash.Add(Bold);
         hash.Add(Italic);
-        foreach (var f in Families) hash.Add(f, StringComparer.Ordinal);
-        foreach (var v in Variations) hash.Add(v);
+        foreach (var f in Families)
+        {
+            hash.Add(f, StringComparer.Ordinal);
+        }
+
+        foreach (var v in Variations)
+        {
+            hash.Add(v);
+        }
+
         return hash.ToHashCode();
     }
 
@@ -75,7 +108,11 @@ public sealed record FontSpec(
     /// </summary>
     public static FontSpec FromStyle(ComputedStyle? style)
     {
-        if (style is null) return Default;
+        if (style is null)
+        {
+            return Default;
+        }
+
         var bold = IsBold(style);
         var italic = IsItalic(style);
         var variations = ExtractVariations(style);
@@ -103,7 +140,9 @@ public sealed record FontSpec(
         // variable face delivers 350/550/etc. exactly. A keyword font-weight
         // resolves to a number upstream (normal=400, bold=700).
         if (style.Get(PropertyId.FontWeight) is CssNumber n && n.Value > 0)
+        {
             axes["wght"] = (float)n.Value;
+        }
 
         // wdth: 50%–200%. We accept either a percentage or the named keywords.
         switch (style.Get(PropertyId.FontStretch))
@@ -113,7 +152,10 @@ public sealed record FontSpec(
                 break;
             case CssKeyword kw:
                 if (StretchKeyword(kw.Name) is { } stretchValue)
+                {
                     axes["wdth"] = stretchValue;
+                }
+
                 break;
         }
 
@@ -129,16 +171,26 @@ public sealed record FontSpec(
 
         // Explicit overrides last.
         if (style.Get(PropertyId.FontVariationSettings) is CssValueList settings)
+        {
             ApplyExplicitSettings(settings.Values, axes);
+        }
         else if (style.Get(PropertyId.FontVariationSettings) is { } single)
+        {
             ApplyExplicitSettings(new[] { single }, axes);
+        }
 
-        if (axes.Count == 0) return Array.Empty<FontVariation>();
+        if (axes.Count == 0)
+        {
+            return Array.Empty<FontVariation>();
+        }
 
         var result = new FontVariation[axes.Count];
         var i = 0;
         foreach (var kv in axes.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+        {
             result[i++] = new FontVariation(kv.Key, kv.Value);
+        }
+
         return result;
     }
 
@@ -206,7 +258,11 @@ public sealed record FontSpec(
                         case CssString str when str.Value.Length > 0: families.Add(str.Value); break;
                     }
                 }
-                if (families.Count > 0) return families;
+                if (families.Count > 0)
+                {
+                    return families;
+                }
+
                 break;
         }
         return Default.Families;

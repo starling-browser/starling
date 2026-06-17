@@ -52,7 +52,11 @@ public sealed unsafe class GpuSurfacePresenter : IDisposable
     {
         ArgumentNullException.ThrowIfNull(window);
         var engine = GpuBlendEngine.CreateForSurface(window, out var surface, out var format);
-        if (engine is null || surface == 0) return null;
+        if (engine is null || surface == 0)
+        {
+            return null;
+        }
+
         return new GpuSurfacePresenter(engine, (Surface*)surface, format);
     }
 
@@ -63,9 +67,17 @@ public sealed unsafe class GpuSurfacePresenter : IDisposable
     /// </summary>
     public static GpuSurfacePresenter? CreateForMetalLayer(nint caMetalLayer)
     {
-        if (caMetalLayer == 0) return null;
+        if (caMetalLayer == 0)
+        {
+            return null;
+        }
+
         var engine = GpuBlendEngine.CreateForMetalLayer(caMetalLayer, out var surface, out var format);
-        if (engine is null || surface == 0) return null;
+        if (engine is null || surface == 0)
+        {
+            return null;
+        }
+
         return new GpuSurfacePresenter(engine, (Surface*)surface, format);
     }
 
@@ -75,9 +87,17 @@ public sealed unsafe class GpuSurfacePresenter : IDisposable
     /// </summary>
     public static GpuSurfacePresenter? CreateForWindowsHwnd(nint hwnd, nint hinstance)
     {
-        if (hwnd == 0) return null;
+        if (hwnd == 0)
+        {
+            return null;
+        }
+
         var engine = GpuBlendEngine.CreateForWindowsHwnd(hwnd, hinstance, out var surface, out var format);
-        if (engine is null || surface == 0) return null;
+        if (engine is null || surface == 0)
+        {
+            return null;
+        }
+
         return new GpuSurfacePresenter(engine, (Surface*)surface, format);
     }
 
@@ -87,9 +107,17 @@ public sealed unsafe class GpuSurfacePresenter : IDisposable
     /// </summary>
     public static GpuSurfacePresenter? CreateForXlibWindow(nint display, ulong window)
     {
-        if (display == 0 || window == 0) return null;
+        if (display == 0 || window == 0)
+        {
+            return null;
+        }
+
         var engine = GpuBlendEngine.CreateForXlibWindow(display, window, out var surface, out var format);
-        if (engine is null || surface == 0) return null;
+        if (engine is null || surface == 0)
+        {
+            return null;
+        }
+
         return new GpuSurfacePresenter(engine, (Surface*)surface, format);
     }
 
@@ -188,7 +216,9 @@ public sealed unsafe class GpuSurfacePresenter : IDisposable
         lock (_gate)
         {
             if (!_configured || _width != width || _height != height)
+            {
                 Configure(width, height);
+            }
 
             var api = _engine.Api;
             // Acquire the swapchain's next drawable. Under PresentMode.Fifo this is
@@ -198,7 +228,10 @@ public sealed unsafe class GpuSurfacePresenter : IDisposable
             // rather than vanishing into gui.render's self-time.
             SurfaceTexture st = default;
             using (StarlingTelemetry.Span(RenderMetrics.PaintArea, RenderMetrics.PresentAcquireOp))
+            {
                 api.SurfaceGetCurrentTexture(_surface, ref st);
+            }
+
             if (st.Status != SurfaceGetCurrentTextureStatus.Success)
             {
                 if (st.Texture != null)
@@ -292,7 +325,9 @@ public sealed unsafe class GpuSurfacePresenter : IDisposable
                 }
 
                 using (StarlingTelemetry.Span(RenderMetrics.PaintArea, RenderMetrics.PresentSwapOp))
+                {
                     api.SurfacePresent(_surface);
+                }
 
                 _engine.EvictStale();
                 return true;

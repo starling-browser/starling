@@ -30,8 +30,13 @@ public sealed class SvgImageDecoderAdvancedTests
     {
         var px = img.Pixels.Span;
         for (int i = 3; i < px.Length; i += 4)
+        {
             if (px[i] != 0)
+            {
                 return true;
+            }
+        }
+
         return false;
     }
 
@@ -39,9 +44,16 @@ public sealed class SvgImageDecoderAdvancedTests
     {
         int n = 0;
         for (int y = 0; y < img.Height; y++)
+        {
             for (int x = 0; x < img.Width; x++)
+            {
                 if (pred(PixelAt(img, x, y)))
+                {
                     n++;
+                }
+            }
+        }
+
         return n;
     }
 

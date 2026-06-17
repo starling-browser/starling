@@ -56,7 +56,10 @@ public class EngineHttpTests
         }
         finally
         {
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -96,7 +99,10 @@ public class EngineHttpTests
         }
         finally
         {
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -152,7 +158,10 @@ public class EngineHttpTests
         }
         finally
         {
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -180,7 +189,10 @@ public class EngineHttpTests
         }
         finally
         {
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -234,8 +246,15 @@ public class EngineHttpTests
         }
         finally
         {
-            if (File.Exists(first)) File.Delete(first);
-            if (File.Exists(second)) File.Delete(second);
+            if (File.Exists(first))
+            {
+                File.Delete(first);
+            }
+
+            if (File.Exists(second))
+            {
+                File.Delete(second);
+            }
         }
     }
 
@@ -458,8 +477,12 @@ public class EngineHttpTests
             {
                 var row = rows.GetRowSpan(y);
                 foreach (var px in row)
+                {
                     if (px.Equals(color))
+                    {
                         count++;
+                    }
+                }
             }
         });
         return count;
@@ -543,7 +566,11 @@ internal sealed class StubHttpServer : IDisposable
                     while (pos < buffer.Length)
                     {
                         var n = await stream.ReadAsync(buffer.AsMemory(pos), _cts.Token);
-                        if (n == 0) break;
+                        if (n == 0)
+                        {
+                            break;
+                        }
+
                         pos += n;
                         if (ContainsCrLfCrLf(buffer.AsSpan(0, pos)))
                         {
@@ -551,20 +578,28 @@ internal sealed class StubHttpServer : IDisposable
                             break;
                         }
                     }
-                    if (!gotRequest) return;
+                    if (!gotRequest)
+                    {
+                        return;
+                    }
 
                     var req = Encoding.ASCII.GetString(buffer, 0, pos);
                     var response = handler(req);
                     await stream.WriteAsync(response, _cts.Token);
                     await stream.FlushAsync(_cts.Token);
 
-                    if (!keepAlive) return;
+                    if (!keepAlive)
+                    {
+                        return;
+                    }
 
                     // If the response itself signals close, stop reading further
                     // requests on this connection.
                     var responseText = Encoding.ASCII.GetString(response);
                     if (responseText.Contains("Connection: close", StringComparison.OrdinalIgnoreCase))
+                    {
                         return;
+                    }
                 }
             }
         }
@@ -578,7 +613,9 @@ internal sealed class StubHttpServer : IDisposable
         for (var i = 0; i + 3 < data.Length; i++)
         {
             if (data[i] == 0x0D && data[i + 1] == 0x0A && data[i + 2] == 0x0D && data[i + 3] == 0x0A)
+            {
                 return true;
+            }
         }
         return false;
     }

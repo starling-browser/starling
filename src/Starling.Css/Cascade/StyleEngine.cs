@@ -98,10 +98,14 @@ public sealed class StyleEngine
         // animations, transition snapshots) lives elsewhere and is preserved.
         _timeline.Animations.ClearKeyframes();
         foreach (var origin in Enum.GetValues<StyleOrigin>())
+        {
             _layerOrders[origin] = new LayerOrder();
+        }
 
         if (includeUserAgentStyleSheet)
+        {
             AddStyleSheet(UaStyleSheet.Parse());
+        }
     }
 
     /// <summary>The animation engine fed by <c>@keyframes</c> rules in every
@@ -144,7 +148,10 @@ public sealed class StyleEngine
         var index = BuildSheetIndex(sheet, _loggerFactory, _layerOrders[sheet.Origin]);
         _sheetIndexes[sheet] = index;
         if (!_structuralRebuildSensitive && SheetUsesHasOrEmpty(index))
+        {
             _structuralRebuildSensitive = true;
+        }
+
         CollectReferencedAttributes(index, _referencedAttributes);
         RegisterKeyframesFromSheet(sheet);
         RebuildCounterStyles();
@@ -159,7 +166,10 @@ public sealed class StyleEngine
         _structuralRebuildSensitive = _sheetIndexes.Values.Any(SheetUsesHasOrEmpty);
         _referencedAttributes.Clear();
         foreach (var idx in _sheetIndexes.Values)
+        {
             CollectReferencedAttributes(idx, _referencedAttributes);
+        }
+
         UnregisterKeyframesFromSheet(sheet);
         RebuildCounterStyles();
         RebuildRegisteredProperties();
@@ -180,15 +190,22 @@ public sealed class StyleEngine
         // wins. Collect across all sheets in add order into a last-wins map.
         var map = new Dictionary<string, PropertiesValues.RegisteredProperty>();
         foreach (var sheet in _sheets)
+        {
             foreach (var registered in PropertiesValues.PropertyDefinitionParser.ParseAll(sheet))
+            {
                 map[registered.Name] = registered;
+            }
+        }
+
         RegisteredProperties = map;
     }
 
     private void RegisterKeyframesFromSheet(StyleSheet sheet)
     {
         foreach (var rule in KeyframesParser.ParseAll(sheet))
+        {
             AnimationEngine.RegisterKeyframes(rule);
+        }
     }
 
     private void UnregisterKeyframesFromSheet(StyleSheet sheet)
@@ -199,7 +216,9 @@ public sealed class StyleEngine
         // the original add order, just like CSSOM removeRule semantics.
         AnimationEngine.ClearKeyframes();
         foreach (var remaining in _sheets)
+        {
             RegisterKeyframesFromSheet(remaining);
+        }
     }
 
     /// <summary>True if any selector in <paramref name="index"/> uses
@@ -210,8 +229,13 @@ public sealed class StyleEngine
     private static bool SheetUsesHasOrEmpty(SheetIndex index)
     {
         foreach (var parsed in index.SelectorLists)
+        {
             if (SelectorListUsesHasOrEmpty(parsed))
+            {
                 return true;
+            }
+        }
+
         return false;
     }
 
@@ -221,34 +245,53 @@ public sealed class StyleEngine
     private static void CollectReferencedAttributes(SheetIndex index, HashSet<string> sink)
     {
         foreach (var parsed in index.SelectorLists)
+        {
             CollectReferencedAttributes(parsed, sink);
+        }
     }
 
     private static void CollectReferencedAttributes(SelectorList list, HashSet<string> sink)
     {
         foreach (var complex in list.Selectors)
+        {
             foreach (var part in complex.Parts)
+            {
                 foreach (var simple in part.Compound.SimpleSelectors)
                 {
                     if (simple is AttributeSelector attr)
+                    {
                         sink.Add(attr.Name);
+                    }
                     else if (simple is PseudoClassSelector pc)
+                    {
                         switch (pc.Argument)
                         {
                             case SelectorList nested: CollectReferencedAttributes(nested, sink); break;
                             case NthArgument { OfSelector: { } of }: CollectReferencedAttributes(of, sink); break;
                         }
+                    }
                 }
+            }
+        }
     }
 
     private static bool SelectorListUsesHasOrEmpty(SelectorList list)
     {
         foreach (var complex in list.Selectors)
+        {
             foreach (var part in complex.Parts)
+            {
                 foreach (var simple in part.Compound.SimpleSelectors)
                 {
-                    if (simple is not PseudoClassSelector pc) continue;
-                    if (pc.Name is "has" or "empty") return true;
+                    if (simple is not PseudoClassSelector pc)
+                    {
+                        continue;
+                    }
+
+                    if (pc.Name is "has" or "empty")
+                    {
+                        return true;
+                    }
                     // Recurse into functional pseudo arguments (:is/:where/:not/:has).
                     switch (pc.Argument)
                     {
@@ -258,6 +301,9 @@ public sealed class StyleEngine
                             return true;
                     }
                 }
+            }
+        }
+
         return false;
     }
 
@@ -391,7 +437,9 @@ public sealed class StyleEngine
                 case AtRule atRule when atRule.Name.Equals("layer", StringComparison.OrdinalIgnoreCase):
                     var layerNames = ParseLayerNamesFromPrelude(atRule.Prelude);
                     if (atRule.Rules.Count == 0 && atRule.Declarations.Count == 0)
+                    {
                         break;
+                    }
 
                     string layerPath;
                     if (layerNames.Count == 0)
@@ -426,7 +474,10 @@ public sealed class StyleEngine
     {
         var next = new RuleCondition[conditions.Count + 1];
         for (var i = 0; i < conditions.Count; i++)
+        {
             next[i] = conditions[i];
+        }
+
         next[^1] = condition;
         return next;
     }
@@ -440,7 +491,11 @@ public sealed class StyleEngine
         // Reuse the full CSS parser so `(...)` becomes a CssSimpleBlock.
         var sheet = CssParser.ParseStyleSheet($"@media {query} {{ }}");
         var at = sheet.Rules.OfType<AtRule>().FirstOrDefault();
-        if (at is null) return false;
+        if (at is null)
+        {
+            return false;
+        }
+
         var list = MediaQueryParser.ParseList(at.Prelude);
         return MediaQueryEvaluator.Evaluate(list, ctx);
     }
@@ -512,7 +567,9 @@ public sealed class StyleEngine
         // Interactive cascades (hover/focus) are per-element and the cache
         // bypass kicks in inside Compute. Nothing to pre-cache.
         if (context is not null)
+        {
             return;
+        }
 
         // Group descendants by depth (relative to root). Root is level 0.
         var levels = new List<List<Element>> { new() { root } };
@@ -527,7 +584,9 @@ public sealed class StyleEngine
             if (level.Count < 12)
             {
                 foreach (var el in level)
+                {
                     Compute(el, context: null, cache);
+                }
             }
             else
             {
@@ -538,14 +597,27 @@ public sealed class StyleEngine
 
     private static void FillLevels(Element parent, int depth, List<List<Element>> levels)
     {
-        while (levels.Count <= depth) levels.Add(new List<Element>());
+        while (levels.Count <= depth)
+        {
+            levels.Add(new List<Element>());
+        }
+
         var bucket = levels[depth];
         foreach (var child in parent.ChildNodes)
+        {
             if (child is Element el)
+            {
                 bucket.Add(el);
+            }
+        }
+
         foreach (var child in parent.ChildNodes)
+        {
             if (child is Element el)
+            {
                 FillLevels(el, depth + 1, levels);
+            }
+        }
     }
 
     /// <summary>
@@ -612,7 +684,9 @@ public sealed class StyleEngine
         ref int elementsStyled)
     {
         if (cache is not null && cache.TryGet(element, out var cached))
+        {
             return cached;
+        }
 
         var parent = element.ParentNode as Element;
         var parentStyle = parent is null
@@ -652,7 +726,9 @@ public sealed class StyleEngine
         SelectorMatchContext? context)
     {
         if (validation is null)
+        {
             return false;
+        }
 
         var matchContext = context ?? new SelectorMatchContext();
         foreach (var result in validation)
@@ -660,7 +736,9 @@ public sealed class StyleEngine
             var matched = ConditionsMatch(result.Conditions, element)
                 && SelectorMatcher.Matches(result.Selector, element, matchContext);
             if (matched != result.Matched)
+            {
                 return false;
+            }
         }
 
         return true;
@@ -684,7 +762,10 @@ public sealed class StyleEngine
     private static string SerializeAttributes(Element element)
     {
         var count = element.Attributes.Count;
-        if (count == 0) return string.Empty;
+        if (count == 0)
+        {
+            return string.Empty;
+        }
         // Sort by name so two elements with the same attributes in different
         // source order hit the same key. For attribute names + values we use
         // ordinal comparison — HTML attribute names are already lower-cased
@@ -705,7 +786,11 @@ public sealed class StyleEngine
         var sb = new System.Text.StringBuilder();
         for (var i = 0; i < pairs.Length; i++)
         {
-            if (i > 0) sb.Append(';');
+            if (i > 0)
+            {
+                sb.Append(';');
+            }
+
             sb.Append(pairs[i].Name);
             sb.Append('=');
             sb.Append(pairs[i].Value);
@@ -716,7 +801,13 @@ public sealed class StyleEngine
     private static string? PreviousElementSiblingTag(Element element)
     {
         for (var n = element.PreviousSibling; n is not null; n = n.PreviousSibling)
-            if (n is Element prev) return prev.LocalName;
+        {
+            if (n is Element prev)
+            {
+                return prev.LocalName;
+            }
+        }
+
         return null;
     }
 
@@ -801,7 +892,9 @@ public sealed class StyleEngine
         foreach (var sheet in _sheets)
         {
             if (!_sheetIndexes.TryGetValue(sheet, out var sheetIndex))
+            {
                 continue;
+            }
 
             sheetIndex.Selectors.GetCandidates(
                 element,
@@ -816,7 +909,9 @@ public sealed class StyleEngine
                 if (!RuleDeclaresContent(indexedRule.Rule)
                     || !ConditionsMatch(indexedRule.Conditions, element)
                     || !SelectorMatcher.Matches(entry.Selector, element, context))
+                {
                     continue;
+                }
 
                 return true;
             }
@@ -828,8 +923,13 @@ public sealed class StyleEngine
     private static bool RuleDeclaresContent(StyleRule rule)
     {
         foreach (var declaration in rule.Declarations)
+        {
             if (declaration.Name.Equals("content", StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
+            }
+        }
+
         return false;
     }
 
@@ -852,6 +952,7 @@ public sealed class StyleEngine
             var layerOrder = _layerOrders[sheet.Origin];
             var sheetIndex = _sheetIndexes.GetValueOrDefault(sheet);
             if (sheetIndex is not null)
+            {
                 GatherFromIndexedRules(
                     sheetIndex,
                     sheet.Origin,
@@ -864,6 +965,7 @@ public sealed class StyleEngine
                     layerOrder,
                     selectorScratch,
                     selectorScratchSeen);
+            }
         }
 
         var inlineStyle = element.GetAttribute("style");
@@ -900,20 +1002,34 @@ public sealed class StyleEngine
         {
             CascadedValue? best = null;
             foreach (var cand in kvp.Value)
+            {
                 if (best is null || cand.IsStrongerThan(best))
+                {
                     best = cand;
+                }
+            }
+
             if (best is not null)
+            {
                 winners[kvp.Key] = best;
+            }
         }
         var customWinners = new Dictionary<string, CustomPropertyValue>(StringComparer.Ordinal);
         foreach (var kvp in customCandidates)
         {
             CustomPropertyValue? best = null;
             foreach (var cand in kvp.Value)
+            {
                 if (best is null || cand.IsStrongerThan(best))
+                {
                     best = cand;
+                }
+            }
+
             if (best is not null)
+            {
                 customWinners[kvp.Key] = best;
+            }
         }
 
         IReadOnlyDictionary<string, IReadOnlyList<CssComponentValue>> customProperties = inheritedCustomProperties;
@@ -926,7 +1042,9 @@ public sealed class StyleEngine
                     pair => pair.Value,
                     StringComparer.Ordinal);
             foreach (var pair in customWinners)
+            {
                 mergedCustomProperties[pair.Key] = pair.Value.Value;
+            }
 
             // CSS Variables L1 §3.3: a custom property whose var() references form a
             // cycle is invalid at computed-value time and computes to the
@@ -942,11 +1060,17 @@ public sealed class StyleEngine
         {
             CssValue value;
             if (winners.TryGetValue(property, out var cascaded))
+            {
                 value = ResolveSpecialKeywords(cascaded, property, parentStyle, customProperties, allCandidates, element);
+            }
             else if (PropertyRegistry.Inherits(property) && parentStyle is not null)
+            {
                 value = parentStyle.Get(property);
+            }
             else
+            {
                 value = PropertyRegistry.InitialValue(property);
+            }
 
             var resolved = ResolveReferences(value, customProperties, element);
             // CSS Variables L1 §3.2: if a var() in a non-custom property cannot be
@@ -955,9 +1079,11 @@ public sealed class StyleEngine
             // is invalid at computed-value time and behaves as `unset` — the
             // inherited value for inherited properties, else the initial value.
             if (ContainsUnresolvedVar(resolved))
+            {
                 resolved = PropertyRegistry.Inherits(property) && parentStyle is not null
                     ? parentStyle.Get(property)
                     : PropertyRegistry.InitialValue(property);
+            }
 
             values[property] = resolved;
         }
@@ -992,7 +1118,11 @@ public sealed class StyleEngine
 
         foreach (var property in PropertyRegistry.All)
         {
-            if (property == PropertyId.FontSize) continue;
+            if (property == PropertyId.FontSize)
+            {
+                continue;
+            }
+
             values[property] = CssCalcResolver.Resolve(values[property], ctx);
         }
     }
@@ -1035,7 +1165,9 @@ public sealed class StyleEngine
             {
                 var size = lookup(anc);
                 if (size is { } v)
+                {
                     return (v.Width, v.Height);
+                }
             }
         }
         // Spec-correct fallback per CSS Containment 3 §3.2 — small viewport.
@@ -1130,7 +1262,9 @@ public sealed class StyleEngine
                 {
                     // Statement form: `@layer a, b, c;` — just registers names.
                     foreach (var p in paths)
+                    {
                         _layerOrders[origin].RegisterLayer(Combine(currentPath, p));
+                    }
                 }
                 else if (paths.Count == 0)
                 {
@@ -1161,7 +1295,11 @@ public sealed class StyleEngine
         void Flush()
         {
             var s = current.ToString().Trim();
-            if (s.Length > 0) result.Add(s);
+            if (s.Length > 0)
+            {
+                result.Add(s);
+            }
+
             current.Clear();
         }
         foreach (var v in prelude)
@@ -1169,9 +1307,19 @@ public sealed class StyleEngine
             if (v is CssTokenValue tv)
             {
                 if (tv.Token.Type == CssTokenType.Comma) { Flush(); continue; }
-                if (tv.Token.Type == CssTokenType.Whitespace) continue;
-                if (tv.Token.Type == CssTokenType.Ident) current.Append(tv.Token.Value);
-                else if (tv.Token.Type == CssTokenType.Delim && tv.Token.Delimiter == '.') current.Append('.');
+                if (tv.Token.Type == CssTokenType.Whitespace)
+                {
+                    continue;
+                }
+
+                if (tv.Token.Type == CssTokenType.Ident)
+                {
+                    current.Append(tv.Token.Value);
+                }
+                else if (tv.Token.Type == CssTokenType.Delim && tv.Token.Delimiter == '.')
+                {
+                    current.Append('.');
+                }
             }
         }
         Flush();
@@ -1232,7 +1380,9 @@ public sealed class StyleEngine
                 indexedRule.Conditions,
                 selectorMatched));
             if (!selectorMatched)
+            {
                 continue;
+            }
 
             AddDeclarations(
                 indexedRule.Rule.Declarations,
@@ -1256,15 +1406,24 @@ public sealed class StyleEngine
                 case RuleConditionKind.Media:
                     if (condition.QueryList is null ||
                         !MediaQueryEvaluator.Evaluate(condition.QueryList, _mediaContext))
+                    {
                         return false;
+                    }
+
                     break;
                 case RuleConditionKind.Supports:
                     if (!condition.SupportsResult)
+                    {
                         return false;
+                    }
+
                     break;
                 case RuleConditionKind.Container:
                     if (condition.QueryList is null || !ContainerQueryMatches(condition.QueryList, element))
+                    {
                         return false;
+                    }
+
                     break;
             }
         }
@@ -1277,7 +1436,9 @@ public sealed class StyleEngine
         SelectorList? parentSelectors)
     {
         if (parentSelectors is null)
+        {
             return SelectorParser.ParseSelectorList(prelude);
+        }
 
         // CSS Nesting 1 §3: textually desugar `&` and implicit-`&` against parent selectors,
         // then reparse via SelectorParser.
@@ -1288,7 +1449,11 @@ public sealed class StyleEngine
         var rebuilt = new System.Text.StringBuilder();
         for (var i = 0; i < pieces.Count; i++)
         {
-            if (i > 0) rebuilt.Append(", ");
+            if (i > 0)
+            {
+                rebuilt.Append(", ");
+            }
+
             var piece = pieces[i].Trim();
             if (piece.Contains('&', StringComparison.Ordinal))
             {
@@ -1309,8 +1474,15 @@ public sealed class StyleEngine
         var depth = 0;
         foreach (var c in text)
         {
-            if (c == '(' || c == '[') depth++;
-            else if (c == ')' || c == ']') depth = Math.Max(0, depth - 1);
+            if (c == '(' || c == '[')
+            {
+                depth++;
+            }
+            else if (c == ')' || c == ']')
+            {
+                depth = Math.Max(0, depth - 1);
+            }
+
             if (c == ',' && depth == 0)
             {
                 result.Add(sb.ToString());
@@ -1326,7 +1498,11 @@ public sealed class StyleEngine
     private static string ComponentValuesToText(IReadOnlyList<CssComponentValue> values)
     {
         var sb = new System.Text.StringBuilder();
-        foreach (var v in values) AppendComponentValueText(sb, v);
+        foreach (var v in values)
+        {
+            AppendComponentValueText(sb, v);
+        }
+
         return sb.ToString();
     }
 
@@ -1339,7 +1515,11 @@ public sealed class StyleEngine
                 break;
             case CssFunction fn:
                 sb.Append(fn.Name).Append('(');
-                foreach (var v in fn.Values) AppendComponentValueText(sb, v);
+                foreach (var v in fn.Values)
+                {
+                    AppendComponentValueText(sb, v);
+                }
+
                 sb.Append(')');
                 break;
             case CssSimpleBlock block:
@@ -1350,7 +1530,11 @@ public sealed class StyleEngine
                     CssTokenType.LeftBrace => '{',
                     _ => '(',
                 });
-                foreach (var v in block.Values) AppendComponentValueText(sb, v);
+                foreach (var v in block.Values)
+                {
+                    AppendComponentValueText(sb, v);
+                }
+
                 sb.Append(block.StartToken switch
                 {
                     CssTokenType.LeftParen => ')',
@@ -1437,9 +1621,19 @@ public sealed class StyleEngine
                     break;
                 case PseudoClassSelector pc:
                     sb.Append(':').Append(pc.Name);
-                    if (pc.Argument is SelectorList sl) sb.Append('(').Append(SelectorListToText(sl)).Append(')');
-                    else if (pc.Argument is NthPattern np) sb.Append('(').Append(np.A).Append('n').Append('+').Append(np.B).Append(')');
-                    else if (pc.Argument is string s) sb.Append('(').Append(s).Append(')');
+                    if (pc.Argument is SelectorList sl)
+                    {
+                        sb.Append('(').Append(SelectorListToText(sl)).Append(')');
+                    }
+                    else if (pc.Argument is NthPattern np)
+                    {
+                        sb.Append('(').Append(np.A).Append('n').Append('+').Append(np.B).Append(')');
+                    }
+                    else if (pc.Argument is string s)
+                    {
+                        sb.Append('(').Append(s).Append(')');
+                    }
+
                     break;
                 case PseudoElementSelector pe:
                     sb.Append("::").Append(pe.Name);
@@ -1475,7 +1669,10 @@ public sealed class StyleEngine
                     layerIndex,
                     layerPath);
                 if (!customCandidates.TryGetValue(declaration.Name, out var list))
+                {
                     customCandidates[declaration.Name] = list = new List<CustomPropertyValue>();
+                }
+
                 list.Add(custom);
                 continue;
             }
@@ -1496,7 +1693,10 @@ public sealed class StyleEngine
                         layerIndex,
                         layerPath);
                     if (!candidates.TryGetValue(p, out var list))
+                    {
                         candidates[p] = list = new List<CascadedValue>();
+                    }
+
                     list.Add(candidate);
                 }
                 continue;
@@ -1514,7 +1714,10 @@ public sealed class StyleEngine
                     layerIndex,
                     layerPath);
                 if (!candidates.TryGetValue(parsed.Id, out var list))
+                {
                     candidates[parsed.Id] = list = new List<CascadedValue>();
+                }
+
                 list.Add(candidate);
             }
         }
@@ -1573,7 +1776,9 @@ public sealed class StyleEngine
         bool sameOriginOnly)
     {
         if (!allCandidates.TryGetValue(property, out var list))
+        {
             return DefaultForProperty(property, parentStyle);
+        }
 
         CascadedValue? best = null;
         foreach (var cand in list)
@@ -1581,21 +1786,39 @@ public sealed class StyleEngine
             if (sameOriginOnly)
             {
                 // revert-layer: same origin, earlier layer (or different importance).
-                if (cand.Origin != current.Origin) continue;
-                if (cand.Important != current.Important) continue;
+                if (cand.Origin != current.Origin)
+                {
+                    continue;
+                }
+
+                if (cand.Important != current.Important)
+                {
+                    continue;
+                }
                 // strictly weaker than current in cascade ordering.
-                if (cand.IsStrongerThan(current) || cand.SameAs(current)) continue;
+                if (cand.IsStrongerThan(current) || cand.SameAs(current))
+                {
+                    continue;
+                }
             }
             else
             {
                 // revert: previous origin (lower origin rank than current).
-                if (OriginRank(cand.Origin, cand.Important) >= OriginRank(current.Origin, current.Important)) continue;
+                if (OriginRank(cand.Origin, cand.Important) >= OriginRank(current.Origin, current.Important))
+                {
+                    continue;
+                }
             }
             if (best is null || cand.IsStrongerThan(best))
+            {
                 best = cand;
+            }
         }
         if (best is null)
+        {
             return DefaultForProperty(property, parentStyle);
+        }
+
         var inner = ResolveSpecialKeywords(best, property, parentStyle, parentStyle?.CustomProperties ?? new Dictionary<string, IReadOnlyList<CssComponentValue>>(StringComparer.Ordinal), allCandidates, element);
         return inner;
     }
@@ -1603,7 +1826,10 @@ public sealed class StyleEngine
     private static CssValue DefaultForProperty(PropertyId property, ComputedStyle? parentStyle)
     {
         if (PropertyRegistry.Inherits(property) && parentStyle is not null)
+        {
             return parentStyle.Get(property);
+        }
+
         return PropertyRegistry.InitialValue(property);
     }
 
@@ -1655,7 +1881,10 @@ public sealed class StyleEngine
     private static void RemoveCyclicCustomProperties(
         Dictionary<string, IReadOnlyList<CssComponentValue>> customProperties)
     {
-        if (customProperties.Count == 0) return;
+        if (customProperties.Count == 0)
+        {
+            return;
+        }
 
         // Build the dependency edges once. Only references to names that are
         // actually defined can form a cycle.
@@ -1674,7 +1903,11 @@ public sealed class StyleEngine
         var onCycle = new HashSet<string>(StringComparer.Ordinal);
         foreach (var start in edges.Keys)
         {
-            if (state.GetValueOrDefault(start) != 0) continue;
+            if (state.GetValueOrDefault(start) != 0)
+            {
+                continue;
+            }
+
             var stack = new Stack<(string Node, IEnumerator<string> Edges)>();
             state[start] = 1;
             stack.Push((start, edges[start].GetEnumerator()));
@@ -1693,7 +1926,10 @@ public sealed class StyleEngine
                         foreach (var frame in stack)
                         {
                             onCycle.Add(frame.Node);
-                            if (string.Equals(frame.Node, next, StringComparison.Ordinal)) break;
+                            if (string.Equals(frame.Node, next, StringComparison.Ordinal))
+                            {
+                                break;
+                            }
                         }
                     }
                     else if (color == 0)
@@ -1711,7 +1947,9 @@ public sealed class StyleEngine
         }
 
         foreach (var name in onCycle)
+        {
             customProperties.Remove(name);
+        }
     }
 
     /// <summary>Collect the names of every custom property referenced by a
@@ -1735,7 +1973,10 @@ public sealed class StyleEngine
                             break; // first ident is the referenced name
                         }
                         if (arg is CssTokenValue { Token.Type: CssTokenType.Whitespace })
+                        {
                             continue;
+                        }
+
                         break;
                     }
                     // The fallback (anything past the first comma) may also name
@@ -1775,15 +2016,21 @@ public sealed class StyleEngine
         {
             var r = ResolveReferences(v, customProperties, element);
             if (r is CssValueList nested)
+            {
                 resolved.AddRange(nested.Values);
+            }
             else
+            {
                 resolved.Add(r);
+            }
         }
 
         foreach (var decl in PropertyRegistry.ExpandResolved(pending.Shorthand, resolved, important: false))
         {
             if (decl.Id == pending.Longhand)
+            {
                 return decl.Value;
+            }
         }
         return PropertyRegistry.InitialValue(pending.Longhand);
     }
@@ -1867,7 +2114,11 @@ public sealed class StyleEngine
         var top = sideA == 0 || sideB == 0;
         var left = sideA == 3 || sideB == 3;
         var right = sideA == 1 || sideB == 1;
-        if (top) return left ? PropertyId.BorderTopLeftRadius : PropertyId.BorderTopRightRadius;
+        if (top)
+        {
+            return left ? PropertyId.BorderTopLeftRadius : PropertyId.BorderTopRightRadius;
+        }
+
         return right ? PropertyId.BorderBottomRightRadius : PropertyId.BorderBottomLeftRadius;
     }
 
@@ -1884,12 +2135,23 @@ public sealed class StyleEngine
         {
             CascadedValue? best = null;
             foreach (var c in list)
-                if (best is null || c.IsStrongerThan(best)) best = c;
+            {
+                if (best is null || c.IsStrongerThan(best))
+                {
+                    best = c;
+                }
+            }
+
             if (best!.Value is CssKeyword k && !IsCssWideKeyword(k.Name))
+            {
                 return k.Name;
+            }
         }
         if (parentStyle is not null && parentStyle.Get(id) is CssKeyword pk)
+        {
             return pk.Name;
+        }
+
         return initial;
     }
 
@@ -1903,9 +2165,15 @@ public sealed class StyleEngine
         foreach (var (logical, physical) in logicalToPhysical)
         {
             if (!allCandidates.TryGetValue(logical, out var logicalList) || logicalList.Count == 0)
+            {
                 continue;
+            }
+
             if (!allCandidates.TryGetValue(physical, out var physicalList))
+            {
                 allCandidates[physical] = physicalList = new List<CascadedValue>();
+            }
+
             physicalList.AddRange(logicalList);
             allCandidates.Remove(logical);
         }
@@ -1924,15 +2192,29 @@ public sealed class StyleEngine
         public bool IsStrongerThan(CascadedValue other)
         {
             var origin = OriginRank(Origin, Important).CompareTo(OriginRank(other.Origin, other.Important));
-            if (origin != 0) return origin > 0;
-            if (Inline != other.Inline) return Inline;
+            if (origin != 0)
+            {
+                return origin > 0;
+            }
+
+            if (Inline != other.Inline)
+            {
+                return Inline;
+            }
             // Layer: per spec, layered styles are weaker than unlayered (non-important);
             // for !important the order is inverted.
             var layer = LayerOrder.Compare(LayerPath, LayerIndex, other.LayerPath, other.LayerIndex);
             if (layer != 0)
+            {
                 return Important ? layer < 0 : layer > 0;
+            }
+
             var specificity = Specificity.CompareTo(other.Specificity);
-            if (specificity != 0) return specificity > 0;
+            if (specificity != 0)
+            {
+                return specificity > 0;
+            }
+
             return Order > other.Order;
         }
 
@@ -1952,13 +2234,28 @@ public sealed class StyleEngine
         public bool IsStrongerThan(CustomPropertyValue other)
         {
             var origin = OriginRank(Origin, Important).CompareTo(OriginRank(other.Origin, other.Important));
-            if (origin != 0) return origin > 0;
-            if (Inline != other.Inline) return Inline;
+            if (origin != 0)
+            {
+                return origin > 0;
+            }
+
+            if (Inline != other.Inline)
+            {
+                return Inline;
+            }
+
             var layer = LayerOrder.Compare(LayerPath, LayerIndex, other.LayerPath, other.LayerIndex);
             if (layer != 0)
+            {
                 return Important ? layer < 0 : layer > 0;
+            }
+
             var specificity = Specificity.CompareTo(other.Specificity);
-            if (specificity != 0) return specificity > 0;
+            if (specificity != 0)
+            {
+                return specificity > 0;
+            }
+
             return Order > other.Order;
         }
     }
@@ -2050,16 +2347,24 @@ internal sealed class RuleCondition
 
             if (prelude[i] is CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var ident } }
                 && !ident.Equals("not", StringComparison.OrdinalIgnoreCase))
+            {
                 conditionStart = i + 1;
+            }
+
             break;
         }
 
         if (conditionStart >= prelude.Count)
+        {
             return null;
+        }
 
         var condition = new List<CssComponentValue>(prelude.Count - conditionStart);
         for (var i = conditionStart; i < prelude.Count; i++)
+        {
             condition.Add(prelude[i]);
+        }
+
         return TryParseMediaQueryList(condition);
     }
 }

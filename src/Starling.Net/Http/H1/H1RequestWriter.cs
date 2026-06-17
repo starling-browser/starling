@@ -39,7 +39,9 @@ public sealed class H1RequestWriter
             await output.WriteAsync(bytes, ct).ConfigureAwait(false);
 
             if (!req.Body.IsEmpty)
+            {
                 await output.WriteAsync(req.Body, ct).ConfigureAwait(false);
+            }
 
             await output.FlushAsync(ct).ConfigureAwait(false);
         }
@@ -101,7 +103,10 @@ public sealed class H1RequestWriter
         var s = sb.ToString();
         var len = Encoding.ASCII.GetByteCount(s);
         if (scratch is null || scratch.Length < len)
+        {
             scratch = new byte[len];
+        }
+
         var written = Encoding.ASCII.GetBytes(s, scratch);
         return new ReadOnlyMemory<byte>(scratch, 0, written);
     }
@@ -115,7 +120,11 @@ public sealed class H1RequestWriter
 
     private static void AppendDefaultHeader(StringBuilder sb, HttpHeaders user, string name, string value)
     {
-        if (user.Contains(name)) return;
+        if (user.Contains(name))
+        {
+            return;
+        }
+
         sb.Append(name).Append(": ").Append(value).Append("\r\n");
     }
 
@@ -127,7 +136,11 @@ public sealed class H1RequestWriter
     internal static string BuildRequestTarget(StarlingUrl url)
     {
         var path = string.IsNullOrEmpty(url.Path) ? "/" : url.Path;
-        if (!path.StartsWith('/')) path = "/" + path;
+        if (!path.StartsWith('/'))
+        {
+            path = "/" + path;
+        }
+
         return url.Query is { Length: > 0 } q ? path + "?" + q : path;
     }
 
@@ -138,11 +151,16 @@ public sealed class H1RequestWriter
     internal static string BuildHostHeader(StarlingUrl url)
     {
         if (string.IsNullOrEmpty(url.Host))
+        {
             throw new ArgumentException("URL has no host — cannot build Host header.", nameof(url));
+        }
 
         var defaultPort = url.DefaultPort;
         if (url.Port is int p && p != defaultPort)
+        {
             return url.Host + ":" + p.ToString(CultureInfo.InvariantCulture);
+        }
+
         return url.Host;
     }
 }

@@ -56,7 +56,11 @@ public class JsBench
     {
         var lex = new JsLexer(FibRecursiveSrc);
         var count = 0;
-        while (lex.Next().Kind != JsTokenKind.EndOfFile) count++;
+        while (lex.Next().Kind != JsTokenKind.EndOfFile)
+        {
+            count++;
+        }
+
         return count;
     }
 

@@ -58,7 +58,9 @@ internal static class GitHubStyleSmoke
             _listener.InstrumentPublished = (inst, lst) =>
             {
                 if (inst.Meter.Name == StarlingTelemetry.SourceName)
+                {
                     lst.EnableMeasurementEvents(inst);
+                }
             };
             _listener.SetMeasurementEventCallback<double>((inst, m, _, _) => Add(inst.Name, m));
             _listener.SetMeasurementEventCallback<long>((inst, m, _, _) => Add(inst.Name, (double)m));
@@ -73,7 +75,9 @@ internal static class GitHubStyleSmoke
             foreach (var pair in _counters
                          .Where(pair => pair.Key.StartsWith(prefix, StringComparison.Ordinal))
                          .OrderBy(pair => pair.Key))
+            {
                 Console.WriteLine($"  counter {pair.Key}: {pair.Value:N0}");
+            }
         }
 
         public void Dispose() => _listener.Dispose();
@@ -94,13 +98,16 @@ internal static class GitHubStyleSmoke
             {
                 ShouldListenTo = src => src.Name == StarlingTelemetry.SourceName,
                 Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                ActivityStarted = a => { lock (_active) _active[a.Id ?? a.OperationName] = Stopwatch.StartNew(); },
+                ActivityStarted = a => { lock (_active) { _active[a.Id ?? a.OperationName] = Stopwatch.StartNew(); } },
                 ActivityStopped = a =>
                 {
                     Stopwatch? sw;
                     lock (_active)
                     {
-                        if (!_active.Remove(a.Id ?? a.OperationName, out sw)) return;
+                        if (!_active.Remove(a.Id ?? a.OperationName, out sw))
+                        {
+                            return;
+                        }
                     }
                     sw.Stop();
                     lock (_spans)
@@ -116,7 +123,9 @@ internal static class GitHubStyleSmoke
         public void Print()
         {
             foreach (var pair in _spans.OrderByDescending(pair => pair.Value))
+            {
                 Console.WriteLine($"  span {pair.Key}: {pair.Value} ms");
+            }
         }
 
         public void Dispose() => _listener.Dispose();

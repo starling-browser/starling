@@ -90,7 +90,10 @@ internal static class StorageBinding
         JintInterop.DefineMethod(engine, proto, "removeItem", (thisV, args) =>
         {
             if (TryStore(thisV) is { } s && args.Length > 0)
+            {
                 s.Remove(args[0].ToString());
+            }
+
             return JsValue.Undefined;
         }, length: 1);
 
@@ -117,7 +120,11 @@ internal static class StorageBinding
 
     private static StorageStore? TryStore(JsValue thisV)
     {
-        if (thisV is ObjectInstance oi && StorageBackings.TryGetValue(oi, out var s)) return s;
+        if (thisV is ObjectInstance oi && StorageBackings.TryGetValue(oi, out var s))
+        {
+            return s;
+        }
+
         return null;
     }
 
@@ -126,8 +133,16 @@ internal static class StorageBinding
 
     private static string OriginFor(string? url)
     {
-        if (string.IsNullOrEmpty(url)) return "about:blank";
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return "about:blank";
+        if (string.IsNullOrEmpty(url))
+        {
+            return "about:blank";
+        }
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return "about:blank";
+        }
+
         var port = uri.IsDefaultPort ? "" : $":{uri.Port}";
         return $"{uri.Scheme}://{uri.Host}{port}".ToLowerInvariant();
     }
@@ -149,14 +164,22 @@ internal sealed class JintStorageObject : ObjectInstance
     private bool IsItemKey(JsValue p, out string key)
     {
         key = "";
-        if (!p.IsString()) return false;
+        if (!p.IsString())
+        {
+            return false;
+        }
+
         key = p.AsString();
         return !_interfaceNames.Contains(key);
     }
 
     public override JsValue Get(JsValue property, JsValue receiver)
     {
-        if (IsItemKey(property, out var key) && _store.TryGet(key, out var v)) return JintInterop.Str(v);
+        if (IsItemKey(property, out var key) && _store.TryGet(key, out var v))
+        {
+            return JintInterop.Str(v);
+        }
+
         return base.Get(property, receiver);
     }
 
@@ -173,19 +196,30 @@ internal sealed class JintStorageObject : ObjectInstance
     public override global::Jint.Runtime.Descriptors.PropertyDescriptor GetOwnProperty(JsValue property)
     {
         if (IsItemKey(property, out var key) && _store.TryGet(key, out var v))
+        {
             return new global::Jint.Runtime.Descriptors.PropertyDescriptor(JintInterop.Str(v), writable: true, enumerable: true, configurable: true);
+        }
+
         return base.GetOwnProperty(property);
     }
 
     public override bool HasProperty(JsValue property)
     {
-        if (IsItemKey(property, out var key) && _store.TryGet(key, out _)) return true;
+        if (IsItemKey(property, out var key) && _store.TryGet(key, out _))
+        {
+            return true;
+        }
+
         return base.HasProperty(property);
     }
 
     public override bool Delete(JsValue property)
     {
-        if (IsItemKey(property, out var key) && _store.Remove(key)) return true;
+        if (IsItemKey(property, out var key) && _store.Remove(key))
+        {
+            return true;
+        }
+
         return base.Delete(property);
     }
 
@@ -193,7 +227,13 @@ internal sealed class JintStorageObject : ObjectInstance
     {
         var keys = new List<JsValue>();
         if ((types & global::Jint.Runtime.Types.String) != 0)
-            foreach (var k in _store.Keys) keys.Add(JintInterop.Str(k));
+        {
+            foreach (var k in _store.Keys)
+            {
+                keys.Add(JintInterop.Str(k));
+            }
+        }
+
         keys.AddRange(base.GetOwnPropertyKeys(types));
         return keys;
     }
@@ -209,13 +249,21 @@ internal sealed class StorageStore
 
     public void Set(string key, string value)
     {
-        if (!_map.ContainsKey(key)) _order.Add(key);
+        if (!_map.ContainsKey(key))
+        {
+            _order.Add(key);
+        }
+
         _map[key] = value;
     }
 
     public bool Remove(string key)
     {
-        if (!_map.Remove(key)) return false;
+        if (!_map.Remove(key))
+        {
+            return false;
+        }
+
         _order.Remove(key);
         return true;
     }

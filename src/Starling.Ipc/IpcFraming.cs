@@ -37,7 +37,9 @@ public static class IpcFraming
         ArgumentNullException.ThrowIfNull(stream);
         var bytes = JsonSerializer.SerializeToUtf8Bytes(envelope, IpcJsonContext.Default.IpcEnvelope);
         if (bytes.Length > IpcProtocol.DefaultMaxMessageBytes)
+        {
             throw new InvalidOperationException($"IPC message is too large: {bytes.Length} bytes.");
+        }
 
         var header = new byte[4];
         BinaryPrimitives.WriteInt32LittleEndian(header, bytes.Length);
@@ -54,13 +56,20 @@ public static class IpcFraming
         var header = new byte[4];
         var read = await ReadExactlyOrEndAsync(stream, header, ct).ConfigureAwait(false);
         if (read == 0)
+        {
             return null;
+        }
+
         if (read != header.Length)
+        {
             throw new EndOfStreamException("IPC stream ended in the middle of a message header.");
+        }
 
         var length = BinaryPrimitives.ReadInt32LittleEndian(header);
         if (length <= 0 || length > IpcProtocol.DefaultMaxMessageBytes)
+        {
             throw new InvalidDataException($"Invalid IPC message length: {length}.");
+        }
 
         var payload = new byte[length];
         await ReadExactlyAsync(stream, payload, ct).ConfigureAwait(false);
@@ -78,7 +87,10 @@ public static class IpcFraming
         {
             var read = await stream.ReadAsync(buffer.AsMemory(total), ct).ConfigureAwait(false);
             if (read == 0)
+            {
                 return total;
+            }
+
             total += read;
         }
 
@@ -95,7 +107,10 @@ public static class IpcFraming
         {
             var read = await stream.ReadAsync(buffer.AsMemory(total), ct).ConfigureAwait(false);
             if (read == 0)
+            {
                 throw new EndOfStreamException("IPC stream ended in the middle of a message payload.");
+            }
+
             total += read;
         }
     }

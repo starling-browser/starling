@@ -89,7 +89,9 @@ internal sealed class StylesheetFetcher : IDisposable
     public IEnumerable<(StyleSheet Sheet, StarlingUrl BaseUrl)> EnumerateLoaded()
     {
         foreach (var entry in _byUrl.Values)
+        {
             yield return (entry.Sheet, entry.Url);
+        }
     }
 
     public async Task FetchAllAsync(Document document, StarlingUrl? baseUrl, CancellationToken ct)
@@ -110,10 +112,16 @@ internal sealed class StylesheetFetcher : IDisposable
         {
             ct.ThrowIfCancellationRequested();
 
-            if (!IsStylesheetLink(link)) continue;
+            if (!IsStylesheetLink(link))
+            {
+                continue;
+            }
 
             var href = link.GetAttribute("href");
-            if (string.IsNullOrWhiteSpace(href)) continue;
+            if (string.IsNullOrWhiteSpace(href))
+            {
+                continue;
+            }
 
             var absolute = ResolveAbsolute(href, baseUrl);
             if (absolute is null)
@@ -125,7 +133,10 @@ internal sealed class StylesheetFetcher : IDisposable
             pending.Add((link, FetchAndParseAsync(absolute, ct)));
         }
 
-        if (pending.Count == 0) return;
+        if (pending.Count == 0)
+        {
+            return;
+        }
 
         // Await all fetches before recording. Task.WhenAll observes every task,
         // so a cancellation can't leave an unobserved faulted task behind; it
@@ -135,7 +146,11 @@ internal sealed class StylesheetFetcher : IDisposable
         foreach (var (link, task) in pending)
         {
             var sheet = task.Result; // completed; null = fetch/parse failed
-            if (sheet is null) continue;
+            if (sheet is null)
+            {
+                continue;
+            }
+
             _byElement[link] = sheet;
         }
     }
@@ -143,14 +158,19 @@ internal sealed class StylesheetFetcher : IDisposable
     private static bool IsStylesheetLink(Element link)
     {
         var rel = link.GetAttribute("rel");
-        if (string.IsNullOrWhiteSpace(rel)) return false;
+        if (string.IsNullOrWhiteSpace(rel))
+        {
+            return false;
+        }
 
         // rel is a space-separated set of tokens per HTML spec; "stylesheet"
         // anywhere in the set counts.
         foreach (var token in rel.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             if (token.Equals("stylesheet", StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -158,7 +178,10 @@ internal sealed class StylesheetFetcher : IDisposable
     private async Task<StyleSheet?> FetchAndParseAsync(StarlingUrl url, CancellationToken ct)
     {
         var key = url.ToString();
-        if (_byUrl.TryGetValue(key, out var cached)) return cached.Sheet;
+        if (_byUrl.TryGetValue(key, out var cached))
+        {
+            return cached.Sheet;
+        }
 
         using var _ = StarlingTelemetry.Span("engine", "fetch_stylesheet");
         Activity.Current?.SetTag("url", key);
@@ -224,17 +247,27 @@ internal sealed class StylesheetFetcher : IDisposable
     {
         // Honour BOM first (CSS Syntax 3 §3.2), then HTTP charset, else UTF-8.
         if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+        {
             return Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+        }
+
         if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE)
+        {
             return Encoding.Unicode.GetString(bytes, 2, bytes.Length - 2);
+        }
+
         if (bytes.Length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF)
+        {
             return Encoding.BigEndianUnicode.GetString(bytes, 2, bytes.Length - 2);
+        }
 
         if (contentType is { Length: > 0 })
         {
             var charset = ExtractCharset(contentType);
             if (charset is not null && TryResolveEncoding(charset) is { } encoding)
+            {
                 return encoding.GetString(bytes);
+            }
         }
 
         return Encoding.UTF8.GetString(bytes);
@@ -247,7 +280,9 @@ internal sealed class StylesheetFetcher : IDisposable
             var part = raw.Trim();
             const string prefix = "charset=";
             if (part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
                 return part[prefix.Length..].Trim().Trim('"', '\'');
+            }
         }
         return null;
     }
@@ -255,7 +290,11 @@ internal sealed class StylesheetFetcher : IDisposable
     private static Encoding? TryResolveEncoding(string name)
     {
         var canonical = WhatwgEncodingLabels.TryGetCanonicalName(name);
-        if (canonical is null) return null;
+        if (canonical is null)
+        {
+            return null;
+        }
+
         return canonical switch
         {
             "UTF-8" => Encoding.UTF8,
@@ -283,7 +322,11 @@ internal sealed class StylesheetFetcher : IDisposable
     {
         _byUrl.Clear();
         _byElement.Clear();
-        if (_ownsHttp) _sharedHttp?.Dispose();
+        if (_ownsHttp)
+        {
+            _sharedHttp?.Dispose();
+        }
+
         _sharedHttp = null;
     }
 }

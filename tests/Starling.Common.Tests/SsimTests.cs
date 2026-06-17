@@ -55,7 +55,11 @@ public class SsimTests
         const int h = 16;
         var (a, b) = MakePair(w, h, fill: 200);
         // Vary alpha aggressively; SSIM should still be perfect.
-        for (var i = 3; i < b.Length; i += 4) b[i] = (byte)(i & 0xFF);
+        for (var i = 3; i < b.Length; i += 4)
+        {
+            b[i] = (byte)(i & 0xFF);
+        }
+
         Ssim.ComputeRgba(a, b, w, h).Should().BeApproximately(1.0, 1e-9);
     }
 

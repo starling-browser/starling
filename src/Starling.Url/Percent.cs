@@ -34,7 +34,11 @@ internal static class Percent
 
     public static bool IsInSet(int c, Set set)
     {
-        if (c <= 0x1F || c >= 0x7F) return true; // C0 controls + > tilde
+        if (c <= 0x1F || c >= 0x7F)
+        {
+            return true; // C0 controls + > tilde
+        }
+
         return set switch
         {
             Set.C0Control => false, // covered by the leading check
@@ -80,7 +84,11 @@ internal static class Percent
     /// </summary>
     public static string Decode(string s)
     {
-        if (s.IndexOf('%') < 0) return s;
+        if (s.IndexOf('%') < 0)
+        {
+            return s;
+        }
+
         var bytes = new List<byte>(s.Length);
         Span<byte> rbuf = stackalloc byte[4];
         for (var i = 0; i < s.Length; i++)
@@ -101,7 +109,10 @@ internal static class Percent
                 // (the per-iteration stackalloc above is hoisted out of the loop).
                 var rune = new System.Text.Rune(s[i]);
                 var n = rune.EncodeToUtf8(rbuf);
-                for (var b = 0; b < n; b++) bytes.Add(rbuf[b]);
+                for (var b = 0; b < n; b++)
+                {
+                    bytes.Add(rbuf[b]);
+                }
             }
         }
         return Encoding.UTF8.GetString(bytes.ToArray());

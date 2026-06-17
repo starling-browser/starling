@@ -26,10 +26,15 @@ public static class SelectorSerializer
         {
             var part = complex.Parts[i];
             if (i > 0)
+            {
                 sb.Append(Combinator(part.CombinatorFromPrevious));
+            }
             else if (part.CombinatorFromPrevious is not (SelectorCombinator.None or SelectorCombinator.Descendant))
+            {
                 // A leading explicit combinator (e.g. inside :has(> a)).
                 sb.Append(Combinator(part.CombinatorFromPrevious).TrimStart());
+            }
+
             sb.Append(Serialize(part.Compound));
         }
         return sb.ToString();
@@ -48,7 +53,10 @@ public static class SelectorSerializer
         foreach (var simple in compound.SimpleSelectors)
         {
             if (omitUniversal && simple is UniversalSelector { Namespace: null })
+            {
                 continue;
+            }
+
             sb.Append(Serialize(simple));
         }
         return sb.ToString();
@@ -97,7 +105,9 @@ public static class SelectorSerializer
         {
             sb.Append(op).Append(SerializeString(a.Value ?? string.Empty));
             if (a.CaseInsensitive)
+            {
                 sb.Append(" i");
+            }
         }
         sb.Append(']');
         return sb.ToString();
@@ -128,20 +138,32 @@ public static class SelectorSerializer
         var b = p.B;
 
         if (a == 0)
+        {
             return b.ToString(CultureInfo.InvariantCulture);
+        }
 
         var sb = new StringBuilder();
         if (a == 1)
+        {
             sb.Append('n');
+        }
         else if (a == -1)
+        {
             sb.Append("-n");
+        }
         else
+        {
             sb.Append(a.ToString(CultureInfo.InvariantCulture)).Append('n');
+        }
 
         if (b > 0)
+        {
             sb.Append('+').Append(b.ToString(CultureInfo.InvariantCulture));
+        }
         else if (b < 0)
+        {
             sb.Append('-').Append((-b).ToString(CultureInfo.InvariantCulture));
+        }
 
         return sb.ToString();
     }
@@ -160,7 +182,10 @@ public static class SelectorSerializer
     public static string SerializeIdent(string ident)
     {
         if (string.IsNullOrEmpty(ident))
+        {
             return string.Empty;
+        }
+
         var sb = new StringBuilder(ident.Length);
         for (var i = 0; i < ident.Length; i++)
         {
@@ -205,13 +230,21 @@ public static class SelectorSerializer
         foreach (var c in value)
         {
             if (c == '\0')
+            {
                 sb.Append(Replacement);
+            }
             else if (IsControlOrDelete(c))
+            {
                 AppendCodePointEscape(sb, c);
+            }
             else if (c == '"' || c == '\\')
+            {
                 sb.Append('\\').Append(c);
+            }
             else
+            {
                 sb.Append(c);
+            }
         }
         sb.Append('"');
         return sb.ToString();

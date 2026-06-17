@@ -59,7 +59,10 @@ public class RasterBench
         var doc = HtmlParser.Parse(html);
         var style = new StyleEngine();
         if (css is not null)
+        {
             style.AddStyleSheet(CssParser.ParseStyleSheet(css));
+        }
+
         var root = new LayoutEngine(style).LayoutDocument(doc, Viewport);
         return new DisplayListBuilder().Build(root);
     }

@@ -21,9 +21,13 @@ internal static class ReplayCompare
             for (var i = 0; i < args.Length; i++)
             {
                 if (args[i] == "--threshold")
+                {
                     threshold = double.Parse(args[++i], CultureInfo.InvariantCulture);
+                }
                 else
+                {
                     positional.Add(args[i]);
+                }
             }
         }
         catch (Exception ex) when (ex is FormatException or IndexOutOfRangeException)
@@ -41,7 +45,9 @@ internal static class ReplayCompare
         var baseline = Load(positional[0]);
         var candidate = Load(positional[1]);
         if (baseline is null || candidate is null)
+        {
             return 2;
+        }
 
         if (baseline.Page != candidate.Page || baseline.ScopeLabel != candidate.ScopeLabel)
         {
@@ -57,8 +63,15 @@ internal static class ReplayCompare
         var regressed = false;
         foreach (var key in new[] { "frame", "style_anim", "layout", "display_list", "raster" })
         {
-            if (!baseline.Phases.TryGetValue(key, out var b)) continue;
-            if (!candidate.Phases.TryGetValue(key, out var c)) continue;
+            if (!baseline.Phases.TryGetValue(key, out var b))
+            {
+                continue;
+            }
+
+            if (!candidate.Phases.TryGetValue(key, out var c))
+            {
+                continue;
+            }
 
             // Percentage thresholds with small absolute floors so a near-zero
             // phase (e.g. style_anim with no animations) does not flag on noise.
@@ -88,7 +101,10 @@ internal static class ReplayCompare
         }
         var result = JsonSerializer.Deserialize(File.ReadAllText(path), ReplayJsonContext.Default.ReplayResult);
         if (result is null)
+        {
             Console.Error.WriteLine($"could not parse: {path}");
+        }
+
         return result;
     }
 

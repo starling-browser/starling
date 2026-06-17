@@ -41,7 +41,11 @@ internal sealed class HpackDynamicTable
     {
         var entrySize = nameOctets + valueOctets + EntryOverhead;
         EvictTo(MaxSize - entrySize);
-        if (entrySize > MaxSize) return; // doesn't fit even in an empty table
+        if (entrySize > MaxSize)
+        {
+            return; // doesn't fit even in an empty table
+        }
+
         _entries.Insert(0, new Entry(name, value, entrySize));
         Size += entrySize;
     }

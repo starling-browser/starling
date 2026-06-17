@@ -39,7 +39,10 @@ public class StarlingHttpClientTests
         var payload = Encoding.UTF8.GetBytes("<!doctype html><body>compressed body content</body>");
         using var ms = new MemoryStream();
         using (var gz = new GZipStream(ms, CompressionLevel.Fastest, leaveOpen: true))
+        {
             gz.Write(payload);
+        }
+
         var compressed = ms.ToArray();
 
         using var server = await StubHttpServer.StartAsync(_ =>
@@ -153,10 +156,17 @@ internal sealed class StubHttpServer : IDisposable
                 while (pos < buffer.Length)
                 {
                     var n = await stream.ReadAsync(buffer.AsMemory(pos), _cts.Token);
-                    if (n == 0) break;
+                    if (n == 0)
+                    {
+                        break;
+                    }
+
                     pos += n;
                     var slice = buffer.AsSpan(0, pos);
-                    if (ContainsCrLfCrLf(slice)) break;
+                    if (ContainsCrLfCrLf(slice))
+                    {
+                        break;
+                    }
                 }
 
                 var req = Encoding.ASCII.GetString(buffer, 0, pos);
@@ -175,7 +185,9 @@ internal sealed class StubHttpServer : IDisposable
         for (var i = 0; i + 3 < data.Length; i++)
         {
             if (data[i] == 0x0D && data[i + 1] == 0x0A && data[i + 2] == 0x0D && data[i + 3] == 0x0A)
+            {
                 return true;
+            }
         }
         return false;
     }

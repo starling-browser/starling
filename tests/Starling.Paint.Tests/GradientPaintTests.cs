@@ -268,7 +268,9 @@ public sealed class GradientPaintTests
                 var (r, g, b, a) = image.GetPixel(probeX, probeY);
                 // Only collect pixels that are clearly not white background.
                 if (r < 240 || g < 200 || b < 200)
+                {
                     coloredPixels.Add((r, g, b));
+                }
             }
         }
         coloredPixels.Should().NotBeEmpty("conic gradient must produce colored pixels inside glyphs");

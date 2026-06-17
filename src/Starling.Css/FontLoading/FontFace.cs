@@ -157,7 +157,9 @@ public sealed class FontFace
     public void Load()
     {
         if (Status is FontFaceLoadStatus.Loaded or FontFaceLoadStatus.Error)
+        {
             return;
+        }
 
         Status = FontFaceLoadStatus.Loading;
         // No real fetch in this slice — transition immediately to Loaded.

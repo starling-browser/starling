@@ -47,7 +47,11 @@ internal static class DomExceptionBinding
     public static void Install(JintBackendContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
-        if (ctx.Wrappers.DomExceptionPrototype is not null) return; // idempotent
+        if (ctx.Wrappers.DomExceptionPrototype is not null)
+        {
+            return; // idempotent
+        }
+
         var engine = ctx.Engine;
 
         var proto = new JsObject(engine);
@@ -58,12 +62,22 @@ internal static class DomExceptionBinding
             var n = thisV is ObjectInstance o ? o.Get("name") : JsValue.Undefined;
             var name = n.IsString() ? n.AsString() : "";
             foreach (var (cn, code) in NameCodes)
-                if (cn == name) return JintInterop.Num(code);
+            {
+                if (cn == name)
+                {
+                    return JintInterop.Num(code);
+                }
+            }
+
             return JintInterop.Num(0);
         });
         JintInterop.DefineMethod(engine, proto, "toString", (thisV, _) =>
         {
-            if (thisV is not ObjectInstance o) return JintInterop.Str("Error");
+            if (thisV is not ObjectInstance o)
+            {
+                return JintInterop.Str("Error");
+            }
+
             var name = o.Get("name");
             var msg = o.Get("message");
             var ns = name.IsString() ? name.AsString() : "Error";
@@ -71,7 +85,9 @@ internal static class DomExceptionBinding
             return JintInterop.Str(ms.Length > 0 ? ns + ": " + ms : ns);
         }, length: 0);
         foreach (var (c, v) in Constants)
+        {
             proto.FastSetProperty(c, new PropertyDescriptor(JintInterop.Num(v), writable: false, enumerable: true, configurable: false));
+        }
 
         var ctor = new NativeConstructor(engine, "DOMException", 0, (args, _) =>
         {
@@ -84,7 +100,9 @@ internal static class DomExceptionBinding
         proto.FastSetProperty("constructor",
             new PropertyDescriptor(ctor, writable: true, enumerable: false, configurable: true));
         foreach (var (c, v) in Constants)
+        {
             ctor.FastSetProperty(c, new PropertyDescriptor(JintInterop.Num(v), writable: false, enumerable: true, configurable: false));
+        }
 
         JintInterop.DefineDataProp(engine.Global, "DOMException", ctor,
             writable: true, enumerable: false, configurable: true);

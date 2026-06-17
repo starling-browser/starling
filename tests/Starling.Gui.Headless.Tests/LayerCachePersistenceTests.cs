@@ -100,7 +100,11 @@ public sealed class LayerCachePersistenceTests
         public MetricRecorder()
         {
             _l.InstrumentPublished = (inst, lst) =>
-            { if (inst.Meter.Name == StarlingTelemetry.SourceName) lst.EnableMeasurementEvents(inst); };
+            { if (inst.Meter.Name == StarlingTelemetry.SourceName)
+                {
+                    lst.EnableMeasurementEvents(inst);
+                }
+            };
             _l.SetMeasurementEventCallback<double>((inst, m, t, s) => Add(inst.Name, m));
             _l.SetMeasurementEventCallback<long>((inst, m, t, s) => Add(inst.Name, m));
             _l.Start();

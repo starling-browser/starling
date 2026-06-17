@@ -125,7 +125,10 @@ public static class TimersBinding
         {
             var cb = args.Length > 0 ? args[0] : JsValue.Undefined;
             if (!AbstractOperations.IsCallable(cb))
+            {
                 throw new JsThrow(realm.NewTypeError("queueMicrotask callback is not callable"));
+            }
+
             realm.Microtasks.Enqueue(() => InvokeHandler(runtime, cb, Array.Empty<JsValue>()));
             return JsValue.Undefined;
         }, isConstructor: false);
@@ -147,15 +150,26 @@ public static class TimersBinding
     {
         var handler = args.Length > 0 ? args[0] : JsValue.Undefined;
         if (!AbstractOperations.IsCallable(handler))
+        {
             throw new JsThrow(realm.NewTypeError("Timer handler is not callable"));
+        }
 
         var delay = 0;
         if (args.Length > 1)
         {
             var d = JsValue.ToNumber(args[1]);
-            if (double.IsNaN(d) || d < 0) delay = 0;
-            else if (d > int.MaxValue) delay = int.MaxValue;
-            else delay = (int)d;
+            if (double.IsNaN(d) || d < 0)
+            {
+                delay = 0;
+            }
+            else if (d > int.MaxValue)
+            {
+                delay = int.MaxValue;
+            }
+            else
+            {
+                delay = (int)d;
+            }
         }
 
         JsValue[] forwarded;
@@ -175,10 +189,22 @@ public static class TimersBinding
     private static bool TryCoerceId(JsValue[] args, out int id)
     {
         id = 0;
-        if (args.Length == 0) return false;
+        if (args.Length == 0)
+        {
+            return false;
+        }
+
         var n = JsValue.ToNumber(args[0]);
-        if (double.IsNaN(n) || double.IsInfinity(n)) return false;
-        if (n < int.MinValue || n > int.MaxValue) return false;
+        if (double.IsNaN(n) || double.IsInfinity(n))
+        {
+            return false;
+        }
+
+        if (n < int.MinValue || n > int.MaxValue)
+        {
+            return false;
+        }
+
         id = (int)n;
         return true;
     }
@@ -217,9 +243,16 @@ public static class TimersBinding
             // Prefer the full stack (message + frames) when the throw carried
             // one — a bare message is useless for minified-bundle failures.
             var stack = value.AsObject.Get("stack");
-            if (stack.IsString) return stack.AsString;
+            if (stack.IsString)
+            {
+                return stack.AsString;
+            }
+
             var msg = value.AsObject.Get("message");
-            if (!msg.IsUndefined) return JsValue.ToStringValue(msg);
+            if (!msg.IsUndefined)
+            {
+                return JsValue.ToStringValue(msg);
+            }
         }
         return JsValue.ToStringValue(value);
     }

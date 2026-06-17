@@ -19,7 +19,9 @@ public static class ContainerQueryParser
         foreach (var rule in sheet.Rules)
         {
             if (rule is AtRule { Name: "container" } atRule)
+            {
                 yield return Parse(atRule);
+            }
         }
     }
 

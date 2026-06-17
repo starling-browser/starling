@@ -73,7 +73,9 @@ public sealed class App : Application
     {
         var configured = Environment.GetEnvironmentVariable("STARLING_MCP_URL");
         if (string.IsNullOrWhiteSpace(configured))
+        {
             return new Uri(DefaultMcpUrl);
+        }
 
         if (!Uri.TryCreate(configured, UriKind.Absolute, out var uri))
         {
@@ -87,8 +89,13 @@ public sealed class App : Application
     private async Task ShutdownMcpAsync()
     {
         if (_mainWindow is not null && _mcpBridge is not null)
+        {
             _mcpBridge.Detach(_mainWindow);
+        }
+
         if (_mcpServer is not null)
+        {
             await _mcpServer.DisposeAsync().ConfigureAwait(false);
+        }
     }
 }

@@ -18,7 +18,11 @@ internal static class IdlMarshal
     /// TypeError (illegal invocation).</summary>
     public static T Receiver<T>(JsRealm realm, JsValue thisV, string iface, string op) where T : class
     {
-        if (DomWrappers.UnwrapAs<T>(thisV) is { } host) return host;
+        if (DomWrappers.UnwrapAs<T>(thisV) is { } host)
+        {
+            return host;
+        }
+
         throw new JsThrow(realm.NewTypeError(
             $"Failed to execute '{op}' on '{iface}': Illegal invocation"));
     }
@@ -29,9 +33,16 @@ internal static class IdlMarshal
         where T : class
     {
         if (args.Length < requiredCount)
+        {
             throw new JsThrow(realm.NewTypeError(
                 $"Failed to execute '{op}': {requiredCount} argument{(requiredCount == 1 ? "" : "s")} required, but only {args.Length} present."));
-        if (index < args.Length && DomWrappers.UnwrapAs<T>(args[index]) is { } value) return value;
+        }
+
+        if (index < args.Length && DomWrappers.UnwrapAs<T>(args[index]) is { } value)
+        {
+            return value;
+        }
+
         throw new JsThrow(realm.NewTypeError(
             $"Failed to execute '{op}': parameter {index + 1} is not of type '{typeName}'."));
     }
@@ -42,8 +53,16 @@ internal static class IdlMarshal
     public static T? NullableInterface<T>(JsRealm realm, JsValue[] args, int index, string op, string typeName)
         where T : class
     {
-        if (index >= args.Length || args[index].IsNull || args[index].IsUndefined) return null;
-        if (DomWrappers.UnwrapAs<T>(args[index]) is { } value) return value;
+        if (index >= args.Length || args[index].IsNull || args[index].IsUndefined)
+        {
+            return null;
+        }
+
+        if (DomWrappers.UnwrapAs<T>(args[index]) is { } value)
+        {
+            return value;
+        }
+
         throw new JsThrow(realm.NewTypeError(
             $"Failed to execute '{op}': parameter {index + 1} is not of type '{typeName}'."));
     }
@@ -61,8 +80,11 @@ internal static class IdlMarshal
     public static string RequireString(JsRealm realm, JsValue[] args, int index, string op, int requiredCount)
     {
         if (args.Length < requiredCount)
+        {
             throw new JsThrow(realm.NewTypeError(
                 $"Failed to execute '{op}': {requiredCount} argument{(requiredCount == 1 ? "" : "s")} required, but only {args.Length} present."));
+        }
+
         return JsValue.ToStringValue(index < args.Length ? args[index] : JsValue.Undefined);
     }
 
@@ -73,9 +95,16 @@ internal static class IdlMarshal
     public static string? RequireNullableString(JsRealm realm, JsValue[] args, int index, string op, int requiredCount)
     {
         if (args.Length < requiredCount)
+        {
             throw new JsThrow(realm.NewTypeError(
                 $"Failed to execute '{op}': {requiredCount} argument{(requiredCount == 1 ? "" : "s")} required, but only {args.Length} present."));
-        if (index >= args.Length || args[index].IsNullish) return null;
+        }
+
+        if (index >= args.Length || args[index].IsNullish)
+        {
+            return null;
+        }
+
         return JsValue.ToStringValue(args[index]);
     }
 
@@ -83,8 +112,11 @@ internal static class IdlMarshal
     public static bool RequireBool(JsRealm realm, JsValue[] args, int index, string op, int requiredCount)
     {
         if (args.Length < requiredCount)
+        {
             throw new JsThrow(realm.NewTypeError(
                 $"Failed to execute '{op}': {requiredCount} argument{(requiredCount == 1 ? "" : "s")} required, but only {args.Length} present."));
+        }
+
         return JsValue.ToBoolean(index < args.Length ? args[index] : JsValue.Undefined);
     }
 
@@ -94,8 +126,11 @@ internal static class IdlMarshal
     public static uint RequireUnsignedLong(JsRealm realm, JsValue[] args, int index, string op, int requiredCount)
     {
         if (args.Length < requiredCount)
+        {
             throw new JsThrow(realm.NewTypeError(
                 $"Failed to execute '{op}': {requiredCount} argument{(requiredCount == 1 ? "" : "s")} required, but only {args.Length} present."));
+        }
+
         return ToUint32(realm, index < args.Length ? args[index] : JsValue.Undefined, op);
     }
 
@@ -104,12 +139,23 @@ internal static class IdlMarshal
     private static uint ToUint32(JsRealm realm, JsValue v, string op)
     {
         if (v.IsSymbol || v.IsBigInt)
+        {
             throw new JsThrow(realm.NewTypeError(
                 $"Failed to execute '{op}': Cannot convert a {(v.IsSymbol ? "Symbol" : "BigInt")} value to a number."));
+        }
+
         double n = JsValue.ToNumber(v);
-        if (double.IsNaN(n) || double.IsInfinity(n)) return 0;
+        if (double.IsNaN(n) || double.IsInfinity(n))
+        {
+            return 0;
+        }
+
         double mod = System.Math.Truncate(n) % 4294967296.0;   // 2^32
-        if (mod < 0) mod += 4294967296.0;
+        if (mod < 0)
+        {
+            mod += 4294967296.0;
+        }
+
         return (uint)mod;
     }
 
@@ -178,7 +224,10 @@ internal static class IdlMarshal
         var doc = context.OwnerDocument ?? context as Document ?? new Document();
         var nodes = new List<Node>(System.Math.Max(0, args.Length - start));
         for (int i = start; i < args.Length; i++)
+        {
             nodes.Add(DomWrappers.UnwrapNode(args[i]) is { } n ? n : doc.CreateTextNode(JsValue.ToStringValue(args[i])));
+        }
+
         return nodes;
     }
 }

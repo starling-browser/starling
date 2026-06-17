@@ -25,14 +25,21 @@ public sealed class RegexCharClass
 
     private void SortAndCoalesce()
     {
-        if (_ranges.Count == 0) return;
+        if (_ranges.Count == 0)
+        {
+            return;
+        }
+
         _ranges.Sort((a, b) => a.Lo.CompareTo(b.Lo));
         var merged = new List<(int Lo, int Hi)>();
         var cur = _ranges[0];
         for (var i = 1; i < _ranges.Count; i++)
         {
             var r = _ranges[i];
-            if (r.Lo <= cur.Hi + 1) cur = (cur.Lo, System.Math.Max(cur.Hi, r.Hi));
+            if (r.Lo <= cur.Hi + 1)
+            {
+                cur = (cur.Lo, System.Math.Max(cur.Hi, r.Hi));
+            }
             else { merged.Add(cur); cur = r; }
         }
         merged.Add(cur);
@@ -49,8 +56,14 @@ public sealed class RegexCharClass
             if (codePoint <= 0xFFFF)
             {
                 var c = (char)codePoint;
-                if (ContainsExact(char.ToLowerInvariant(c))) hit = true;
-                else if (ContainsExact(char.ToUpperInvariant(c))) hit = true;
+                if (ContainsExact(char.ToLowerInvariant(c)))
+                {
+                    hit = true;
+                }
+                else if (ContainsExact(char.ToUpperInvariant(c)))
+                {
+                    hit = true;
+                }
             }
         }
         return Negated ? !hit : hit;
@@ -59,7 +72,13 @@ public sealed class RegexCharClass
     private bool ContainsExact(int codePoint)
     {
         foreach (var (lo, hi) in _ranges)
-            if (codePoint >= lo && codePoint <= hi) return true;
+        {
+            if (codePoint >= lo && codePoint <= hi)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -80,10 +99,26 @@ public sealed class RegexCharClass
 
     public static bool IsWordChar(int cp)
     {
-        if (cp >= '0' && cp <= '9') return true;
-        if (cp >= 'A' && cp <= 'Z') return true;
-        if (cp == '_') return true;
-        if (cp >= 'a' && cp <= 'z') return true;
+        if (cp >= '0' && cp <= '9')
+        {
+            return true;
+        }
+
+        if (cp >= 'A' && cp <= 'Z')
+        {
+            return true;
+        }
+
+        if (cp == '_')
+        {
+            return true;
+        }
+
+        if (cp >= 'a' && cp <= 'z')
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -92,7 +127,14 @@ public sealed class RegexCharClass
 
     public static bool IsWhitespace(int cp)
     {
-        foreach (var (lo, hi) in Whitespace()) if (cp >= lo && cp <= hi) return true;
+        foreach (var (lo, hi) in Whitespace())
+        {
+            if (cp >= lo && cp <= hi)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -122,7 +164,11 @@ public sealed class RegexCharClass
         var dict = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<(int, int)>>(System.StringComparer.OrdinalIgnoreCase);
         foreach (var name in SupportedProperties)
         {
-            if (dict.ContainsKey(name)) continue;
+            if (dict.ContainsKey(name))
+            {
+                continue;
+            }
+
             var ranges = new System.Collections.Generic.List<(int, int)>();
             int? rangeStart = null;
             for (var cp = 0; cp <= 0xFFFF; cp++)
@@ -137,7 +183,10 @@ public sealed class RegexCharClass
                     rangeStart = null;
                 }
             }
-            if (rangeStart.HasValue) ranges.Add((rangeStart.Value, 0xFFFF));
+            if (rangeStart.HasValue)
+            {
+                ranges.Add((rangeStart.Value, 0xFFFF));
+            }
             // store a coalesced copy (ctor will copy again but cheap)
             dict[name] = ranges;
             // also store canonical short names if not present
@@ -150,7 +199,10 @@ public sealed class RegexCharClass
     /// </summary>
     public static System.Collections.Generic.List<(int, int)> GetPropertyRanges(string name)
     {
-        if (_propertyRanges.TryGetValue(name, out var ranges)) return ranges;
+        if (_propertyRanges.TryGetValue(name, out var ranges))
+        {
+            return ranges;
+        }
         // fallback (should not happen after Supported check)
         return new System.Collections.Generic.List<(int, int)>();
     }
@@ -160,7 +212,11 @@ public sealed class RegexCharClass
     /// code points get conservative answers.</summary>
     public static bool MatchesProperty(int cp, string property)
     {
-        if (cp > 0xFFFF) cp = '?'; // simplified — only the BMP
+        if (cp > 0xFFFF)
+        {
+            cp = '?'; // simplified — only the BMP
+        }
+
         var c = (char)cp;
         var cat = CharUnicodeInfo.GetUnicodeCategory(c);
         return property switch

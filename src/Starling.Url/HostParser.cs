@@ -36,7 +36,10 @@ internal static class HostParser
     /// </summary>
     public static Result Parse(string input, bool isSpecial)
     {
-        if (input.Length == 0) return Result.Fail(Error.Empty);
+        if (input.Length == 0)
+        {
+            return Result.Fail(Error.Empty);
+        }
 
         // IPv6 literals are not implemented yet.
         if (input[0] == '[')
@@ -61,7 +64,9 @@ internal static class HostParser
         foreach (var ch in decoded)
         {
             if (IsForbiddenDomainCodePoint(ch))
+            {
                 return Result.Fail(Error.InvalidCharacter);
+            }
         }
 
         // Attempt IPv4 numeric parse — spec is in §4.6 IPv4 parser. If the
@@ -69,7 +74,10 @@ internal static class HostParser
         // (e.g. "0x7F.1" → "127.0.0.1"). For inputs that don't match, the
         // domain string is returned as-is.
         if (TryParseIPv4(decoded, out var ipv4))
+        {
             return Result.Ok(ipv4);
+        }
+
         return Result.Ok(decoded);
     }
 
@@ -102,20 +110,28 @@ internal static class HostParser
     {
         canonical = "";
         var parts = input.TrimEnd('.').Split('.');
-        if (parts.Length is < 1 or > 4) return false;
+        if (parts.Length is < 1 or > 4)
+        {
+            return false;
+        }
         // Every part must be a valid number per the IPv4 number grammar.
         // First quick check: at least the last part is purely digits.
         var numbers = new long[parts.Length];
         for (var i = 0; i < parts.Length; i++)
         {
             if (!TryParseIPv4Number(parts[i], out numbers[i]))
+            {
                 return false;
+            }
         }
         // Spec: if any part > 255 (except the last, which may be > 255 only
         // when there are fewer than 4 parts), it's an error.
         for (var i = 0; i < parts.Length - 1; i++)
         {
-            if (numbers[i] > 255) return false;
+            if (numbers[i] > 255)
+            {
+                return false;
+            }
         }
         var maxLast = parts.Length switch
         {
@@ -124,7 +140,10 @@ internal static class HostParser
             3 => 0xFFFFL,
             _ => 255L,
         };
-        if (numbers[^1] > maxLast) return false;
+        if (numbers[^1] > maxLast)
+        {
+            return false;
+        }
 
         long addr;
         switch (parts.Length)
@@ -142,7 +161,11 @@ internal static class HostParser
     private static bool TryParseIPv4Number(string s, out long value)
     {
         value = 0;
-        if (s.Length == 0) return false;
+        if (s.Length == 0)
+        {
+            return false;
+        }
+
         int radix = 10;
         if (s.Length >= 2 && (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase)))
         {
@@ -154,7 +177,11 @@ internal static class HostParser
             radix = 8;
             s = s[1..];
         }
-        if (s.Length == 0) return true; // "0" or "0x" → 0
+        if (s.Length == 0)
+        {
+            return true; // "0" or "0x" → 0
+        }
+
         try
         {
             value = Convert.ToInt64(s, radix);

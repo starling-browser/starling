@@ -27,7 +27,11 @@ internal sealed class SocketTcpConnection(Socket socket, TcpEndpoint endpoint, I
 
     public async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct)
     {
-        if (!_open) return 0;
+        if (!_open)
+        {
+            return 0;
+        }
+
         var n = await _socket.ReceiveAsync(buffer, SocketFlags.None, ct)
             .ConfigureAwait(false);
         // A zero-length read request always completes with 0 bytes — that is
@@ -36,13 +40,21 @@ internal sealed class SocketTcpConnection(Socket socket, TcpEndpoint endpoint, I
         // *non-empty* request is a peer half-close. Conflating the two marks
         // the connection dead on SslStream's first zero-byte read and breaks
         // the TLS handshake with a spurious EOF.
-        if (n == 0 && !buffer.IsEmpty) _open = false; // peer closed
+        if (n == 0 && !buffer.IsEmpty)
+        {
+            _open = false; // peer closed
+        }
+
         return n;
     }
 
     public async ValueTask WriteAsync(ReadOnlyMemory<byte> data, CancellationToken ct)
     {
-        if (!_open) throw new InvalidOperationException("connection is closed");
+        if (!_open)
+        {
+            throw new InvalidOperationException("connection is closed");
+        }
+
         var sent = 0;
         while (sent < data.Length)
         {
@@ -55,7 +67,11 @@ internal sealed class SocketTcpConnection(Socket socket, TcpEndpoint endpoint, I
 
     public ValueTask ShutdownAsync(CancellationToken ct)
     {
-        if (!_open) return ValueTask.CompletedTask;
+        if (!_open)
+        {
+            return ValueTask.CompletedTask;
+        }
+
         _open = false;
         try { _socket.Shutdown(SocketShutdown.Both); }
         catch (SocketException ex) { SocketTcpConnectionLog.ShutdownFailed(_log, ex); }

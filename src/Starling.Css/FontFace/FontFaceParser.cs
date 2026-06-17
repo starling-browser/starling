@@ -27,7 +27,9 @@ public static class FontFaceParser
             if (rule is AtRule { Name: "font-face" } atRule)
             {
                 if (TryParse(atRule, out var fontFace))
+                {
                     yield return fontFace!;
+                }
             }
         }
     }
@@ -37,7 +39,9 @@ public static class FontFaceParser
         ArgumentNullException.ThrowIfNull(rule);
         fontFace = null;
         if (!string.Equals(rule.Name, "font-face", StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
 
         string? family = null;
         var sources = new List<FontFaceSource>();
@@ -68,7 +72,9 @@ public static class FontFaceParser
         }
 
         if (string.IsNullOrEmpty(family) || sources.Count == 0)
+        {
             return false;
+        }
 
         fontFace = new FontFaceRule(family, sources, bold, italic, unicodeRange);
         return true;
@@ -88,14 +94,24 @@ public static class FontFaceParser
         {
             var entry = sb.ToString().Trim();
             sb.Clear();
-            if (entry.Length == 0) return;
+            if (entry.Length == 0)
+            {
+                return;
+            }
+
             if (TryParseSingleRange(entry, out var start, out var end))
+            {
                 ranges.Add((start, end));
+            }
         }
 
         foreach (var v in value)
         {
-            if (v is not CssTokenValue token) continue;
+            if (v is not CssTokenValue token)
+            {
+                continue;
+            }
+
             switch (token.Token.Type)
             {
                 case CssTokenType.Whitespace:
@@ -144,7 +160,11 @@ public static class FontFaceParser
     // double.IsNegative catches -0, which a plain comparison would miss.
     private static void AppendUnicodeRangeNumber(System.Text.StringBuilder sb, double number)
     {
-        if (double.IsNegative(number)) sb.Append('-');
+        if (double.IsNegative(number))
+        {
+            sb.Append('-');
+        }
+
         sb.Append(((long)Math.Abs(number)).ToString(System.Globalization.CultureInfo.InvariantCulture));
     }
 
@@ -155,10 +175,21 @@ public static class FontFaceParser
         // tokenizer eats the '+' as the sign of the following Number, so by
         // the time we reassemble we may see "U400" not "U+400" — accept both.
         var s = spec.AsSpan().Trim();
-        if (s.Length < 2) return false;
-        if (s[0] != 'U' && s[0] != 'u') return false;
+        if (s.Length < 2)
+        {
+            return false;
+        }
+
+        if (s[0] != 'U' && s[0] != 'u')
+        {
+            return false;
+        }
+
         s = s[1..];
-        if (s.Length > 0 && s[0] == '+') s = s[1..];
+        if (s.Length > 0 && s[0] == '+')
+        {
+            s = s[1..];
+        }
 
         // Wildcard form: every '?' marks a hex nibble that varies. Replace with
         // 0 for the low bound and F for the high bound.
@@ -179,7 +210,11 @@ public static class FontFaceParser
         var dash = s.IndexOf('-');
         if (dash < 0)
         {
-            if (!int.TryParse(s, System.Globalization.NumberStyles.HexNumber, null, out start)) return false;
+            if (!int.TryParse(s, System.Globalization.NumberStyles.HexNumber, null, out start))
+            {
+                return false;
+            }
+
             end = start;
             return true;
         }
@@ -208,7 +243,11 @@ public static class FontFaceParser
                 }
             }
         }
-        if (!string.IsNullOrEmpty(quoted)) return quoted;
+        if (!string.IsNullOrEmpty(quoted))
+        {
+            return quoted;
+        }
+
         return idents.Count == 0 ? null : string.Join(' ', idents);
     }
 
@@ -220,7 +259,10 @@ public static class FontFaceParser
         foreach (var entry in SplitOnComma(value))
         {
             var source = ParseSrcEntry(entry);
-            if (source is not null) yield return source;
+            if (source is not null)
+            {
+                yield return source;
+            }
         }
     }
 
@@ -238,7 +280,11 @@ public static class FontFaceParser
                     break;
                 case CssFunction { Name: var name } fn when string.Equals(name, "url", StringComparison.OrdinalIgnoreCase):
                     var url = ExtractStringOrIdent(fn.Values);
-                    if (!string.IsNullOrEmpty(url)) primary ??= new UrlFontSource(url, null);
+                    if (!string.IsNullOrEmpty(url))
+                    {
+                        primary ??= new UrlFontSource(url, null);
+                    }
+
                     break;
                 case CssFunction { Name: var name } fn when string.Equals(name, "format", StringComparison.OrdinalIgnoreCase):
                     formatHint = ExtractStringOrIdent(fn.Values);
@@ -263,9 +309,20 @@ public static class FontFaceParser
         {
             if (v is CssTokenValue token)
             {
-                if (token.Token.Type == CssTokenType.String) return token.Token.Value;
-                if (token.Token.Type == CssTokenType.Url) return token.Token.Value;
-                if (token.Token.Type == CssTokenType.Ident) return token.Token.Value;
+                if (token.Token.Type == CssTokenType.String)
+                {
+                    return token.Token.Value;
+                }
+
+                if (token.Token.Type == CssTokenType.Url)
+                {
+                    return token.Token.Value;
+                }
+
+                if (token.Token.Type == CssTokenType.Ident)
+                {
+                    return token.Token.Value;
+                }
             }
         }
         return null;
@@ -283,10 +340,16 @@ public static class FontFaceParser
             }
             // Skip leading/trailing whitespace so the per-entry list is clean.
             if (v is CssTokenValue { Token.Type: CssTokenType.Whitespace } && current.Count == 0)
+            {
                 continue;
+            }
+
             current.Add(v);
         }
-        if (current.Count > 0) yield return current;
+        if (current.Count > 0)
+        {
+            yield return current;
+        }
     }
 
     private static bool ParseBold(IReadOnlyList<CssComponentValue> value)
@@ -303,9 +366,14 @@ public static class FontFaceParser
             {
                 if (token.Token.Type == CssTokenType.Ident &&
                     string.Equals(token.Token.Value, "bold", StringComparison.OrdinalIgnoreCase))
+                {
                     return true;
+                }
+
                 if (token.Token.Type == CssTokenType.Number && token.Token.Number > top)
+                {
                     top = token.Token.Number;
+                }
             }
         }
         return top >= 600;
@@ -319,7 +387,9 @@ public static class FontFaceParser
                 token.Token.Type == CssTokenType.Ident &&
                 (string.Equals(token.Token.Value, "italic", StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(token.Token.Value, "oblique", StringComparison.OrdinalIgnoreCase)))
+            {
                 return true;
+            }
         }
         return false;
     }

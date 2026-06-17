@@ -24,11 +24,18 @@ internal static class WebAnimationsBinding
     {
         ArgumentNullException.ThrowIfNull(ctx);
         var engine = ctx.Engine;
-        if (ctx.Wrappers.ElementPrototype is not { } elProto) return;
+        if (ctx.Wrappers.ElementPrototype is not { } elProto)
+        {
+            return;
+        }
 
         JintInterop.DefineMethod(engine, elProto, "animate", (t, args) =>
         {
-            if (ctx.Wrappers.UnwrapElement(t) is not { } el) return JsValue.Undefined;
+            if (ctx.Wrappers.UnwrapElement(t) is not { } el)
+            {
+                return JsValue.Undefined;
+            }
+
             return Animate(ctx, el, args);
         }, 2);
     }
@@ -46,7 +53,10 @@ internal static class WebAnimationsBinding
 
     private static IReadOnlyList<AnimationKeyframeSpec> ParseKeyframes(JsValue value)
     {
-        if (!value.IsObject()) return System.Array.Empty<AnimationKeyframeSpec>();
+        if (!value.IsObject())
+        {
+            return System.Array.Empty<AnimationKeyframeSpec>();
+        }
 
         // Array form: [{opacity:0, offset:0}, {opacity:1}].
         if (value is JsArray arr)
@@ -55,15 +65,27 @@ internal static class WebAnimationsBinding
             for (var i = 0; i < arr.Length; i++)
             {
                 var item = arr[i];
-                if (!item.IsObject()) continue;
+                if (!item.IsObject())
+                {
+                    continue;
+                }
+
                 var obj = item.AsObject();
                 double? offset = null;
                 var off = obj.Get("offset");
-                if (off.IsNumber()) offset = off.AsNumber();
+                if (off.IsNumber())
+                {
+                    offset = off.AsNumber();
+                }
+
                 var decls = new List<KeyValuePair<string, string>>();
                 foreach (var key in EnumKeys(obj))
                 {
-                    if (key is "offset" or "easing" or "composite") continue;
+                    if (key is "offset" or "easing" or "composite")
+                    {
+                        continue;
+                    }
+
                     decls.Add(new(CamelToKebab(key), CssText(obj.Get(key))));
                 }
                 frames.Add((offset, decls));
@@ -77,16 +99,31 @@ internal static class WebAnimationsBinding
         var maxLen = 0;
         foreach (var key in EnumKeys(src))
         {
-            if (key is "offset" or "easing" or "composite") continue;
+            if (key is "offset" or "easing" or "composite")
+            {
+                continue;
+            }
+
             var v = src.Get(key);
             var values = new List<string>();
             if (v is JsArray a)
-                for (var i = 0; i < a.Length; i++) values.Add(CssText(a[i]));
+            {
+                for (var i = 0; i < a.Length; i++)
+                {
+                    values.Add(CssText(a[i]));
+                }
+            }
             else
+            {
                 values.Add(CssText(v));
+            }
+
             if (values.Count > 0) { props.Add((CamelToKebab(key), values)); maxLen = Math.Max(maxLen, values.Count); }
         }
-        if (maxLen == 0) return System.Array.Empty<AnimationKeyframeSpec>();
+        if (maxLen == 0)
+        {
+            return System.Array.Empty<AnimationKeyframeSpec>();
+        }
 
         var result = new List<AnimationKeyframeSpec>(maxLen);
         for (var j = 0; j < maxLen; j++)
@@ -94,7 +131,10 @@ internal static class WebAnimationsBinding
             var offset = maxLen == 1 ? 1.0 : (double)j / (maxLen - 1);
             var decls = new List<KeyValuePair<string, string>>(props.Count);
             foreach (var (name, values) in props)
+            {
                 decls.Add(new(name, values[Math.Min(j, values.Count - 1)]));
+            }
+
             result.Add(new AnimationKeyframeSpec(offset, decls));
         }
         return result;
@@ -127,12 +167,35 @@ internal static class WebAnimationsBinding
         else if (value.IsObject())
         {
             var o = value.AsObject();
-            var dur = o.Get("duration"); if (dur.IsNumber()) duration = dur.AsNumber();
-            var del = o.Get("delay"); if (del.IsNumber()) delay = del.AsNumber();
-            var iter = o.Get("iterations"); if (iter.IsNumber()) iterations = iter.AsNumber();
-            var dir = o.Get("direction"); if (!dir.IsNull() && !dir.IsUndefined()) direction = TypeConverter.ToString(dir);
-            var fl = o.Get("fill"); if (!fl.IsNull() && !fl.IsUndefined()) fill = TypeConverter.ToString(fl);
-            var ea = o.Get("easing"); if (!ea.IsNull() && !ea.IsUndefined()) easing = TypeConverter.ToString(ea);
+            var dur = o.Get("duration"); if (dur.IsNumber())
+            {
+                duration = dur.AsNumber();
+            }
+
+            var del = o.Get("delay"); if (del.IsNumber())
+            {
+                delay = del.AsNumber();
+            }
+
+            var iter = o.Get("iterations"); if (iter.IsNumber())
+            {
+                iterations = iter.AsNumber();
+            }
+
+            var dir = o.Get("direction"); if (!dir.IsNull() && !dir.IsUndefined())
+            {
+                direction = TypeConverter.ToString(dir);
+            }
+
+            var fl = o.Get("fill"); if (!fl.IsNull() && !fl.IsUndefined())
+            {
+                fill = TypeConverter.ToString(fl);
+            }
+
+            var ea = o.Get("easing"); if (!ea.IsNull() && !ea.IsUndefined())
+            {
+                easing = TypeConverter.ToString(ea);
+            }
         }
 
         return new AnimationEffectTimingSpec(duration, delay, iterations, direction, fill, easing);
@@ -155,7 +218,7 @@ internal static class WebAnimationsBinding
 
         JintInterop.DefineAccessor(engine, anim, "currentTime",
             (_, _) => JintInterop.Num(host?.CurrentTime(id) ?? 0),
-            (_, a) => { if (host is not null && a.Length > 0 && a[0].IsNumber()) host.SetCurrentTime(id, a[0].AsNumber()); return JsValue.Undefined; });
+            (_, a) => { if (host is not null && a.Length > 0 && a[0].IsNumber()) { host.SetCurrentTime(id, a[0].AsNumber()); } return JsValue.Undefined; });
         JintInterop.DefineAccessor(engine, anim, "startTime", (_, _) => JintInterop.Num(host?.TimelineNow ?? 0));
         JintInterop.DefineAccessor(engine, anim, "playState", (_, _) => JintInterop.Str(host?.PlayState(id) ?? "idle"));
         JintInterop.DefineAccessor(engine, anim, "playbackRate", (_, _) => JintInterop.Num(1));
@@ -167,7 +230,9 @@ internal static class WebAnimationsBinding
         anim.FastSetProperty("effect", new PropertyDescriptor(BuildKeyframeEffect(ctx, keyframes, timing), writable: true, enumerable: true, configurable: true));
 
         foreach (var m in new[] { "addEventListener", "removeEventListener" })
+        {
             JintInterop.DefineMethod(engine, anim, m, (_, _) => JsValue.Undefined, 2);
+        }
 
         return anim;
     }
@@ -187,7 +252,10 @@ internal static class WebAnimationsBinding
                 var o = new JsObject(engine);
                 o.FastSetProperty("offset", new PropertyDescriptor(JintInterop.Num(kf.Offset), writable: true, enumerable: true, configurable: true));
                 foreach (var d in kf.Declarations)
+                {
                     o.FastSetProperty(KebabToCamel(d.Key), new PropertyDescriptor(JintInterop.Str(d.Value), writable: true, enumerable: true, configurable: true));
+                }
+
                 items[i] = o;
             }
             return new JsArray(engine, items);
@@ -233,9 +301,16 @@ internal static class WebAnimationsBinding
     {
         foreach (var key in o.GetOwnPropertyKeys(Types.String))
         {
-            if (!key.IsString()) continue;
+            if (!key.IsString())
+            {
+                continue;
+            }
+
             var d = o.GetOwnProperty(key);
-            if (d != PropertyDescriptor.Undefined && d.Enumerable) yield return key.AsString();
+            if (d != PropertyDescriptor.Undefined && d.Enumerable)
+            {
+                yield return key.AsString();
+            }
         }
     }
 
@@ -245,7 +320,9 @@ internal static class WebAnimationsBinding
         {
             var ts = v.AsObject().Get("toString");
             if (ts.IsCallable())
+            {
                 return TypeConverter.ToString(ts.Call(v, System.Array.Empty<JsValue>())).Trim();
+            }
         }
         return TypeConverter.ToString(v).Trim();
     }
@@ -256,15 +333,22 @@ internal static class WebAnimationsBinding
         for (var i = 0; i < s.Length; i++)
         {
             var c = s[i];
-            if (char.IsUpper(c)) { if (i > 0) sb.Append('-'); sb.Append(char.ToLowerInvariant(c)); }
-            else sb.Append(c);
+            if (char.IsUpper(c)) { if (i > 0) { sb.Append('-'); } sb.Append(char.ToLowerInvariant(c)); }
+            else
+            {
+                sb.Append(c);
+            }
         }
         return sb.ToString();
     }
 
     private static string KebabToCamel(string s)
     {
-        if (s.IndexOf('-') < 0) return s;
+        if (s.IndexOf('-') < 0)
+        {
+            return s;
+        }
+
         var sb = new StringBuilder(s.Length);
         var upper = false;
         foreach (var c in s)

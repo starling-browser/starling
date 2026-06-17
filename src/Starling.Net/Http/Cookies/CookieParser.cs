@@ -16,7 +16,10 @@ internal static class CookieParser
     /// </summary>
     public static ParsedSetCookie? Parse(string header)
     {
-        if (string.IsNullOrWhiteSpace(header)) return null;
+        if (string.IsNullOrWhiteSpace(header))
+        {
+            return null;
+        }
 
         // §5.2 step 1-3: split off the first ';' to separate the name=value pair
         // from the attribute list. The name=value itself uses the *first* '='.
@@ -25,22 +28,33 @@ internal static class CookieParser
         var attrSection = firstSemi < 0 ? string.Empty : header[(firstSemi + 1)..];
 
         var eq = pair.IndexOf('=', StringComparison.Ordinal);
-        if (eq < 0) return null;
+        if (eq < 0)
+        {
+            return null;
+        }
 
         var name = pair[..eq].Trim();
         var value = pair[(eq + 1)..].Trim();
-        if (name.Length == 0) return null;
+        if (name.Length == 0)
+        {
+            return null;
+        }
         // Strip a single pair of surrounding double-quotes from the value
         // — common in older Set-Cookie outputs.
         if (value.Length >= 2 && value[0] == '"' && value[^1] == '"')
+        {
             value = value[1..^1];
+        }
 
         var result = new ParsedSetCookie { Name = name, Value = value };
 
         foreach (var rawAttr in attrSection.Split(';'))
         {
             var attr = rawAttr.Trim();
-            if (attr.Length == 0) continue;
+            if (attr.Length == 0)
+            {
+                continue;
+            }
 
             string attrName, attrValue;
             var aeq = attr.IndexOf('=', StringComparison.Ordinal);
@@ -61,7 +75,10 @@ internal static class CookieParser
     {
         if (string.Equals(name, "Expires", StringComparison.OrdinalIgnoreCase))
         {
-            if (TryParseHttpDate(value, out var date)) c.Expires = date;
+            if (TryParseHttpDate(value, out var date))
+            {
+                c.Expires = date;
+            }
         }
         else if (string.Equals(name, "Max-Age", StringComparison.OrdinalIgnoreCase))
         {
@@ -76,7 +93,10 @@ internal static class CookieParser
         else if (string.Equals(name, "Domain", StringComparison.OrdinalIgnoreCase))
         {
             var d = value.TrimStart('.').ToLowerInvariant();
-            if (d.Length > 0) c.Domain = d;
+            if (d.Length > 0)
+            {
+                c.Domain = d;
+            }
         }
         else if (string.Equals(name, "Path", StringComparison.OrdinalIgnoreCase))
         {

@@ -67,7 +67,10 @@ public sealed class PerformancePanel : Grid, IDisposable
 
         // Snapshot existing activities, then live-pump.
         foreach (var record in stream.Activities.Snapshot())
+        {
             Push(record);
+        }
+
         Refresh();
 
         _subscription = stream.Activities.Subscribe();
@@ -94,7 +97,9 @@ public sealed class PerformancePanel : Grid, IDisposable
     {
         _recent.Add(record);
         if (_recent.Count > MaxRows)
+        {
             _recent.RemoveRange(0, _recent.Count - MaxRows);
+        }
     }
 
     private void Refresh()
@@ -159,13 +164,41 @@ public sealed class PerformancePanel : Grid, IDisposable
     private static Category CategoryFor(string operationName)
     {
         var lower = operationName.ToLowerInvariant();
-        if (lower.Contains("paint") || lower.Contains("raster") || lower.Contains("render")) return Category.Paint;
-        if (lower.Contains("layout") || lower.Contains("display_list")) return Category.Layout;
-        if (lower.Contains("css") || lower.Contains("style") || lower.Contains("cascade")) return Category.Css;
-        if (lower.Contains("js")) return Category.Js;
-        if (lower.Contains("html") || lower.Contains("parse")) return Category.Html;
-        if (lower.Contains("gc")) return Category.Gc;
-        if (lower.Contains("net") || lower.Contains("http") || lower.Contains("navigate")) return Category.Net;
+        if (lower.Contains("paint") || lower.Contains("raster") || lower.Contains("render"))
+        {
+            return Category.Paint;
+        }
+
+        if (lower.Contains("layout") || lower.Contains("display_list"))
+        {
+            return Category.Layout;
+        }
+
+        if (lower.Contains("css") || lower.Contains("style") || lower.Contains("cascade"))
+        {
+            return Category.Css;
+        }
+
+        if (lower.Contains("js"))
+        {
+            return Category.Js;
+        }
+
+        if (lower.Contains("html") || lower.Contains("parse"))
+        {
+            return Category.Html;
+        }
+
+        if (lower.Contains("gc"))
+        {
+            return Category.Gc;
+        }
+
+        if (lower.Contains("net") || lower.Contains("http") || lower.Contains("navigate"))
+        {
+            return Category.Net;
+        }
+
         return Category.Idle;
     }
 

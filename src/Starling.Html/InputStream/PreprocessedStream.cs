@@ -95,7 +95,11 @@ public sealed class PreprocessedStream
     /// </summary>
     public int Read()
     {
-        if (_pos >= _buffer.Count) return -1;
+        if (_pos >= _buffer.Count)
+        {
+            return -1;
+        }
+
         return _buffer[_pos++];
     }
 
@@ -104,7 +108,11 @@ public sealed class PreprocessedStream
     /// </summary>
     public int Peek()
     {
-        if (_pos >= _buffer.Count) return -1;
+        if (_pos >= _buffer.Count)
+        {
+            return -1;
+        }
+
         return _buffer[_pos];
     }
 
@@ -115,7 +123,11 @@ public sealed class PreprocessedStream
     public int PeekAt(int offset)
     {
         var idx = _pos + offset;
-        if (idx < 0 || idx >= _buffer.Count) return -1;
+        if (idx < 0 || idx >= _buffer.Count)
+        {
+            return -1;
+        }
+
         return _buffer[idx];
     }
 
@@ -123,7 +135,10 @@ public sealed class PreprocessedStream
     public void Advance(int n)
     {
         _pos += n;
-        if (_pos > _buffer.Count) _pos = _buffer.Count;
+        if (_pos > _buffer.Count)
+        {
+            _pos = _buffer.Count;
+        }
     }
 
     /// <summary>

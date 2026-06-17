@@ -92,19 +92,33 @@ internal sealed class ResourceSeries
 
     private static double AvgInWindow((long Ms, double V)[] series, long startMs, long endMs)
     {
-        if (series.Length == 0) return double.NaN;
+        if (series.Length == 0)
+        {
+            return double.NaN;
+        }
 
         double sum = 0;
         var n = 0;
         // Linear scan is fine: snapshots are bounded at 2000 entries.
         foreach (var (ms, v) in series)
         {
-            if (ms < startMs) continue;
-            if (ms > endMs) break;
+            if (ms < startMs)
+            {
+                continue;
+            }
+
+            if (ms > endMs)
+            {
+                break;
+            }
+
             sum += v;
             n++;
         }
-        if (n > 0) return sum / n;
+        if (n > 0)
+        {
+            return sum / n;
+        }
 
         // No sample inside the window (common for sub-frame spans): fall back to
         // the nearest sample to the window midpoint within tolerance.
@@ -113,20 +127,31 @@ internal sealed class ResourceSeries
 
     private static double Nearest((long Ms, double V)[] series, long t)
     {
-        if (series.Length == 0) return double.NaN;
+        if (series.Length == 0)
+        {
+            return double.NaN;
+        }
 
         var lo = 0;
         var hi = series.Length - 1;
         while (lo < hi)
         {
             var mid = (lo + hi) / 2;
-            if (series[mid].Ms < t) lo = mid + 1;
-            else hi = mid;
+            if (series[mid].Ms < t)
+            {
+                lo = mid + 1;
+            }
+            else
+            {
+                hi = mid;
+            }
         }
 
         var best = series[lo];
         if (lo > 0 && Math.Abs(series[lo - 1].Ms - t) < Math.Abs(best.Ms - t))
+        {
             best = series[lo - 1];
+        }
 
         return Math.Abs(best.Ms - t) <= ToleranceMs ? best.V : double.NaN;
     }

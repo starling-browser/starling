@@ -38,7 +38,10 @@ internal sealed class HtmlCollectionObject : JsObject
 
     public IEnumerable<JsValue> Values()
     {
-        foreach (var e in Items) yield return JsValue.Object(DomWrappers.Wrap(_realm, e));
+        foreach (var e in Items)
+        {
+            yield return JsValue.Object(DomWrappers.Wrap(_realm, e));
+        }
     }
 
     // An array index is a canonical non-negative integer string (no leading
@@ -46,27 +49,57 @@ internal sealed class HtmlCollectionObject : JsObject
     private static bool TryIndex(string name, out int index)
     {
         index = 0;
-        if (name.Length == 0) return false;
-        if (name.Length > 1 && name[0] == '0') return false;
-        if (!ulong.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var v))
+        if (name.Length == 0)
+        {
             return false;
+        }
+
+        if (name.Length > 1 && name[0] == '0')
+        {
+            return false;
+        }
+
+        if (!ulong.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var v))
+        {
+            return false;
+        }
         // WebIDL "array index": an integer in [0, 2^32-2]. 2^32-1 (4294967295)
         // and above are NOT array indices — they fall through to named-property
         // lookup. A value beyond int range is a valid index but always past the
         // end of any real collection, so clamp it to int.MaxValue (=> undefined).
-        if (v > 4294967294UL) return false;
+        if (v > 4294967294UL)
+        {
+            return false;
+        }
+
         index = v > int.MaxValue ? int.MaxValue : (int)v;
         return true;
     }
 
     private Element? NamedItem(string name)
     {
-        if (name.Length == 0) return null;
+        if (name.Length == 0)
+        {
+            return null;
+        }
+
         var items = Items;
         foreach (var e in items)
-            if (e.GetAttribute("id") == name) return e;
+        {
+            if (e.GetAttribute("id") == name)
+            {
+                return e;
+            }
+        }
+
         foreach (var e in items)
-            if (e.Namespace == Element.HtmlNamespace && e.GetAttribute("name") == name) return e;
+        {
+            if (e.Namespace == Element.HtmlNamespace && e.GetAttribute("name") == name)
+            {
+                return e;
+            }
+        }
+
         return null;
     }
 
@@ -82,11 +115,18 @@ internal sealed class HtmlCollectionObject : JsObject
         foreach (var e in Items)
         {
             var id = e.GetAttribute("id");
-            if (!string.IsNullOrEmpty(id) && seen.Add(id)) names.Add(id);
+            if (!string.IsNullOrEmpty(id) && seen.Add(id))
+            {
+                names.Add(id);
+            }
+
             if (e.Namespace == Element.HtmlNamespace)
             {
                 var n = e.GetAttribute("name");
-                if (!string.IsNullOrEmpty(n) && seen.Add(n)) names.Add(n);
+                if (!string.IsNullOrEmpty(n) && seen.Add(n))
+                {
+                    names.Add(n);
+                }
             }
         }
         return names;
@@ -96,11 +136,16 @@ internal sealed class HtmlCollectionObject : JsObject
     {
         var items = Items;
         if (TryIndex(name, out var index))
+        {
             return index < items.Count ? JsValue.Object(DomWrappers.Wrap(_realm, items[index])) : JsValue.Undefined;
+        }
         // A named element resolves only when the name is a visible named property
         // (not shadowed by an own expando or a prototype/built-in like item/length).
         if (IsVisibleNamedProperty(name) && NamedItem(name) is { } named)
+        {
             return JsValue.Object(DomWrappers.Wrap(_realm, named));
+        }
+
         return base.Get(name); // length lives on the prototype; expandos / built-ins resolve here
     }
 
@@ -110,9 +155,19 @@ internal sealed class HtmlCollectionObject : JsObject
     // (which this override reports) don't make every name look "shadowed".
     private bool IsShadowed(string name)
     {
-        if (base.HasOwn(name)) return true; // real own expando
+        if (base.HasOwn(name))
+        {
+            return true; // real own expando
+        }
+
         for (var p = GetPrototypeOf(); p is not null; p = p.GetPrototypeOf())
-            if (p.HasOwn(name)) return true; // prototype / built-in (item, namedItem, length, …)
+        {
+            if (p.HasOwn(name))
+            {
+                return true; // prototype / built-in (item, namedItem, length, …)
+            }
+        }
+
         return false;
     }
 
@@ -121,8 +176,16 @@ internal sealed class HtmlCollectionObject : JsObject
 
     public override bool HasOwn(string name)
     {
-        if (TryIndex(name, out var index)) return index < Items.Count;
-        if (base.HasOwn(name)) return true;
+        if (TryIndex(name, out var index))
+        {
+            return index < Items.Count;
+        }
+
+        if (base.HasOwn(name))
+        {
+            return true;
+        }
+
         return IsVisibleNamedProperty(name);
     }
 
@@ -134,12 +197,22 @@ internal sealed class HtmlCollectionObject : JsObject
         // Set/Delete/DefineOwnProperty overrides and making a strict-mode write
         // (e.g. coll[0] = x) fail per WebIDL rather than silently appear to succeed.
         if (TryIndex(name, out var index))
+        {
             return index < items.Count
                 ? PropertyDescriptor.Data(JsValue.Object(DomWrappers.Wrap(_realm, items[index])), writable: false, enumerable: true, configurable: true)
                 : null;
-        if (base.GetOwnPropertyDescriptor(name) is { } own) return own;
+        }
+
+        if (base.GetOwnPropertyDescriptor(name) is { } own)
+        {
+            return own;
+        }
+
         if (IsVisibleNamedProperty(name) && NamedItem(name) is { } named)
+        {
             return PropertyDescriptor.Data(JsValue.Object(DomWrappers.Wrap(_realm, named)), writable: false, enumerable: true, configurable: true);
+        }
+
         return null;
     }
 
@@ -152,16 +225,25 @@ internal sealed class HtmlCollectionObject : JsObject
         {
             var count = Items.Count;
             for (var i = 0; i < count; i++)
+            {
                 yield return i.ToString(CultureInfo.InvariantCulture);
+            }
             // WebIDL [[OwnPropertyKeys]]: after the indices come the supported
             // names that are NOT array indices and NOT shadowed by an own expando
             // or a prototype/built-in key — so the own-key list stays duplicate-free
             // and never collides with an index ("0"), "length", or "item".
             foreach (var n in SupportedNames())
+            {
                 if (!TryIndex(n, out _) && !IsShadowed(n))
+                {
                     yield return n;
+                }
+            }
+
             foreach (var k in base.Keys)
+            {
                 yield return k; // expando properties set directly on the collection
+            }
         }
     }
 
@@ -170,9 +252,14 @@ internal sealed class HtmlCollectionObject : JsObject
         get
         {
             foreach (var k in Keys)
+            {
                 yield return JsPropertyKey.String(k);
+            }
+
             foreach (var s in SymbolKeys)
+            {
                 yield return JsPropertyKey.Symbol(s);
+            }
         }
     }
 
@@ -183,8 +270,16 @@ internal sealed class HtmlCollectionObject : JsObject
     // behaves as an ordinary expando. Any other key is an ordinary expando.
     public override void Set(string name, JsValue value)
     {
-        if (TryIndex(name, out _)) return;
-        if (IsVisibleNamedProperty(name)) return;
+        if (TryIndex(name, out _))
+        {
+            return;
+        }
+
+        if (IsVisibleNamedProperty(name))
+        {
+            return;
+        }
+
         base.Set(name, value);
     }
 
@@ -193,8 +288,16 @@ internal sealed class HtmlCollectionObject : JsObject
     // delete a visible supported named property. Expando keys delete normally.
     public override bool Delete(string name)
     {
-        if (TryIndex(name, out _)) return false;
-        if (IsVisibleNamedProperty(name)) return false;
+        if (TryIndex(name, out _))
+        {
+            return false;
+        }
+
+        if (IsVisibleNamedProperty(name))
+        {
+            return false;
+        }
+
         return base.Delete(name);
     }
 
@@ -203,8 +306,16 @@ internal sealed class HtmlCollectionObject : JsObject
     // visible supported named property, fails; any other key is an ordinary expando.
     public override bool DefineOwnProperty(string name, PropertyDescriptor desc)
     {
-        if (TryIndex(name, out _)) return false;
-        if (IsVisibleNamedProperty(name)) return false;
+        if (TryIndex(name, out _))
+        {
+            return false;
+        }
+
+        if (IsVisibleNamedProperty(name))
+        {
+            return false;
+        }
+
         return base.DefineOwnProperty(name, desc);
     }
 }

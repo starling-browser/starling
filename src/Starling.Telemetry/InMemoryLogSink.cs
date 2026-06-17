@@ -54,7 +54,10 @@ public sealed class InMemoryLogSink : ILoggerProvider
             // Buffer is a ring; walk from oldest (head - count) wrapping forward.
             var start = (_head - _count + Capacity) % Capacity;
             for (var i = 0; i < _count; i++)
+            {
                 result[i] = _buffer[(start + i) % Capacity];
+            }
+
             return result;
         }
     }
@@ -90,19 +93,30 @@ public sealed class InMemoryLogSink : ILoggerProvider
         {
             _buffer[_head] = record;
             _head = (_head + 1) % Capacity;
-            if (_count < Capacity) _count++;
+            if (_count < Capacity)
+            {
+                _count++;
+            }
         }
         // Fan out to subscribers outside the lock; TryWrite is non-blocking.
         foreach (var subscriber in _subscribers)
+        {
             subscriber.Writer.TryWrite(record);
+        }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         foreach (var subscriber in _subscribers)
+        {
             subscriber.Writer.TryComplete();
+        }
     }
 
     public sealed class Subscription : IDisposable

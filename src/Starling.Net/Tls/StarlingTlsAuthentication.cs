@@ -25,7 +25,9 @@ internal sealed class StarlingTlsAuthentication : TlsAuthentication
     {
         if (!CertificateVerifier.Verify(
                 serverCertificate.Certificate, _options.ServerName, _roots, _options.ValidationTime, _revocations))
+        {
             throw new TlsFatalAlert(AlertDescription.bad_certificate, "server certificate validation failed");
+        }
 
         // Capture the verified leaf for the UI lock popover. Only reached once
         // the chain has validated against the bundled root store.

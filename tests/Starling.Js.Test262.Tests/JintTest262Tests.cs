@@ -83,10 +83,16 @@ public class JintTest262Tests
         report.AppendLine();
         report.AppendLine("By category (pass/total):");
         foreach (var (cat, c) in byCat)
+        {
             report.AppendLine($"  {c.pass,7}/{c.total,-7} {100d * c.pass / Math.Max(1, c.total),6:F1}%  {cat}");
+        }
+
         report.AppendLine();
         report.AppendLine($"Failure samples ({failSamples.Count} shown):");
-        foreach (var s in failSamples) report.AppendLine("  " + s);
+        foreach (var s in failSamples)
+        {
+            report.AppendLine("  " + s);
+        }
 
         var enc = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
         var reportPath = Path.Combine(resultsDir, "jint-summary.txt");
@@ -103,20 +109,29 @@ public class JintTest262Tests
         // Conformance_pass_rate first to populate it.
         var starlingRate = TryReadStarlingRate(resultsDir);
         if (starlingRate is { } sr)
+        {
             TestContext.WriteLine($"SIDE-BY-SIDE (dirs=[{string.Join(",", cfg.Dirs)}]): Starling.Js {sr:F2}%  |  Jint {rate:F2}%  (delta +{rate - sr:F2}pts)");
+        }
         else
+        {
             TestContext.WriteLine("SIDE-BY-SIDE: Starling.Js number unavailable (run Conformance_pass_rate against the same corpus first).");
+        }
 
         TestContext.WriteLine("report: " + reportPath);
 
         // INFORMATIONAL: only enforce a floor when one is explicitly requested.
         if (floor > 0)
+        {
             Assert.IsTrue(rate >= floor, $"Jint Test262 pass rate {rate:F2}% < floor {floor:F2}% — see {reportPath}");
+        }
     }
 
     private static void RecordSample(List<string> samples, ScenarioResult r)
     {
-        if (samples.Count < 60) samples.Add($"[{r.Mode}] {r.File} :: {r.Detail}");
+        if (samples.Count < 60)
+        {
+            samples.Add($"[{r.Mode}] {r.File} :: {r.Detail}");
+        }
     }
 
     /// <summary>Pull the Starling.Js pass rate out of the previously-written
@@ -126,17 +141,32 @@ public class JintTest262Tests
     private static double? TryReadStarlingRate(string resultsDir)
     {
         var path = Path.Combine(resultsDir, "summary.txt");
-        if (!File.Exists(path)) return null;
+        if (!File.Exists(path))
+        {
+            return null;
+        }
+
         try
         {
             foreach (var line in File.ReadLines(path))
             {
                 var idx = line.IndexOf("PASS RATE:", StringComparison.Ordinal);
-                if (idx < 0) continue;
+                if (idx < 0)
+                {
+                    continue;
+                }
+
                 var pct = line.IndexOf('%', idx);
-                if (pct < 0) continue;
+                if (pct < 0)
+                {
+                    continue;
+                }
+
                 var num = line.Substring(idx + "PASS RATE:".Length, pct - idx - "PASS RATE:".Length).Trim();
-                if (double.TryParse(num, System.Globalization.CultureInfo.InvariantCulture, out var v)) return v;
+                if (double.TryParse(num, System.Globalization.CultureInfo.InvariantCulture, out var v))
+                {
+                    return v;
+                }
             }
         }
         catch { /* best-effort: side-by-side is a nicety, never load-bearing */ }

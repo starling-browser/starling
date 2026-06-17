@@ -92,7 +92,11 @@ public static class MathObj
             var b = args.Length > 0 ? JsValue.ToNumber(args[0]) : double.NaN;
             var e = args.Length > 1 ? JsValue.ToNumber(args[1]) : double.NaN;
             // Math.pow(NaN, 0) === 1 per ES spec (overrides usual NaN-poisoning).
-            if (e == 0) return JsValue.Number(1);
+            if (e == 0)
+            {
+                return JsValue.Number(1);
+            }
+
             return JsValue.Number(SysMath.Pow(b, e));
         });
 
@@ -117,10 +121,15 @@ public static class MathObj
             foreach (var arg in args)
             {
                 var n = JsValue.ToNumber(arg);
-                if (double.IsNaN(n)) return JsValue.NaN;
+                if (double.IsNaN(n))
+                {
+                    return JsValue.NaN;
+                }
                 // +0 should beat -0 for max.
                 if (n > best || (n == 0 && best == 0 && !double.IsNegative(n)))
+                {
                     best = n;
+                }
             }
             return JsValue.Number(best);
         });
@@ -132,9 +141,15 @@ public static class MathObj
             foreach (var arg in args)
             {
                 var n = JsValue.ToNumber(arg);
-                if (double.IsNaN(n)) return JsValue.NaN;
+                if (double.IsNaN(n))
+                {
+                    return JsValue.NaN;
+                }
+
                 if (n < best || (n == 0 && best == 0 && double.IsNegative(n)))
+                {
                     best = n;
+                }
             }
             return JsValue.Number(best);
         });
@@ -142,19 +157,39 @@ public static class MathObj
         // Math.hypot: spec length === 2 (declared as (value1, value2, ...values)).
         IntrinsicHelpers.DefineMethod(realm, math, "hypot", 2, (_, args) =>
         {
-            if (args.Length == 0) return JsValue.Number(0);
+            if (args.Length == 0)
+            {
+                return JsValue.Number(0);
+            }
             // General variadic case: sum-of-squares with infinity/NaN guards.
             bool anyInf = false; bool anyNan = false;
             double sum = 0;
             foreach (var arg in args)
             {
                 var n = JsValue.ToNumber(arg);
-                if (double.IsInfinity(n)) anyInf = true;
-                else if (double.IsNaN(n)) anyNan = true;
-                else sum += n * n;
+                if (double.IsInfinity(n))
+                {
+                    anyInf = true;
+                }
+                else if (double.IsNaN(n))
+                {
+                    anyNan = true;
+                }
+                else
+                {
+                    sum += n * n;
+                }
             }
-            if (anyInf) return JsValue.Number(double.PositiveInfinity);
-            if (anyNan) return JsValue.NaN;
+            if (anyInf)
+            {
+                return JsValue.Number(double.PositiveInfinity);
+            }
+
+            if (anyNan)
+            {
+                return JsValue.NaN;
+            }
+
             return JsValue.Number(SysMath.Sqrt(sum));
         });
 
@@ -192,20 +227,43 @@ public static class MathObj
     /// usual edge-case handling.</summary>
     private static double JsRound(double x)
     {
-        if (double.IsNaN(x) || double.IsInfinity(x)) return x;
-        if (x == 0) return x; // preserves -0 / +0
+        if (double.IsNaN(x) || double.IsInfinity(x))
+        {
+            return x;
+        }
+
+        if (x == 0)
+        {
+            return x; // preserves -0 / +0
+        }
         // Math.round(-0.5) === -0, Math.round(-0.4) === -0, … negative values
         // in [-0.5, 0] round to -0. Math.round(0.5) === 1.
-        if (x < 0 && x >= -0.5) return -0.0;
+        if (x < 0 && x >= -0.5)
+        {
+            return -0.0;
+        }
+
         return SysMath.Floor(x + 0.5);
     }
 
     /// <summary>JS-style Math.sign: returns -0 for -0, +0 for +0, ±1 otherwise.</summary>
     private static double JsSign(double x)
     {
-        if (double.IsNaN(x)) return double.NaN;
-        if (x > 0) return 1.0;
-        if (x < 0) return -1.0;
+        if (double.IsNaN(x))
+        {
+            return double.NaN;
+        }
+
+        if (x > 0)
+        {
+            return 1.0;
+        }
+
+        if (x < 0)
+        {
+            return -1.0;
+        }
+
         return x; // preserves signed zero
     }
 
@@ -213,7 +271,11 @@ public static class MathObj
     private static uint ToUint32(JsValue value)
     {
         var n = JsValue.ToNumber(value);
-        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0) return 0;
+        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0)
+        {
+            return 0;
+        }
+
         var i = SysMath.Truncate(n);
         // Modulo 2^32, then map to unsigned.
         var mod = i - SysMath.Floor(i / 4294967296.0) * 4294967296.0;
@@ -223,7 +285,11 @@ public static class MathObj
     private static double Clz32(double x)
     {
         var u = ToUint32(JsValue.Number(x));
-        if (u == 0) return 32;
+        if (u == 0)
+        {
+            return 32;
+        }
+
         int c = 0;
         while ((u & 0x80000000u) == 0) { c++; u <<= 1; }
         return c;

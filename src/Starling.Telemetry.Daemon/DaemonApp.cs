@@ -64,7 +64,10 @@ internal static class DaemonApp
         {
             var body = await ReadBodyAsync(req, ct);
             if (!TryParse(ExportTraceServiceRequest.Parser, body, out var request))
+            {
                 return Results.BadRequest();
+            }
+
             store.IngestSpans(OtlpConverter.ToActivityRecords(request));
             return Results.Bytes(new ExportTraceServiceResponse().ToByteArray(), "application/x-protobuf");
         });
@@ -72,7 +75,10 @@ internal static class DaemonApp
         {
             var body = await ReadBodyAsync(req, ct);
             if (!TryParse(ExportMetricsServiceRequest.Parser, body, out var request))
+            {
                 return Results.BadRequest();
+            }
+
             store.IngestMetrics(OtlpConverter.ToMeterRecords(request));
             return Results.Bytes(new ExportMetricsServiceResponse().ToByteArray(), "application/x-protobuf");
         });
@@ -80,7 +86,10 @@ internal static class DaemonApp
         {
             var body = await ReadBodyAsync(req, ct);
             if (!TryParse(ExportLogsServiceRequest.Parser, body, out var request))
+            {
                 return Results.BadRequest();
+            }
+
             store.IngestLogs(OtlpConverter.ToLogRecords(request));
             return Results.Bytes(new ExportLogsServiceResponse().ToByteArray(), "application/x-protobuf");
         });
@@ -150,7 +159,10 @@ internal static class DaemonApp
         }
         finally
         {
-            if (gzip is not null) await gzip.DisposeAsync();
+            if (gzip is not null)
+            {
+                await gzip.DisposeAsync();
+            }
         }
     }
 }

@@ -34,15 +34,21 @@ internal sealed partial class ImageIODecoder : IImageDecoder
                 data = CFDataCreate(0, (nint)p, bytes.Length);
             }
             if (data == 0)
+            {
                 throw new ImageDecodeException("ImageIO: CFDataCreate returned null.");
+            }
 
             source = CGImageSourceCreateWithData(data, 0);
             if (source == 0)
+            {
                 throw new ImageDecodeException("ImageIO: CGImageSourceCreateWithData failed (not a recognised image).");
+            }
 
             cgImage = CGImageSourceCreateImageAtIndex(source, 0, 0);
             if (cgImage == 0)
+            {
                 throw new ImageDecodeException("ImageIO: CGImageSourceCreateImageAtIndex failed (corrupt or unsupported image).");
+            }
 
             nint width = CGImageGetWidth(cgImage);
             nint height = CGImageGetHeight(cgImage);
@@ -57,7 +63,9 @@ internal sealed partial class ImageIODecoder : IImageDecoder
 
             colorSpace = CGColorSpaceCreateDeviceRGB();
             if (colorSpace == 0)
+            {
                 throw new ImageDecodeException("ImageIO: CGColorSpaceCreateDeviceRGB failed.");
+            }
 
             nint stride = (nint)cw * 4;
 
@@ -86,13 +94,18 @@ internal sealed partial class ImageIODecoder : IImageDecoder
                         space: colorSpace,
                         bitmapInfo: kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
                     if (ctx == 0)
+                    {
                         throw new ImageDecodeException("ImageIO: CGBitmapContextCreate failed.");
+                    }
+
                     context = ctx;
 
                     // When the decode is resolution-clamped the draw below is a
                     // downscale; ask CG for its best resampling filter.
                     if (cw != w || ch != h)
+                    {
                         CGContextSetInterpolationQuality(ctx, kCGInterpolationHigh);
+                    }
 
                     // A CGBitmapContext stores row 0 of its backing buffer at
                     // the *top* of the image, and CGContextDrawImage fills the
@@ -117,11 +130,30 @@ internal sealed partial class ImageIODecoder : IImageDecoder
         }
         finally
         {
-            if (context != 0) CGContextRelease(context);
-            if (colorSpace != 0) CGColorSpaceRelease(colorSpace);
-            if (cgImage != 0) CGImageRelease(cgImage);
-            if (source != 0) CFRelease(source);
-            if (data != 0) CFRelease(data);
+            if (context != 0)
+            {
+                CGContextRelease(context);
+            }
+
+            if (colorSpace != 0)
+            {
+                CGColorSpaceRelease(colorSpace);
+            }
+
+            if (cgImage != 0)
+            {
+                CGImageRelease(cgImage);
+            }
+
+            if (source != 0)
+            {
+                CFRelease(source);
+            }
+
+            if (data != 0)
+            {
+                CFRelease(data);
+            }
         }
     }
 
@@ -149,7 +181,10 @@ internal sealed partial class ImageIODecoder : IImageDecoder
         {
             byte a = rgba[i + 3];
             if (a == 0 || a == 255)
+            {
                 continue;
+            }
+
             rgba[i] = (byte)Math.Min(255, rgba[i] * 255 / a);
             rgba[i + 1] = (byte)Math.Min(255, rgba[i + 1] * 255 / a);
             rgba[i + 2] = (byte)Math.Min(255, rgba[i + 2] * 255 / a);

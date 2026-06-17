@@ -77,7 +77,9 @@ internal sealed class JintScriptSession : IScriptSession
             opts.EnableModules(_moduleLoader);
             opts.UseHostFactory(_ => new StarlingJintModuleMetaHost());
             if (abortToken.CanBeCanceled)
+            {
                 opts.CancellationToken(abortToken);
+            }
         });
 
         _ctx = new JintBackendContext(
@@ -220,10 +222,14 @@ internal sealed class JintScriptSession : IScriptSession
         DrainMicrotasks();
 
         if (DrainPostQueue())
+        {
             DrainMicrotasks();
+        }
 
         if (_loop.PendingTimerCount > 0 || _loop.PendingAnimationFrameCount > 0)
+        {
             _loop.AdvanceBy(SimulatedStepMs);
+        }
 
         return _loop.PendingTimerCount > 0
             || _loop.PendingAnimationFrameCount > 0
@@ -269,7 +275,10 @@ internal sealed class JintScriptSession : IScriptSession
     public void OnScriptElementConnected(Node scriptEl)
     {
         ArgumentNullException.ThrowIfNull(scriptEl);
-        if (scriptEl is not Element { LocalName: "script" } script) return;
+        if (scriptEl is not Element { LocalName: "script" } script)
+        {
+            return;
+        }
 
         // Script-inserted external scripts (and any async-flagged script) are
         // async by default — route them to the dynamic-script runner
@@ -278,14 +287,22 @@ internal sealed class JintScriptSession : IScriptSession
         var hasSrc = !string.IsNullOrWhiteSpace(script.GetAttribute("src"));
         if (hasSrc || script.HasAttribute("async"))
         {
-            if (hasSrc) _dynamicRunner.EnqueueInjectedExternal(script);
+            if (hasSrc)
+            {
+                _dynamicRunner.EnqueueInjectedExternal(script);
+            }
+
             return;
         }
 
         // Inline non-async injected script: run synchronously on insertion so its
         // side effects are visible to the code that appended it.
         var inline = script.TextContent;
-        if (string.IsNullOrWhiteSpace(inline)) return;
+        if (string.IsNullOrWhiteSpace(inline))
+        {
+            return;
+        }
+
         try
         {
             RunClassicScript(inline, "<injected inline>");
@@ -301,14 +318,20 @@ internal sealed class JintScriptSession : IScriptSession
         ArgumentNullException.ThrowIfNull(scriptEl);
         // Flag a parser-batch script "already started" so a later JS `src` write
         // never re-runs it (HTML §4.12.1).
-        if (scriptEl is Element script) _dynamicRunner.MarkStarted(script);
+        if (scriptEl is Element script)
+        {
+            _dynamicRunner.MarkStarted(script);
+        }
     }
 
     public bool DispatchEvent(Starling.Dom.Events.EventTarget target, Starling.Dom.Events.Event evt)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(evt);
-        if (_disposed) return false;
+        if (_disposed)
+        {
+            return false;
+        }
 
         var before = _ctx.Document.MutationVersion;
         try
@@ -329,7 +352,11 @@ internal sealed class JintScriptSession : IScriptSession
 
     public bool PumpFrame(long elapsedMs)
     {
-        if (_disposed) return false;
+        if (_disposed)
+        {
+            return false;
+        }
+
         if (!_liveStarted)
         {
             _liveBaselineMs = _loop.NowMilliseconds;
@@ -341,14 +368,18 @@ internal sealed class JintScriptSession : IScriptSession
         // RunFrame requires a non-decreasing clock; only advance when real time
         // has moved past the loop's current now.
         if (target > _loop.NowMilliseconds)
+        {
             _loop.RunFrame(target);
+        }
 
         // Drain Jint promise jobs, then the cross-thread post queue (fetch/XHR
         // completions + dynamic-script runs) on the JS thread, then re-drain so
         // reactions they queued settle this tick.
         DrainMicrotasks();
         if (DrainPostQueue())
+        {
             DrainMicrotasks();
+        }
 
         return _ctx.Document.MutationVersion != before;
     }
@@ -361,7 +392,11 @@ internal sealed class JintScriptSession : IScriptSession
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         _engine.Dispose();
     }
@@ -425,7 +460,11 @@ internal sealed class JintScriptSession : IScriptSession
         // HTML §"report the exception": run window.onerror first (a truthy return
         // cancels the default console report), then echo to the console.
         var message = JintInterop.DescribeError(ex.Error, ex.Message);
-        if (EventTargetBinding.ReportException(_ctx, ex.Error, message)) return;
+        if (EventTargetBinding.ReportException(_ctx, ex.Error, message))
+        {
+            return;
+        }
+
         _consoleSink(ConsoleLevel.Error, $"Uncaught {message}");
     }
 

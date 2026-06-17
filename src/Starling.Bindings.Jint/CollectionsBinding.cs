@@ -26,7 +26,11 @@ internal static class CollectionsBinding
     public static void Install(JintBackendContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
-        if (ctx.Wrappers.NodeListPrototype is not null) return; // idempotent
+        if (ctx.Wrappers.NodeListPrototype is not null)
+        {
+            return; // idempotent
+        }
+
         var engine = ctx.Engine;
 
         // ---- NodeList.prototype -------------------------------------------------
@@ -78,7 +82,11 @@ internal static class CollectionsBinding
         {
             var arr = snapshot(t) ?? new JsArray(engine, System.Array.Empty<JsValue>());
             var keys = new JsValue[arr.Length];
-            for (uint i = 0; i < arr.Length; i++) keys[i] = JintInterop.Num(i);
+            for (uint i = 0; i < arr.Length; i++)
+            {
+                keys[i] = JintInterop.Num(i);
+            }
+
             return ArrayIterator(engine, new JsArray(engine, keys));
         }, 0);
         JintInterop.DefineMethod(engine, proto, "entries", (t, _) =>
@@ -86,17 +94,27 @@ internal static class CollectionsBinding
             var arr = snapshot(t) ?? new JsArray(engine, System.Array.Empty<JsValue>());
             var entries = new JsValue[arr.Length];
             for (uint i = 0; i < arr.Length; i++)
+            {
                 entries[i] = new JsArray(engine, new[] { JintInterop.Num(i), arr[(int)i] });
+            }
+
             return ArrayIterator(engine, new JsArray(engine, entries));
         }, 0);
         JintInterop.DefineMethod(engine, proto, "forEach", (t, a) =>
         {
             var arr = snapshot(t) ?? new JsArray(engine, System.Array.Empty<JsValue>());
-            if (a.Length == 0 || !a[0].IsCallable()) return JsValue.Undefined;
+            if (a.Length == 0 || !a[0].IsCallable())
+            {
+                return JsValue.Undefined;
+            }
+
             var cb = a[0];
             var thisArg = a.Length > 1 ? a[1] : JsValue.Undefined;
             for (uint i = 0; i < arr.Length; i++)
+            {
                 cb.Call(thisArg, new[] { arr[(int)i], JintInterop.Num(i), t });
+            }
+
             return JsValue.Undefined;
         }, 1);
     }
@@ -146,7 +164,10 @@ internal sealed class JintNodeListObject : ObjectInstance
     {
         _ctx = ctx;
         _source = source;
-        if (prototype is not null) Prototype = prototype;
+        if (prototype is not null)
+        {
+            Prototype = prototype;
+        }
     }
 
     private IReadOnlyList<Node> Items => _source();
@@ -162,7 +183,11 @@ internal sealed class JintNodeListObject : ObjectInstance
     {
         var items = Items;
         var values = new JsValue[items.Count];
-        for (var i = 0; i < items.Count; i++) values[i] = _ctx.Wrappers.Wrap(items[i]);
+        for (var i = 0; i < items.Count; i++)
+        {
+            values[i] = _ctx.Wrappers.Wrap(items[i]);
+        }
+
         return new JsArray(engine, values);
     }
 
@@ -182,14 +207,20 @@ internal sealed class JintNodeListObject : ObjectInstance
         {
             var items = Items;
             if (i < items.Count)
+            {
                 return new PropertyDescriptor(_ctx.Wrappers.Wrap(items[i]), writable: false, enumerable: true, configurable: true);
+            }
         }
         return base.GetOwnProperty(property);
     }
 
     public override bool HasProperty(JsValue property)
     {
-        if (property.IsString() && CollectionIndex.TryIndex(property.AsString(), out var i) && i < Items.Count) return true;
+        if (property.IsString() && CollectionIndex.TryIndex(property.AsString(), out var i) && i < Items.Count)
+        {
+            return true;
+        }
+
         return base.HasProperty(property);
     }
 
@@ -197,7 +228,13 @@ internal sealed class JintNodeListObject : ObjectInstance
     {
         var keys = new List<JsValue>();
         if ((types & Types.String) != 0)
-            for (var i = 0; i < Items.Count; i++) keys.Add(JintInterop.Str(i.ToString(CultureInfo.InvariantCulture)));
+        {
+            for (var i = 0; i < Items.Count; i++)
+            {
+                keys.Add(JintInterop.Str(i.ToString(CultureInfo.InvariantCulture)));
+            }
+        }
+
         keys.AddRange(base.GetOwnPropertyKeys(types));
         return keys;
     }
@@ -216,7 +253,10 @@ internal sealed class JintHtmlCollectionObject : ObjectInstance
     {
         _ctx = ctx;
         _source = source;
-        if (prototype is not null) Prototype = prototype;
+        if (prototype is not null)
+        {
+            Prototype = prototype;
+        }
     }
 
     private IReadOnlyList<Element> Items => _source();
@@ -235,18 +275,38 @@ internal sealed class JintHtmlCollectionObject : ObjectInstance
     {
         var items = Items;
         var values = new JsValue[items.Count];
-        for (var i = 0; i < items.Count; i++) values[i] = _ctx.Wrappers.Wrap(items[i]);
+        for (var i = 0; i < items.Count; i++)
+        {
+            values[i] = _ctx.Wrappers.Wrap(items[i]);
+        }
+
         return new JsArray(engine, values);
     }
 
     private Element? NamedItem(string name)
     {
-        if (name.Length == 0) return null;
+        if (name.Length == 0)
+        {
+            return null;
+        }
+
         var items = Items;
         foreach (var e in items)
-            if (e.GetAttribute("id") == name) return e;
+        {
+            if (e.GetAttribute("id") == name)
+            {
+                return e;
+            }
+        }
+
         foreach (var e in items)
-            if (e.Namespace == Element.HtmlNamespace && e.GetAttribute("name") == name) return e;
+        {
+            if (e.Namespace == Element.HtmlNamespace && e.GetAttribute("name") == name)
+            {
+                return e;
+            }
+        }
+
         return null;
     }
 
@@ -254,9 +314,19 @@ internal sealed class JintHtmlCollectionObject : ObjectInstance
     // (item/namedItem/length/…), per WebIDL named-property visibility.
     private bool IsShadowed(JsValue name)
     {
-        if (base.GetOwnProperty(name) != PropertyDescriptor.Undefined) return true;
+        if (base.GetOwnProperty(name) != PropertyDescriptor.Undefined)
+        {
+            return true;
+        }
+
         for (var p = Prototype; p is not null; p = p.Prototype)
-            if (p.GetOwnProperty(name) != PropertyDescriptor.Undefined) return true;
+        {
+            if (p.GetOwnProperty(name) != PropertyDescriptor.Undefined)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -270,7 +340,10 @@ internal sealed class JintHtmlCollectionObject : ObjectInstance
                 var items = Items;
                 return i < items.Count ? _ctx.Wrappers.Wrap(items[i]) : JsValue.Undefined;
             }
-            if (!IsShadowed(property) && NamedItem(name) is { } named) return _ctx.Wrappers.Wrap(named);
+            if (!IsShadowed(property) && NamedItem(name) is { } named)
+            {
+                return _ctx.Wrappers.Wrap(named);
+            }
         }
         return base.Get(property, receiver);
     }
@@ -284,10 +357,14 @@ internal sealed class JintHtmlCollectionObject : ObjectInstance
             {
                 var items = Items;
                 if (i < items.Count)
+                {
                     return new PropertyDescriptor(_ctx.Wrappers.Wrap(items[i]), writable: false, enumerable: true, configurable: true);
+                }
             }
             else if (base.GetOwnProperty(property) == PropertyDescriptor.Undefined && NamedItem(name) is { } named)
+            {
                 return new PropertyDescriptor(_ctx.Wrappers.Wrap(named), writable: false, enumerable: true, configurable: true);
+            }
         }
         return base.GetOwnProperty(property);
     }
@@ -297,8 +374,15 @@ internal sealed class JintHtmlCollectionObject : ObjectInstance
         if (property.IsString())
         {
             var name = property.AsString();
-            if (CollectionIndex.TryIndex(name, out var i)) return i < Items.Count;
-            if (!IsShadowed(property) && NamedItem(name) is not null) return true;
+            if (CollectionIndex.TryIndex(name, out var i))
+            {
+                return i < Items.Count;
+            }
+
+            if (!IsShadowed(property) && NamedItem(name) is not null)
+            {
+                return true;
+            }
         }
         return base.HasProperty(property);
     }
@@ -307,7 +391,13 @@ internal sealed class JintHtmlCollectionObject : ObjectInstance
     {
         var keys = new List<JsValue>();
         if ((types & Types.String) != 0)
-            for (var i = 0; i < Items.Count; i++) keys.Add(JintInterop.Str(i.ToString(CultureInfo.InvariantCulture)));
+        {
+            for (var i = 0; i < Items.Count; i++)
+            {
+                keys.Add(JintInterop.Str(i.ToString(CultureInfo.InvariantCulture)));
+            }
+        }
+
         keys.AddRange(base.GetOwnPropertyKeys(types));
         return keys;
     }
@@ -325,33 +415,50 @@ internal sealed class JintDomTokenListObject : ObjectInstance
     public JintDomTokenListObject(JintBackendContext ctx, DomTokenList tokens) : base(ctx.Engine)
     {
         _tokens = tokens;
-        if (ctx.Wrappers.DomTokenListPrototype is { } p) Prototype = p;
+        if (ctx.Wrappers.DomTokenListPrototype is { } p)
+        {
+            Prototype = p;
+        }
     }
 
     public JsArray ValuesArray(global::Jint.Engine engine)
     {
         var values = new JsValue[_tokens.Count];
-        for (var i = 0; i < _tokens.Count; i++) values[i] = JintInterop.Str(_tokens[i]);
+        for (var i = 0; i < _tokens.Count; i++)
+        {
+            values[i] = JintInterop.Str(_tokens[i]);
+        }
+
         return new JsArray(engine, values);
     }
 
     public override JsValue Get(JsValue property, JsValue receiver)
     {
         if (property.IsString() && CollectionIndex.TryIndex(property.AsString(), out var i))
+        {
             return i < _tokens.Count ? JintInterop.Str(_tokens[i]) : JsValue.Undefined;
+        }
+
         return base.Get(property, receiver);
     }
 
     public override PropertyDescriptor GetOwnProperty(JsValue property)
     {
         if (property.IsString() && CollectionIndex.TryIndex(property.AsString(), out var i) && i < _tokens.Count)
+        {
             return new PropertyDescriptor(JintInterop.Str(_tokens[i]), writable: false, enumerable: true, configurable: true);
+        }
+
         return base.GetOwnProperty(property);
     }
 
     public override bool HasProperty(JsValue property)
     {
-        if (property.IsString() && CollectionIndex.TryIndex(property.AsString(), out var i) && i < _tokens.Count) return true;
+        if (property.IsString() && CollectionIndex.TryIndex(property.AsString(), out var i) && i < _tokens.Count)
+        {
+            return true;
+        }
+
         return base.HasProperty(property);
     }
 
@@ -359,7 +466,13 @@ internal sealed class JintDomTokenListObject : ObjectInstance
     {
         var keys = new List<JsValue>();
         if ((types & Types.String) != 0)
-            for (var i = 0; i < _tokens.Count; i++) keys.Add(JintInterop.Str(i.ToString(CultureInfo.InvariantCulture)));
+        {
+            for (var i = 0; i < _tokens.Count; i++)
+            {
+                keys.Add(JintInterop.Str(i.ToString(CultureInfo.InvariantCulture)));
+            }
+        }
+
         keys.AddRange(base.GetOwnPropertyKeys(types));
         return keys;
     }
@@ -372,10 +485,26 @@ internal static class CollectionIndex
     public static bool TryIndex(string name, out int index)
     {
         index = 0;
-        if (name.Length == 0) return false;
-        if (name.Length > 1 && name[0] == '0') return false;
-        if (!ulong.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var v)) return false;
-        if (v > 4294967294UL) return false;
+        if (name.Length == 0)
+        {
+            return false;
+        }
+
+        if (name.Length > 1 && name[0] == '0')
+        {
+            return false;
+        }
+
+        if (!ulong.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var v))
+        {
+            return false;
+        }
+
+        if (v > 4294967294UL)
+        {
+            return false;
+        }
+
         index = v > int.MaxValue ? int.MaxValue : (int)v;
         return true;
     }

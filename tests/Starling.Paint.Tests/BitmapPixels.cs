@@ -25,7 +25,11 @@ internal static class BitmapPixels
     /// <summary>True iff both bitmaps have the same size and identical RGBA bytes.</summary>
     public static bool PixelsEqual(RenderedBitmap a, RenderedBitmap b)
     {
-        if (a.Width != b.Width || a.Height != b.Height) return false;
+        if (a.Width != b.Width || a.Height != b.Height)
+        {
+            return false;
+        }
+
         return a.Rgba.SequenceEqual(b.Rgba);
     }
 
@@ -36,7 +40,9 @@ internal static class BitmapPixels
         for (var i = 0; i < rgba.Length; i += 4)
         {
             if (predicate(rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]))
+            {
                 count++;
+            }
         }
         return count;
     }

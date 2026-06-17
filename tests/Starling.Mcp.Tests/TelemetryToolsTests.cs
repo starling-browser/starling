@@ -105,7 +105,9 @@ public class TelemetryToolsTests
     {
         using var fixture = new TelemetryFixture();
         for (var i = 0; i < 5; i++)
+        {
             fixture.EmitSpan($"span-{i}");
+        }
 
         var payload = fixture.InvokePayloadAsync(TelemetryTools.TracesToolName, new { limit = 2 });
         var traces = payload["traces"]!.AsArray();
@@ -222,8 +224,16 @@ public class TelemetryToolsTests
             ActivityStatusCode status = ActivityStatusCode.Unset)
         {
             using var activity = Source.StartActivity(name, ActivityKind.Internal);
-            if (activity is null) return;
-            if (tagKey is not null) activity.SetTag(tagKey, tagValue);
+            if (activity is null)
+            {
+                return;
+            }
+
+            if (tagKey is not null)
+            {
+                activity.SetTag(tagKey, tagValue);
+            }
+
             activity.SetStatus(status);
         }
 
@@ -243,7 +253,10 @@ public class TelemetryToolsTests
             }
             var pairs = new KeyValuePair<string, object?>[tags.Length];
             for (var i = 0; i < tags.Length; i++)
+            {
                 pairs[i] = new KeyValuePair<string, object?>(tags[i].Key, tags[i].Value);
+            }
+
             counter.Add(value, pairs.AsSpan());
         }
 

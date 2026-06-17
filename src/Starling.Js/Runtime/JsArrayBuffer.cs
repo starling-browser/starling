@@ -5,7 +5,11 @@ public sealed class JsArrayBuffer : JsObject
 {
     public JsArrayBuffer(JsObject? prototype, int byteLength) : base(prototype)
     {
-        if (byteLength < 0) throw new ArgumentOutOfRangeException(nameof(byteLength));
+        if (byteLength < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(byteLength));
+        }
+
         Storage = new ManagedArrayBufferStorage(new byte[byteLength]);
         RefreshByteLength();
     }

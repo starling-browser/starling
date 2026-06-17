@@ -66,7 +66,11 @@ public class JsObject
         if (_slots.Length < next.SlotCount)
         {
             var cap = _slots.Length == 0 ? 4 : _slots.Length * 2;
-            if (cap < next.SlotCount) cap = next.SlotCount;
+            if (cap < next.SlotCount)
+            {
+                cap = next.SlotCount;
+            }
+
             System.Array.Resize(ref _slots, cap);
         }
         _slots[slot] = value;
@@ -110,7 +114,10 @@ public class JsObject
 
     private void BumpEpochIfPrototype()
     {
-        if (_isUsedAsPrototype) ProtoEpoch++;
+        if (_isUsedAsPrototype)
+        {
+            ProtoEpoch++;
+        }
     }
 
     /// <summary>True iff this object stores its string data properties in the
@@ -133,7 +140,11 @@ public class JsObject
     /// its position.</summary>
     private void PutString(string name, PropertyDescriptor desc)
     {
-        if (!_properties!.ContainsKey(name)) _stringKeyOrder!.Add(name);
+        if (!_properties!.ContainsKey(name))
+        {
+            _stringKeyOrder!.Add(name);
+        }
+
         _properties[name] = desc;
         BumpEpochIfPrototype();
     }
@@ -142,7 +153,11 @@ public class JsObject
     /// <see cref="_stringKeyOrder"/> in sync.</summary>
     private bool RemoveString(string name)
     {
-        if (!_properties!.Remove(name)) return false;
+        if (!_properties!.Remove(name))
+        {
+            return false;
+        }
+
         _stringKeyOrder!.Remove(name);
         BumpEpochIfPrototype();
         return true;
@@ -153,9 +168,21 @@ public class JsObject
     private static byte DataFlags(in PropertyDescriptor desc)
     {
         byte f = 0;
-        if (desc.Writable) f |= Shape.Writable;
-        if (desc.Enumerable) f |= Shape.Enumerable;
-        if (desc.Configurable) f |= Shape.Configurable;
+        if (desc.Writable)
+        {
+            f |= Shape.Writable;
+        }
+
+        if (desc.Enumerable)
+        {
+            f |= Shape.Enumerable;
+        }
+
+        if (desc.Configurable)
+        {
+            f |= Shape.Configurable;
+        }
+
         return f;
     }
 
@@ -167,7 +194,11 @@ public class JsObject
         if (_slots.Length < next.SlotCount)
         {
             var cap = _slots.Length == 0 ? 4 : _slots.Length * 2;
-            if (cap < next.SlotCount) cap = next.SlotCount;
+            if (cap < next.SlotCount)
+            {
+                cap = next.SlotCount;
+            }
+
             System.Array.Resize(ref _slots, cap);
         }
         _slots[next.AddedSlot] = value;
@@ -180,7 +211,11 @@ public class JsObject
     /// redefinition, non-extensible churn). Idempotent.</summary>
     private void MigrateToDictionary()
     {
-        if (_shape is null) return;
+        if (_shape is null)
+        {
+            return;
+        }
+
         var shape = _shape;
         var keys = shape.OrderedKeys();
         var shapeProps = shape.OrderedProps(); // slot-ordered, single chain walk — no flattened table
@@ -254,23 +289,46 @@ public class JsObject
     public JsObject(JsObject? prototype)
     {
         Prototype = prototype;
-        if (prototype is not null) prototype._isUsedAsPrototype = true;
+        if (prototype is not null)
+        {
+            prototype._isUsedAsPrototype = true;
+        }
     }
 
     /// <summary>§10.1.2 [[SetPrototypeOf]]. Returns true on success.</summary>
     public virtual bool SetPrototypeOf(JsObject? proto)
     {
-        if (ReferenceEquals(proto, Prototype)) return true; // §10.1.2 — same prototype is a no-op success
-        if (!Extensible) return false;
+        if (ReferenceEquals(proto, Prototype))
+        {
+            return true; // §10.1.2 — same prototype is a no-op success
+        }
+
+        if (!Extensible)
+        {
+            return false;
+        }
         // Cycle check: walking up the new chain must not lead back to this.
         for (var p = proto; p is not null; p = p.Prototype)
-            if (ReferenceEquals(p, this)) return false;
+        {
+            if (ReferenceEquals(p, this))
+            {
+                return false;
+            }
+        }
         // A relink changes the chain for any object whose prototype is this one,
         // and migrating to dictionary mode drops this object's own shape so its
         // own caches miss. Both keep inline caches correct across __proto__ swaps.
-        if (_shape is not null) MigrateToDictionary();
+        if (_shape is not null)
+        {
+            MigrateToDictionary();
+        }
+
         BumpEpochIfPrototype();
-        if (proto is not null) proto._isUsedAsPrototype = true;
+        if (proto is not null)
+        {
+            proto._isUsedAsPrototype = true;
+        }
+
         Prototype = proto;
         return true;
     }
@@ -287,7 +345,11 @@ public class JsObject
     /// check.</summary>
     public virtual bool PreventExtensions()
     {
-        if (_shape is not null) MigrateToDictionary();
+        if (_shape is not null)
+        {
+            MigrateToDictionary();
+        }
+
         _extensible = false;
         return true;
     }
@@ -319,7 +381,13 @@ public class JsObject
     public virtual JsValue Get(string name)
     {
         for (var o = this; o is not null; o = o.Prototype)
-            if (o.TryGetOwnRaw(name, out var v)) return v;
+        {
+            if (o.TryGetOwnRaw(name, out var v))
+            {
+                return v;
+            }
+        }
+
         return JsValue.Undefined;
     }
 
@@ -328,7 +396,9 @@ public class JsObject
         for (var o = this; o is not null; o = o.Prototype)
         {
             if (o._symbolProperties is not null && o._symbolProperties.TryGetValue(symbol, out var desc))
+            {
                 return desc.IsAccessor ? JsValue.Undefined : desc.Value;
+            }
         }
         return JsValue.Undefined;
     }
@@ -344,22 +414,42 @@ public class JsObject
         {
             if (_shape.TryGet(name, out var p))
             {
-                if (!p.Writable) return;
+                if (!p.Writable)
+                {
+                    return;
+                }
+
                 _slots[p.Slot] = value;
                 return;
             }
-            if (!Extensible) return;
+            if (!Extensible)
+            {
+                return;
+            }
+
             AddFastProperty(name, value, Shape.DefaultData);
             return;
         }
         if (_properties!.TryGetValue(name, out var desc))
         {
-            if (desc.IsAccessor) return; // accessor path — caller should use AbstractOperations.Set
-            if (!desc.Writable) return;
+            if (desc.IsAccessor)
+            {
+                return; // accessor path — caller should use AbstractOperations.Set
+            }
+
+            if (!desc.Writable)
+            {
+                return;
+            }
+
             _properties[name] = desc.WithValue(value); // existing key — order unchanged
             return;
         }
-        if (!Extensible) return;
+        if (!Extensible)
+        {
+            return;
+        }
+
         PutString(name, PropertyDescriptor.Data(value));
     }
 
@@ -367,19 +457,37 @@ public class JsObject
     {
         if (_symbolProperties is not null && _symbolProperties.TryGetValue(symbol, out var desc))
         {
-            if (desc.IsAccessor) return;
-            if (!desc.Writable) return;
+            if (desc.IsAccessor)
+            {
+                return;
+            }
+
+            if (!desc.Writable)
+            {
+                return;
+            }
+
             _symbolProperties[symbol] = desc.WithValue(value);
             return;
         }
-        if (!Extensible) return;
+        if (!Extensible)
+        {
+            return;
+        }
+
         (_symbolProperties ??= new Dictionary<JsSymbol, PropertyDescriptor>())[symbol] = PropertyDescriptor.Data(value);
     }
 
     public void Set(JsPropertyKey key, JsValue value)
     {
-        if (key.IsSymbol) Set(key.AsSymbol, value);
-        else Set(key.AsString, value);
+        if (key.IsSymbol)
+        {
+            Set(key.AsSymbol, value);
+        }
+        else
+        {
+            Set(key.AsString, value);
+        }
     }
 
     /// <summary>Spec [[HasProperty]] — walks the prototype chain. Virtual so
@@ -389,14 +497,26 @@ public class JsObject
     public virtual bool Has(string name)
     {
         for (var o = this; o is not null; o = o.Prototype)
-            if (o.HasOwn(name)) return true;
+        {
+            if (o.HasOwn(name))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
     public virtual bool Has(JsSymbol symbol)
     {
         for (var o = this; o is not null; o = o.Prototype)
-            if (o.HasOwn(symbol)) return true;
+        {
+            if (o.HasOwn(symbol))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -413,9 +533,12 @@ public class JsObject
     public virtual PropertyDescriptor? GetOwnPropertyDescriptor(string name)
     {
         if (_shape is not null)
+        {
             return _shape.TryGet(name, out var p)
                 ? PropertyDescriptor.Data(_slots[p.Slot], p.Writable, p.Enumerable, p.Configurable)
                 : null;
+        }
+
         return _properties!.TryGetValue(name, out var d) ? d : null;
     }
     public virtual PropertyDescriptor? GetOwnPropertyDescriptor(JsSymbol symbol)
@@ -434,7 +557,11 @@ public class JsObject
             if (_shape.TryGet(name, out var p))
             {
                 var existing = PropertyDescriptor.Data(_slots[p.Slot], p.Writable, p.Enumerable, p.Configurable);
-                if (!ValidateRedefine(existing, desc)) return false;
+                if (!ValidateRedefine(existing, desc))
+                {
+                    return false;
+                }
+
                 if (DataFlags(desc) == p.Flags)
                 {
                     _slots[p.Slot] = desc.Value; // attributes unchanged — just replace value
@@ -445,18 +572,33 @@ public class JsObject
                 PutString(name, desc);
                 return true;
             }
-            if (!Extensible) return false;
+            if (!Extensible)
+            {
+                return false;
+            }
+
             AddFastProperty(name, desc.Value, DataFlags(desc));
             return true;
         }
 
         // Accessor, or already in dictionary mode: use the dictionary path.
-        if (_shape is not null) MigrateToDictionary();
+        if (_shape is not null)
+        {
+            MigrateToDictionary();
+        }
+
         if (_properties!.TryGetValue(name, out var ex))
         {
-            if (!ValidateRedefine(ex, desc)) return false;
+            if (!ValidateRedefine(ex, desc))
+            {
+                return false;
+            }
         }
-        else if (!Extensible) return false;
+        else if (!Extensible)
+        {
+            return false;
+        }
+
         PutString(name, desc);
         return true;
     }
@@ -475,7 +617,11 @@ public class JsObject
     /// writable:true→false transition).</summary>
     internal void ForceDefineOwnProperty(string name, PropertyDescriptor desc)
     {
-        if (_shape is not null) MigrateToDictionary();
+        if (_shape is not null)
+        {
+            MigrateToDictionary();
+        }
+
         PutString(name, desc);
     }
 
@@ -500,12 +646,19 @@ public class JsObject
         // ForceDefineOwnProperty; for string keys, move to dictionary mode first
         // so its intricate non-configurable validation runs against the legacy
         // backing exactly as before.
-        if (key.IsString && _shape is not null) MigrateToDictionary();
+        if (key.IsString && _shape is not null)
+        {
+            MigrateToDictionary();
+        }
 
         var existing = GetOwnPropertyDescriptor(key);
         if (existing is null)
         {
-            if (!Extensible) return false;
+            if (!Extensible)
+            {
+                return false;
+            }
+
             var fresh = desc.IsAccessor
                 ? PropertyDescriptor.Accessor(
                     present.HasGet ? desc.Getter : null,
@@ -517,8 +670,15 @@ public class JsObject
                     present.HasWritable && desc.Writable,
                     present.HasEnumerable && desc.Enumerable,
                     present.HasConfigurable && desc.Configurable);
-            if (key.IsSymbol) ForceDefineOwnProperty(key.AsSymbol, fresh);
-            else ForceDefineOwnProperty(key.AsString, fresh);
+            if (key.IsSymbol)
+            {
+                ForceDefineOwnProperty(key.AsSymbol, fresh);
+            }
+            else
+            {
+                ForceDefineOwnProperty(key.AsString, fresh);
+            }
+
             return true;
         }
 
@@ -529,21 +689,47 @@ public class JsObject
 
         if (!cur.Configurable)
         {
-            if (configurable) return false;
-            if (present.HasEnumerable && desc.Enumerable != cur.Enumerable) return false;
-            if (changingKind) return false;
+            if (configurable)
+            {
+                return false;
+            }
+
+            if (present.HasEnumerable && desc.Enumerable != cur.Enumerable)
+            {
+                return false;
+            }
+
+            if (changingKind)
+            {
+                return false;
+            }
+
             if (!cur.IsAccessor)
             {
                 if (!cur.Writable)
                 {
-                    if (present.HasWritable && desc.Writable) return false;
-                    if (present.HasValue && !desc.Value.Equals(cur.Value)) return false;
+                    if (present.HasWritable && desc.Writable)
+                    {
+                        return false;
+                    }
+
+                    if (present.HasValue && !desc.Value.Equals(cur.Value))
+                    {
+                        return false;
+                    }
                 }
             }
             else
             {
-                if (present.HasGet && !ReferenceEquals(desc.Getter, cur.Getter)) return false;
-                if (present.HasSet && !ReferenceEquals(desc.Setter, cur.Setter)) return false;
+                if (present.HasGet && !ReferenceEquals(desc.Getter, cur.Getter))
+                {
+                    return false;
+                }
+
+                if (present.HasSet && !ReferenceEquals(desc.Setter, cur.Setter))
+                {
+                    return false;
+                }
             }
         }
 
@@ -561,8 +747,15 @@ public class JsObject
             var value = present.HasValue ? desc.Value : (cur.IsAccessor ? JsValue.Undefined : cur.Value);
             merged = PropertyDescriptor.Data(value, writable, enumerable, configurable);
         }
-        if (key.IsSymbol) ForceDefineOwnProperty(key.AsSymbol, merged);
-        else ForceDefineOwnProperty(key.AsString, merged);
+        if (key.IsSymbol)
+        {
+            ForceDefineOwnProperty(key.AsSymbol, merged);
+        }
+        else
+        {
+            ForceDefineOwnProperty(key.AsString, merged);
+        }
+
         return true;
     }
 
@@ -571,7 +764,10 @@ public class JsObject
     {
         if (table.TryGetValue(key, out var existing))
         {
-            if (!ValidateRedefine(existing, desc)) return false;
+            if (!ValidateRedefine(existing, desc))
+            {
+                return false;
+            }
         }
         else if (!Extensible)
         {
@@ -588,11 +784,31 @@ public class JsObject
     /// <see cref="DefineOwnPropertyCore"/> path.</summary>
     private static bool ValidateRedefine(PropertyDescriptor existing, PropertyDescriptor desc)
     {
-        if (existing.Configurable) return true;
-        if (existing.IsAccessor != desc.IsAccessor) return false;
-        if (existing.Configurable != desc.Configurable) return false;
-        if (existing.Enumerable != desc.Enumerable) return false;
-        if (!existing.IsAccessor && existing.Writable != desc.Writable) return false;
+        if (existing.Configurable)
+        {
+            return true;
+        }
+
+        if (existing.IsAccessor != desc.IsAccessor)
+        {
+            return false;
+        }
+
+        if (existing.Configurable != desc.Configurable)
+        {
+            return false;
+        }
+
+        if (existing.Enumerable != desc.Enumerable)
+        {
+            return false;
+        }
+
+        if (!existing.IsAccessor && existing.Writable != desc.Writable)
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -602,18 +818,38 @@ public class JsObject
     {
         if (_shape is not null)
         {
-            if (!_shape.Contains(name)) return true; // absent — nothing to delete
+            if (!_shape.Contains(name))
+            {
+                return true; // absent — nothing to delete
+            }
+
             MigrateToDictionary();
         }
-        if (!_properties!.TryGetValue(name, out var desc)) return true;
-        if (!desc.Configurable) return false;
+        if (!_properties!.TryGetValue(name, out var desc))
+        {
+            return true;
+        }
+
+        if (!desc.Configurable)
+        {
+            return false;
+        }
+
         return RemoveString(name);
     }
 
     public virtual bool Delete(JsSymbol symbol)
     {
-        if (_symbolProperties is null || !_symbolProperties.TryGetValue(symbol, out var desc)) return true;
-        if (!desc.Configurable) return false;
+        if (_symbolProperties is null || !_symbolProperties.TryGetValue(symbol, out var desc))
+        {
+            return true;
+        }
+
+        if (!desc.Configurable)
+        {
+            return false;
+        }
+
         return _symbolProperties.Remove(symbol);
     }
 
@@ -637,17 +873,32 @@ public class JsObject
         foreach (var key in creation)
         {
             if (JsArray.IsArrayIndex(key, out var idx))
+            {
                 (indices ??= new List<uint>()).Add(idx);
+            }
         }
         if (indices is null)
         {
-            foreach (var key in creation) yield return key;
+            foreach (var key in creation)
+            {
+                yield return key;
+            }
+
             yield break;
         }
         indices.Sort();
-        foreach (var idx in indices) yield return JsArray.IndexToString(idx);
+        foreach (var idx in indices)
+        {
+            yield return JsArray.IndexToString(idx);
+        }
+
         foreach (var key in creation)
-            if (!JsArray.IsArrayIndex(key, out _)) yield return key;
+        {
+            if (!JsArray.IsArrayIndex(key, out _))
+            {
+                yield return key;
+            }
+        }
     }
 
     /// <summary>All own string keys in §10.1.11.1 order (integer indices
@@ -659,9 +910,18 @@ public class JsObject
     {
         get
         {
-            foreach (var key in OrderedStringKeys()) yield return JsPropertyKey.String(key);
+            foreach (var key in OrderedStringKeys())
+            {
+                yield return JsPropertyKey.String(key);
+            }
+
             if (_symbolProperties is not null)
-                foreach (var key in _symbolProperties.Keys) yield return JsPropertyKey.Symbol(key);
+            {
+                foreach (var key in _symbolProperties.Keys)
+                {
+                    yield return JsPropertyKey.Symbol(key);
+                }
+            }
         }
     }
 
@@ -670,7 +930,12 @@ public class JsObject
     public virtual IEnumerable<string> EnumerableKeys()
     {
         foreach (var key in OrderedStringKeys())
-            if (IsEnumerableOwnString(key)) yield return key;
+        {
+            if (IsEnumerableOwnString(key))
+            {
+                yield return key;
+            }
+        }
     }
 
     private bool IsEnumerableOwnString(string key)
@@ -680,9 +945,18 @@ public class JsObject
 
     public IEnumerable<JsSymbol> EnumerableSymbolKeys()
     {
-        if (_symbolProperties is null) yield break;
+        if (_symbolProperties is null)
+        {
+            yield break;
+        }
+
         foreach (var pair in _symbolProperties)
-            if (pair.Value.Enumerable) yield return pair.Key;
+        {
+            if (pair.Value.Enumerable)
+            {
+                yield return pair.Key;
+            }
+        }
     }
 
     public override string ToString() => "[object Object]";

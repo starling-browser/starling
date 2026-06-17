@@ -64,7 +64,9 @@ internal sealed class ImageSharpGpuContext : IDisposable
     public static void DisposeForDevice(nint deviceHandle)
     {
         if (deviceHandle != 0 && ByDevice.TryRemove(deviceHandle, out var context))
+        {
             context.Dispose();
+        }
     }
 
     public void ThrowIfDisposed()
@@ -107,7 +109,10 @@ internal sealed class ImageSharpGpuContext : IDisposable
     public void Dispose()
     {
         if (_context is IDisposable disposable)
+        {
             disposable.Dispose();
+        }
+
         _context = null;
     }
 }

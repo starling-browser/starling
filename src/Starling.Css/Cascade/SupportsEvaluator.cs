@@ -22,14 +22,22 @@ public static class SupportsEvaluator
     {
         var list = new List<CssComponentValue>();
         foreach (var v in values)
+        {
             if (v is not CssTokenValue { Token.Type: CssTokenType.Whitespace })
+            {
                 list.Add(v);
+            }
+        }
+
         return list;
     }
 
     private static bool ParseCondition(List<CssComponentValue> tokens, ref int pos)
     {
-        if (pos >= tokens.Count) return false;
+        if (pos >= tokens.Count)
+        {
+            return false;
+        }
         // not <in-parens>
         if (IsIdent(tokens[pos], "not"))
         {
@@ -64,7 +72,11 @@ public static class SupportsEvaluator
 
     private static bool ParseInParens(List<CssComponentValue> tokens, ref int pos)
     {
-        if (pos >= tokens.Count) return false;
+        if (pos >= tokens.Count)
+        {
+            return false;
+        }
+
         var node = tokens[pos];
         if (node is CssSimpleBlock { StartToken: CssTokenType.LeftParen } block)
         {
@@ -85,7 +97,11 @@ public static class SupportsEvaluator
     {
         // The interior may be (a) a nested condition starting with `not` / `(` / func, or (b) a declaration.
         var stripped = StripWhitespace(values);
-        if (stripped.Count == 0) return false;
+        if (stripped.Count == 0)
+        {
+            return false;
+        }
+
         if (IsIdent(stripped[0], "not") ||
             stripped[0] is CssSimpleBlock { StartToken: CssTokenType.LeftParen } ||
             stripped[0] is CssFunction)
@@ -99,17 +115,33 @@ public static class SupportsEvaluator
     private static bool EvaluateDeclaration(List<CssComponentValue> tokens)
     {
         // Expect ident ':' value+
-        if (tokens.Count < 2) return false;
-        if (tokens[0] is not CssTokenValue { Token.Type: CssTokenType.Ident } nameTok) return false;
-        if (tokens[1] is not CssTokenValue { Token.Type: CssTokenType.Colon }) return false;
+        if (tokens.Count < 2)
+        {
+            return false;
+        }
+
+        if (tokens[0] is not CssTokenValue { Token.Type: CssTokenType.Ident } nameTok)
+        {
+            return false;
+        }
+
+        if (tokens[1] is not CssTokenValue { Token.Type: CssTokenType.Colon })
+        {
+            return false;
+        }
 
         var name = nameTok.Token.Value;
         var valueTokens = new List<CssComponentValue>();
-        for (var i = 2; i < tokens.Count; i++) valueTokens.Add(tokens[i]);
+        for (var i = 2; i < tokens.Count; i++)
+        {
+            valueTokens.Add(tokens[i]);
+        }
 
         // Custom properties are always supported.
         if (name.StartsWith("--", StringComparison.Ordinal))
+        {
             return true;
+        }
 
         // Try the property registry — yields longhands for shorthands like `margin`.
         // CSS Conditional 5 §2.2: the declaration is "supported" only when the
@@ -134,12 +166,15 @@ public static class SupportsEvaluator
     private static bool IsSupportedValue(PropertyDeclaration d)
     {
         if (d.Id == PropertyId.Color)
+        {
             return d.Value is CssColor
                 || d.Value is CssKeyword
                 {
                     Name: "currentcolor" or "transparent"
                         or "inherit" or "initial" or "unset" or "revert" or "revert-layer"
                 };
+        }
+
         return PropertyRegistry.IsValidLonghandValue(d.Id, d.Value);
     }
 
@@ -165,7 +200,10 @@ public static class SupportsEvaluator
         // The nesting selector `&` is only valid inside a style rule; in a
         // standalone `selector()` test it is not a valid selector, so reject it.
         if (values.Any(v => v is CssTokenValue { Token: { Type: CssTokenType.Delim, Delimiter: '&' } }))
+        {
             return false;
+        }
+
         try
         {
             var list = SelectorParser.ParseSelectorList(values);

@@ -61,7 +61,9 @@ public sealed class TypeMapper(WebIdlModel model)
         var r = model.ResolveTypedef(type);
 
         if (r.IsUnion)
+        {
             return Nullable(new MappedType(UnionName(r), TypeKind.Union, false), r.Nullable);
+        }
 
         // Parameterised types.
         switch (r.Name)
@@ -98,31 +100,59 @@ public sealed class TypeMapper(WebIdlModel model)
         }
 
         if (Primitives.TryGetValue(r.Name, out var prim))
+        {
             return Nullable(new MappedType(prim.Cs, prim.Kind, false), r.Nullable);
+        }
 
         if (Strings.Contains(r.Name))
+        {
             return Nullable(new MappedType("string", TypeKind.String, false), r.Nullable);
+        }
 
         if (r.Name is "object")
+        {
             return new MappedType(JsValue, TypeKind.Object, false);
+        }
+
         if (r.Name is "any")
+        {
             return new MappedType(JsValue, TypeKind.Any, false);
+        }
+
         if (r.Name is "undefined" or "void")
+        {
             return new MappedType("void", TypeKind.Undefined, false);
+        }
+
         if (r.Name is "symbol")
+        {
             return new MappedType(JsValue, TypeKind.Object, false);
+        }
 
         if (Buffers.Contains(r.Name))
+        {
             return new MappedType(JsValue, TypeKind.Buffer, false);
+        }
 
         if (model.Enums.ContainsKey(r.Name))
+        {
             return Nullable(new MappedType(r.Name, TypeKind.Enum, false), r.Nullable);
+        }
+
         if (model.Dictionaries.ContainsKey(r.Name))
+        {
             return Nullable(new MappedType(r.Name, TypeKind.Dictionary, false), r.Nullable);
+        }
+
         if (model.Callbacks.ContainsKey(r.Name))
+        {
             return Nullable(new MappedType(r.Name, TypeKind.Callback, false), r.Nullable);
+        }
+
         if (model.Interfaces.ContainsKey(r.Name) || model.Mixins.ContainsKey(r.Name))
+        {
             return Nullable(new MappedType(ClrName(r.Name), TypeKind.Interface, false), r.Nullable);
+        }
 
         // An unknown name is almost always an interface from a spec we have not
         // vendored. Treat it as one so signatures still form.
@@ -144,7 +174,10 @@ public sealed class TypeMapper(WebIdlModel model)
     private string MemberLabel(IdlType member)
     {
         var r = model.ResolveTypedef(member);
-        if (r.IsUnion) return string.Join("Or", r.Union.Select(MemberLabel));
+        if (r.IsUnion)
+        {
+            return string.Join("Or", r.Union.Select(MemberLabel));
+        }
 
         return r.Name switch
         {
@@ -178,7 +211,11 @@ public sealed class TypeMapper(WebIdlModel model)
 
     private static MappedType Nullable(MappedType t, bool nullable)
     {
-        if (!nullable || t.CSharp == "void" || t.CSharp.EndsWith('?')) return t;
+        if (!nullable || t.CSharp == "void" || t.CSharp.EndsWith('?'))
+        {
+            return t;
+        }
+
         return t with { CSharp = t.CSharp + "?", Nullable = true };
     }
 }

@@ -56,7 +56,10 @@ public sealed class WptRunner
         worker.Start();
         // Real-time backstop: a little over the cooperative load timeout.
         if (!worker.Join(_timeoutMs + 5_000))
+        {
             return new WptFileResult(rel, false, -2, Array.Empty<WptSubtest>(), "timeout (thread)");
+        }
+
         return result!;
     }
 
@@ -79,7 +82,9 @@ public sealed class WptRunner
             return NoResult(rel, "timeout (load)", loggerFactory);
         }
         if (r.IsErr)
+        {
             return NoResult(rel, "load:" + r.Error.Message, loggerFactory);
+        }
 
         using var page = r.Value;
         var json = ReadResults(page);
@@ -97,11 +102,16 @@ public sealed class WptRunner
             var didWork = page.Scripting.PumpFrame(50);
             json = ReadResults(page);
             idleStreak = didWork ? 0 : idleStreak + 1;
-            if (idleStreak > 120) break; // ~6 s virtual idle (past the 4 s fallback)
+            if (idleStreak > 120)
+            {
+                break; // ~6 s virtual idle (past the 4 s fallback)
+            }
         }
 
         if (json is null)
+        {
             return NoResult(rel, "no-result", loggerFactory);
+        }
 
         return Parse(rel, json);
     }
@@ -169,7 +179,7 @@ public sealed class WptRunner
 
         public string Tail() => _msgs.Count == 0 ? "" : string.Join(" ;; ", _msgs);
 
-        private void TryAdd(string m) { lock (_msgs) { if (_msgs.Count < 8) _msgs.Add(Truncate(m)); } }
+        private void TryAdd(string m) { lock (_msgs) { if (_msgs.Count < 8) { _msgs.Add(Truncate(m)); } } }
 
         private sealed class CapturingLogger(CapturingLoggerFactory owner, string category) : ILogger
         {
@@ -178,7 +188,11 @@ public sealed class WptRunner
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
                 Func<TState, Exception?, string> formatter)
             {
-                if (logLevel < LogLevel.Warning) return;
+                if (logLevel < LogLevel.Warning)
+                {
+                    return;
+                }
+
                 var msg = exception is not null
                     ? $"[{logLevel}] {category}: {exception.GetType().Name}: {formatter(state, exception)}"
                     : $"[{logLevel}] {category}: {formatter(state, exception)}";

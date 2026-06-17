@@ -69,7 +69,11 @@ public sealed class EngineConsoleLevelTests
 
     private static void TryDelete(string path)
     {
-        try { if (File.Exists(path)) File.Delete(path); }
+        try { if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
         catch { /* best-effort */ }
     }
 
@@ -92,7 +96,11 @@ public sealed class EngineConsoleLevelTests
             public bool IsEnabled(LogLevel l) => true;
             public void Log<TState>(LogLevel l, EventId id, TState s, Exception? ex,
                 Func<TState, Exception?, string> fmt)
-            { lock (o.Entries) o.Entries.Add((cat, l, fmt(s, ex))); }
+            { lock (o.Entries)
+                {
+                    o.Entries.Add((cat, l, fmt(s, ex)));
+                }
+            }
         }
     }
 }

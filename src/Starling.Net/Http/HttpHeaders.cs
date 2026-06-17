@@ -47,7 +47,9 @@ public sealed class HttpHeaders : IEnumerable<KeyValuePair<string, string>>
         foreach (var kv in _items)
         {
             if (NameEquals(kv.Key, name))
+            {
                 (matches ??= []).Add(kv.Value);
+            }
         }
         return matches ?? (IReadOnlyList<string>)Array.Empty<string>();
     }
@@ -64,7 +66,10 @@ public sealed class HttpHeaders : IEnumerable<KeyValuePair<string, string>>
     {
         for (var i = 0; i < _items.Count; i++)
         {
-            if (NameEquals(_items[i].Key, name)) return i;
+            if (NameEquals(_items[i].Key, name))
+            {
+                return i;
+            }
         }
         return -1;
     }
@@ -75,13 +80,17 @@ public sealed class HttpHeaders : IEnumerable<KeyValuePair<string, string>>
     private static void ValidateName(string name)
     {
         if (string.IsNullOrEmpty(name))
+        {
             throw new ArgumentException("Header name must not be empty.", nameof(name));
+        }
 
         foreach (var c in name)
         {
             if (!IsTokenChar(c))
+            {
                 throw new ArgumentException(
                     $"Header name '{name}' contains an invalid character.", nameof(name));
+            }
         }
     }
 

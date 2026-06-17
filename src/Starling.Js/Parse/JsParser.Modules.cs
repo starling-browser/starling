@@ -21,7 +21,10 @@ public ref partial struct JsParser
         {
             var next = _lex.Peek().Kind;
             if (next is JsTokenKind.LParen or JsTokenKind.Dot)
+            {
                 return ParseStatement();
+            }
+
             return ParseImportDeclaration();
         }
 
@@ -48,9 +51,12 @@ public ref partial struct JsParser
             Advance(); // .
             var meta = ExpectIdentifierName("expected 'meta' after 'import.'");
             if (!meta.TextEquals("meta"))
+            {
                 throw new JsParseException(
                     $"the only valid meta-property for import is 'import.meta' (got 'import.{meta.Lexeme}')",
                     meta.Start);
+            }
+
             return new ImportMetaExpression(start, meta.End);
         }
 
@@ -60,7 +66,9 @@ public ref partial struct JsParser
             var specifier = ParseAssignment();
             Expression? options = null;
             if (Match(JsTokenKind.Comma) && !Check(JsTokenKind.RParen))
+            {
                 options = ParseAssignment(); // import attributes — parsed, ignored
+            }
             // tolerate a trailing comma: import(spec,) / import(spec, opts,)
             Match(JsTokenKind.Comma);
             var end = _current.End;
@@ -96,11 +104,17 @@ public ref partial struct JsParser
             if (Match(JsTokenKind.Comma))
             {
                 if (Check(JsTokenKind.Star))
+                {
                     specifiers.Add(ParseImportNamespaceSpecifier());
+                }
                 else if (Check(JsTokenKind.LBrace))
+                {
                     specifiers.AddRange(ParseNamedImportSpecifiers());
+                }
                 else
+                {
                     throw new JsParseException("expected namespace or named import after ','", _current.Start);
+                }
             }
         }
         else if (Check(JsTokenKind.Star))
@@ -157,8 +171,15 @@ public ref partial struct JsParser
                 throw new JsParseException("string-named imports require an 'as' binding", imported.Start);
             }
             specifiers.Add(new ImportNamedSpecifier(imported, local, imported.Start, local.End));
-            if (!Match(JsTokenKind.Comma)) break;
-            if (Check(JsTokenKind.RBrace)) break;
+            if (!Match(JsTokenKind.Comma))
+            {
+                break;
+            }
+
+            if (Check(JsTokenKind.RBrace))
+            {
+                break;
+            }
         }
         Expect(JsTokenKind.RBrace, "expected '}' to close named import list");
         return specifiers;
@@ -174,17 +195,25 @@ public ref partial struct JsParser
         // (`export default …` is a SyntaxError). The lexer keeps the keyword
         // kind but tags the escape.
         if (Check(JsTokenKind.Default) && _current.ContainsEscape)
+        {
             throw new JsParseException(
                 "the 'default' keyword may not contain an escape sequence", _current.Start);
+        }
 
         if (Match(JsTokenKind.Default))
+        {
             return ParseExportDefaultDeclaration(start);
+        }
 
         if (Check(JsTokenKind.Star))
+        {
             return ParseExportAllDeclaration(start);
+        }
 
         if (Check(JsTokenKind.LBrace))
+        {
             return ParseExportNamedDeclaration(start);
+        }
 
         Statement declaration = _current.Kind switch
         {
@@ -261,10 +290,20 @@ public ref partial struct JsParser
             var local = ParseModuleExportName("expected exported local name");
             var exported = local;
             if (MatchContextualIdentifier("as"))
+            {
                 exported = ParseModuleExportName("expected exported name after 'as'");
+            }
+
             specifiers.Add(new ExportSpecifier(local, exported, local.Start, exported.End));
-            if (!Match(JsTokenKind.Comma)) break;
-            if (Check(JsTokenKind.RBrace)) break;
+            if (!Match(JsTokenKind.Comma))
+            {
+                break;
+            }
+
+            if (Check(JsTokenKind.RBrace))
+            {
+                break;
+            }
         }
         Expect(JsTokenKind.RBrace, "expected '}' to close named export list");
 
@@ -307,7 +346,9 @@ public ref partial struct JsParser
     private void ExpectContextualIdentifier(string lexeme, string message)
     {
         if (!MatchContextualIdentifier(lexeme))
+        {
             throw new JsParseException($"{message} (got {_current.Kind} '{_current.Lexeme}')", _current.Start);
+        }
     }
 
     private bool MatchContextualIdentifier(string lexeme)
@@ -316,7 +357,11 @@ public ref partial struct JsParser
         // contain a UnicodeEscapeSequence (an escaped `from` / `as` is
         // not the keyword), so reject an escaped spelling here.
         if (_current.Kind != JsTokenKind.Identifier || _current.Lexeme != lexeme
-            || _current.ContainsEscape) return false;
+            || _current.ContainsEscape)
+        {
+            return false;
+        }
+
         Advance();
         return true;
     }

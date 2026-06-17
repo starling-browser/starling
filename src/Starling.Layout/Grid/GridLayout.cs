@@ -56,9 +56,18 @@ internal sealed class GridLayout
         // overlay doesn't occupy a grid cell.
         var items = new List<Box.Box>(container.Children.Count);
         foreach (var c in container.Children)
-            if (!BlockLayout.IsOutOfFlow(c.Style)) items.Add(c);
+        {
+            if (!BlockLayout.IsOutOfFlow(c.Style))
+            {
+                items.Add(c);
+            }
+        }
+
         if (items.Count == 0)
+        {
             return explicitHeight ?? 0;
+        }
+
         var n = items.Count;
 
         var style = container.Style;
@@ -73,8 +82,15 @@ internal sealed class GridLayout
         // grid-template-areas implies that many explicit (auto-sized) tracks.
         if (areas is not null)
         {
-            while (colDefs.Count < areas.Cols) colDefs.Add(AutoDef());
-            while (rowDefs.Count < areas.Rows) rowDefs.Add(AutoDef());
+            while (colDefs.Count < areas.Cols)
+            {
+                colDefs.Add(AutoDef());
+            }
+
+            while (rowDefs.Count < areas.Rows)
+            {
+                rowDefs.Add(AutoDef());
+            }
         }
         var explicitCols = colDefs.Count;
         var explicitRows = rowDefs.Count;
@@ -95,12 +111,22 @@ internal sealed class GridLayout
         for (var i = 0; i < n; i++)
         {
             var end = colSpec[i].Start >= 0 ? colSpec[i].Start + colSpec[i].Span : colSpec[i].Span;
-            if (end > numCols) numCols = end;
+            if (end > numCols)
+            {
+                numCols = end;
+            }
         }
 
         var placements = PlaceItems(n, colSpec, rowSpec, numCols, out var numRows);
-        if (numRows < explicitRows) numRows = explicitRows;
-        if (numRows < 1) numRows = 1;
+        if (numRows < explicitRows)
+        {
+            numRows = explicitRows;
+        }
+
+        if (numRows < 1)
+        {
+            numRows = 1;
+        }
 
         // Full per-axis track arrays, implicit tracks taking grid-auto-* sizes.
         var colTracks = BuildTrackArray(colDefs, numCols, ImplicitDef(style, PropertyId.GridAutoColumns, containerWidth));
@@ -253,18 +279,32 @@ internal sealed class GridLayout
         {
             var a = L(sn);
             var b = L(en);
-            if (b <= a) b = a + 1; // §8.3.1: end before start → span 1 from start
+            if (b <= a)
+            {
+                b = a + 1; // §8.3.1: end before start → span 1 from start
+            }
+
             return new AxisSpec { Start = a, Span = b - a };
         }
         if (sk == LineKind.Line && ek == LineKind.Span)
+        {
             return new AxisSpec { Start = L(sn), Span = Math.Max(1, en) };
+        }
+
         if (sk == LineKind.Line)
+        {
             return new AxisSpec { Start = L(sn), Span = 1 };
+        }
+
         if (sk == LineKind.Span && ek == LineKind.Line)
         {
             var b = L(en);
             var a = b - Math.Max(1, sn);
-            if (a < 0) a = 0;
+            if (a < 0)
+            {
+                a = 0;
+            }
+
             return new AxisSpec { Start = a, Span = Math.Max(1, b - a) };
         }
         if (ek == LineKind.Line)
@@ -274,9 +314,15 @@ internal sealed class GridLayout
             return new AxisSpec { Start = a, Span = 1 };
         }
         if (sk == LineKind.Span)
+        {
             return new AxisSpec { Start = -1, Span = Math.Max(1, sn) };
+        }
+
         if (ek == LineKind.Span)
+        {
             return new AxisSpec { Start = -1, Span = Math.Max(1, en) };
+        }
+
         return new AxisSpec { Start = -1, Span = 1 };
     }
 
@@ -296,8 +342,14 @@ internal sealed class GridLayout
                     var spanCount = 0;
                     foreach (var v in list.Values)
                     {
-                        if (v is CssKeyword { Name: "span" }) sawSpan = true;
-                        else if (v is CssNumber m) spanCount = (int)m.Value;
+                        if (v is CssKeyword { Name: "span" })
+                        {
+                            sawSpan = true;
+                        }
+                        else if (v is CssNumber m)
+                        {
+                            spanCount = (int)m.Value;
+                        }
                     }
                     if (sawSpan && spanCount > 0)
                     {
@@ -339,7 +391,10 @@ internal sealed class GridLayout
 
         void EnsureRows(int rowEnd)
         {
-            while (occ.Count < rowEnd) occ.Add(new bool[numCols]);
+            while (occ.Count < rowEnd)
+            {
+                occ.Add(new bool[numCols]);
+            }
         }
 
         bool Fits(int r, int rs, int c, int cs)
@@ -349,7 +404,12 @@ internal sealed class GridLayout
             {
                 var row = occ[rr];
                 for (var cc = c; cc < c + cs; cc++)
-                    if (row[cc]) return false;
+                {
+                    if (row[cc])
+                    {
+                        return false;
+                    }
+                }
             }
             return true;
         }
@@ -361,7 +421,9 @@ internal sealed class GridLayout
             {
                 var row = occ[rr];
                 for (var cc = c; cc < c + cs; cc++)
+                {
                     row[cc] = true;
+                }
             }
             placements[i] = new ItemPlacement { Col = c, ColSpan = cs, Row = r, RowSpan = rs };
             placed[i] = true;
@@ -370,7 +432,11 @@ internal sealed class GridLayout
         // Pass 1: both axes definite.
         for (var i = 0; i < n; i++)
         {
-            if (colSpec[i].Start < 0 || rowSpec[i].Start < 0) continue;
+            if (colSpec[i].Start < 0 || rowSpec[i].Start < 0)
+            {
+                continue;
+            }
+
             Mark(i, rowSpec[i].Start, Math.Max(1, rowSpec[i].Span), colSpec[i].Start, Math.Max(1, colSpec[i].Span));
         }
 
@@ -379,7 +445,11 @@ internal sealed class GridLayout
         Dictionary<int, int>? rowCursor = null;
         for (var i = 0; i < n; i++)
         {
-            if (placed[i] || rowSpec[i].Start < 0) continue;
+            if (placed[i] || rowSpec[i].Start < 0)
+            {
+                continue;
+            }
+
             rowCursor ??= new Dictionary<int, int>();
             var r = rowSpec[i].Start;
             var rs = Math.Max(1, rowSpec[i].Span);
@@ -390,7 +460,11 @@ internal sealed class GridLayout
             {
                 if (Fits(r, rs, c, cs)) { found = c; break; }
             }
-            if (found < 0) found = Math.Max(0, numCols - cs); // overflow: overlap at the end
+            if (found < 0)
+            {
+                found = Math.Max(0, numCols - cs); // overflow: overlap at the end
+            }
+
             Mark(i, r, rs, found, cs);
             rowCursor[r] = found + cs;
         }
@@ -400,7 +474,11 @@ internal sealed class GridLayout
         var cursorCol = 0;
         for (var i = 0; i < n; i++)
         {
-            if (placed[i]) continue;
+            if (placed[i])
+            {
+                continue;
+            }
+
             var rs = Math.Max(1, rowSpec[i].Span);
             var cs = Math.Min(Math.Max(1, colSpec[i].Span), numCols);
             if (colSpec[i].Start >= 0)
@@ -408,9 +486,17 @@ internal sealed class GridLayout
                 // Definite column: advance to the next row whose cells are free
                 // at that column (moving down if the cursor already passed it).
                 var c = Math.Min(colSpec[i].Start, numCols - cs);
-                if (c < 0) c = 0;
+                if (c < 0)
+                {
+                    c = 0;
+                }
+
                 if (c < cursorCol) { cursorRow++; cursorCol = 0; }
-                while (!Fits(cursorRow, rs, c, cs)) cursorRow++;
+                while (!Fits(cursorRow, rs, c, cs))
+                {
+                    cursorRow++;
+                }
+
                 Mark(i, cursorRow, rs, c, cs);
                 cursorCol = c + cs;
             }
@@ -424,7 +510,11 @@ internal sealed class GridLayout
                     {
                         if (Fits(r, rs, c, cs)) { found = c; break; }
                     }
-                    if (found < 0) continue; // next row (fresh rows are empty, so this terminates)
+                    if (found < 0)
+                    {
+                        continue; // next row (fresh rows are empty, so this terminates)
+                    }
+
                     Mark(i, r, rs, found, cs);
                     cursorRow = r;
                     cursorCol = found + cs;
@@ -465,19 +555,34 @@ internal sealed class GridLayout
                 break;
             case CssValueList list:
                 foreach (var v in list.Values)
-                    if (v is CssString rs) (rows ??= new List<string>(list.Values.Count)).Add(rs.Value);
+                {
+                    if (v is CssString rs)
+                    {
+                        (rows ??= new List<string>(list.Values.Count)).Add(rs.Value);
+                    }
+                }
+
                 break;
         }
-        if (rows is null || rows.Count == 0) return null;
+        if (rows is null || rows.Count == 0)
+        {
+            return null;
+        }
 
         var tokens = new string[rows.Count][];
         var cols = 0;
         for (var r = 0; r < rows.Count; r++)
         {
             tokens[r] = rows[r].Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-            if (tokens[r].Length > cols) cols = tokens[r].Length;
+            if (tokens[r].Length > cols)
+            {
+                cols = tokens[r].Length;
+            }
         }
-        if (cols == 0) return null;
+        if (cols == 0)
+        {
+            return null;
+        }
 
         var map = new AreaMap { Rows = rows.Count, Cols = cols };
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -487,7 +592,11 @@ internal sealed class GridLayout
             for (var c = 0; c < rowTokens.Length; c++)
             {
                 var name = rowTokens[c];
-                if (name.Length == 0 || name[0] == '.') continue; // null cell token
+                if (name.Length == 0 || name[0] == '.')
+                {
+                    continue; // null cell token
+                }
+
                 if (map.Areas.TryGetValue(name, out var rect))
                 {
                     map.Areas[name] = new AreaRect(
@@ -507,7 +616,10 @@ internal sealed class GridLayout
         foreach (var (name, rect) in map.Areas)
         {
             var area = (rect.R1 - rect.R0 + 1) * (rect.C1 - rect.C0 + 1);
-            if (counts[name] != area) return null;
+            if (counts[name] != area)
+            {
+                return null;
+            }
         }
         return map;
     }
@@ -540,7 +652,10 @@ internal sealed class GridLayout
     private List<TrackDef> ParseTrackDefs(CssValue? value, double? percentBasis, double? autoRepeatAvailable, double gap)
     {
         var defs = new List<TrackDef>();
-        if (value is null || value is CssKeyword { Name: "none" }) return defs;
+        if (value is null || value is CssKeyword { Name: "none" })
+        {
+            return defs;
+        }
 
         var repeatAt = -1;
         List<TrackDef>? repeatBody = null;
@@ -551,7 +666,11 @@ internal sealed class GridLayout
         {
             var count = AutoRepeatCount(defs, repeatBody, autoRepeatAvailable, gap);
             var expanded = new List<TrackDef>(defs.Count + count * repeatBody.Count);
-            for (var i = 0; i < repeatAt; i++) expanded.Add(defs[i]);
+            for (var i = 0; i < repeatAt; i++)
+            {
+                expanded.Add(defs[i]);
+            }
+
             for (var r = 0; r < count; r++)
             {
                 for (var b = 0; b < repeatBody.Count; b++)
@@ -561,7 +680,11 @@ internal sealed class GridLayout
                     expanded.Add(d);
                 }
             }
-            for (var i = repeatAt; i < defs.Count; i++) expanded.Add(defs[i]);
+            for (var i = repeatAt; i < defs.Count; i++)
+            {
+                expanded.Add(defs[i]);
+            }
+
             return expanded;
         }
         return defs;
@@ -573,7 +696,10 @@ internal sealed class GridLayout
         {
             case CssValueList list:
                 foreach (var v in list.Values)
+                {
                     AppendTrackDefs(v, defs, basis, ref repeatAt, ref repeatBody, ref autoFit);
+                }
+
                 break;
             case CssFunctionValue { Name: "repeat" } f when f.Arguments.Count >= 2:
                 if (f.Arguments[0] is CssNumber { Value: var cnt } && cnt >= 1)
@@ -583,10 +709,17 @@ internal sealed class GridLayout
                     List<TrackDef>? bBody = null;
                     var bFit = false;
                     for (var a = 1; a < f.Arguments.Count; a++)
+                    {
                         AppendTrackDefs(f.Arguments[a], body, basis, ref bAt, ref bBody, ref bFit);
+                    }
+
                     for (var r = 0; r < (int)cnt; r++)
+                    {
                         for (var b = 0; b < body.Count; b++)
+                        {
                             defs.Add(body[b]);
+                        }
+                    }
                 }
                 else if (f.Arguments[0] is CssKeyword { Name: "auto-fill" or "auto-fit" } k && repeatBody is null)
                 {
@@ -596,13 +729,20 @@ internal sealed class GridLayout
                     List<TrackDef>? bBody = null;
                     var bFit = false;
                     for (var a = 1; a < f.Arguments.Count; a++)
+                    {
                         AppendTrackDefs(f.Arguments[a], repeatBody, basis, ref bAt, ref bBody, ref bFit);
+                    }
+
                     repeatAt = defs.Count;
                     autoFit = k.Name == "auto-fit";
                 }
                 break;
             default:
-                if (TryParseTrackDef(value, basis, out var def)) defs.Add(def);
+                if (TryParseTrackDef(value, basis, out var def))
+                {
+                    defs.Add(def);
+                }
+
                 break;
         }
     }
@@ -617,7 +757,11 @@ internal sealed class GridLayout
                     var (minK, minV) = ParseSizePart(f.Arguments[0], basis, isMin: true);
                     var (maxK, maxV) = ParseSizePart(f.Arguments[1], basis, isMin: false);
                     // §7.2.5: if max < min, max is treated as min.
-                    if (minK == SizeKind.Px && maxK == SizeKind.Px && maxV < minV) maxV = minV;
+                    if (minK == SizeKind.Px && maxK == SizeKind.Px && maxV < minV)
+                    {
+                        maxV = minV;
+                    }
+
                     def = new TrackDef { MinKind = minK, Min = minV, MaxKind = maxK, Max = maxV };
                     return true;
                 }
@@ -699,23 +843,37 @@ internal sealed class GridLayout
     /// </summary>
     private static int AutoRepeatCount(List<TrackDef> others, List<TrackDef> body, double? available, double gap)
     {
-        if (available is not { } avail) return 1;
+        if (available is not { } avail)
+        {
+            return 1;
+        }
+
         double bodySum = 0;
         for (var i = 0; i < body.Count; i++)
         {
             var d = DefiniteSize(body[i]);
-            if (d < 0) return 1; // auto-repeat tracks must have definite sizes
+            if (d < 0)
+            {
+                return 1; // auto-repeat tracks must have definite sizes
+            }
+
             bodySum += d;
         }
         var k = body.Count;
         var denom = bodySum + gap * k;
-        if (denom <= 0) return 1;
+        if (denom <= 0)
+        {
+            return 1;
+        }
 
         double otherSum = 0;
         for (var i = 0; i < others.Count; i++)
         {
             var d = DefiniteSize(others[i]);
-            if (d > 0) otherSum += d;
+            if (d > 0)
+            {
+                otherSum += d;
+            }
         }
         var numer = avail - otherSum - gap * (others.Count - 1);
         var count = (int)Math.Floor(numer / denom + 1e-9);
@@ -724,8 +882,16 @@ internal sealed class GridLayout
 
     private static double DefiniteSize(TrackDef def)
     {
-        if (def.MaxKind is SizeKind.Px or SizeKind.FitContent) return def.Max;
-        if (def.MinKind == SizeKind.Px) return def.Min;
+        if (def.MaxKind is SizeKind.Px or SizeKind.FitContent)
+        {
+            return def.Max;
+        }
+
+        if (def.MinKind == SizeKind.Px)
+        {
+            return def.Min;
+        }
+
         return -1;
     }
 
@@ -733,8 +899,16 @@ internal sealed class GridLayout
     {
         var tracks = new TrackDef[count];
         var e = Math.Min(explicitDefs.Count, count);
-        for (var i = 0; i < e; i++) tracks[i] = explicitDefs[i];
-        for (var i = e; i < count; i++) tracks[i] = implicitDef;
+        for (var i = 0; i < e; i++)
+        {
+            tracks[i] = explicitDefs[i];
+        }
+
+        for (var i = e; i < count; i++)
+        {
+            tracks[i] = implicitDef;
+        }
+
         return tracks;
     }
 
@@ -742,7 +916,10 @@ internal sealed class GridLayout
     {
         var value = style?.Get(id);
         if (value is CssValueList list && list.Values.Count > 0)
+        {
             value = list.Values[0]; // grid-auto-* lists cycle; use the first size
+        }
+
         return value is not null && TryParseTrackDef(value, basis, out var def) ? def : AutoDef();
     }
 
@@ -750,19 +927,37 @@ internal sealed class GridLayout
     {
         var any = false;
         for (var t = 0; t < tracks.Length; t++)
+        {
             if (tracks[t].AutoFit) { any = true; break; }
-        if (!any) return;
+        }
+
+        if (!any)
+        {
+            return;
+        }
 
         var used = new bool[tracks.Length];
         for (var i = 0; i < placements.Length; i++)
         {
             var start = isColumn ? placements[i].Col : placements[i].Row;
             var end = start + (isColumn ? placements[i].ColSpan : placements[i].RowSpan);
-            if (end > tracks.Length) end = tracks.Length;
-            for (var t = start; t < end; t++) used[t] = true;
+            if (end > tracks.Length)
+            {
+                end = tracks.Length;
+            }
+
+            for (var t = start; t < end; t++)
+            {
+                used[t] = true;
+            }
         }
         for (var t = 0; t < tracks.Length; t++)
-            if (tracks[t].AutoFit && !used[t]) tracks[t].Collapsed = true;
+        {
+            if (tracks[t].AutoFit && !used[t])
+            {
+                tracks[t].Collapsed = true;
+            }
+        }
     }
 
     // ====================================================================
@@ -788,7 +983,11 @@ internal sealed class GridLayout
         for (var i = 0; i < n; i++)
         {
             ref readonly var d = ref defs[i];
-            if (d.Collapsed) continue;
+            if (d.Collapsed)
+            {
+                continue;
+            }
+
             active++;
             double baseSize, limit;
             if (d.MaxKind == SizeKind.Fr)
@@ -809,7 +1008,10 @@ internal sealed class GridLayout
             {
                 baseSize = d.MinKind == SizeKind.Px ? d.Min : contrib[i];
                 limit = d.MaxKind == SizeKind.Px ? d.Max : contrib[i];
-                if (limit < baseSize) limit = baseSize;
+                if (limit < baseSize)
+                {
+                    limit = baseSize;
+                }
             }
             sizes[i] = baseSize;
             limits[i] = limit;
@@ -821,7 +1023,11 @@ internal sealed class GridLayout
             // limit; fr and intrinsic tracks take their content size.
             for (var i = 0; i < n; i++)
             {
-                if (defs[i].Collapsed) continue;
+                if (defs[i].Collapsed)
+                {
+                    continue;
+                }
+
                 sizes[i] = double.IsPositiveInfinity(limits[i])
                     ? Math.Max(sizes[i], contrib[i])
                     : limits[i];
@@ -831,7 +1037,12 @@ internal sealed class GridLayout
 
         var free = avail - gap * Math.Max(0, active - 1);
         for (var i = 0; i < n; i++)
-            if (!defs[i].Collapsed) free -= sizes[i];
+        {
+            if (!defs[i].Collapsed)
+            {
+                free -= sizes[i];
+            }
+        }
 
         // §11.5 maximize: grow non-fr tracks toward their growth limits,
         // distributing free space equally (re-distributing as tracks freeze).
@@ -839,20 +1050,36 @@ internal sealed class GridLayout
         {
             var growable = 0;
             for (var i = 0; i < n; i++)
+            {
                 if (!defs[i].Collapsed && defs[i].MaxKind != SizeKind.Fr && sizes[i] < limits[i] - 1e-9)
+                {
                     growable++;
-            if (growable == 0) break;
+                }
+            }
+
+            if (growable == 0)
+            {
+                break;
+            }
+
             var share = free / growable;
             double distributed = 0;
             for (var i = 0; i < n; i++)
             {
-                if (defs[i].Collapsed || defs[i].MaxKind == SizeKind.Fr || sizes[i] >= limits[i] - 1e-9) continue;
+                if (defs[i].Collapsed || defs[i].MaxKind == SizeKind.Fr || sizes[i] >= limits[i] - 1e-9)
+                {
+                    continue;
+                }
+
                 var grow = Math.Min(share, limits[i] - sizes[i]);
                 sizes[i] += grow;
                 distributed += grow;
             }
             free -= distributed;
-            if (distributed <= 1e-9) break;
+            if (distributed <= 1e-9)
+            {
+                break;
+            }
         }
 
         // §11.7 expand flexible tracks: split the leftover across fr tracks in
@@ -861,8 +1088,12 @@ internal sealed class GridLayout
         {
             var frSpace = free;
             for (var i = 0; i < n; i++)
+            {
                 if (!defs[i].Collapsed && defs[i].MaxKind == SizeKind.Fr)
+                {
                     frSpace += sizes[i];
+                }
+            }
 
             var frozen = new bool[n];
             while (true)
@@ -870,23 +1101,54 @@ internal sealed class GridLayout
                 double factors = 0, reserved = 0;
                 for (var i = 0; i < n; i++)
                 {
-                    if (defs[i].Collapsed || defs[i].MaxKind != SizeKind.Fr) continue;
-                    if (frozen[i]) reserved += sizes[i];
-                    else factors += defs[i].Max;
+                    if (defs[i].Collapsed || defs[i].MaxKind != SizeKind.Fr)
+                    {
+                        continue;
+                    }
+
+                    if (frozen[i])
+                    {
+                        reserved += sizes[i];
+                    }
+                    else
+                    {
+                        factors += defs[i].Max;
+                    }
                 }
-                if (factors <= 0) break;
+                if (factors <= 0)
+                {
+                    break;
+                }
+
                 var unit = (frSpace - reserved) / factors;
-                if (unit < 0) unit = 0;
+                if (unit < 0)
+                {
+                    unit = 0;
+                }
+
                 var froze = false;
                 for (var i = 0; i < n; i++)
                 {
-                    if (defs[i].Collapsed || defs[i].MaxKind != SizeKind.Fr || frozen[i]) continue;
+                    if (defs[i].Collapsed || defs[i].MaxKind != SizeKind.Fr || frozen[i])
+                    {
+                        continue;
+                    }
+
                     if (sizes[i] > defs[i].Max * unit + 1e-9) { frozen[i] = true; froze = true; }
                 }
-                if (froze) continue;
+                if (froze)
+                {
+                    continue;
+                }
+
                 for (var i = 0; i < n; i++)
+                {
                     if (!defs[i].Collapsed && defs[i].MaxKind == SizeKind.Fr && !frozen[i])
+                    {
                         sizes[i] = defs[i].Max * unit;
+                    }
+                }
+
                 break;
             }
             free = 0;
@@ -897,12 +1159,23 @@ internal sealed class GridLayout
         {
             var autoCount = 0;
             for (var i = 0; i < n; i++)
-                if (!defs[i].Collapsed && defs[i].MaxKind == SizeKind.Auto) autoCount++;
+            {
+                if (!defs[i].Collapsed && defs[i].MaxKind == SizeKind.Auto)
+                {
+                    autoCount++;
+                }
+            }
+
             if (autoCount > 0)
             {
                 var per = free / autoCount;
                 for (var i = 0; i < n; i++)
-                    if (!defs[i].Collapsed && defs[i].MaxKind == SizeKind.Auto) sizes[i] += per;
+                {
+                    if (!defs[i].Collapsed && defs[i].MaxKind == SizeKind.Auto)
+                    {
+                        sizes[i] += per;
+                    }
+                }
             }
         }
 
@@ -917,12 +1190,23 @@ internal sealed class GridLayout
     private static void DistributeContribution(double[] contrib, TrackDef[] tracks, int start, int span, double outer, double gap)
     {
         var end = start + span;
-        if (end > tracks.Length) end = tracks.Length;
-        if (start >= end) return;
+        if (end > tracks.Length)
+        {
+            end = tracks.Length;
+        }
+
+        if (start >= end)
+        {
+            return;
+        }
 
         if (end - start == 1)
         {
-            if (outer > contrib[start]) contrib[start] = outer;
+            if (outer > contrib[start])
+            {
+                contrib[start] = outer;
+            }
+
             return;
         }
 
@@ -931,17 +1215,38 @@ internal sealed class GridLayout
         for (var t = start; t < end; t++)
         {
             ref readonly var d = ref tracks[t];
-            if (d.Collapsed) continue;
-            if (d.MinKind == SizeKind.Px && d.MaxKind == SizeKind.Px) remaining -= d.Min;
-            else intrinsic++;
+            if (d.Collapsed)
+            {
+                continue;
+            }
+
+            if (d.MinKind == SizeKind.Px && d.MaxKind == SizeKind.Px)
+            {
+                remaining -= d.Min;
+            }
+            else
+            {
+                intrinsic++;
+            }
         }
-        if (intrinsic == 0 || remaining <= 0) return;
+        if (intrinsic == 0 || remaining <= 0)
+        {
+            return;
+        }
+
         var share = remaining / intrinsic;
         for (var t = start; t < end; t++)
         {
             ref readonly var d = ref tracks[t];
-            if (d.Collapsed || (d.MinKind == SizeKind.Px && d.MaxKind == SizeKind.Px)) continue;
-            if (share > contrib[t]) contrib[t] = share;
+            if (d.Collapsed || (d.MinKind == SizeKind.Px && d.MaxKind == SizeKind.Px))
+            {
+                continue;
+            }
+
+            if (share > contrib[t])
+            {
+                contrib[t] = share;
+            }
         }
     }
 
@@ -954,7 +1259,11 @@ internal sealed class GridLayout
         for (var i = 0; i < sizes.Length; i++)
         {
             pos[i] = cursor;
-            if (defs[i].Collapsed) continue;
+            if (defs[i].Collapsed)
+            {
+                continue;
+            }
+
             anyVisible = true;
             cursor += sizes[i] + gap;
         }
@@ -966,8 +1275,16 @@ internal sealed class GridLayout
     private static double SpanExtent(double[] pos, double[] sizes, int start, int span)
     {
         var last = start + span - 1;
-        if (last >= pos.Length) last = pos.Length - 1;
-        if (start > last) start = last;
+        if (last >= pos.Length)
+        {
+            last = pos.Length - 1;
+        }
+
+        if (start > last)
+        {
+            start = last;
+        }
+
         return pos[last] + sizes[last] - pos[start];
     }
 
@@ -986,7 +1303,11 @@ internal sealed class GridLayout
     private static Align ResolveInlineAlign(ComputedStyle? container, ComputedStyle? item)
     {
         var self = Keyword(item, PropertyId.JustifySelf);
-        if (self is null or "auto") self = Keyword(container, PropertyId.JustifyItems);
+        if (self is null or "auto")
+        {
+            self = Keyword(container, PropertyId.JustifyItems);
+        }
+
         return MapAlign(self);
     }
 
@@ -998,7 +1319,11 @@ internal sealed class GridLayout
     private static Align ResolveBlockAlign(ComputedStyle? container, ComputedStyle? item)
     {
         var self = Keyword(item, PropertyId.AlignSelf);
-        if (self is null or "auto") self = Keyword(container, PropertyId.AlignItems);
+        if (self is null or "auto")
+        {
+            self = Keyword(container, PropertyId.AlignItems);
+        }
+
         return MapAlign(self);
     }
 
@@ -1059,7 +1384,10 @@ internal sealed class GridLayout
         {
             double max = 0;
             foreach (var child in box.Children)
+            {
                 max = Math.Max(max, child.Frame.X + child.Frame.Width);
+            }
+
             return max;
         }
 
@@ -1072,7 +1400,11 @@ internal sealed class GridLayout
             switch (node)
             {
                 case TextBox tb:
-                    foreach (var frag in tb.Fragments) edge = Math.Max(edge, frag.X + frag.Width);
+                    foreach (var frag in tb.Fragments)
+                    {
+                        edge = Math.Max(edge, frag.X + frag.Width);
+                    }
+
                     return;
                 case ImageBox img:
                     edge = Math.Max(edge, img.Frame.X + img.Frame.Width);
@@ -1082,13 +1414,20 @@ internal sealed class GridLayout
                     edge = Math.Max(edge, ib.Frame.X + ib.Frame.Width);
                     return;
             }
-            foreach (var child in node.Children) Walk(child);
+            foreach (var child in node.Children)
+            {
+                Walk(child);
+            }
         }
     }
 
     private double ResolveGap(ComputedStyle? style, PropertyId id, double basis)
     {
-        if (style is null) return 0;
+        if (style is null)
+        {
+            return 0;
+        }
+
         return style.Get(id) switch
         {
             CssKeyword { Name: "normal" } => 0,

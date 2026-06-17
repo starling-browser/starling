@@ -34,7 +34,11 @@ public sealed class JsSet : JsObject
     public void Add(JsValue value)
     {
         var k = NormalizeKey(value);
-        if (_lookup.ContainsKey(k)) return;
+        if (_lookup.ContainsKey(k))
+        {
+            return;
+        }
+
         _lookup[k] = _entries.Count;
         _entries.Add(new Slot(k, alive: true));
     }
@@ -42,7 +46,11 @@ public sealed class JsSet : JsObject
     public bool Delete(JsValue value)
     {
         var k = NormalizeKey(value);
-        if (!_lookup.TryGetValue(k, out var i)) return false;
+        if (!_lookup.TryGetValue(k, out var i))
+        {
+            return false;
+        }
+
         _entries[i] = new Slot(JsValue.Undefined, alive: false);
         _lookup.Remove(k);
         _holes++;
@@ -62,28 +70,45 @@ public sealed class JsSet : JsObject
         for (var i = 0; i < _entries.Count; i++)
         {
             var slot = _entries[i];
-            if (slot.Alive) yield return slot.Value;
+            if (slot.Alive)
+            {
+                yield return slot.Value;
+            }
         }
     }
 
     private static JsValue NormalizeKey(JsValue key)
     {
         if (key.Kind == JsValueKind.Number && key.AsNumber == 0.0)
+        {
             return JsValue.Zero;
+        }
+
         return key;
     }
 
     private void MaybeCompact()
     {
-        if (_holes < CompactMinHoles) return;
-        if ((double)_holes / Math.Max(1, _entries.Count) < CompactRatio) return;
+        if (_holes < CompactMinHoles)
+        {
+            return;
+        }
+
+        if ((double)_holes / Math.Max(1, _entries.Count) < CompactRatio)
+        {
+            return;
+        }
 
         var live = new List<Slot>(_entries.Count - _holes);
         _lookup.Clear();
         for (var i = 0; i < _entries.Count; i++)
         {
             var slot = _entries[i];
-            if (!slot.Alive) continue;
+            if (!slot.Alive)
+            {
+                continue;
+            }
+
             _lookup[slot.Value] = live.Count;
             live.Add(slot);
         }

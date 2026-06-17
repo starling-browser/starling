@@ -84,7 +84,10 @@ public sealed class JsModuleNamespace : JsObject
     // ==========================================================
     public override PropertyDescriptor? GetOwnPropertyDescriptor(string name)
     {
-        if (!_exports.TryGetValue(name, out var cell)) return null;
+        if (!_exports.TryGetValue(name, out var cell))
+        {
+            return null;
+        }
         // Live data descriptor: value reflects the binding's current value.
         return PropertyDescriptor.Data(cell.Value, writable: true, enumerable: true, configurable: false);
     }
@@ -94,8 +97,11 @@ public sealed class JsModuleNamespace : JsObject
         // §10.4.6.5 step 1: a symbol key falls back to OrdinaryGetOwnProperty,
         // which for a namespace only has @@toStringTag.
         if (ReferenceEquals(symbol, SymbolCtor.ToStringTag))
+        {
             return PropertyDescriptor.Data(JsValue.String("Module"),
                 writable: false, enumerable: false, configurable: false);
+        }
+
         return null;
     }
 
@@ -115,12 +121,36 @@ public sealed class JsModuleNamespace : JsObject
     internal override bool DefineOwnPropertyPartial(JsPropertyKey key, PropertyDescriptor desc, DescriptorFields present)
     {
         var current = GetOwnPropertyDescriptor(key);
-        if (current is not { } cur) return false; // no such export → reject add
-        if (desc.IsAccessor) return false; // current is always a data descriptor
-        if (present.HasConfigurable && desc.Configurable) return false; // current is non-configurable
-        if (present.HasEnumerable && desc.Enumerable != cur.Enumerable) return false;
-        if (present.HasWritable && desc.Writable != cur.Writable) return false;
-        if (present.HasValue && !AbstractOperations.SameValue(desc.Value, cur.Value)) return false;
+        if (current is not { } cur)
+        {
+            return false; // no such export → reject add
+        }
+
+        if (desc.IsAccessor)
+        {
+            return false; // current is always a data descriptor
+        }
+
+        if (present.HasConfigurable && desc.Configurable)
+        {
+            return false; // current is non-configurable
+        }
+
+        if (present.HasEnumerable && desc.Enumerable != cur.Enumerable)
+        {
+            return false;
+        }
+
+        if (present.HasWritable && desc.Writable != cur.Writable)
+        {
+            return false;
+        }
+
+        if (present.HasValue && !AbstractOperations.SameValue(desc.Value, cur.Value))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -129,12 +159,31 @@ public sealed class JsModuleNamespace : JsObject
     /// modification is rejected (returns false).</summary>
     private static bool DefineMatches(PropertyDescriptor? current, PropertyDescriptor desc)
     {
-        if (current is not { } cur) return false; // adding a property → reject
-        if (desc.IsAccessor) return false; // current is always a data descriptor
+        if (current is not { } cur)
+        {
+            return false; // adding a property → reject
+        }
+
+        if (desc.IsAccessor)
+        {
+            return false; // current is always a data descriptor
+        }
         // Step 8: configurable/enumerable/writable/value must all match.
-        if (desc.Configurable) return false;        // current is non-configurable
-        if (desc.Enumerable != cur.Enumerable) return false;
-        if (desc.Writable != cur.Writable) return false;
+        if (desc.Configurable)
+        {
+            return false;        // current is non-configurable
+        }
+
+        if (desc.Enumerable != cur.Enumerable)
+        {
+            return false;
+        }
+
+        if (desc.Writable != cur.Writable)
+        {
+            return false;
+        }
+
         return AbstractOperations.SameValue(desc.Value, cur.Value);
     }
 
@@ -185,7 +234,11 @@ public sealed class JsModuleNamespace : JsObject
     {
         get
         {
-            foreach (var name in _sortedNames) yield return JsPropertyKey.String(name);
+            foreach (var name in _sortedNames)
+            {
+                yield return JsPropertyKey.String(name);
+            }
+
             yield return JsPropertyKey.Symbol(SymbolCtor.ToStringTag);
         }
     }

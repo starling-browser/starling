@@ -58,12 +58,20 @@ public static class Ssim
         ReadOnlySpan<byte> a, ReadOnlySpan<byte> b, int width, int height)
     {
         if (width <= 0 || height <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(width), "Width/height must be positive.");
+        }
+
         var expected = checked(width * height * 4);
         if (a.Length != expected)
+        {
             throw new ArgumentException($"Buffer A length {a.Length} != expected {expected}.", nameof(a));
+        }
+
         if (b.Length != expected)
+        {
             throw new ArgumentException($"Buffer B length {b.Length} != expected {expected}.", nameof(b));
+        }
 
         var window = Math.Min(WindowSize, Math.Min(width, height));
 
@@ -98,7 +106,10 @@ public static class Ssim
         // Per-channel SSIM, averaged. (R, G, B; alpha skipped.)
         double sum = 0.0;
         for (var c = 0; c < 3; c++)
+        {
             sum += ChannelSsim(a, b, stridePixels, x0, y0, w, h, c);
+        }
+
         return sum / 3.0;
     }
 
@@ -107,7 +118,10 @@ public static class Ssim
         int x0, int y0, int w, int h, int channel)
     {
         var n = w * h;
-        if (n <= 0) return 1.0;
+        if (n <= 0)
+        {
+            return 1.0;
+        }
 
         // Pass 1: means.
         double sumA = 0, sumB = 0;
@@ -146,7 +160,11 @@ public static class Ssim
 
         var numerator = (2 * meanA * meanB + C1) * (2 * covAB + C2);
         var denominator = (meanA * meanA + meanB * meanB + C1) * (varA + varB + C2);
-        if (denominator == 0.0) return 1.0;
+        if (denominator == 0.0)
+        {
+            return 1.0;
+        }
+
         return numerator / denominator;
     }
 }

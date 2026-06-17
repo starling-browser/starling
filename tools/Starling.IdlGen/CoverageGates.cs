@@ -20,8 +20,13 @@ public sealed class CoverageGates
         using var doc = JsonDocument.Parse(File.ReadAllText(path));
         var gates = new Dictionary<string, int>(StringComparer.Ordinal);
         if (doc.RootElement.TryGetProperty("gates", out var g))
+        {
             foreach (var p in g.EnumerateObject())
+            {
                 gates[p.Name] = p.Value.GetInt32();
+            }
+        }
+
         return new CoverageGates(gates);
     }
 }

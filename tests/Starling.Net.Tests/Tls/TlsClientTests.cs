@@ -352,7 +352,9 @@ public class TlsClientTests
     public async Task Live_tls13_handshake_when_enabled(string host)
     {
         if (Environment.GetEnvironmentVariable("STARLING_LIVE_TLS_TESTS") != "1")
+        {
             return;
+        }
 
         var ct = CancellationToken.None;
         var addresses = await System.Net.Dns.GetHostAddressesAsync(host, ct);

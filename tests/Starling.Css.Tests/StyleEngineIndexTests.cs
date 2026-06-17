@@ -22,7 +22,10 @@ public sealed class StyleEngineIndexTests
     {
         var css = new StringBuilder();
         for (var i = 0; i < 1000; i++)
+        {
             css.Append(".missing").Append(i).Append(" { color: red; }\n");
+        }
+
         css.Append("article { color: blue; }");
 
         var doc = new Document();
@@ -183,7 +186,11 @@ public sealed class StyleEngineIndexTests
         public MetricRecorder()
         {
             _l.InstrumentPublished = (inst, lst) =>
-            { if (inst.Meter.Name == StarlingTelemetry.SourceName) lst.EnableMeasurementEvents(inst); };
+            { if (inst.Meter.Name == StarlingTelemetry.SourceName)
+                {
+                    lst.EnableMeasurementEvents(inst);
+                }
+            };
             _l.SetMeasurementEventCallback<double>((inst, m, t, s) => Add(inst.Name, m));
             _l.SetMeasurementEventCallback<long>((inst, m, t, s) => Add(inst.Name, m));
             _l.Start();

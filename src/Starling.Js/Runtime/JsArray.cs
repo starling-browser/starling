@@ -28,7 +28,10 @@ public sealed class JsArray : JsObject
     public JsArray(JsRealm realm, int capacity) : base(realm.ArrayPrototype)
     {
         DisableInlineCache();
-        if (capacity > 0) _items.Capacity = capacity;
+        if (capacity > 0)
+        {
+            _items.Capacity = capacity;
+        }
     }
 
     public JsArray(JsRealm realm, IReadOnlyList<JsValue> items) : base(realm.ArrayPrototype)
@@ -56,14 +59,21 @@ public sealed class JsArray : JsObject
     /// revoked proxies throw.</summary>
     public static bool IsArray(JsValue v, JsRealm? realm = null)
     {
-        if (!v.IsObject) return false;
+        if (!v.IsObject)
+        {
+            return false;
+        }
+
         var obj = v.AsObject;
         while (obj is JsProxy proxy)
         {
             if (proxy.Target is null)
+            {
                 throw new JsThrow(realm is not null
                     ? realm.NewTypeError("Cannot perform IsArray on a revoked proxy")
                     : JsValue.String("Cannot perform IsArray on a revoked proxy"));
+            }
+
             obj = proxy.Target;
         }
         return obj is JsArray;
@@ -74,15 +84,28 @@ public sealed class JsArray : JsObject
     public static bool IsArrayIndex(string key, out uint index)
     {
         index = 0;
-        if (key.Length == 0) return false;
+        if (key.Length == 0)
+        {
+            return false;
+        }
         // No leading zeros (except literal "0").
-        if (key[0] == '0' && key.Length > 1) return false;
+        if (key[0] == '0' && key.Length > 1)
+        {
+            return false;
+        }
         // Digits-only check.
         for (var i = 0; i < key.Length; i++)
         {
-            if (key[i] < '0' || key[i] > '9') return false;
+            if (key[i] < '0' || key[i] > '9')
+            {
+                return false;
+            }
         }
-        if (!uint.TryParse(key, NumberStyles.None, CultureInfo.InvariantCulture, out index)) return false;
+        if (!uint.TryParse(key, NumberStyles.None, CultureInfo.InvariantCulture, out index))
+        {
+            return false;
+        }
+
         return index < uint.MaxValue;
     }
 
@@ -92,8 +115,16 @@ public sealed class JsArray : JsObject
 
     public override JsValue Get(string name)
     {
-        if (name == "length") return JsValue.Number(_items.Count);
-        if (IsArrayIndex(name, out var idx) && idx < _items.Count) return _items[(int)idx];
+        if (name == "length")
+        {
+            return JsValue.Number(_items.Count);
+        }
+
+        if (IsArrayIndex(name, out var idx) && idx < _items.Count)
+        {
+            return _items[(int)idx];
+        }
+
         return base.Get(name);
     }
 
@@ -114,17 +145,31 @@ public sealed class JsArray : JsObject
 
     public override bool HasOwn(string name)
     {
-        if (name == "length") return true;
-        if (IsArrayIndex(name, out var idx) && idx < _items.Count) return true;
+        if (name == "length")
+        {
+            return true;
+        }
+
+        if (IsArrayIndex(name, out var idx) && idx < _items.Count)
+        {
+            return true;
+        }
+
         return base.HasOwn(name);
     }
 
     public override PropertyDescriptor? GetOwnPropertyDescriptor(string name)
     {
         if (name == "length")
+        {
             return PropertyDescriptor.Data(JsValue.Number(_items.Count), writable: true, enumerable: false, configurable: false);
+        }
+
         if (IsArrayIndex(name, out var idx) && idx < _items.Count)
+        {
             return PropertyDescriptor.Data(_items[(int)idx], writable: true, enumerable: true, configurable: true);
+        }
+
         return base.GetOwnPropertyDescriptor(name);
     }
 
@@ -132,7 +177,11 @@ public sealed class JsArray : JsObject
     {
         if (name == "length")
         {
-            if (desc.IsAccessor) return false;
+            if (desc.IsAccessor)
+            {
+                return false;
+            }
+
             SetLength(desc.Value);
             return true;
         }
@@ -211,7 +260,11 @@ public sealed class JsArray : JsObject
 
     public override bool Delete(string name)
     {
-        if (name == "length") return false; // non-configurable
+        if (name == "length")
+        {
+            return false; // non-configurable
+        }
+
         if (IsArrayIndex(name, out var idx) && idx < _items.Count)
         {
             // Make the slot a hole (spec: delete leaves the slot absent but
@@ -228,8 +281,14 @@ public sealed class JsArray : JsObject
         get
         {
             for (var i = 0; i < _items.Count; i++)
+            {
                 yield return IndexToString((uint)i);
-            foreach (var key in base.Keys) yield return key;
+            }
+
+            foreach (var key in base.Keys)
+            {
+                yield return key;
+            }
         }
     }
 
@@ -238,27 +297,47 @@ public sealed class JsArray : JsObject
         get
         {
             for (var i = 0; i < _items.Count; i++)
+            {
                 yield return JsPropertyKey.String(IndexToString((uint)i));
-            foreach (var key in base.OwnPropertyKeys) yield return key;
+            }
+
+            foreach (var key in base.OwnPropertyKeys)
+            {
+                yield return key;
+            }
         }
     }
 
     public override IEnumerable<string> EnumerableKeys()
     {
         for (var i = 0; i < _items.Count; i++)
+        {
             yield return IndexToString((uint)i);
-        foreach (var key in base.EnumerableKeys()) yield return key;
+        }
+
+        foreach (var key in base.EnumerableKeys())
+        {
+            yield return key;
+        }
     }
 
     // ---------------- Internals ----------------
 
     private void SetIndex(int index, JsValue value)
     {
-        if (index < 0) return;
+        if (index < 0)
+        {
+            return;
+        }
+
         if (index >= _items.Count)
         {
             // Grow with explicit Undefined holes (we don't track sparseness).
-            while (_items.Count < index) _items.Add(JsValue.Undefined);
+            while (_items.Count < index)
+            {
+                _items.Add(JsValue.Undefined);
+            }
+
             _items.Add(value);
         }
         else
@@ -272,7 +351,10 @@ public sealed class JsArray : JsObject
         var n = JsValue.ToNumber(value);
         var nu = (uint)n;
         if (n != nu || double.IsNaN(n) || double.IsInfinity(n))
+        {
             throw new JsThrow(JsValue.String("Invalid array length"));
+        }
+
         var newLen = (int)nu;
         if (newLen < _items.Count)
         {
@@ -283,13 +365,24 @@ public sealed class JsArray : JsObject
             // there via mixed-mode DefineOwnProperty fallbacks).
             var stragglers = new List<string>();
             foreach (var k in base.Keys)
+            {
                 if (IsArrayIndex(k, out var i) && i >= newLen)
+                {
                     stragglers.Add(k);
-            foreach (var k in stragglers) base.Delete(k);
+                }
+            }
+
+            foreach (var k in stragglers)
+            {
+                base.Delete(k);
+            }
         }
         else
         {
-            while (_items.Count < newLen) _items.Add(JsValue.Undefined);
+            while (_items.Count < newLen)
+            {
+                _items.Add(JsValue.Undefined);
+            }
         }
     }
 

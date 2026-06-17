@@ -63,7 +63,10 @@ public static class PerformanceBinding
         ArgumentNullException.ThrowIfNull(wallClockMs);
 
         var realm = runtime.Realm;
-        if (realm.GlobalObject.HasOwn("performance")) return;
+        if (realm.GlobalObject.HasOwn("performance"))
+        {
+            return;
+        }
 
         var origin = wallClockMs();
         var stopwatch = Stopwatch.StartNew();

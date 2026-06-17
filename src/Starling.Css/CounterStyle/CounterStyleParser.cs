@@ -25,7 +25,9 @@ public static class CounterStyleParser
             if (rule is AtRule atRule &&
                 string.Equals(atRule.Name, "counter-style", StringComparison.OrdinalIgnoreCase) &&
                 TryParse(atRule, out var counterStyle))
+            {
                 yield return counterStyle!;
+            }
         }
     }
 
@@ -34,11 +36,15 @@ public static class CounterStyleParser
         ArgumentNullException.ThrowIfNull(rule);
         counterStyle = null;
         if (!string.Equals(rule.Name, "counter-style", StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
 
         var name = ExtractName(rule.Prelude);
         if (string.IsNullOrEmpty(name))
+        {
             return false;
+        }
 
         var system = CounterSystem.Symbolic;
         var fixedFirst = 1;
@@ -120,7 +126,9 @@ public static class CounterStyleParser
         foreach (var component in prelude)
         {
             if (component is CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var ident } })
+            {
                 return ident.ToLowerInvariant();
+            }
         }
         return string.Empty;
     }
@@ -136,16 +144,27 @@ public static class CounterStyleParser
         var sawExtendsKeyword = false;
         foreach (var v in value)
         {
-            if (v is not CssTokenValue token) continue;
+            if (v is not CssTokenValue token)
+            {
+                continue;
+            }
+
             switch (token.Token.Type)
             {
                 case CssTokenType.Ident:
                     if (sawExtendsKeyword)
+                    {
                         extends ??= token.Token.Value.ToLowerInvariant();
+                    }
                     else if (token.Token.Value.Equals("extends", StringComparison.OrdinalIgnoreCase))
+                    {
                         sawExtendsKeyword = true;
+                    }
                     else
+                    {
                         keyword ??= token.Token.Value.ToLowerInvariant();
+                    }
+
                     break;
                 case CssTokenType.Number when token.Token.IsInteger:
                     firstValue ??= (int)token.Token.Number;
@@ -154,7 +173,9 @@ public static class CounterStyleParser
         }
 
         if (sawExtendsKeyword)
+        {
             return (CounterSystem.Extends, fixedFirst, extends);
+        }
 
         return keyword switch
         {
@@ -175,9 +196,15 @@ public static class CounterStyleParser
         var symbols = new List<string>();
         foreach (var v in value)
         {
-            if (v is not CssTokenValue token) continue;
+            if (v is not CssTokenValue token)
+            {
+                continue;
+            }
+
             if (token.Token.Type is CssTokenType.String or CssTokenType.Ident)
+            {
                 symbols.Add(token.Token.Value);
+            }
         }
         return symbols;
     }
@@ -192,13 +219,20 @@ public static class CounterStyleParser
         void Flush()
         {
             if (weight is { } w && symbol is { } s)
+            {
                 result.Add(new AdditiveSymbol(w, s));
+            }
+
             weight = null;
             symbol = null;
         }
         foreach (var v in value)
         {
-            if (v is not CssTokenValue token) continue;
+            if (v is not CssTokenValue token)
+            {
+                continue;
+            }
+
             switch (token.Token.Type)
             {
                 case CssTokenType.Comma:
@@ -248,9 +282,14 @@ public static class CounterStyleParser
             if (v is CssTokenValue token)
             {
                 if (token.Token.Type is CssTokenType.String or CssTokenType.Ident)
+                {
                     return token.Token.Value;
+                }
+
                 if (token.Token.Type == CssTokenType.Delim)
+                {
                     return token.Token.Delimiter.ToString();
+                }
             }
         }
         return null;
@@ -261,7 +300,9 @@ public static class CounterStyleParser
         foreach (var v in value)
         {
             if (v is CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var ident } })
+            {
                 return ident.ToLowerInvariant();
+            }
         }
         return null;
     }
@@ -279,13 +320,20 @@ public static class CounterStyleParser
         void FlushSegment()
         {
             if (bounds.Count >= 2)
+            {
                 segments.Add((bounds[0], bounds[1]));
+            }
+
             bounds.Clear();
         }
 
         foreach (var v in value)
         {
-            if (v is not CssTokenValue token) continue;
+            if (v is not CssTokenValue token)
+            {
+                continue;
+            }
+
             switch (token.Token.Type)
             {
                 case CssTokenType.Ident when token.Token.Value.Equals("auto", StringComparison.OrdinalIgnoreCase):
@@ -305,7 +353,9 @@ public static class CounterStyleParser
         FlushSegment();
 
         if (hasAuto || segments.Count == 0)
+        {
             return (null, null, false, []);
+        }
         // RangeLow/RangeHigh mirror the first segment for callers that only
         // read the single-pair form.
         return (segments[0].Low, segments[0].High, true, segments);
@@ -319,7 +369,11 @@ public static class CounterStyleParser
         string? symbol = null;
         foreach (var v in value)
         {
-            if (v is not CssTokenValue token) continue;
+            if (v is not CssTokenValue token)
+            {
+                continue;
+            }
+
             switch (token.Token.Type)
             {
                 case CssTokenType.Number when token.Token.IsInteger:

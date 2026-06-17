@@ -79,7 +79,9 @@ public sealed class TextOverflowEllipsisPaintTests
             {
                 var i = row + x * 4;
                 if (rgba[i] < 128 && rgba[i + 1] < 128 && rgba[i + 2] < 128 && rgba[i + 3] > 0)
+                {
                     count++;
+                }
             }
         }
         return count;

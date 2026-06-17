@@ -386,7 +386,11 @@ internal sealed class FetchState
         {
             url = existing.Url;
             method = existing.Method;
-            foreach (var (k, v) in Headers.Get(existing.HeadersHandle).Entries()) headers.Append(k, v);
+            foreach (var (k, v) in Headers.Get(existing.HeadersHandle).Entries())
+            {
+                headers.Append(k, v);
+            }
+
             body = Bodies.Peek(existing.BodyHandle);
             redirect = existing.Redirect; mode = existing.Mode; credentials = existing.Credentials;
         }
@@ -398,17 +402,35 @@ internal sealed class FetchState
         if (init.IsObject())
         {
             var o = init.AsObject();
-            var m = o.Get("method"); if (m.IsString()) method = m.AsString().ToUpperInvariant();
+            var m = o.Get("method"); if (m.IsString())
+            {
+                method = m.AsString().ToUpperInvariant();
+            }
+
             var h = o.Get("headers"); if (!h.IsUndefined() && !h.IsNull()) { headers = new HeaderStore(); headers.PopulateFromJs(Headers, h); }
             var b = o.Get("body");
             if (!b.IsUndefined() && !b.IsNull())
             {
                 body = BodyToBytes(b, out var bodyCt);
-                if (bodyCt is not null && !headers.Has("content-type")) headers.Append("content-type", bodyCt);
+                if (bodyCt is not null && !headers.Has("content-type"))
+                {
+                    headers.Append("content-type", bodyCt);
+                }
             }
-            var r = o.Get("redirect"); if (r.IsString()) redirect = r.AsString();
-            var md = o.Get("mode"); if (md.IsString()) mode = md.AsString();
-            var cr = o.Get("credentials"); if (cr.IsString()) credentials = cr.AsString();
+            var r = o.Get("redirect"); if (r.IsString())
+            {
+                redirect = r.AsString();
+            }
+
+            var md = o.Get("mode"); if (md.IsString())
+            {
+                mode = md.AsString();
+            }
+
+            var cr = o.Get("credentials"); if (cr.IsString())
+            {
+                credentials = cr.AsString();
+            }
         }
         return (url, method, headers, body, redirect, mode, credentials);
     }
@@ -424,11 +446,26 @@ internal sealed class FetchState
         if (init.IsObject())
         {
             var o = init.AsObject();
-            var st = o.Get("status"); if (st.IsNumber()) status = (int)st.AsNumber();
-            var stt = o.Get("statusText"); if (stt.IsString()) statusText = stt.AsString();
-            var hd = o.Get("headers"); if (!hd.IsUndefined() && !hd.IsNull()) headers.PopulateFromJs(Headers, hd);
+            var st = o.Get("status"); if (st.IsNumber())
+            {
+                status = (int)st.AsNumber();
+            }
+
+            var stt = o.Get("statusText"); if (stt.IsString())
+            {
+                statusText = stt.AsString();
+            }
+
+            var hd = o.Get("headers"); if (!hd.IsUndefined() && !hd.IsNull())
+            {
+                headers.PopulateFromJs(Headers, hd);
+            }
         }
-        if (bodyCt is not null && !headers.Has("content-type")) headers.Append("content-type", bodyCt);
+        if (bodyCt is not null && !headers.Has("content-type"))
+        {
+            headers.Append("content-type", bodyCt);
+        }
+
         return RegisterResponse(status, statusText, headers, bytes, url: "", redirected: false, type: "default");
     }
 
@@ -436,9 +473,16 @@ internal sealed class FetchState
     {
         var r = _responses[id];
         if (Bodies.IsUsed(r.BodyHandle))
+        {
             throw new JavaScriptException(new JsString("Failed to execute 'clone' on 'Response': body already used"));
+        }
+
         var headers = new HeaderStore();
-        foreach (var (k, v) in Headers.Get(r.HeadersHandle).Entries()) headers.Append(k, v);
+        foreach (var (k, v) in Headers.Get(r.HeadersHandle).Entries())
+        {
+            headers.Append(k, v);
+        }
+
         return RegisterResponse(r.Status, r.StatusText, headers, Bodies.Peek(r.BodyHandle), r.Url, r.Redirected, r.Type);
     }
 
@@ -570,7 +614,11 @@ internal sealed class FetchState
     private int RegisterResponseFromWire(HttpResponse wire, string finalUrl)
     {
         var headers = new HeaderStore();
-        foreach (var kv in wire.Headers) headers.Append(kv.Key, kv.Value);
+        foreach (var kv in wire.Headers)
+        {
+            headers.Append(kv.Key, kv.Value);
+        }
+
         return RegisterResponse(wire.StatusCode, wire.ReasonPhrase, headers, wire.Body.ToArray(),
             finalUrl, redirected: false, type: "basic");
     }
@@ -587,7 +635,11 @@ internal sealed class FetchState
     private string ResolveUrl(string input)
     {
         var parsed = StarlingUrlParser.Parse(input, _ctx.BaseUrl);
-        if (parsed.IsOk) return parsed.Value.ToString();
+        if (parsed.IsOk)
+        {
+            return parsed.Value.ToString();
+        }
+
         var abs = StarlingUrlParser.Parse(input);
         return abs.IsOk ? abs.Value.ToString() : input;
     }
@@ -601,11 +653,30 @@ internal sealed class FetchState
     private static byte[] BodyToBytes(JsValue body, out string? contentType)
     {
         contentType = null;
-        if (body.IsUndefined() || body.IsNull()) return Array.Empty<byte>();
-        if (body.IsString()) return Encoding.UTF8.GetBytes(body.AsString());
-        if (body.IsArrayBuffer() && body.AsArrayBuffer() is { } ab) return (byte[])ab.Clone();
-        if (body.IsUint8Array() && body.AsUint8Array() is { } u8) return (byte[])u8.Clone();
-        if (body.IsDataView() && body.AsDataView() is { } dv) return (byte[])dv.Clone();
+        if (body.IsUndefined() || body.IsNull())
+        {
+            return Array.Empty<byte>();
+        }
+
+        if (body.IsString())
+        {
+            return Encoding.UTF8.GetBytes(body.AsString());
+        }
+
+        if (body.IsArrayBuffer() && body.AsArrayBuffer() is { } ab)
+        {
+            return (byte[])ab.Clone();
+        }
+
+        if (body.IsUint8Array() && body.AsUint8Array() is { } u8)
+        {
+            return (byte[])u8.Clone();
+        }
+
+        if (body.IsDataView() && body.AsDataView() is { } dv)
+        {
+            return (byte[])dv.Clone();
+        }
 
         if (body is ObjectInstance o)
         {
@@ -616,13 +687,19 @@ internal sealed class FetchState
                 var arr = bytesFn.Call(o, System.Array.Empty<JsValue>());
                 var bytes = ExtractBytes(arr);
                 var t = o.Get("type");
-                if (t.IsString() && t.AsString().Length > 0) contentType = t.AsString();
+                if (t.IsString() && t.AsString().Length > 0)
+                {
+                    contentType = t.AsString();
+                }
+
                 return bytes;
             }
             // FormData — has the __entries list.
             var entries = o.Get("__entries");
             if (entries is JsArray fdEntries)
+            {
                 return SerializeMultipart(fdEntries, out contentType);
+            }
             // URLSearchParams — toStringTag "URLSearchParams".
             var tag = o.Get(global::Jint.Native.Symbol.GlobalSymbolRegistry.ToStringTag);
             if (tag.IsString() && tag.AsString() == "URLSearchParams")
@@ -636,7 +713,11 @@ internal sealed class FetchState
 
     private static byte[] ExtractBytes(JsValue v)
     {
-        if (v.IsArrayBuffer() && v.AsArrayBuffer() is { } ab) return (byte[])ab.Clone();
+        if (v.IsArrayBuffer() && v.AsArrayBuffer() is { } ab)
+        {
+            return (byte[])ab.Clone();
+        }
+
         if (v is ObjectInstance oi)
         {
             var bufVal = oi.Get("buffer");
@@ -665,7 +746,11 @@ internal sealed class FetchState
 
         for (uint i = 0; i < entries.Length; i++)
         {
-            if (entries[(int)i] is not JsArray pair || pair.Length < 2) continue;
+            if (entries[(int)i] is not JsArray pair || pair.Length < 2)
+            {
+                continue;
+            }
+
             var name = pair[0].ToString();
             var value = pair[1];
             Write("--" + boundary + "\r\n");
@@ -694,7 +779,10 @@ internal sealed class FetchState
     private static bool TryGetRequestHandle(JsValue v, out int handle)
     {
         handle = 0;
-        if (!v.IsObject()) return false;
+        if (!v.IsObject())
+        {
+            return false;
+        }
         // Request facades carry a native-readable, non-enumerable '__rid' marker
         // (stamped by the JS bootstrap). Absent it, the input is treated as a URL.
         var marker = v.AsObject().Get("__rid");
@@ -762,7 +850,12 @@ internal sealed class HeaderStore
     public IEnumerable<string> SetCookies()
     {
         foreach (var (name, value) in _entries)
-            if (name == "set-cookie") yield return value;
+        {
+            if (name == "set-cookie")
+            {
+                yield return value;
+            }
+        }
     }
 
     public JsValue EntriesAsJsArray(global::Jint.Engine engine)
@@ -774,7 +867,11 @@ internal sealed class HeaderStore
         var pairs = new List<JsValue>();
         foreach (var (name, _) in _entries)
         {
-            if (!seen.Add(name)) continue;
+            if (!seen.Add(name))
+            {
+                continue;
+            }
+
             var combined = GetCombined(name) ?? "";
             pairs.Add(new JsArray(engine, new JsValue[] { new JsString(name), new JsString(combined) }));
         }
@@ -783,14 +880,22 @@ internal sealed class HeaderStore
 
     public void PopulateFromJs(HeadersTable table, JsValue init)
     {
-        if (init.IsUndefined() || init.IsNull() || !init.IsObject()) return;
+        if (init.IsUndefined() || init.IsNull() || !init.IsObject())
+        {
+            return;
+        }
+
         var o = init.AsObject();
 
         // Existing Headers facade? Read its native store via the '__hid' marker.
         var marker = o.Get("__hid");
         if (marker.IsNumber())
         {
-            foreach (var (k, v) in table.Get((int)marker.AsNumber()).Entries()) Append(k, v);
+            foreach (var (k, v) in table.Get((int)marker.AsNumber()).Entries())
+            {
+                Append(k, v);
+            }
+
             return;
         }
 
@@ -813,9 +918,17 @@ internal sealed class HeaderStore
         // Plain record { name: value }.
         foreach (var prop in o.GetOwnProperties())
         {
-            if (!prop.Value.Enumerable) continue;
+            if (!prop.Value.Enumerable)
+            {
+                continue;
+            }
+
             var name = prop.Key.ToString();
-            if (string.IsNullOrEmpty(name)) continue;
+            if (string.IsNullOrEmpty(name))
+            {
+                continue;
+            }
+
             Append(name, o.Get(prop.Key).ToString());
         }
     }
@@ -856,7 +969,10 @@ internal sealed class BodyTable
     {
         var real = Resolve(handle);
         if (_used.Contains(real))
+        {
             throw new JavaScriptException(new JsString("Failed to read body: already used"));
+        }
+
         _used.Add(real);
         return _bytes.TryGetValue(real, out var b) ? b : Array.Empty<byte>();
     }
@@ -881,7 +997,11 @@ internal sealed class AbortRec
 
     public void Abort(JsValue reason)
     {
-        if (Aborted) return;
+        if (Aborted)
+        {
+            return;
+        }
+
         Aborted = true;
         Reason = reason.IsUndefined()
             ? new JsString("AbortError: The operation was aborted.")

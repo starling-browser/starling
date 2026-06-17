@@ -111,7 +111,9 @@ public class BindingsEmitterTests
         string code = EmitCoreDom();
         code.Should().Contain("internal static void InstallAll(JsRealm realm)");
         foreach (string iface in BindingsEmitter.CoreDomInterfaces)
+        {
             code.Should().Contain($"Install{iface}(realm);");
+        }
     }
 
     [TestMethod]
@@ -143,7 +145,10 @@ public class BindingsEmitterTests
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx")))
+        {
             dir = dir.Parent;
+        }
+
         return dir?.FullName ?? throw new InvalidOperationException("repo root not found");
     }
 }

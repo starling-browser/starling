@@ -158,11 +158,18 @@ public sealed class StickyLayoutTests
 
     private static Box.Box? FindBox(Box.Box root, string id)
     {
-        if (root.Element?.GetAttribute("id") == id) return root;
+        if (root.Element?.GetAttribute("id") == id)
+        {
+            return root;
+        }
+
         foreach (var child in root.Children)
         {
             var hit = FindBox(child, id);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }

@@ -29,9 +29,15 @@ public static class SelectionBinding
     public static void Install(JsRealm realm)
     {
         ArgumentNullException.ThrowIfNull(realm);
-        if (!realm.GlobalObject.Get("Selection").IsUndefined) return;
+        if (!realm.GlobalObject.Get("Selection").IsUndefined)
+        {
+            return;
+        }
+
         if (realm.DocumentPrototype is null)
+        {
             throw new InvalidOperationException("NodeBindings.Install must run before SelectionBinding.Install");
+        }
 
         var selProto = new JsObject(realm.ObjectPrototype);
         SelProtoPerRealm.Add(realm, selProto);
@@ -71,7 +77,10 @@ public static class SelectionBinding
         {
             var s = RequireSel(realm, thisV, "addRange");
             if (args.Length < 1 || RangeBinding.UnwrapRange(args[0]) is not { } r)
+            {
                 throw new JsThrow(realm.NewTypeError("addRange: argument must be a Range"));
+            }
+
             s.AddRange(r);
             return JsValue.Undefined;
         }, length: 1);
@@ -79,7 +88,10 @@ public static class SelectionBinding
         {
             var s = RequireSel(realm, thisV, "removeRange");
             if (args.Length < 1 || RangeBinding.UnwrapRange(args[0]) is not { } r)
+            {
                 throw new JsThrow(realm.NewTypeError("removeRange: argument must be a Range"));
+            }
+
             WrapDomCall(realm, () => { s.RemoveRange(r); return 0; });
             return JsValue.Undefined;
         }, length: 1);
@@ -98,10 +110,16 @@ public static class SelectionBinding
             var s = RequireSel(realm, thisV, "collapse");
             // Spec: if node is null, removeAllRanges.
             if (args.Length == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("collapse: requires a Node or null"));
+            }
+
             Node? node = args[0].IsNull ? null : DomWrappers.UnwrapNode(args[0]);
             if (!args[0].IsNull && node is null)
+            {
                 throw new JsThrow(realm.NewTypeError("collapse: argument 0 must be a Node or null"));
+            }
+
             var offset = args.Length > 1 ? (int)JsValue.ToNumber(args[1]) : 0;
             WrapDomCall(realm, () => { s.Collapse(node, offset); return 0; });
             return JsValue.Undefined;
@@ -111,10 +129,16 @@ public static class SelectionBinding
         {
             var s = RequireSel(realm, thisV, "setPosition");
             if (args.Length == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("setPosition: requires a Node or null"));
+            }
+
             Node? node = args[0].IsNull ? null : DomWrappers.UnwrapNode(args[0]);
             if (!args[0].IsNull && node is null)
+            {
                 throw new JsThrow(realm.NewTypeError("setPosition: argument 0 must be a Node or null"));
+            }
+
             var offset = args.Length > 1 ? (int)JsValue.ToNumber(args[1]) : 0;
             WrapDomCall(realm, () => { s.Collapse(node, offset); return 0; });
             return JsValue.Undefined;
@@ -135,7 +159,10 @@ public static class SelectionBinding
         {
             var s = RequireSel(realm, thisV, "extend");
             if (args.Length < 1 || DomWrappers.UnwrapNode(args[0]) is not { } node)
+            {
                 throw new JsThrow(realm.NewTypeError("extend: argument 0 must be a Node"));
+            }
+
             var offset = args.Length > 1 ? (int)JsValue.ToNumber(args[1]) : 0;
             WrapDomCall(realm, () => { s.Extend(node, offset); return 0; });
             return JsValue.Undefined;
@@ -144,7 +171,10 @@ public static class SelectionBinding
         {
             var s = RequireSel(realm, thisV, "setBaseAndExtent");
             if (args.Length < 4)
+            {
                 throw new JsThrow(realm.NewTypeError("setBaseAndExtent: requires 4 arguments"));
+            }
+
             var aNode = DomWrappers.UnwrapNode(args[0]) ?? throw new JsThrow(realm.NewTypeError("setBaseAndExtent: anchorNode must be a Node"));
             var aOff = (int)JsValue.ToNumber(args[1]);
             var fNode = DomWrappers.UnwrapNode(args[2]) ?? throw new JsThrow(realm.NewTypeError("setBaseAndExtent: focusNode must be a Node"));
@@ -156,7 +186,10 @@ public static class SelectionBinding
         {
             var s = RequireSel(realm, thisV, "selectAllChildren");
             if (args.Length < 1 || DomWrappers.UnwrapNode(args[0]) is not { } node)
+            {
                 throw new JsThrow(realm.NewTypeError("selectAllChildren: argument must be a Node"));
+            }
+
             WrapDomCall(realm, () => { s.SelectAllChildren(node); return 0; });
             return JsValue.Undefined;
         }, length: 1);
@@ -164,7 +197,10 @@ public static class SelectionBinding
         {
             var s = RequireSel(realm, thisV, "containsNode");
             if (args.Length < 1 || DomWrappers.UnwrapNode(args[0]) is not { } node)
+            {
                 throw new JsThrow(realm.NewTypeError("containsNode: argument 0 must be a Node"));
+            }
+
             var allowPartial = args.Length > 1 && JsValue.ToBoolean(args[1]);
             return JsValue.Boolean(s.ContainsNode(node, allowPartial));
         }, length: 1);
@@ -199,7 +235,11 @@ public static class SelectionBinding
         EventTargetBinding.DefineMethod(realm, realm.GlobalObject, "getSelection", (_, _) =>
         {
             var doc = GetRealmDocument(realm);
-            if (doc is null) return JsValue.Null;
+            if (doc is null)
+            {
+                return JsValue.Null;
+            }
+
             return JsValue.Object(WrapSelection(realm, doc));
         }, length: 0);
 
@@ -208,9 +248,16 @@ public static class SelectionBinding
         // createHTMLDocument/createDocument results), it must return null.
         EventTargetBinding.DefineMethod(realm, realm.DocumentPrototype, "getSelection", (thisV, _) =>
         {
-            if (DomWrappers.UnwrapDocument(thisV) is not { } doc) return JsValue.Null;
+            if (DomWrappers.UnwrapDocument(thisV) is not { } doc)
+            {
+                return JsValue.Null;
+            }
             // Spec: getSelection returns null when the document has no defaultView.
-            if (!IsRealmDocument(realm, doc)) return JsValue.Null;
+            if (!IsRealmDocument(realm, doc))
+            {
+                return JsValue.Null;
+            }
+
             return JsValue.Object(WrapSelection(realm, doc));
         }, length: 0);
     }
@@ -222,7 +269,10 @@ public static class SelectionBinding
     internal static JsObject WrapSelection(JsRealm realm, Document document)
     {
         var cache = SelWrappersPerRealm.GetValue(realm, _ => new ConditionalWeakTable<Document, JsObject>());
-        if (cache.TryGetValue(document, out var existing)) return existing;
+        if (cache.TryGetValue(document, out var existing))
+        {
+            return existing;
+        }
 
         var host = DocumentSelectionTable.GetValue(document, d => new DomSelection(d));
         var proto = SelProtoPerRealm.TryGetValue(realm, out var p) ? p : realm.ObjectPrototype;

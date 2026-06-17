@@ -40,7 +40,9 @@ public sealed class CssTokenizer
             }
         }
         if (!needsWork)
+        {
             return source;
+        }
 
         var builder = new StringBuilder(source.Length);
         for (var i = 0; i < source.Length; i++)
@@ -51,7 +53,10 @@ public sealed class CssTokenizer
                 case '\r':
                     builder.Append('\n');
                     if (i + 1 < source.Length && source[i + 1] == '\n')
+                    {
                         i++;
+                    }
+
                     break;
                 case '\f':
                     builder.Append('\n');
@@ -107,14 +112,21 @@ public sealed class CssTokenizer
     public CssToken NextToken()
     {
         while (StartsWith("/*"))
+        {
             ConsumeComment();
+        }
 
         if (IsEnd)
+        {
             return new CssToken(CssTokenType.Eof);
+        }
 
         var c = Peek();
         if (IsCssWhitespace(c))
+        {
             return ConsumeWhitespace();
+        }
+
         if (StartsWith("<!--"))
         {
             _position += 4;
@@ -126,14 +138,23 @@ public sealed class CssTokenizer
             return new CssToken(CssTokenType.Cdc);
         }
         if (c is '"' or '\'')
+        {
             return ConsumeString(Read());
+        }
+
         if (WouldStartNumber())
+        {
             return ConsumeNumeric();
+        }
+
         if (c == '@')
         {
             Read();
             if (WouldStartIdentifier())
+            {
                 return new CssToken(CssTokenType.AtKeyword, ConsumeName());
+            }
+
             return new CssToken(CssTokenType.Delim, Delimiter: '@');
         }
         if (c == '#')
@@ -149,9 +170,14 @@ public sealed class CssTokenizer
             return new CssToken(CssTokenType.Delim, Delimiter: '#');
         }
         if (c == '\\' && StartsValidEscape())
+        {
             return ConsumeIdentLike();
+        }
+
         if (WouldStartIdentifier())
+        {
             return ConsumeIdentLike();
+        }
 
         return Read() switch
         {
@@ -172,7 +198,10 @@ public sealed class CssTokenizer
     {
         var start = _position;
         while (!IsEnd && IsCssWhitespace(Peek()))
+        {
             _position++;
+        }
+
         return new CssToken(CssTokenType.Whitespace, _source[start.._position]);
     }
 
@@ -188,7 +217,10 @@ public sealed class CssTokenizer
                 return new CssToken(CssTokenType.String, value.ToString());
             }
             if (c is '\n' or '\r' or '\f')
+            {
                 return new CssToken(CssTokenType.BadString, value.ToString());
+            }
+
             if (c == '\\')
             {
                 if (_position + 1 >= _source.Length)
@@ -202,7 +234,10 @@ public sealed class CssTokenizer
                     // \<newline> in a string is a line continuation per spec §4.3.5.
                     _position++; // backslash
                     if (Peek() == '\r' && Peek(1) == '\n')
+                    {
                         _position++;
+                    }
+
                     _position++;
                     continue;
                 }
@@ -226,7 +261,9 @@ public sealed class CssTokenizer
         // signless integers and value serialization can canonicalize numbers.
         var hasSign = Peek() is '+' or '-';
         if (hasSign)
+        {
             _position++;
+        }
 
         var isInteger = true;
         ConsumeDigits();
@@ -243,7 +280,10 @@ public sealed class CssTokenizer
             isInteger = false;
             _position++;
             if (Peek() is '+' or '-')
+            {
                 _position++;
+            }
+
             ConsumeDigits();
         }
 
@@ -268,11 +308,15 @@ public sealed class CssTokenizer
     {
         var name = ConsumeName();
         if (Peek() != '(')
+        {
             return new CssToken(CssTokenType.Ident, name);
+        }
 
         _position++;
         if (name.Equals("url", StringComparison.OrdinalIgnoreCase))
+        {
             return ConsumeUrl();
+        }
 
         return new CssToken(CssTokenType.Function, name);
     }
@@ -280,10 +324,14 @@ public sealed class CssTokenizer
     private CssToken ConsumeUrl()
     {
         while (IsCssWhitespace(Peek()))
+        {
             _position++;
+        }
 
         if (Peek() is '"' or '\'')
+        {
             return new CssToken(CssTokenType.Function, "url");
+        }
 
         var value = new StringBuilder();
         while (!IsEnd)
@@ -298,18 +346,26 @@ public sealed class CssTokenizer
             if (IsCssWhitespace(c))
             {
                 while (!IsEnd && IsCssWhitespace(Peek()))
+                {
                     _position++;
+                }
+
                 if (IsEnd || Peek() == ')')
                 {
                     if (!IsEnd)
+                    {
                         _position++;
+                    }
+
                     return new CssToken(CssTokenType.Url, value.ToString());
                 }
                 return ConsumeBadUrlRemnants();
             }
 
             if (c is '"' or '\'' or '(' || IsNonPrintable(c))
+            {
                 return ConsumeBadUrlRemnants();
+            }
 
             if (c == '\\')
             {
@@ -335,9 +391,14 @@ public sealed class CssTokenizer
         {
             var c = Read();
             if (c == ')')
+            {
                 break;
+            }
+
             if (c == '\\' && _position < _source.Length && _source[_position] is not ('\n' or '\r' or '\f'))
+            {
                 ConsumeEscape();
+            }
         }
         return new CssToken(CssTokenType.BadUrl);
     }
@@ -368,7 +429,9 @@ public sealed class CssTokenizer
     private string ConsumeEscape()
     {
         if (IsEnd)
+        {
             return "�";
+        }
 
         var c = Read();
         if (IsHex(c))
@@ -377,18 +440,27 @@ public sealed class CssTokenizer
             hex[0] = c;
             var count = 1;
             while (count < 6 && IsHex(Peek()))
+            {
                 hex[count++] = _source[_position++];
+            }
+
             if (IsCssWhitespace(Peek()))
             {
                 // Spec: a single trailing whitespace after a hex escape is consumed (CRLF as one).
                 if (Peek() == '\r' && Peek(1) == '\n')
+                {
                     _position++;
+                }
+
                 _position++;
             }
 
             var code = uint.Parse(hex[..count], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
             if (code == 0 || code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF))
+            {
                 return "�";
+            }
+
             return char.ConvertFromUtf32((int)code);
         }
 
@@ -412,7 +484,9 @@ public sealed class CssTokenizer
     private void ConsumeDigits()
     {
         while (char.IsAsciiDigit(Peek()))
+        {
             _position++;
+        }
     }
 
     private void ConsumeComment()
@@ -427,9 +501,15 @@ public sealed class CssTokenizer
         var c1 = Peek();
         var c2 = Peek(1);
         if (c1 == '-')
+        {
             return IsNameStart(c2) || c2 == '-' || (c2 == '\\' && StartsValidEscape(1));
+        }
+
         if (c1 == '\\')
+        {
             return StartsValidEscape();
+        }
+
         return IsNameStart(c1);
     }
 

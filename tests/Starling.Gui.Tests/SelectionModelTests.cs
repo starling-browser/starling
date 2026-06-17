@@ -47,7 +47,9 @@ public sealed class SelectionModelTests
         // the same caret position; assert whichever the model picks is
         // canonically at "end of hello".
         if (caret.FragmentIndex == placed.IndexOf(hello))
+        {
             caret.CharOffset.Should().Be(5);
+        }
         else
         {
             caret.FragmentIndex.Should().Be(placed.IndexOf(hello) + 1);

@@ -226,11 +226,18 @@ public sealed class FlexAlignmentTests
 
     private static Box.Box? FindBox(Box.Box root, Func<Box.Box, bool> pred)
     {
-        if (pred(root)) return root;
+        if (pred(root))
+        {
+            return root;
+        }
+
         foreach (var child in root.Children)
         {
             var hit = FindBox(child, pred);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }
@@ -248,9 +255,16 @@ public sealed class FlexAlignmentTests
     {
         foreach (var child in box.Children)
         {
-            if (child is TextBox tb && tb.Fragments.Count > 0) return tb;
+            if (child is TextBox tb && tb.Fragments.Count > 0)
+            {
+                return tb;
+            }
+
             var hit = FindTextBox(child);
-            if (hit is not null) return hit;
+            if (hit is not null)
+            {
+                return hit;
+            }
         }
         return null;
     }

@@ -17,7 +17,10 @@ public sealed class GeneratedContentLayoutTests
     {
         var engine = new StyleEngine();
         if (css is not null)
+        {
             engine.AddStyleSheet(CssParser.ParseStyleSheet(css, StyleOrigin.Author));
+        }
+
         return new LayoutEngine(engine).LayoutDocument(HtmlParser.Parse(html), new Size(800, 600));
     }
 
@@ -25,8 +28,12 @@ public sealed class GeneratedContentLayoutTests
     {
         if (box is TextBox tb) { yield return tb; yield break; }
         foreach (var child in box.Children)
+        {
             foreach (var inner in TextBoxes(child))
+            {
                 yield return inner;
+            }
+        }
     }
 
     private static List<string> Fragments(Box.Box root)

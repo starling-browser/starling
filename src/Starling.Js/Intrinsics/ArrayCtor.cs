@@ -35,7 +35,11 @@ public static class ArrayCtor
             {
                 var arr = ConstructArray(realm, args);
                 var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, proto);
-                if (!ReferenceEquals(instProto, proto)) arr.SetPrototypeOf(instProto);
+                if (!ReferenceEquals(instProto, proto))
+                {
+                    arr.SetPrototypeOf(instProto);
+                }
+
                 return JsValue.Object(arr);
             },
             isConstructor: true);
@@ -48,7 +52,11 @@ public static class ArrayCtor
         IntrinsicHelpers.DefineMethod(realm, ctor, "of", 0, (_, args) =>
         {
             var arr = new JsArray(realm);
-            foreach (var v in args) arr.Push(v);
+            foreach (var v in args)
+            {
+                arr.Push(v);
+            }
+
             return JsValue.Object(arr);
         });
         IntrinsicHelpers.DefineMethod(realm, ctor, "from", 1, (_, args) => From(realm, args));
@@ -122,7 +130,10 @@ public static class ArrayCtor
             var n = args[0].AsNumber;
             var len = (uint)n;
             if (n != len || double.IsNaN(n) || double.IsInfinity(n))
+            {
                 throw new JsThrow(realm.NewRangeError("Invalid array length"));
+            }
+
             var arr = new JsArray(realm);
             // Pre-grow via length so we have N holes.
             var lengthDesc = PropertyDescriptor.Data(JsValue.Number(len), writable: true, enumerable: false, configurable: false);
@@ -143,7 +154,10 @@ public static class ArrayCtor
     private static JsObject ThisObject(JsRealm realm, JsValue thisV)
     {
         if (thisV.IsNullish)
+        {
             throw new JsThrow(realm.NewTypeError("Array.prototype method called on null or undefined"));
+        }
+
         return thisV.IsObject ? thisV.AsObject : AbstractOperations.ToObject(realm, thisV);
     }
 
@@ -151,14 +165,26 @@ public static class ArrayCtor
     {
         var v = obj.Get("length");
         var n = JsValue.ToNumber(v);
-        if (double.IsNaN(n) || n <= 0) return 0;
-        if (n > int.MaxValue) return int.MaxValue;
+        if (double.IsNaN(n) || n <= 0)
+        {
+            return 0;
+        }
+
+        if (n > int.MaxValue)
+        {
+            return int.MaxValue;
+        }
+
         return (int)Math.Min(Math.Truncate(n), (double)(1L << 53) - 1);
     }
 
     private static JsValue GetElement(JsObject obj, int i)
     {
-        if (obj is JsArray ja) return ja[i];
+        if (obj is JsArray ja)
+        {
+            return ja[i];
+        }
+
         return AbstractOperations.Get((JsVm?)null, obj, JsArray.IndexToString((uint)i));
     }
 
@@ -170,16 +196,32 @@ public static class ArrayCtor
 
     private static int ClampStart(int relative, int len)
     {
-        if (relative < 0) return Math.Max(len + relative, 0);
+        if (relative < 0)
+        {
+            return Math.Max(len + relative, 0);
+        }
+
         return Math.Min(relative, len);
     }
 
     private static int ToInteger(JsValue v)
     {
         var n = JsValue.ToNumber(v);
-        if (double.IsNaN(n)) return 0;
-        if (double.IsPositiveInfinity(n)) return int.MaxValue;
-        if (double.IsNegativeInfinity(n)) return int.MinValue;
+        if (double.IsNaN(n))
+        {
+            return 0;
+        }
+
+        if (double.IsPositiveInfinity(n))
+        {
+            return int.MaxValue;
+        }
+
+        if (double.IsNegativeInfinity(n))
+        {
+            return int.MinValue;
+        }
+
         return (int)Math.Truncate(n);
     }
 
@@ -190,13 +232,18 @@ public static class ArrayCtor
     private static JsValue From(JsRealm realm, JsValue[] args)
     {
         if (args.Length == 0 || args[0].IsNullish)
+        {
             throw new JsThrow(realm.NewTypeError("Array.from requires an iterable or array-like"));
+        }
+
         var src = args[0];
         var mapFn = args.Length > 1 ? args[1] : JsValue.Undefined;
         var thisArg = args.Length > 2 ? args[2] : JsValue.Undefined;
         var hasMap = !mapFn.IsUndefined;
         if (hasMap && !AbstractOperations.IsCallable(mapFn))
+        {
             throw new JsThrow(realm.NewTypeError("Array.from: map fn must be callable"));
+        }
 
         var arr = new JsArray(realm);
 
@@ -211,7 +258,11 @@ public static class ArrayCtor
             while (true)
             {
                 var step = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-                if (step is null) break;
+                if (step is null)
+                {
+                    break;
+                }
+
                 var value = AbstractOperations.IteratorValue(realm.ActiveVm, step.Value);
                 var elem = hasMap
                     ? AbstractOperations.Call(realm.ActiveVm, mapFn, thisArg, new[] { value, JsValue.Number(index) })
@@ -224,13 +275,20 @@ public static class ArrayCtor
 
         // Array-like fallback (length + indexed access).
         if (!src.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Array.from: source must be an iterable or array-like"));
+        }
+
         var obj = src.AsObject;
         var len = ToLength(obj);
         for (var i = 0; i < len; i++)
         {
             var elem = GetElement(obj, i);
-            if (hasMap) elem = AbstractOperations.Call(realm.ActiveVm, mapFn, thisArg, new[] { elem, JsValue.Number(i) });
+            if (hasMap)
+            {
+                elem = AbstractOperations.Call(realm.ActiveVm, mapFn, thisArg, new[] { elem, JsValue.Number(i) });
+            }
+
             arr.Push(elem);
         }
         return JsValue.Object(arr);
@@ -242,8 +300,16 @@ public static class ArrayCtor
     /// protocol path and the array-like fallback.</summary>
     internal static bool HasIteratorMethod(JsRealm realm, JsValue value)
     {
-        if (value.IsString) return true;
-        if (!value.IsObject) return false;
+        if (value.IsString)
+        {
+            return true;
+        }
+
+        if (!value.IsObject)
+        {
+            return false;
+        }
+
         var v = AbstractOperations.Get((JsVm?)null, value.AsObject, JsPropertyKey.Symbol(SymbolCtor.Iterator));
         return AbstractOperations.IsCallable(v);
     }
@@ -291,7 +357,10 @@ public static class ArrayCtor
         }
         var first = GetElement(obj, 0);
         for (var i = 1; i < len; i++)
+        {
             SetElement(obj, i - 1, GetElement(obj, i));
+        }
+
         AbstractOperations.Set(null, obj, "length", JsValue.Number(len - 1));
         return first;
     }
@@ -304,9 +373,14 @@ public static class ArrayCtor
         if (count > 0)
         {
             for (var i = len - 1; i >= 0; i--)
+            {
                 SetElement(obj, i + count, GetElement(obj, i));
+            }
+
             for (var i = 0; i < count; i++)
+            {
                 SetElement(obj, i, args[i]);
+            }
         }
         var newLen = len + count;
         AbstractOperations.Set(null, obj, "length", JsValue.Number(newLen));
@@ -319,28 +393,47 @@ public static class ArrayCtor
         var len = ToLength(obj);
         var start = args.Length > 0 ? ClampStart(ToInteger(args[0]), len) : 0;
         int deleteCount;
-        if (args.Length < 1) deleteCount = 0;
-        else if (args.Length < 2) deleteCount = len - start;
-        else deleteCount = Math.Max(0, Math.Min(ToInteger(args[1]), len - start));
+        if (args.Length < 1)
+        {
+            deleteCount = 0;
+        }
+        else if (args.Length < 2)
+        {
+            deleteCount = len - start;
+        }
+        else
+        {
+            deleteCount = Math.Max(0, Math.Min(ToInteger(args[1]), len - start));
+        }
+
         var insertCount = Math.Max(0, args.Length - 2);
         var removed = new JsArray(realm);
         for (var i = 0; i < deleteCount; i++)
+        {
             removed.Push(GetElement(obj, start + i));
+        }
 
         var newLen = len - deleteCount + insertCount;
         if (insertCount < deleteCount)
         {
             for (var i = start; i < len - deleteCount; i++)
+            {
                 SetElement(obj, i + insertCount, GetElement(obj, i + deleteCount));
+            }
             // Resulting length is shorter; rely on JsArray length truncation.
         }
         else if (insertCount > deleteCount)
         {
             for (var i = len - deleteCount - 1; i >= start; i--)
+            {
                 SetElement(obj, i + insertCount, GetElement(obj, i + deleteCount));
+            }
         }
         for (var i = 0; i < insertCount; i++)
+        {
             SetElement(obj, start + i, args[2 + i]);
+        }
+
         AbstractOperations.Set(null, obj, "length", JsValue.Number(newLen));
         return JsValue.Object(removed);
     }
@@ -365,11 +458,18 @@ public static class ArrayCtor
         var obj = ThisObject(realm, thisV);
         var cmpV = args.Length > 0 ? args[0] : JsValue.Undefined;
         if (!cmpV.IsUndefined && !AbstractOperations.IsCallable(cmpV))
+        {
             throw new JsThrow(realm.NewTypeError("Array.prototype.sort: comparator must be a function"));
+        }
+
         var len = ToLength(obj);
         var items = CollectIndexedValues(obj, len);
         StableSort(realm, items, cmpV);
-        for (var i = 0; i < len; i++) SetElement(obj, i, items[i].Value);
+        for (var i = 0; i < len; i++)
+        {
+            SetElement(obj, i, items[i].Value);
+        }
+
         return JsValue.Object(obj);
     }
 
@@ -377,16 +477,40 @@ public static class ArrayCtor
     {
         // §23.1.3.30: undefined values sort to the end (regardless of comparator).
         var aIsU = a.IsUndefined; var bIsU = b.IsUndefined;
-        if (aIsU && bIsU) return 0;
-        if (aIsU) return 1;
-        if (bIsU) return -1;
+        if (aIsU && bIsU)
+        {
+            return 0;
+        }
+
+        if (aIsU)
+        {
+            return 1;
+        }
+
+        if (bIsU)
+        {
+            return -1;
+        }
+
         if (!cmpFn.IsUndefined)
         {
             var r = AbstractOperations.Call(realm.ActiveVm, cmpFn, JsValue.Undefined, new[] { a, b });
             var n = JsValue.ToNumber(r);
-            if (double.IsNaN(n)) return 0;
-            if (n < 0) return -1;
-            if (n > 0) return 1;
+            if (double.IsNaN(n))
+            {
+                return 0;
+            }
+
+            if (n < 0)
+            {
+                return -1;
+            }
+
+            if (n > 0)
+            {
+                return 1;
+            }
+
             return 0;
         }
         return string.CompareOrdinal(JsValue.ToStringValue(a), JsValue.ToStringValue(b));
@@ -395,7 +519,11 @@ public static class ArrayCtor
     private static List<IndexedValue> CollectIndexedValues(JsObject obj, int len)
     {
         var items = new List<IndexedValue>(len);
-        for (var i = 0; i < len; i++) items.Add(new IndexedValue(GetElement(obj, i), i));
+        for (var i = 0; i < len; i++)
+        {
+            items.Add(new IndexedValue(GetElement(obj, i), i));
+        }
+
         return items;
     }
 
@@ -427,7 +555,11 @@ public static class ArrayCtor
         var value = args.Length > 0 ? args[0] : JsValue.Undefined;
         var start = args.Length > 1 ? ClampStart(ToInteger(args[1]), len) : 0;
         var end = args.Length > 2 ? ClampStart(ToInteger(args[2]), len) : len;
-        for (var i = start; i < end; i++) SetElement(obj, i, value);
+        for (var i = start; i < end; i++)
+        {
+            SetElement(obj, i, value);
+        }
+
         return JsValue.Object(obj);
     }
 
@@ -439,11 +571,22 @@ public static class ArrayCtor
         var start = args.Length > 1 ? ClampStart(ToInteger(args[1]), len) : 0;
         var end = args.Length > 2 ? ClampStart(ToInteger(args[2]), len) : len;
         var count = Math.Min(end - start, len - target);
-        if (count <= 0) return JsValue.Object(obj);
+        if (count <= 0)
+        {
+            return JsValue.Object(obj);
+        }
         // Snapshot to avoid overlap issues.
         var snap = new JsValue[count];
-        for (var i = 0; i < count; i++) snap[i] = GetElement(obj, start + i);
-        for (var i = 0; i < count; i++) SetElement(obj, target + i, snap[i]);
+        for (var i = 0; i < count; i++)
+        {
+            snap[i] = GetElement(obj, start + i);
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            SetElement(obj, target + i, snap[i]);
+        }
+
         return JsValue.Object(obj);
     }
 
@@ -456,9 +599,16 @@ public static class ArrayCtor
         var obj = ThisObject(realm, thisV);
         var result = new JsArray(realm);
         if (JsArray.IsArray(JsValue.Object(obj), realm))
+        {
             _ = AbstractOperations.Get(realm.ActiveVm, obj, "constructor");
+        }
+
         AppendConcat(realm, result, JsValue.Object(obj));
-        foreach (var a in args) AppendConcat(realm, result, a);
+        foreach (var a in args)
+        {
+            AppendConcat(realm, result, a);
+        }
+
         return JsValue.Object(result);
     }
 
@@ -468,7 +618,10 @@ public static class ArrayCtor
         {
             var source = v.AsObject;
             var len = ToLength(source);
-            for (var i = 0; i < len; i++) target.Push(GetElement(source, i));
+            for (var i = 0; i < len; i++)
+            {
+                target.Push(GetElement(source, i));
+            }
         }
         else
         {
@@ -478,7 +631,11 @@ public static class ArrayCtor
 
     private static bool IsConcatSpreadable(JsRealm realm, JsValue value)
     {
-        if (!value.IsObject) return false;
+        if (!value.IsObject)
+        {
+            return false;
+        }
+
         var spreadable = AbstractOperations.Get(realm.ActiveVm, value.AsObject,
             JsPropertyKey.Symbol(SymbolCtor.IsConcatSpreadable));
         return spreadable.IsUndefined ? JsArray.IsArray(value, realm) : JsValue.ToBoolean(spreadable);
@@ -491,7 +648,11 @@ public static class ArrayCtor
         var start = args.Length > 0 ? ClampStart(ToInteger(args[0]), len) : 0;
         var end = args.Length > 1 && !args[1].IsUndefined ? ClampStart(ToInteger(args[1]), len) : len;
         var result = new JsArray(realm);
-        for (var i = start; i < end; i++) result.Push(GetElement(obj, i));
+        for (var i = start; i < end; i++)
+        {
+            result.Push(GetElement(obj, i));
+        }
+
         return JsValue.Object(result);
     }
 
@@ -502,15 +663,31 @@ public static class ArrayCtor
         var len = ToLength(obj);
         var sb = new System.Text.StringBuilder();
         var stack = s_joinStack ??= new HashSet<JsObject>();
-        if (!stack.Add(obj)) return JsValue.String(string.Empty);
+        if (!stack.Add(obj))
+        {
+            return JsValue.String(string.Empty);
+        }
+
         try
         {
             for (var i = 0; i < len; i++)
             {
-                if (i > 0) sb.Append(sep);
+                if (i > 0)
+                {
+                    sb.Append(sep);
+                }
+
                 var v = GetElement(obj, i);
-                if (v.IsNullish) continue;
-                if (v.IsObject && stack.Contains(v.AsObject)) continue;
+                if (v.IsNullish)
+                {
+                    continue;
+                }
+
+                if (v.IsObject && stack.Contains(v.AsObject))
+                {
+                    continue;
+                }
+
                 sb.Append(AbstractOperations.ToStringJs(realm.ActiveVm, v));
             }
         }
@@ -526,7 +703,9 @@ public static class ArrayCtor
         var obj = ThisObject(realm, thisV);
         var join = AbstractOperations.Get(realm.ActiveVm, obj, "join");
         if (AbstractOperations.IsCallable(join))
+        {
             return AbstractOperations.Call(realm.ActiveVm, join, JsValue.Object(obj), Array.Empty<JsValue>());
+        }
 
         var objectToString = AbstractOperations.Get(realm.ActiveVm, realm.ObjectPrototype, "toString");
         return AbstractOperations.Call(realm.ActiveVm, objectToString, JsValue.Object(obj), Array.Empty<JsValue>());
@@ -536,7 +715,11 @@ public static class ArrayCtor
     {
         var obj = ThisObject(realm, thisV);
         var len = ToLength(obj);
-        if (len == 0) return JsValue.Number(-1);
+        if (len == 0)
+        {
+            return JsValue.Number(-1);
+        }
+
         var target = args.Length > 0 ? args[0] : JsValue.Undefined;
         int from;
         if (args.Length > 1)
@@ -558,12 +741,22 @@ public static class ArrayCtor
         if (fromEnd)
         {
             for (var i = from; i >= 0; i--)
-                if (JsValue.StrictEquals(GetElement(obj, i), target)) return JsValue.Number(i);
+            {
+                if (JsValue.StrictEquals(GetElement(obj, i), target))
+                {
+                    return JsValue.Number(i);
+                }
+            }
         }
         else
         {
             for (var i = from; i < len; i++)
-                if (JsValue.StrictEquals(GetElement(obj, i), target)) return JsValue.Number(i);
+            {
+                if (JsValue.StrictEquals(GetElement(obj, i), target))
+                {
+                    return JsValue.Number(i);
+                }
+            }
         }
         return JsValue.Number(-1);
     }
@@ -572,19 +765,32 @@ public static class ArrayCtor
     {
         var obj = ThisObject(realm, thisV);
         var len = ToLength(obj);
-        if (len == 0) return JsValue.False;
+        if (len == 0)
+        {
+            return JsValue.False;
+        }
+
         var target = args.Length > 0 ? args[0] : JsValue.Undefined;
         var n = args.Length > 1 ? ToInteger(args[1]) : 0;
         var from = n >= 0 ? n : Math.Max(0, len + n);
         for (var i = from; i < len; i++)
-            if (AbstractOperations.SameValueZero(GetElement(obj, i), target)) return JsValue.True;
+        {
+            if (AbstractOperations.SameValueZero(GetElement(obj, i), target))
+            {
+                return JsValue.True;
+            }
+        }
+
         return JsValue.False;
     }
 
     private static (JsValue fn, JsValue thisArg) ParseCallback(JsRealm realm, JsValue[] args, string methodName)
     {
         if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+        {
             throw new JsThrow(realm.NewTypeError($"Array.prototype.{methodName}: callback must be a function"));
+        }
+
         return (args[0], args.Length > 1 ? args[1] : JsValue.Undefined);
     }
 
@@ -626,7 +832,10 @@ public static class ArrayCtor
         {
             var v = GetElement(obj, i);
             var keep = AbstractOperations.Call(realm.ActiveVm, fn, thisArg, new[] { v, JsValue.Number(i), JsValue.Object(obj) });
-            if (JsValue.ToBoolean(keep)) result.Push(v);
+            if (JsValue.ToBoolean(keep))
+            {
+                result.Push(v);
+            }
         }
         return JsValue.Object(result);
     }
@@ -635,7 +844,10 @@ public static class ArrayCtor
     {
         var obj = ThisObject(realm, thisV);
         if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+        {
             throw new JsThrow(realm.NewTypeError("Array.prototype.reduce: callback must be a function"));
+        }
+
         var fn = args[0];
         var len = ToLength(obj);
         var hasInitial = args.Length > 1;
@@ -649,7 +861,10 @@ public static class ArrayCtor
         else
         {
             if (len == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("Reduce of empty array with no initial value"));
+            }
+
             i = fromRight ? len - 1 : 0;
             acc = GetElement(obj, i);
             i += fromRight ? -1 : 1;
@@ -657,14 +872,18 @@ public static class ArrayCtor
         if (fromRight)
         {
             for (; i >= 0; i--)
+            {
                 acc = AbstractOperations.Call(realm.ActiveVm, fn, JsValue.Undefined,
                     new[] { acc, GetElement(obj, i), JsValue.Number(i), JsValue.Object(obj) });
+            }
         }
         else
         {
             for (; i < len; i++)
+            {
                 acc = AbstractOperations.Call(realm.ActiveVm, fn, JsValue.Undefined,
                     new[] { acc, GetElement(obj, i), JsValue.Number(i), JsValue.Object(obj) });
+            }
         }
         return acc;
     }
@@ -678,7 +897,10 @@ public static class ArrayCtor
         {
             var v = GetElement(obj, i);
             var r = AbstractOperations.Call(realm.ActiveVm, fn, thisArg, new[] { v, JsValue.Number(i), JsValue.Object(obj) });
-            if (!JsValue.ToBoolean(r)) return JsValue.False;
+            if (!JsValue.ToBoolean(r))
+            {
+                return JsValue.False;
+            }
         }
         return JsValue.True;
     }
@@ -692,7 +914,10 @@ public static class ArrayCtor
         {
             var v = GetElement(obj, i);
             var r = AbstractOperations.Call(realm.ActiveVm, fn, thisArg, new[] { v, JsValue.Number(i), JsValue.Object(obj) });
-            if (JsValue.ToBoolean(r)) return JsValue.True;
+            if (JsValue.ToBoolean(r))
+            {
+                return JsValue.True;
+            }
         }
         return JsValue.False;
     }
@@ -709,7 +934,10 @@ public static class ArrayCtor
             {
                 var v = GetElement(obj, i);
                 var r = AbstractOperations.Call(realm.ActiveVm, fn, thisArg, new[] { v, JsValue.Number(i), JsValue.Object(obj) });
-                if (JsValue.ToBoolean(r)) return indexOnly ? JsValue.Number(i) : v;
+                if (JsValue.ToBoolean(r))
+                {
+                    return indexOnly ? JsValue.Number(i) : v;
+                }
             }
         }
         else
@@ -718,7 +946,10 @@ public static class ArrayCtor
             {
                 var v = GetElement(obj, i);
                 var r = AbstractOperations.Call(realm.ActiveVm, fn, thisArg, new[] { v, JsValue.Number(i), JsValue.Object(obj) });
-                if (JsValue.ToBoolean(r)) return indexOnly ? JsValue.Number(i) : v;
+                if (JsValue.ToBoolean(r))
+                {
+                    return indexOnly ? JsValue.Number(i) : v;
+                }
             }
         }
         return indexOnly ? JsValue.Number(-1) : JsValue.Undefined;
@@ -728,7 +959,11 @@ public static class ArrayCtor
     {
         var obj = ThisObject(realm, thisV);
         var depth = 1d;
-        if (args.Length > 0 && !args[0].IsUndefined) depth = JsValue.ToNumber(args[0]);
+        if (args.Length > 0 && !args[0].IsUndefined)
+        {
+            depth = JsValue.ToNumber(args[0]);
+        }
+
         var result = new JsArray(realm);
         FlattenInto(result, obj, depth);
         return JsValue.Object(result);
@@ -741,9 +976,13 @@ public static class ArrayCtor
         {
             var v = GetElement(source, i);
             if (depth > 0 && v.IsObject && v.AsObject is JsArray sub)
+            {
                 FlattenInto(target, sub, depth - 1);
+            }
             else
+            {
                 target.Push(v);
+            }
         }
     }
 
@@ -759,9 +998,16 @@ public static class ArrayCtor
             var mapped = AbstractOperations.Call(realm.ActiveVm, fn, thisArg,
                 new[] { v, JsValue.Number(i), JsValue.Object(obj) });
             if (mapped.IsObject && mapped.AsObject is JsArray sub)
-                for (var k = 0; k < sub.Length; k++) result.Push(sub[k]);
+            {
+                for (var k = 0; k < sub.Length; k++)
+                {
+                    result.Push(sub[k]);
+                }
+            }
             else
+            {
                 result.Push(mapped);
+            }
         }
         return JsValue.Object(result);
     }
@@ -775,7 +1021,11 @@ public static class ArrayCtor
         var obj = ThisObject(realm, thisV);
         var len = ToLength(obj);
         var result = new JsArray(realm);
-        for (var i = len - 1; i >= 0; i--) result.Push(GetElement(obj, i));
+        for (var i = len - 1; i >= 0; i--)
+        {
+            result.Push(GetElement(obj, i));
+        }
+
         return JsValue.Object(result);
     }
 
@@ -784,12 +1034,19 @@ public static class ArrayCtor
         var obj = ThisObject(realm, thisV);
         var cmpV = args.Length > 0 ? args[0] : JsValue.Undefined;
         if (!cmpV.IsUndefined && !AbstractOperations.IsCallable(cmpV))
+        {
             throw new JsThrow(realm.NewTypeError("Array.prototype.toSorted: comparator must be a function"));
+        }
+
         var len = ToLength(obj);
         var items = CollectIndexedValues(obj, len);
         StableSort(realm, items, cmpV);
         var result = new JsArray(realm);
-        foreach (var item in items) result.Push(item.Value);
+        foreach (var item in items)
+        {
+            result.Push(item.Value);
+        }
+
         return JsValue.Object(result);
     }
 
@@ -799,13 +1056,35 @@ public static class ArrayCtor
         var len = ToLength(obj);
         var start = args.Length > 0 ? ClampStart(ToInteger(args[0]), len) : 0;
         int deleteCount;
-        if (args.Length < 1) deleteCount = 0;
-        else if (args.Length < 2) deleteCount = len - start;
-        else deleteCount = Math.Max(0, Math.Min(ToInteger(args[1]), len - start));
+        if (args.Length < 1)
+        {
+            deleteCount = 0;
+        }
+        else if (args.Length < 2)
+        {
+            deleteCount = len - start;
+        }
+        else
+        {
+            deleteCount = Math.Max(0, Math.Min(ToInteger(args[1]), len - start));
+        }
+
         var result = new JsArray(realm);
-        for (var i = 0; i < start; i++) result.Push(GetElement(obj, i));
-        for (var i = 2; i < args.Length; i++) result.Push(args[i]);
-        for (var i = start + deleteCount; i < len; i++) result.Push(GetElement(obj, i));
+        for (var i = 0; i < start; i++)
+        {
+            result.Push(GetElement(obj, i));
+        }
+
+        for (var i = 2; i < args.Length; i++)
+        {
+            result.Push(args[i]);
+        }
+
+        for (var i = start + deleteCount; i < len; i++)
+        {
+            result.Push(GetElement(obj, i));
+        }
+
         return JsValue.Object(result);
     }
 
@@ -814,15 +1093,24 @@ public static class ArrayCtor
         var obj = ThisObject(realm, thisV);
         var len = ToLength(obj);
         if (args.Length < 1)
+        {
             throw new JsThrow(realm.NewTypeError("Array.prototype.with: index required"));
+        }
+
         var rel = ToInteger(args[0]);
         var idx = rel < 0 ? len + rel : rel;
         if (idx < 0 || idx >= len)
+        {
             throw new JsThrow(realm.NewRangeError("Invalid index"));
+        }
+
         var value = args.Length > 1 ? args[1] : JsValue.Undefined;
         var result = new JsArray(realm);
         for (var i = 0; i < len; i++)
+        {
             result.Push(i == idx ? value : GetElement(obj, i));
+        }
+
         return JsValue.Object(result);
     }
 

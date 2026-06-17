@@ -38,7 +38,9 @@ public sealed class NamedNodeMap : IReadOnlyList<AttrNode>
         foreach (var attr in _attributes)
         {
             if (attr.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
                 return attr;
+            }
         }
         return null;
     }
@@ -56,7 +58,11 @@ public sealed class NamedNodeMap : IReadOnlyList<AttrNode>
             if (_attributes[i].Name.Equals(attr.Name, StringComparison.OrdinalIgnoreCase))
             {
                 var old = _attributes[i];
-                if (ReferenceEquals(old, attr)) return null; // no change
+                if (ReferenceEquals(old, attr))
+                {
+                    return null; // no change
+                }
+
                 var oldValue = old.Value;
                 old.OwnerElement = null;
                 attr.OwnerElement = _owner;
@@ -106,8 +112,13 @@ public sealed class NamedNodeMap : IReadOnlyList<AttrNode>
     {
         ArgumentNullException.ThrowIfNull(localName);
         foreach (var attr in _attributes)
+        {
             if (NsEq(attr.Namespace, ns) && attr.LocalName.Equals(localName, StringComparison.Ordinal))
+            {
                 return attr;
+            }
+        }
+
         return null;
     }
 
@@ -123,7 +134,11 @@ public sealed class NamedNodeMap : IReadOnlyList<AttrNode>
                 && _attributes[i].LocalName.Equals(attr.LocalName, StringComparison.Ordinal))
             {
                 var old = _attributes[i];
-                if (ReferenceEquals(old, attr)) return null;
+                if (ReferenceEquals(old, attr))
+                {
+                    return null;
+                }
+
                 var oldValue = old.Value;
                 old.OwnerElement = null;
                 attr.OwnerElement = _owner;

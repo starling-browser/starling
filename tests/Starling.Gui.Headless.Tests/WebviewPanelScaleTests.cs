@@ -38,7 +38,10 @@ public class WebviewPanelScaleTests
         using var panel = NewPanel();
         var image = GetPageImage(panel);
         // Host the real _pageImage standalone so we don't need a laid-out page.
-        if (image.Parent is Panel parent) parent.Children.Remove(image);
+        if (image.Parent is Panel parent)
+        {
+            parent.Children.Remove(image);
+        }
 
         // Device-pixel source as BitmapBridge would produce: a red field with a
         // GREEN marker in the far bottom-right corner. The marker is visible in
@@ -103,6 +106,7 @@ public class WebviewPanelScaleTests
     {
         var pixels = new byte[w * h * 4];
         for (var y = 0; y < h; y++)
+        {
             for (var x = 0; x < w; x++)
             {
                 var o = (y * w + x) * 4;
@@ -112,15 +116,23 @@ public class WebviewPanelScaleTests
                 pixels[o + 2] = 0;                        // B
                 pixels[o + 3] = 255;                      // A
             }
+        }
 
         var bmp = new WriteableBitmap(new PixelSize(w, h), new Vector(96, 96), PixelFormat.Rgba8888, AlphaFormat.Unpremul);
         using var fb = bmp.Lock();
         var srcStride = w * 4;
         if (fb.RowBytes == srcStride)
+        {
             Marshal.Copy(pixels, 0, fb.Address, pixels.Length);
+        }
         else
+        {
             for (var y = 0; y < h; y++)
+            {
                 Marshal.Copy(pixels, y * srcStride, fb.Address + (y * fb.RowBytes), srcStride);
+            }
+        }
+
         return bmp;
     }
 

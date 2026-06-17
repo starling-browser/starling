@@ -84,7 +84,9 @@ internal sealed partial class ImageSharpBackend
         public void Dispose()
         {
             foreach (var item in _items)
+            {
                 item.Dispose();
+            }
         }
     }
 
@@ -166,7 +168,9 @@ internal sealed partial class ImageSharpBackend
             lock (_gate)
             {
                 foreach (var entry in _lru)
+                {
                     entry.Image.Dispose();
+                }
 
                 _lru.Clear();
                 _map.Clear();
@@ -256,7 +260,9 @@ internal sealed partial class ImageSharpBackend
         private void EvictToBudget(DisposableBag deferredDisposals)
         {
             while (_bytes > _maxBytes && _lru.Last is { } last)
+            {
                 Remove(last, deferredDisposals);
+            }
         }
 
         private void Remove(LinkedListNode<Entry> node, DisposableBag deferredDisposals)
@@ -271,7 +277,11 @@ internal sealed partial class ImageSharpBackend
         {
             lock (_gate)
             {
-                foreach (var entry in _lru) entry.Image.Dispose();
+                foreach (var entry in _lru)
+                {
+                    entry.Image.Dispose();
+                }
+
                 _lru.Clear();
                 _map.Clear();
                 _bytes = 0;

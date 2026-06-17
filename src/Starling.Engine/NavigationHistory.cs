@@ -21,7 +21,9 @@ public sealed class NavigationHistory
         ArgumentException.ThrowIfNullOrWhiteSpace(url);
 
         if (_index + 1 < _entries.Count)
+        {
             _entries.RemoveRange(_index + 1, _entries.Count - _index - 1);
+        }
 
         _entries.Add(url);
         _index = _entries.Count - 1;
@@ -31,7 +33,10 @@ public sealed class NavigationHistory
     public string Back()
     {
         if (!CanGoBack)
+        {
             throw new InvalidOperationException("Cannot go back because there is no previous history entry.");
+        }
+
         _index--;
         return _entries[_index];
     }
@@ -39,7 +44,10 @@ public sealed class NavigationHistory
     public string Forward()
     {
         if (!CanGoForward)
+        {
             throw new InvalidOperationException("Cannot go forward because there is no next history entry.");
+        }
+
         _index++;
         return _entries[_index];
     }

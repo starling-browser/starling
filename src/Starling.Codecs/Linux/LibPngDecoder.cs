@@ -51,7 +51,9 @@ internal static partial class LibPngDecoder
         fixed (byte* src = srcCopy)
         {
             if (png_image_begin_read_from_memory(ref image, (nint)src, (nuint)srcCopy.Length) == 0)
+            {
                 throw new ImageDecodeException($"libpng: begin_read_from_memory failed ({ReadMessage(ref image)}).");
+            }
         }
 
         image.Format = PNG_FORMAT_RGBA;
@@ -68,7 +70,9 @@ internal static partial class LibPngDecoder
                     // background = null (no compositing), row_stride in bytes,
                     // colormap = null. Returns non-zero on success.
                     if (png_image_finish_read(ref image, 0, (nint)dst, (int)stride, 0) == 0)
+                    {
                         throw new ImageDecodeException($"libpng: finish_read failed ({ReadMessage(ref image)}).");
+                    }
                 }
             });
         }

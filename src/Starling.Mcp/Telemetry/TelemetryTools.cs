@@ -66,15 +66,34 @@ public sealed class TelemetryTools : IMcpToolGroup
         for (var i = snapshot.Length - 1; i >= 0 && count < limit; i--)
         {
             var record = snapshot[i];
-            if (sinceMs is { } since && record.StartUtc < FromUnixMs(since)) continue;
-            if (sourceFilter is { Length: > 0 } source && record.Source != source) continue;
-            if (minDurationMs is { } md && record.Duration.TotalMilliseconds < md) continue;
-            if (statusError && record.Status != ActivityStatusCode.Error) continue;
+            if (sinceMs is { } since && record.StartUtc < FromUnixMs(since))
+            {
+                continue;
+            }
+
+            if (sourceFilter is { Length: > 0 } source && record.Source != source)
+            {
+                continue;
+            }
+
+            if (minDurationMs is { } md && record.Duration.TotalMilliseconds < md)
+            {
+                continue;
+            }
+
+            if (statusError && record.Status != ActivityStatusCode.Error)
+            {
+                continue;
+            }
+
             picked.Add(ActivityRecordToJson(record));
             count++;
         }
         picked.Reverse();
-        foreach (var entry in picked) traces.Add(entry);
+        foreach (var entry in picked)
+        {
+            traces.Add(entry);
+        }
 
         return new JsonObject
         {
@@ -98,16 +117,31 @@ public sealed class TelemetryTools : IMcpToolGroup
         for (var i = snapshot.Length - 1; i >= 0 && count < limit; i--)
         {
             var record = snapshot[i];
-            if (sinceMs is { } since && record.TimestampUtc < FromUnixMs(since)) continue;
-            if (categoryFilter is { Length: > 0 } cat && record.Category != cat) continue;
-            if (minLevel is { } floor && record.Level < floor) continue;
+            if (sinceMs is { } since && record.TimestampUtc < FromUnixMs(since))
+            {
+                continue;
+            }
+
+            if (categoryFilter is { Length: > 0 } cat && record.Category != cat)
+            {
+                continue;
+            }
+
+            if (minLevel is { } floor && record.Level < floor)
+            {
+                continue;
+            }
+
             picked.Add(LogRecordToJson(record));
             count++;
         }
         picked.Reverse();
 
         var logs = new JsonArray();
-        foreach (var entry in picked) logs.Add(entry);
+        foreach (var entry in picked)
+        {
+            logs.Add(entry);
+        }
 
         return new JsonObject
         {
@@ -129,15 +163,26 @@ public sealed class TelemetryTools : IMcpToolGroup
         for (var i = snapshot.Length - 1; i >= 0 && count < limit; i--)
         {
             var record = snapshot[i];
-            if (sinceMs is { } since && record.TimestampUtc < FromUnixMs(since)) continue;
-            if (instrumentFilter is { Length: > 0 } inst && record.InstrumentName != inst) continue;
+            if (sinceMs is { } since && record.TimestampUtc < FromUnixMs(since))
+            {
+                continue;
+            }
+
+            if (instrumentFilter is { Length: > 0 } inst && record.InstrumentName != inst)
+            {
+                continue;
+            }
+
             picked.Add(MeterRecordToJson(record));
             count++;
         }
         picked.Reverse();
 
         var measurements = new JsonArray();
-        foreach (var entry in picked) measurements.Add(entry);
+        foreach (var entry in picked)
+        {
+            measurements.Add(entry);
+        }
 
         return new JsonObject
         {
@@ -163,8 +208,15 @@ public sealed class TelemetryTools : IMcpToolGroup
         foreach (var record in _telemetry.Logs.Snapshot())
         {
             logCategories.Add(record.Category);
-            if (record.Level < minLogLevel) minLogLevel = record.Level;
-            if (record.Level > maxLogLevel) maxLogLevel = record.Level;
+            if (record.Level < minLogLevel)
+            {
+                minLogLevel = record.Level;
+            }
+
+            if (record.Level > maxLogLevel)
+            {
+                maxLogLevel = record.Level;
+            }
         }
 
         var meterNames = new HashSet<string>(StringComparer.Ordinal);
@@ -210,7 +262,9 @@ public sealed class TelemetryTools : IMcpToolGroup
     {
         var tags = new JsonObject();
         foreach (var kv in record.Tags)
+        {
             tags[kv.Key] = TagValue(kv.Value);
+        }
 
         return new JsonObject
         {
@@ -242,7 +296,9 @@ public sealed class TelemetryTools : IMcpToolGroup
     {
         var tags = new JsonObject();
         foreach (var kv in record.Tags)
+        {
             tags[kv.Key] = TagValue(kv.Value);
+        }
 
         return new JsonObject
         {
@@ -275,14 +331,26 @@ public sealed class TelemetryTools : IMcpToolGroup
 
     private static LogLevel? ParseLogLevel(string? text)
     {
-        if (string.IsNullOrWhiteSpace(text)) return null;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
         return Enum.TryParse<LogLevel>(text, ignoreCase: true, out var level) ? level : null;
     }
 
     private static int ClampLimit(int requested)
     {
-        if (requested <= 0) return DefaultLimit;
-        if (requested > 2000) return 2000;
+        if (requested <= 0)
+        {
+            return DefaultLimit;
+        }
+
+        if (requested > 2000)
+        {
+            return 2000;
+        }
+
         return requested;
     }
 

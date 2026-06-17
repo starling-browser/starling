@@ -22,7 +22,10 @@ internal static partial class LibWebpDecoder
         fixed (byte* src = bytes)
         {
             if (WebPGetInfo((nint)src, (nuint)bytes.Length, out width, out height) == 0)
+            {
                 throw new ImageDecodeException("libwebp: WebPGetInfo rejected the data (not a valid WebP).");
+            }
+
             var (w, h, byteLength) = NativeImageDecoder.ValidateDecodedDimensions(width, height);
             nint stride = (nint)w * 4;
 
@@ -35,7 +38,9 @@ internal static partial class LibWebpDecoder
                     nint result = WebPDecodeRGBAInto(
                         (nint)s, (nuint)srcCopy.Length, (nint)dst, (nuint)byteLength, (int)stride);
                     if (result == 0)
+                    {
                         throw new ImageDecodeException("libwebp: WebPDecodeRGBAInto failed (corrupt WebP).");
+                    }
                 }
             });
         }

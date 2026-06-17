@@ -139,8 +139,11 @@ public sealed class ImageSharpTextMeasurerTests
         shaped.Advance.Should().BeGreaterThan(0);
         shaped.Glyphs[0].X.Should().Be(0f, "the first glyph's pen position is at the run origin");
         for (var i = 1; i < shaped.Glyphs.Length; i++)
+        {
             shaped.Glyphs[i].X.Should().BeGreaterThanOrEqualTo(shaped.Glyphs[i - 1].X,
                 "pen positions accumulate monotonically along the baseline");
+        }
+
         ((double)shaped.Glyphs[^1].X).Should().BeLessThanOrEqualTo(shaped.Advance,
             "the last glyph's pen X is before the run's total advance");
     }
@@ -202,7 +205,12 @@ public sealed class ImageSharpTextMeasurerTests
             {
                 var styles = family.GetAvailableStyles().Span;
                 for (var i = 0; i < styles.Length; i++)
-                    if (styles[i] == style) return true;
+                {
+                    if (styles[i] == style)
+                    {
+                        return true;
+                    }
+                }
             }
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)

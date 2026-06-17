@@ -55,7 +55,9 @@ public static class SymbolCtor
         DefineMethod(ctor, "for", (_, args) => SymbolFor(realm, args), 1);
         DefineMethod(ctor, "keyFor", (_, args) => KeyFor(realm, args), 1);
         foreach (var (name, symbol) in WellKnown)
+        {
             DefineData(ctor, name, JsValue.Symbol(symbol), writable: false, enumerable: false, configurable: false);
+        }
 
         DefineData(proto, "constructor", JsValue.Object(ctor), writable: true, enumerable: false, configurable: true);
         DefineMethod(proto, "toString", (thisV, _) => JsValue.String(ThisSymbol(realm, thisV).DescriptiveString), 0);
@@ -90,20 +92,36 @@ public static class SymbolCtor
     private static JsValue KeyFor(JsRealm realm, JsValue[] args)
     {
         if (args.Length == 0 || !args[0].IsSymbol)
+        {
             throw new JsThrow(realm.NewTypeError("Symbol.keyFor requires a Symbol"));
+        }
+
         var needle = args[0].AsSymbol;
         foreach (var (key, symbol) in realm.SymbolRegistry)
-            if (ReferenceEquals(symbol, needle)) return JsValue.String(key);
+        {
+            if (ReferenceEquals(symbol, needle))
+            {
+                return JsValue.String(key);
+            }
+        }
+
         return JsValue.Undefined;
     }
 
     private static JsSymbol ThisSymbol(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsSymbol) return thisV.AsSymbol;
+        if (thisV.IsSymbol)
+        {
+            return thisV.AsSymbol;
+        }
+
         if (thisV.IsObject)
         {
             var slot = thisV.AsObject.GetOwnPropertyDescriptor("__primitiveValue");
-            if (slot is { } d && d.Value.IsSymbol) return d.Value.AsSymbol;
+            if (slot is { } d && d.Value.IsSymbol)
+            {
+                return d.Value.AsSymbol;
+            }
         }
         throw new JsThrow(realm.NewTypeError("Symbol.prototype method called on incompatible receiver"));
     }

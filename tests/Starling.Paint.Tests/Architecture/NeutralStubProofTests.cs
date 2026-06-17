@@ -50,16 +50,36 @@ public sealed class NeutralStubProofTests
 
         foreach (var t in asm.GetTypes())
         {
-            if (t.Name.StartsWith('<')) continue;
+            if (t.Name.StartsWith('<'))
+            {
+                continue;
+            }
+
             foreach (var c in t.GetConstructors(F))
-                foreach (var p in c.GetParameters()) Check(leaks, t, p.ParameterType);
+            {
+                foreach (var p in c.GetParameters())
+                {
+                    Check(leaks, t, p.ParameterType);
+                }
+            }
+
             foreach (var m in t.GetMethods(F))
             {
                 Check(leaks, t, m.ReturnType);
-                foreach (var p in m.GetParameters()) Check(leaks, t, p.ParameterType);
+                foreach (var p in m.GetParameters())
+                {
+                    Check(leaks, t, p.ParameterType);
+                }
             }
-            foreach (var pr in t.GetProperties(F)) Check(leaks, t, pr.PropertyType);
-            foreach (var fl in t.GetFields(F)) Check(leaks, t, fl.FieldType);
+            foreach (var pr in t.GetProperties(F))
+            {
+                Check(leaks, t, pr.PropertyType);
+            }
+
+            foreach (var fl in t.GetFields(F))
+            {
+                Check(leaks, t, fl.FieldType);
+            }
         }
 
         leaks.Should().BeEmpty("the proof backend implements the seam without any SixLabors type");
@@ -68,16 +88,27 @@ public sealed class NeutralStubProofTests
     private static void Check(SortedSet<string> leaks, Type owner, Type t)
     {
         foreach (var r in Flatten(t))
+        {
             if ((r.Namespace ?? "").StartsWith("SixLabors", StringComparison.Ordinal))
+            {
                 leaks.Add($"{owner.Name} => {r.Name}");
+            }
+        }
     }
 
     private static IEnumerable<Type> Flatten(Type t)
     {
-        if (t.HasElementType) { foreach (var e in Flatten(t.GetElementType()!)) yield return e; yield break; }
+        if (t.HasElementType) { foreach (var e in Flatten(t.GetElementType()!)) { yield return e; } yield break; }
         yield return t;
         if (t.IsGenericType)
+        {
             foreach (var a in t.GetGenericArguments())
-                foreach (var e in Flatten(a)) yield return e;
+            {
+                foreach (var e in Flatten(a))
+                {
+                    yield return e;
+                }
+            }
+        }
     }
 }

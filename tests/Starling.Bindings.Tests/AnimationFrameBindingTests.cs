@@ -96,7 +96,10 @@ public sealed class AnimationFrameBindingTests
         var errors = new List<string>();
         runtime.Realm.ConsoleSink = (level, msg) =>
         {
-            if (level == ConsoleLevel.Error) errors.Add(msg);
+            if (level == ConsoleLevel.Error)
+            {
+                errors.Add(msg);
+            }
         };
         AnimationFrameBinding.Install(runtime, loop);
         return (runtime, loop, errors);

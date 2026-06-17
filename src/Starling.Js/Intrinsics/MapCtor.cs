@@ -20,7 +20,10 @@ public static class MapCtor
             (newTarget, args) =>
             {
                 if (!IntrinsicHelpers.IsConstructInvocation(newTarget))
+                {
                     throw new JsThrow(realm.NewTypeError("Constructor Map requires 'new'"));
+                }
+
                 var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, proto);
                 return JsValue.Object(Construct(realm, instProto, args));
             },
@@ -102,18 +105,32 @@ public static class MapCtor
     private static JsMap Construct(JsRealm realm, JsObject instProto, JsValue[] args)
     {
         var map = new JsMap(realm);
-        if (!ReferenceEquals(instProto, realm.MapPrototype)) map.SetPrototypeOf(instProto);
-        if (args.Length == 0 || args[0].IsNullish) return map;
+        if (!ReferenceEquals(instProto, realm.MapPrototype))
+        {
+            map.SetPrototypeOf(instProto);
+        }
+
+        if (args.Length == 0 || args[0].IsNullish)
+        {
+            return map;
+        }
 
         var adder = AbstractOperations.Get(realm.ActiveVm, map, "set");
         if (!AbstractOperations.IsCallable(adder))
+        {
             throw new JsThrow(realm.NewTypeError("Map constructor set method is not callable"));
+        }
+
         var iterable = args[0];
         var record = AbstractOperations.GetIterator(realm, realm.ActiveVm, iterable);
         while (true)
         {
             var next = AbstractOperations.IteratorStep(realm, realm.ActiveVm, ref record);
-            if (next is null) break;
+            if (next is null)
+            {
+                break;
+            }
+
             JsValue entry;
             try
             {
@@ -146,14 +163,21 @@ public static class MapCtor
 
     private static JsMap ThisMap(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is JsMap m) return m;
+        if (thisV.IsObject && thisV.AsObject is JsMap m)
+        {
+            return m;
+        }
+
         throw new JsThrow(realm.NewTypeError("Map.prototype method called on incompatible receiver"));
     }
 
     private static JsValue MapIteratorNext(JsRealm realm, JsValue thisV)
     {
         if (!thisV.IsObject || thisV.AsObject is not JsMapIterator it)
+        {
             throw new JsThrow(realm.NewTypeError("Map Iterator.prototype.next called on incompatible receiver"));
+        }
+
         return it.Next(realm);
     }
 
@@ -161,7 +185,10 @@ public static class MapCtor
     {
         var map = ThisMap(realm, thisV);
         if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+        {
             throw new JsThrow(realm.NewTypeError("Map.prototype.forEach requires a callback"));
+        }
+
         var cb = args[0];
         var thisArg = args.Length > 1 ? args[1] : JsValue.Undefined;
         foreach (var (k, v) in map.LiveEntries())

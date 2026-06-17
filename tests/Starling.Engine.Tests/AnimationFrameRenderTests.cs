@@ -57,7 +57,10 @@ public class AnimationFrameRenderTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 
@@ -91,7 +94,10 @@ public class AnimationFrameRenderTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 }

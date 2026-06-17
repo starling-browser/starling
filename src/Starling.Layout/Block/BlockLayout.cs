@@ -117,9 +117,14 @@ internal sealed class BlockLayout
         if (!item.SubtreeDirty)
         {
             if (measure && reuseHeight && item.ItemMeasureConstraint == cs)
+            {
                 return item.ItemMeasuredContent;
+            }
+
             if (!measure && item.ItemLaidConstraint == cs)
+            {
                 return item.ItemLaidContent;
+            }
         }
 
         double content;
@@ -258,14 +263,26 @@ internal sealed class BlockLayout
         // last in-flow block (§10.6.7). Without this, a float-only container
         // would report zero height even though its floats are visible.
         var floatBottom = floats.MaxFloatBottom();
-        if (floatBottom > cursorY) cursorY = floatBottom;
+        if (floatBottom > cursorY)
+        {
+            cursorY = floatBottom;
+        }
+
         return cursorY;
     }
 
     private static string? GetFloatSide(ComputedStyle? style)
     {
-        if (style is null) return null;
-        if (style.Get(PropertyId.Float) is not CssKeyword k) return null;
+        if (style is null)
+        {
+            return null;
+        }
+
+        if (style.Get(PropertyId.Float) is not CssKeyword k)
+        {
+            return null;
+        }
+
         return k.Name.Equals("left", StringComparison.OrdinalIgnoreCase) ? "left"
             : k.Name.Equals("right", StringComparison.OrdinalIgnoreCase) ? "right"
             : null;
@@ -273,8 +290,16 @@ internal sealed class BlockLayout
 
     private static string? GetClearSide(ComputedStyle? style)
     {
-        if (style is null) return null;
-        if (style.Get(PropertyId.Clear) is not CssKeyword k) return null;
+        if (style is null)
+        {
+            return null;
+        }
+
+        if (style.Get(PropertyId.Clear) is not CssKeyword k)
+        {
+            return null;
+        }
+
         var n = k.Name;
         return n.Equals("left", StringComparison.OrdinalIgnoreCase) ? "left"
             : n.Equals("right", StringComparison.OrdinalIgnoreCase) ? "right"
@@ -288,7 +313,10 @@ internal sealed class BlockLayout
         // height from laid-out children) but are placed by the float context
         // instead of advancing the cursor. They establish their own BFC so the
         // recursive LayoutChildren call gets its own FloatContext.
-        if (child.Kind == BoxKind.AnonymousBlock) return;
+        if (child.Kind == BoxKind.AnonymousBlock)
+        {
+            return;
+        }
 
         ResolveBoxModel(child, containerWidth);
         var explicitHeight = ResolveHeight(child.Style, PropertyId.Height, containerHeight, _viewport, allowAuto: true);
@@ -344,8 +372,16 @@ internal sealed class BlockLayout
     /// </summary>
     internal static bool IsOutOfFlow(ComputedStyle? style)
     {
-        if (style is null) return false;
-        if (style.Get(PropertyId.Position) is not CssKeyword k) return false;
+        if (style is null)
+        {
+            return false;
+        }
+
+        if (style.Get(PropertyId.Position) is not CssKeyword k)
+        {
+            return false;
+        }
+
         var name = k.Name;
         return string.Equals(name, "absolute", StringComparison.OrdinalIgnoreCase)
             || string.Equals(name, "fixed", StringComparison.OrdinalIgnoreCase);
@@ -500,7 +536,11 @@ internal sealed class BlockLayout
         // the scroll sink gate below only governs measurement bookkeeping.
         box.RelShiftValid = false;
         var sink = RelaidScrollerSink;
-        if (sink is null) return;
+        if (sink is null)
+        {
+            return;
+        }
+
         Scroll.ScrollOverflowMeasurer.InvalidateExtentsToRoot(box);
         if (box.Element is not null
             && !box.ScrollMeasureQueued
@@ -517,7 +557,11 @@ internal sealed class BlockLayout
     /// includes a moved rect. No-op without a sink.</summary>
     internal void NoteFrameMoved(Box.Box box)
     {
-        if (RelaidScrollerSink is null) return;
+        if (RelaidScrollerSink is null)
+        {
+            return;
+        }
+
         Scroll.ScrollOverflowMeasurer.InvalidateExtentsToRoot(box);
     }
 
@@ -528,7 +572,11 @@ internal sealed class BlockLayout
     /// incremental path.</summary>
     private void Stamp(Box.Box box, ConstraintSpace cs, bool measure)
     {
-        if (!_incremental) return;
+        if (!_incremental)
+        {
+            return;
+        }
+
         NoteRelaid(box);
         if (measure)
         {
@@ -559,7 +607,10 @@ internal sealed class BlockLayout
     {
         var leftAuto = IsAutoMargin(child.Style, PropertyId.MarginLeft);
         var rightAuto = IsAutoMargin(child.Style, PropertyId.MarginRight);
-        if (!leftAuto && !rightAuto) return;
+        if (!leftAuto && !rightAuto)
+        {
+            return;
+        }
 
         // CSS 2.1 §10.3.3 says auto margins absorb slack when width is not
         // auto. §10.4 extends this to the max-width / min-width clamp: after
@@ -572,7 +623,10 @@ internal sealed class BlockLayout
         // collapse to 0 the same way the §10.3.3 path produces.
         var outerWidth = usedWidth + child.Padding.Horizontal + child.Border.Horizontal;
         var slack = containerWidth - outerWidth - child.Margin.Left - child.Margin.Right;
-        if (slack <= 0) return;
+        if (slack <= 0)
+        {
+            return;
+        }
 
         double newLeft = child.Margin.Left;
         double newRight = child.Margin.Right;
@@ -607,23 +661,43 @@ internal sealed class BlockLayout
 
     internal static bool IsFlexContainer(ComputedStyle? style)
     {
-        if (style is null) return false;
-        if (style.Get(PropertyId.Display) is not CssKeyword k) return false;
+        if (style is null)
+        {
+            return false;
+        }
+
+        if (style.Get(PropertyId.Display) is not CssKeyword k)
+        {
+            return false;
+        }
+
         return k.Name.Equals("flex", StringComparison.OrdinalIgnoreCase)
             || k.Name.Equals("inline-flex", StringComparison.OrdinalIgnoreCase);
     }
 
     internal static bool IsGridContainer(ComputedStyle? style)
     {
-        if (style is null) return false;
-        if (style.Get(PropertyId.Display) is not CssKeyword k) return false;
+        if (style is null)
+        {
+            return false;
+        }
+
+        if (style.Get(PropertyId.Display) is not CssKeyword k)
+        {
+            return false;
+        }
+
         return k.Name.Equals("grid", StringComparison.OrdinalIgnoreCase)
             || k.Name.Equals("inline-grid", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool HasExplicitWidth(ComputedStyle? style)
     {
-        if (style is null) return false;
+        if (style is null)
+        {
+            return false;
+        }
+
         var value = style.Get(PropertyId.Width);
         return value is not CssKeyword k || k.Name != "auto";
     }
@@ -669,34 +743,56 @@ internal sealed class BlockLayout
 
         double tentative;
         if (TryResolveIntrinsicWidth(box.Style?.Get(PropertyId.Width), box, available, containerWidth, out var intrinsic))
+        {
             tentative = intrinsic;
+        }
         else if (ResolveLength(box.Style, PropertyId.Width, containerWidth, _viewport, allowAuto: true) is { } w)
+        {
             tentative = w;
+        }
         else if (transferredWidth is { } tw)
+        {
             tentative = tw;
+        }
         else
+        {
             tentative = available;
+        }
 
         // max-width: `none` (the initial value) is a no-op; any concrete length,
         // percentage, or intrinsic keyword clamps the tentative width down.
         double? maxWidth;
         if (TryResolveIntrinsicWidth(box.Style?.Get(PropertyId.MaxWidth), box, available, containerWidth, out var maxIntrinsic))
+        {
             maxWidth = maxIntrinsic;
+        }
         else
+        {
             maxWidth = ResolveMaxLength(box.Style, PropertyId.MaxWidth, containerWidth, _viewport);
+        }
+
         if (maxWidth is { } mx && tentative > mx)
+        {
             tentative = mx;
+        }
 
         // min-width: initial value `0` is a no-op; a concrete length/percentage
         // (or intrinsic keyword) expands the box back up when it's narrower
         // than the floor.
         double minWidth;
         if (TryResolveIntrinsicWidth(box.Style?.Get(PropertyId.MinWidth), box, available, containerWidth, out var minIntrinsic))
+        {
             minWidth = minIntrinsic;
+        }
         else
+        {
             minWidth = ResolveLength(box.Style, PropertyId.MinWidth, containerWidth, _viewport) ?? 0;
+        }
+
         if (tentative < minWidth)
+        {
             tentative = minWidth;
+        }
 
         return Math.Max(0, tentative);
     }
@@ -755,7 +851,11 @@ internal sealed class BlockLayout
     /// </summary>
     internal double MinContentWidth(Box.Box box)
     {
-        if (!box.SubtreeDirty && box.CachedMinContentWidth is { } cached) return cached;
+        if (!box.SubtreeDirty && box.CachedMinContentWidth is { } cached)
+        {
+            return cached;
+        }
+
         LayoutItem(box, 0d, null, measure: true);
         var min = IntrinsicSizes.ContentExtent(box);
         box.CachedMinContentWidth = min;
@@ -777,7 +877,11 @@ internal sealed class BlockLayout
             var flex = new Starling.Layout.Flex.FlexLayout(this, _viewport);
             return flex.NaturalWidth(box, containerWidth);
         }
-        if (!box.SubtreeDirty && box.CachedMaxContentWidth is { } cached) return cached;
+        if (!box.SubtreeDirty && box.CachedMaxContentWidth is { } cached)
+        {
+            return cached;
+        }
+
         LayoutItem(box, IntrinsicSizes.ProbeWidth, null, measure: true);
         var max = IntrinsicSizes.ContentExtent(box);
         box.CachedMaxContentWidth = max;
@@ -803,8 +907,16 @@ internal sealed class BlockLayout
     /// </summary>
     private static double? TransferredWidth(Box.Box child, double? explicitHeight)
     {
-        if (explicitHeight is not { } h || HasExplicitWidth(child.Style)) return null;
-        if (!IntrinsicSizes.TryGetPreferredRatio(child.Style, out var ratio)) return null;
+        if (explicitHeight is not { } h || HasExplicitWidth(child.Style))
+        {
+            return null;
+        }
+
+        if (!IntrinsicSizes.TryGetPreferredRatio(child.Style, out var ratio))
+        {
+            return null;
+        }
+
         return h * ratio;
     }
 
@@ -819,7 +931,11 @@ internal sealed class BlockLayout
     /// </summary>
     private double? TransferredHeight(Box.Box child, double usedWidth, double? containerHeight, double contentHeight)
     {
-        if (!IntrinsicSizes.TryGetPreferredRatio(child.Style, out var ratio)) return null;
+        if (!IntrinsicSizes.TryGetPreferredRatio(child.Style, out var ratio))
+        {
+            return null;
+        }
+
         var transferred = usedWidth / ratio;
 
         double? maxH = child.Style?.Get(PropertyId.MaxHeight) is CssKeyword { Name: "none" }
@@ -827,14 +943,28 @@ internal sealed class BlockLayout
             : ResolveHeight(child.Style, PropertyId.MaxHeight, containerHeight, _viewport, allowAuto: true);
         var minH = ResolveHeight(child.Style, PropertyId.MinHeight, containerHeight, _viewport, allowAuto: true);
 
-        if (maxH is { } mx && transferred > mx) transferred = mx;
-        if (minH is { } mn && transferred < mn) transferred = mn;
+        if (maxH is { } mx && transferred > mx)
+        {
+            transferred = mx;
+        }
+
+        if (minH is { } mn && transferred < mn)
+        {
+            transferred = mn;
+        }
 
         if (minH is not { } floor || floor <= 0)
         {
             var contentFloor = contentHeight;
-            if (maxH is { } cap && contentFloor > cap) contentFloor = cap;
-            if (transferred < contentFloor) transferred = contentFloor;
+            if (maxH is { } cap && contentFloor > cap)
+            {
+                contentFloor = cap;
+            }
+
+            if (transferred < contentFloor)
+            {
+                transferred = contentFloor;
+            }
         }
         return transferred;
     }
@@ -844,17 +974,33 @@ internal sealed class BlockLayout
     // the box; intercept it here so callers can skip the clamp.
     internal static double? ResolveMaxLength(ComputedStyle? style, PropertyId property, double percentageBasis, Size? viewport)
     {
-        if (style is null) return null;
+        if (style is null)
+        {
+            return null;
+        }
+
         var value = style.Get(property);
-        if (value is CssKeyword k && k.Name == "none") return null;
+        if (value is CssKeyword k && k.Name == "none")
+        {
+            return null;
+        }
+
         return ResolveLength(style, property, percentageBasis, viewport);
     }
 
     internal static double ResolveBorderWidth(ComputedStyle? style, PropertyId widthId, PropertyId styleId, Size? viewport = null)
     {
-        if (style is null) return 0;
+        if (style is null)
+        {
+            return 0;
+        }
+
         var styleValue = style.Get(styleId);
-        if (styleValue is CssKeyword k && k.Name == "none") return 0;
+        if (styleValue is CssKeyword k && k.Name == "none")
+        {
+            return 0;
+        }
+
         return style.Get(widthId) is CssLength len ? ToPx(len, viewport) : 0;
     }
 
@@ -867,7 +1013,11 @@ internal sealed class BlockLayout
     /// </summary>
     internal static double? ResolveHeight(ComputedStyle? style, PropertyId property, double? containerHeight, Size? viewport, bool allowAuto = false)
     {
-        if (style is null) return null;
+        if (style is null)
+        {
+            return null;
+        }
+
         var value = style.Get(property);
         return value switch
         {
@@ -896,7 +1046,11 @@ internal sealed class BlockLayout
 
     internal static double? ResolveLength(ComputedStyle? style, PropertyId property, double percentageBasis, Size? viewport, bool allowAuto = false)
     {
-        if (style is null) return null;
+        if (style is null)
+        {
+            return null;
+        }
+
         var value = style.Get(property);
         return value switch
         {

@@ -40,7 +40,10 @@ public class RenderE2ETests
         }
         finally
         {
-            if (File.Exists(output)) File.Delete(output);
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
         }
     }
 
@@ -52,9 +55,15 @@ public class RenderE2ETests
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx")))
+        {
             dir = dir.Parent;
+        }
+
         if (dir is null)
+        {
             throw new InvalidOperationException("Could not locate Starling.slnx walking up from the test binary.");
+        }
+
         return dir.FullName;
     }
 }

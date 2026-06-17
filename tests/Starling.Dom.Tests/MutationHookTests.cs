@@ -31,7 +31,10 @@ public sealed class MutationHookTests
         var records = new List<(Node Added, Node? Prev, Node? Next)>();
         doc.ChildListMutated = (_, added, _, prev, next) =>
         {
-            if (added is { Count: > 0 }) records.Add((added[0], prev, next));
+            if (added is { Count: > 0 })
+            {
+                records.Add((added[0], prev, next));
+            }
         };
 
         // Simulate the engine's NodeConnected hook running an injected <script>
@@ -40,7 +43,11 @@ public sealed class MutationHookTests
         var reentered = false;
         doc.NodeConnected = node =>
         {
-            if (reentered || !ReferenceEquals(node, b)) return;
+            if (reentered || !ReferenceEquals(node, b))
+            {
+                return;
+            }
+
             reentered = true;
             body.AppendChild(doc.CreateElement("c")); // changes b.NextSibling: null -> <c>
         };

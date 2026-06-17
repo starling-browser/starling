@@ -253,7 +253,11 @@ public sealed class MainWindow : Window, IBrowserController
         Background = new SolidColorBrush(t.Bg);
         Content = OperatingSystem.IsMacOS() ? (Control)rootGrid : WrapWithResizeGrips(rootGrid);
 
-        if (devToolsTab is { } tab) OpenDevTools(tab);
+        if (devToolsTab is { } tab)
+        {
+            OpenDevTools(tab);
+        }
+
         UpdateNavButtonStates();
     }
 
@@ -312,7 +316,10 @@ public sealed class MainWindow : Window, IBrowserController
 
         // Detach _webview from the old middle grid so it can be re-parented to
         // the new one — Avalonia controls reject being added to a second parent.
-        if (_webview.Parent is Panel oldParent) oldParent.Children.Remove(_webview);
+        if (_webview.Parent is Panel oldParent)
+        {
+            oldParent.Children.Remove(_webview);
+        }
 
         if (_devtools is not null)
         {
@@ -339,7 +346,11 @@ public sealed class MainWindow : Window, IBrowserController
     // Switch the docking position of an already-open panel.
     private void SetDock(DevToolsDock dock)
     {
-        if (_devtools is null || _dock == dock) return;
+        if (_devtools is null || _dock == dock)
+        {
+            return;
+        }
+
         _dock = dock;
         PlaceDevTools();
     }
@@ -349,7 +360,11 @@ public sealed class MainWindow : Window, IBrowserController
     // webview is always re-seated as the primary cell of the middle grid.
     private void PlaceDevTools()
     {
-        if (_devtools is null) return;
+        if (_devtools is null)
+        {
+            return;
+        }
+
         var middle = (Grid)_contentStack.Children[1];
 
         // Clear the grid (removes webview + any splitter + a docked panel) and
@@ -419,7 +434,11 @@ public sealed class MainWindow : Window, IBrowserController
 
     private void ShowDevWindow()
     {
-        if (_devtools is null) return;
+        if (_devtools is null)
+        {
+            return;
+        }
+
         var t = _tm.Tokens;
         _devWindow = new Window
         {
@@ -436,7 +455,11 @@ public sealed class MainWindow : Window, IBrowserController
         // programmatic teardown is a no-op here (avoids re-entrancy).
         _devWindow.Closed += (s, _) =>
         {
-            if (!ReferenceEquals(_devWindow, s)) return;
+            if (!ReferenceEquals(_devWindow, s))
+            {
+                return;
+            }
+
             _devWindow = null;
             CloseDevTools();
         };
@@ -447,7 +470,11 @@ public sealed class MainWindow : Window, IBrowserController
     // the panel (the caller decides whether to re-host or dispose).
     private void DestroyDevWindow()
     {
-        if (_devWindow is null) return;
+        if (_devWindow is null)
+        {
+            return;
+        }
+
         var w = _devWindow;
         _devWindow = null;
         w.Content = null;
@@ -456,10 +483,18 @@ public sealed class MainWindow : Window, IBrowserController
 
     private void CloseDevTools()
     {
-        if (_devtools is null) return;
+        if (_devtools is null)
+        {
+            return;
+        }
+
         var middle = (Grid)_contentStack.Children[1];
         middle.Children.Remove(_devtools);
-        if (_devSplitter is not null) middle.Children.Remove(_devSplitter);
+        if (_devSplitter is not null)
+        {
+            middle.Children.Remove(_devSplitter);
+        }
+
         DestroyDevWindow();
 
         _devtools.Dispose();
@@ -469,7 +504,10 @@ public sealed class MainWindow : Window, IBrowserController
         // Restore the webview as the sole occupant of the middle area.
         middle.ColumnDefinitions = new ColumnDefinitions("*");
         middle.RowDefinitions = new RowDefinitions("*");
-        if (!middle.Children.Contains(_webview)) Place(middle, _webview);
+        if (!middle.Children.Contains(_webview))
+        {
+            Place(middle, _webview);
+        }
     }
 
     private async void ToggleTheme()
@@ -479,30 +517,50 @@ public sealed class MainWindow : Window, IBrowserController
         // construction time, so flipping the theme has to re-run the load
         // for `@media (prefers-color-scheme: dark)` rules to apply.
         if (_session.History.Current is not null && !_busy)
+        {
             await RunNavigation((ct, fp) => _session.ReloadInteractiveAsync(BuildOptions(), ct, fp), "Theme reload");
+        }
     }
 
     private void ToggleDevTools()
     {
-        if (_devtools is null) OpenDevTools(DevToolsTab.Performance);
-        else CloseDevTools();
+        if (_devtools is null)
+        {
+            OpenDevTools(DevToolsTab.Performance);
+        }
+        else
+        {
+            CloseDevTools();
+        }
     }
 
     private async void BackClicked(object? s, EventArgs e)
     {
-        if (!_session.History.CanGoBack || _busy) return;
+        if (!_session.History.CanGoBack || _busy)
+        {
+            return;
+        }
+
         await RunNavigation((ct, fp) => _session.BackInteractiveAsync(BuildOptions(), ct, fp), "Back");
     }
 
     private async void ForwardClicked(object? s, EventArgs e)
     {
-        if (!_session.History.CanGoForward || _busy) return;
+        if (!_session.History.CanGoForward || _busy)
+        {
+            return;
+        }
+
         await RunNavigation((ct, fp) => _session.ForwardInteractiveAsync(BuildOptions(), ct, fp), "Forward");
     }
 
     private async void ReloadClicked(object? s, EventArgs e)
     {
-        if (_session.History.Current is null || _busy) return;
+        if (_session.History.Current is null || _busy)
+        {
+            return;
+        }
+
         await RunNavigation((ct, fp) => _session.ReloadInteractiveAsync(BuildOptions(), ct, fp), "Reload");
     }
 
@@ -527,8 +585,16 @@ public sealed class MainWindow : Window, IBrowserController
         var info = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
                    ?? string.Empty;
         var plus = info.IndexOf('+');
-        if (plus >= 0) info = info[(plus + 1)..];
-        if (info.Length > 8) info = info[..8];
+        if (plus >= 0)
+        {
+            info = info[(plus + 1)..];
+        }
+
+        if (info.Length > 8)
+        {
+            info = info[..8];
+        }
+
         return info;
     }
 
@@ -555,7 +621,11 @@ public sealed class MainWindow : Window, IBrowserController
 
     private async void OnSidebarTabActivated(TabInfo tab)
     {
-        if (string.IsNullOrWhiteSpace(tab.Url)) return;
+        if (string.IsNullOrWhiteSpace(tab.Url))
+        {
+            return;
+        }
+
         await NavigateAsync(tab.Url, ignoreEmpty: true);
     }
 
@@ -564,7 +634,11 @@ public sealed class MainWindow : Window, IBrowserController
         var trimmed = (raw ?? string.Empty).Trim();
         if (trimmed.Length == 0)
         {
-            if (!ignoreEmpty) _statusBar.SetHint("Enter a URL first.", isError: true);
+            if (!ignoreEmpty)
+            {
+                _statusBar.SetHint("Enter a URL first.", isError: true);
+            }
+
             return;
         }
 
@@ -574,7 +648,11 @@ public sealed class MainWindow : Window, IBrowserController
             _statusBar.SetHint($"Can't navigate: '{trimmed}' is not a URL.", isError: true);
             return;
         }
-        if (_urlBar.Address.Text != url) _urlBar.Address.Text = url;
+        if (_urlBar.Address.Text != url)
+        {
+            _urlBar.Address.Text = url;
+        }
+
         await RunNavigation((ct, fp) => _session.NavigateInteractiveAsync(url, BuildOptions(), ct, fp), $"GET {url}");
     }
 
@@ -612,7 +690,11 @@ public sealed class MainWindow : Window, IBrowserController
             Interlocked.Exchange(ref firstPaintPosted, 1);
             PostUiWithoutActivity(() =>
             {
-                if (!ReferenceEquals(_navCts, myCts)) return;
+                if (!ReferenceEquals(_navCts, myCts))
+                {
+                    return;
+                }
+
                 using var _ = GuiActivityScope.Use(navigationActivity);
                 // Wall time from navigation start to "page is visible." This is
                 // the user-meaningful "loaded and rendered" moment, distinct from
@@ -627,7 +709,10 @@ public sealed class MainWindow : Window, IBrowserController
         {
             var result = await navigate(myCts.Token, OnFirstPaint);
             sw.Stop();
-            if (!ReferenceEquals(_navCts, myCts)) return;
+            if (!ReferenceEquals(_navCts, myCts))
+            {
+                return;
+            }
 
             if (result.IsErr)
             {
@@ -729,7 +814,9 @@ public sealed class MainWindow : Window, IBrowserController
         // page.Url is the navigation's own target, immune to interleaving
         // from a parallel nav that might race the URL bar update.
         if (_urlBar.Address.Text != page.Url)
+        {
             _urlBar.Address.Text = page.Url;
+        }
 
         _statusBar.SetState(StatusState.Ready);
         _statusBar.SetHint($"{opLabel} → {elapsedMs} ms");
@@ -762,7 +849,11 @@ public sealed class MainWindow : Window, IBrowserController
 
     private static SiteSecurity? MapSecurity(Starling.Net.Http.ConnectionSecurity? cs)
     {
-        if (cs is null) return null;
+        if (cs is null)
+        {
+            return null;
+        }
+
         var cert = cs.Certificate;
         return new SiteSecurity(
             Encrypted: cs.IsEncrypted,
@@ -778,7 +869,11 @@ public sealed class MainWindow : Window, IBrowserController
     private string HistoryLabel()
     {
         var h = _session.History;
-        if (h.Count == 0 || h.Index < 0) return "0 / 0";
+        if (h.Count == 0 || h.Index < 0)
+        {
+            return "0 / 0";
+        }
+
         return $"{h.Index + 1} / {h.Count}";
     }
 
@@ -803,7 +898,11 @@ public sealed class MainWindow : Window, IBrowserController
     // navigation is in flight — that load already picks up the latest size.
     private LaidOutPage? RelayoutForResize(LaidOutPage page, EngineSize viewport)
     {
-        if (_busy) return null;
+        if (_busy)
+        {
+            return null;
+        }
+
         try
         {
             var relaid = _session.RelayoutCurrent(page, BuildOptionsFor(viewport));
@@ -834,7 +933,10 @@ public sealed class MainWindow : Window, IBrowserController
     public async Task<BrowserControlResult> NavigateFromToolAsync(string url, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(url))
+        {
             return Snapshot(success: false, error: "browser_navigate requires a non-empty url.");
+        }
+
         await NavigateAsync(url, ignoreEmpty: false);
         return Snapshot(success: true);
     }
@@ -842,7 +944,10 @@ public sealed class MainWindow : Window, IBrowserController
     public async Task<BrowserControlResult> BackFromToolAsync(CancellationToken ct)
     {
         if (!_session.History.CanGoBack)
+        {
             return Snapshot(success: false, error: "No back history.");
+        }
+
         await RunNavigation((c, fp) => _session.BackInteractiveAsync(BuildOptions(), c, fp), "Back");
         return Snapshot(success: true);
     }
@@ -850,7 +955,10 @@ public sealed class MainWindow : Window, IBrowserController
     public async Task<BrowserControlResult> ForwardFromToolAsync(CancellationToken ct)
     {
         if (!_session.History.CanGoForward)
+        {
             return Snapshot(success: false, error: "No forward history.");
+        }
+
         await RunNavigation((c, fp) => _session.ForwardInteractiveAsync(BuildOptions(), c, fp), "Forward");
         return Snapshot(success: true);
     }
@@ -858,7 +966,10 @@ public sealed class MainWindow : Window, IBrowserController
     public async Task<BrowserControlResult> ReloadFromToolAsync(CancellationToken ct)
     {
         if (_session.History.Current is null)
+        {
             return Snapshot(success: false, error: "Nothing to reload.");
+        }
+
         await RunNavigation((c, fp) => _session.ReloadInteractiveAsync(BuildOptions(), c, fp), "Reload");
         return Snapshot(success: true);
     }
@@ -876,7 +987,10 @@ public sealed class MainWindow : Window, IBrowserController
     public Task<BrowserControlResult> ScreenshotFromToolAsync(string path, CancellationToken ct)
     {
         if (_lastShownPage is null)
+        {
             return Task.FromResult(Snapshot(success: false, error: "No page is loaded to screenshot."));
+        }
+
         try
         {
             var full = Path.GetFullPath(string.IsNullOrWhiteSpace(path) ? "starling-screenshot.png" : path);
@@ -920,7 +1034,9 @@ public sealed class MainWindow : Window, IBrowserController
 
             sb.AppendLine("--- recent JS console (warn+error, last 40) ---");
             foreach (var r in jsLogs.Where(r => r.Level >= LogLevel.Warning).TakeLast(40))
+            {
                 sb.Append('[').Append(r.Level).Append("] ").AppendLine(r.Message);
+            }
 
             if (!string.IsNullOrWhiteSpace(logPath))
             {
@@ -929,12 +1045,19 @@ public sealed class MainWindow : Window, IBrowserController
                 report.AppendLine(sb.ToString());
                 report.AppendLine("=== ALL TELEMETRY LOGS ===");
                 foreach (var r in logs)
+                {
                     report.Append(r.TimestampUtc.ToString("HH:mm:ss.fff")).Append(" [").Append(r.Level)
                           .Append("] ").Append(r.Category).Append(": ").AppendLine(r.Message);
+                }
+
                 report.AppendLine().AppendLine("=== DOCUMENT outerHTML ===");
                 report.AppendLine(html ?? "(no document)");
                 var dir = Path.GetDirectoryName(full);
-                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
                 File.WriteAllText(full, report.ToString());
                 sb.Append("wrote full report to: ").AppendLine(full);
             }
@@ -958,7 +1081,9 @@ public sealed class MainWindow : Window, IBrowserController
     {
         var floor = ParseLogLevel(minLevel);
         if (floor is null && !string.IsNullOrWhiteSpace(minLevel))
+        {
             return Task.FromResult(Snapshot(success: false, error: $"Unknown log level '{minLevel}'."));
+        }
 
         var capped = ClampToolLimit(limit, 100, 500);
         var logs = _telemetry.Logs.Snapshot()
@@ -974,7 +1099,9 @@ public sealed class MainWindow : Window, IBrowserController
             sb.Append(r.TimestampUtc.ToString("HH:mm:ss.fff")).Append(" [")
                 .Append(r.Level).Append("] ").AppendLine(r.Message);
             if (!string.IsNullOrEmpty(r.Exception))
+            {
                 sb.AppendLine(r.Exception);
+            }
         }
         return Task.FromResult(Snapshot(success: true, detail: sb.ToString()));
     }
@@ -993,9 +1120,21 @@ public sealed class MainWindow : Window, IBrowserController
             sb.Append(a.StartUtc.ToString("HH:mm:ss.fff")).Append(' ')
                 .Append(a.OperationName).Append(" durationMs=")
                 .Append(a.Duration.TotalMilliseconds.ToString("0.#"));
-            if (FindTag(a, "http.url") is { } url) sb.Append(" url=").Append(url);
-            if (FindTag(a, "url") is { } url2) sb.Append(" url=").Append(url2);
-            if (FindTag(a, "http.status_code") is { } status) sb.Append(" status=").Append(status);
+            if (FindTag(a, "http.url") is { } url)
+            {
+                sb.Append(" url=").Append(url);
+            }
+
+            if (FindTag(a, "url") is { } url2)
+            {
+                sb.Append(" url=").Append(url2);
+            }
+
+            if (FindTag(a, "http.status_code") is { } status)
+            {
+                sb.Append(" status=").Append(status);
+            }
+
             sb.AppendLine();
         }
 
@@ -1007,9 +1146,11 @@ public sealed class MainWindow : Window, IBrowserController
             .ToArray();
         sb.Append("network logs: ").Append(logs.Length).AppendLine();
         foreach (var r in logs)
+        {
             sb.Append(r.TimestampUtc.ToString("HH:mm:ss.fff")).Append(" [")
                 .Append(r.Level).Append("] ").Append(r.Category).Append(": ")
                 .AppendLine(r.Message);
+        }
 
         return Task.FromResult(Snapshot(success: true, detail: sb.ToString()));
     }
@@ -1039,20 +1180,35 @@ public sealed class MainWindow : Window, IBrowserController
     {
         var mode = (state ?? string.Empty).Trim().ToLowerInvariant();
         if (mode.Length == 0)
+        {
             return Snapshot(success: false, error: "browser_wait requires a state.");
+        }
+
         if (mode is not ("load" or "idle" or "page" or "selector" or "text" or "url"))
+        {
             return Snapshot(success: false, error: "browser_wait state must be load, idle, page, selector, text, or url.");
+        }
+
         if ((mode is "selector" or "text" or "url") && string.IsNullOrWhiteSpace(value))
+        {
             return Snapshot(success: false, error: $"browser_wait state '{mode}' requires a value.");
+        }
+
         var capped = Math.Clamp(timeoutMs <= 0 ? 5000 : timeoutMs, 1, 60000);
         var sw = Stopwatch.StartNew();
 
         while (true)
         {
             if (WaitConditionMet(mode, value, out var detail))
+            {
                 return Snapshot(success: true, detail: detail);
+            }
+
             if (sw.ElapsedMilliseconds >= capped)
+            {
                 return Snapshot(success: false, error: $"Timed out after {capped} ms waiting for {mode}.");
+            }
+
             await Task.Delay(50, ct);
         }
     }
@@ -1075,7 +1231,10 @@ public sealed class MainWindow : Window, IBrowserController
     public async Task<BrowserControlResult> ClipboardFromToolAsync(string action, string? text, CancellationToken ct)
     {
         if (_lastShownPage is null)
+        {
             return Snapshot(success: false, error: "No page is loaded for clipboard.");
+        }
+
         try
         {
             var r = await _webview.ClipboardAsync(action, text);
@@ -1094,16 +1253,25 @@ public sealed class MainWindow : Window, IBrowserController
         {
             var bookmark = Bookmarks.FirstOrDefault(b => b.Id.Equals(id, StringComparison.Ordinal));
             if (bookmark is null)
+            {
                 return Snapshot(success: false, error: $"No bookmark with id '{id}'.");
+            }
+
             if (string.IsNullOrWhiteSpace(bookmark.Url))
+            {
                 return Snapshot(success: false, error: $"Bookmark '{id}' has no URL.");
+            }
+
             await NavigateAsync(bookmark.Url, ignoreEmpty: false);
             return Snapshot(success: true, detail: $"opened bookmark {id}: {bookmark.Title}");
         }
 
         var sb = new StringBuilder();
         foreach (var b in Bookmarks)
+        {
             sb.Append(b.Id).Append(" | ").Append(b.Title).Append(" | ").AppendLine(b.Url ?? string.Empty);
+        }
+
         return Snapshot(success: true, detail: sb.ToString());
     }
 
@@ -1113,15 +1281,20 @@ public sealed class MainWindow : Window, IBrowserController
     public Task<BrowserControlResult> ResizeFromToolAsync(double width, double height, CancellationToken ct)
     {
         if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0)
+        {
             return Task.FromResult(Snapshot(success: false,
                 error: $"browser_resize requires positive finite width/height; got {width}x{height}."));
+        }
+
         try
         {
             // Setting Width/Height has no effect while the window is maximized
             // or full-screen — drop back to Normal first so the assignment sticks
             // and the WebviewPanel sees a Bounds change that triggers reflow.
             if (WindowState != WindowState.Normal)
+            {
                 WindowState = WindowState.Normal;
+            }
 
             var w = Math.Max(width, MinWidth);
             var h = Math.Max(height, MinHeight);
@@ -1196,13 +1369,21 @@ public sealed class MainWindow : Window, IBrowserController
 
     private static int ClampToolLimit(int requested, int fallback, int max)
     {
-        if (requested <= 0) return fallback;
+        if (requested <= 0)
+        {
+            return fallback;
+        }
+
         return Math.Min(requested, max);
     }
 
     private static LogLevel? ParseLogLevel(string? text)
     {
-        if (string.IsNullOrWhiteSpace(text)) return null;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
         return Enum.TryParse<LogLevel>(text, ignoreCase: true, out var level) ? level : null;
     }
 
@@ -1215,8 +1396,13 @@ public sealed class MainWindow : Window, IBrowserController
     private static string? FindTag(ActivityRecord record, string name)
     {
         foreach (var tag in record.Tags)
+        {
             if (tag.Key.Equals(name, StringComparison.Ordinal))
+            {
                 return tag.Value?.ToString();
+            }
+        }
+
         return null;
     }
 
@@ -1227,7 +1413,10 @@ public sealed class MainWindow : Window, IBrowserController
     private Task<BrowserControlResult> InputTool(string name, Func<Controls.InputResult> action)
     {
         if (_lastShownPage is null)
+        {
             return Task.FromResult(Snapshot(success: false, error: $"No page is loaded to {name}."));
+        }
+
         try
         {
             var r = action();

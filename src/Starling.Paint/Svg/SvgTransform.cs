@@ -15,22 +15,43 @@ internal static class SvgTransform
     {
         var m = Matrix3x2.Identity;
         if (string.IsNullOrWhiteSpace(transform))
+        {
             return m;
+        }
 
         int i = 0;
         while (i < transform.Length)
         {
             // function name
-            while (i < transform.Length && !char.IsLetter(transform[i])) i++;
+            while (i < transform.Length && !char.IsLetter(transform[i]))
+            {
+                i++;
+            }
+
             int nameStart = i;
-            while (i < transform.Length && char.IsLetter(transform[i])) i++;
-            if (i >= transform.Length) break;
+            while (i < transform.Length && char.IsLetter(transform[i]))
+            {
+                i++;
+            }
+
+            if (i >= transform.Length)
+            {
+                break;
+            }
+
             var name = transform[nameStart..i];
 
             int open = transform.IndexOf('(', i);
-            if (open < 0) break;
+            if (open < 0)
+            {
+                break;
+            }
+
             int close = transform.IndexOf(')', open + 1);
-            if (close < 0) break;
+            if (close < 0)
+            {
+                break;
+            }
 
             var args = ParseNumbers(transform[(open + 1)..close]);
             i = close + 1;
@@ -58,12 +79,18 @@ internal static class SvgTransform
                     float deg = a.Length > 0 ? a[0] : 0;
                     float rad = deg * MathF.PI / 180f;
                     if (a.Length >= 3)
+                    {
                         return Matrix3x2.CreateRotation(rad, new Vector2(a[1], a[2]));
+                    }
+
                     return Matrix3x2.CreateRotation(rad);
                 }
             case "matrix":
                 if (a.Length >= 6)
+                {
                     return new Matrix3x2(a[0], a[1], a[2], a[3], a[4], a[5]);
+                }
+
                 return Matrix3x2.Identity;
             case "skewx":
                 {
@@ -86,22 +113,43 @@ internal static class SvgTransform
         int i = 0;
         while (i < s.Length)
         {
-            while (i < s.Length && (s[i] is ' ' or '\t' or '\r' or '\n' or ',')) i++;
-            if (i >= s.Length) break;
+            while (i < s.Length && (s[i] is ' ' or '\t' or '\r' or '\n' or ','))
+            {
+                i++;
+            }
+
+            if (i >= s.Length)
+            {
+                break;
+            }
+
             int start = i;
-            if (s[i] is '+' or '-') i++;
+            if (s[i] is '+' or '-')
+            {
+                i++;
+            }
+
             bool dot = false, digit = false;
             while (i < s.Length)
             {
                 char c = s[i];
                 if (char.IsDigit(c)) { digit = true; i++; }
                 else if (c == '.' && !dot) { dot = true; i++; }
-                else if ((c is 'e' or 'E') && digit) { i++; if (i < s.Length && s[i] is '+' or '-') i++; }
-                else break;
+                else if ((c is 'e' or 'E') && digit) { i++; if (i < s.Length && s[i] is '+' or '-')
+                    {
+                        i++;
+                    }
+                }
+                else
+                {
+                    break;
+                }
             }
             if (!digit) { i++; continue; }
             if (float.TryParse(s.AsSpan(start, i - start), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
+            {
                 list.Add(v);
+            }
         }
         return list.ToArray();
     }

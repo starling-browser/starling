@@ -32,7 +32,11 @@ internal static class Html5LibDatFile
         // Read raw bytes so we don't get surprised by BOM or CRLF normalization
         // in any locale.
         var text = File.ReadAllText(path, new UTF8Encoding(false));
-        if (text.Length == 0) yield break;
+        if (text.Length == 0)
+        {
+            yield break;
+        }
+
         var idx = 0;
         var blockIndex = 0;
         while (idx < text.Length)
@@ -45,11 +49,22 @@ internal static class Html5LibDatFile
             var block = text.Substring(idx, end - idx).TrimEnd('\n');
             idx = end;
             // Skip the two-newline separator (or single trailing newline at EOF).
-            while (idx < text.Length && text[idx] == '\n') idx++;
-            if (block.Length == 0) continue;
+            while (idx < text.Length && text[idx] == '\n')
+            {
+                idx++;
+            }
+
+            if (block.Length == 0)
+            {
+                continue;
+            }
 
             var parsed = ParseBlock(block);
-            if (parsed is null) continue;
+            if (parsed is null)
+            {
+                continue;
+            }
+
             yield return parsed with { SourceFile = path, BlockIndex = blockIndex++ };
         }
     }
@@ -61,7 +76,10 @@ internal static class Html5LibDatFile
         while (i < text.Length)
         {
             if (text[i] == '\n' && i + 1 < text.Length && text[i + 1] == '\n')
+            {
                 return i;
+            }
+
             i++;
         }
         return text.Length;
@@ -80,22 +98,39 @@ internal static class Html5LibDatFile
             if (IsSectionHeader(rawLine, out var name))
             {
                 current = name;
-                if (!sections.ContainsKey(current)) sections[current] = new StringBuilder();
+                if (!sections.ContainsKey(current))
+                {
+                    sections[current] = new StringBuilder();
+                }
             }
             else if (current is not null)
             {
                 // Sections preserve newlines between body lines but not the
                 // header's trailing newline or a final blank line.
-                if (sections[current].Length > 0) sections[current].Append('\n');
+                if (sections[current].Length > 0)
+                {
+                    sections[current].Append('\n');
+                }
+
                 sections[current].Append(rawLine);
             }
         }
         if (!sections.TryGetValue("data", out var data) || !sections.TryGetValue("document", out var document))
+        {
             return null;
+        }
+
         sections.TryGetValue("document-fragment", out var fragment);
         bool? scripting = null;
-        if (sections.ContainsKey("script-on")) scripting = true;
-        if (sections.ContainsKey("script-off")) scripting = false;
+        if (sections.ContainsKey("script-on"))
+        {
+            scripting = true;
+        }
+
+        if (sections.ContainsKey("script-off"))
+        {
+            scripting = false;
+        }
 
         return new Html5LibCase(
             SourceFile: "",
@@ -109,7 +144,11 @@ internal static class Html5LibDatFile
     private static bool IsSectionHeader(string line, out string name)
     {
         name = "";
-        if (line.Length < 2 || line[0] != '#') return false;
+        if (line.Length < 2 || line[0] != '#')
+        {
+            return false;
+        }
+
         var rest = line[1..];
         // Known section names per the README — listing them by hand keeps a stray
         // '#' inside #data from being mis-parsed as a section header.

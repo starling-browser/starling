@@ -19,10 +19,26 @@ public ref partial struct JsParser
     /// <see cref="ParseProgram()"/> and inherits none of this.</summary>
     public Program ParseProgram(DirectEvalContext ctx)
     {
-        if (ctx.CallerStrict) _strict = true;
-        if (ctx.InFunction) _functionDepth = 1;       // §13.3.12 — new.target legal
-        if (ctx.InMethod) _superPropertyDepth = 1;    // §13.3.7.1 — SuperProperty legal
-        if (ctx.InDerivedConstructor) _derivedConstructorDepth = 1; // SuperCall legal
+        if (ctx.CallerStrict)
+        {
+            _strict = true;
+        }
+
+        if (ctx.InFunction)
+        {
+            _functionDepth = 1;       // §13.3.12 — new.target legal
+        }
+
+        if (ctx.InMethod)
+        {
+            _superPropertyDepth = 1;    // §13.3.7.1 — SuperProperty legal
+        }
+
+        if (ctx.InDerivedConstructor)
+        {
+            _derivedConstructorDepth = 1; // SuperCall legal
+        }
+
         return ParseProgram();
     }
 
@@ -58,9 +74,11 @@ public ref partial struct JsParser
     private void CheckNoPendingCoverInit()
     {
         foreach (var obj in _coverInitObjects)
+        {
             throw new JsParseException(
                 "shorthand property with initializer is only valid in a destructuring pattern",
                 obj.Start);
+        }
     }
 
     /// <summary>Parse a Module goal (§16.2.1.6). Module code is always strict
@@ -101,15 +119,24 @@ public ref partial struct JsParser
             var stmt = isProgram ? ParseProgramStatement() : ParseStatement();
             into.Add(stmt);
             if (!IsDirective(stmt))
+            {
                 break; // a string used as part of a larger expression ends the prologue
-            if (octal && sawOctalDirective is null) sawOctalDirective = octalPos;
+            }
+
+            if (octal && sawOctalDirective is null)
+            {
+                sawOctalDirective = octalPos;
+            }
+
             if (IsUseStrictDirective(stmt, lexeme))
             {
                 _strict = true;
                 _prologueHadUseStrict = true;
                 if (sawOctalDirective is { } p)
+                {
                     throw new JsParseException(
                         "octal escape sequences are not allowed in a strict-mode directive prologue", p);
+                }
             }
         }
     }
@@ -197,7 +224,10 @@ public ref partial struct JsParser
         {
             var body = new List<Statement>();
             while (!Check(JsTokenKind.RBrace) && !Check(JsTokenKind.EndOfFile))
+            {
                 body.Add(ParseStatement());
+            }
+
             var end = _current.End;
             Expect(JsTokenKind.RBrace, "expected '}' to close block");
             // §14.2.1 — Block early errors: no duplicate LexicallyDeclaredNames
@@ -226,7 +256,10 @@ public ref partial struct JsParser
     {
         var start = _current.Start;
         if (_strict)
+        {
             throw new JsParseException("'with' statements are not allowed in strict mode", start);
+        }
+
         Advance(); // 'with'
         Expect(JsTokenKind.LParen, "( expected after 'with'");
         var obj = ParseExpressionNoEof();
@@ -267,7 +300,10 @@ public ref partial struct JsParser
         var cons = ParseSubStatement(allowSloppyFunction: true);
         Statement? alt = null;
         if (Match(JsTokenKind.Else))
+        {
             alt = ParseSubStatement(allowSloppyFunction: true);
+        }
+
         return new IfStatement(test, cons, alt, start, (alt ?? cons).End);
     }
 
@@ -334,8 +370,15 @@ public ref partial struct JsParser
                 if (init is VariableDeclaration vd && vd.Declarations.Count == 1
                     && vd.Declarations[0].Init is null)
                 {
-                    if (Check(JsTokenKind.In)) return FinishForIn(start, vd);
-                    if (IsContextualOf()) return FinishForOf(start, vd, isAwait);
+                    if (Check(JsTokenKind.In))
+                    {
+                        return FinishForIn(start, vd);
+                    }
+
+                    if (IsContextualOf())
+                    {
+                        return FinishForOf(start, vd, isAwait);
+                    }
                 }
             }
             else
@@ -343,8 +386,16 @@ public ref partial struct JsParser
                 if (Check(JsTokenKind.LBracket) || Check(JsTokenKind.LBrace))
                 {
                     var cover = ParseLeftHandSide();
-                    if (Check(JsTokenKind.In)) return FinishForIn(start, cover);
-                    if (IsContextualOf()) return FinishForOf(start, cover, isAwait);
+                    if (Check(JsTokenKind.In))
+                    {
+                        return FinishForIn(start, cover);
+                    }
+
+                    if (IsContextualOf())
+                    {
+                        return FinishForOf(start, cover, isAwait);
+                    }
+
                     var exprInit = cover;
                     init = new ExpressionStatement(exprInit, exprInit.Start, exprInit.End);
                 }
@@ -352,7 +403,10 @@ public ref partial struct JsParser
                 {
                     var expr = ParseExpressionNoIn();
                     if (Check(JsTokenKind.In))
+                    {
                         return FinishForIn(start, expr);
+                    }
+
                     if (IsContextualOf())
                     {
                         // §14.7.5 — a for-of LeftHandSide may not be the single
@@ -360,8 +414,11 @@ public ref partial struct JsParser
                         // [lookahead ≠ async of] restriction to keep it distinct
                         // from `for await`). The bare `async` here is an error.
                         if (expr is Identifier { Name: "async" })
+                        {
                             throw new JsParseException(
                                 "'async' may not be the left-hand side of a for-of loop", expr.Start);
+                        }
+
                         return FinishForOf(start, expr, isAwait);
                     }
                     init = new ExpressionStatement(expr, expr.Start, expr.End);
@@ -370,15 +427,26 @@ public ref partial struct JsParser
         }
         // wp:M3-04g — `for await` is only valid in the for-of form.
         if (isAwait)
+        {
             throw new JsParseException("'for await' requires an 'of' iteration clause", _current.Start);
+        }
+
         Expect(JsTokenKind.Semicolon, "expected ';' in for-loop init");
 
         Expression? test = null;
-        if (!Check(JsTokenKind.Semicolon)) test = ParseExpressionNoEof();
+        if (!Check(JsTokenKind.Semicolon))
+        {
+            test = ParseExpressionNoEof();
+        }
+
         Expect(JsTokenKind.Semicolon, "expected ';' in for-loop test");
 
         Expression? update = null;
-        if (!Check(JsTokenKind.RParen)) update = ParseExpressionNoEof();
+        if (!Check(JsTokenKind.RParen))
+        {
+            update = ParseExpressionNoEof();
+        }
+
         Expect(JsTokenKind.RParen, "expected ')' to close for-loop header");
         var body = ParseIterationBody();
         CheckForHeadLexicalVsBodyVar(init, body);
@@ -417,7 +485,10 @@ public ref partial struct JsParser
         // §14.7.5 — the contextual `of` keyword may not contain a Unicode escape
         // (`for (var x of [])` is a SyntaxError).
         if (_current.ContainsEscape)
+        {
             throw new JsParseException("'of' keyword may not contain an escape sequence", _current.Start);
+        }
+
         Advance(); // contextual 'of'
         // §14.7.5 — the for-of right-hand side is a single AssignmentExpression[+In]
         // (no comma sequence): `for (x of a, b)` is a SyntaxError. `in` is
@@ -443,7 +514,10 @@ public ref partial struct JsParser
         // §13.10.1 — a ReturnStatement is only valid inside a function body. A
         // `return` at script/module top level (depth 0) is an early SyntaxError.
         if (_functionDepth == 0)
+        {
             throw new JsParseException("'return' statement outside of a function", start);
+        }
+
         Advance(); // 'return'
         Expression? arg = null;
         if (!_current.PrecededByLineTerminator
@@ -493,7 +567,10 @@ public ref partial struct JsParser
         var start = _current.Start;
         Advance();
         if (_current.PrecededByLineTerminator)
+        {
             throw new JsParseException("illegal newline after 'throw'", start);
+        }
+
         var arg = ParseExpressionNoEof();
         var end = _current.End;
         ConsumeSemicolonOrAsi();
@@ -511,9 +588,13 @@ public ref partial struct JsParser
         CollectPatternNames(param, names);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (name, pos) in names)
+        {
             if (!seen.Add(name))
+            {
                 throw new JsParseException(
                     $"duplicate catch parameter name '{name}'", pos);
+            }
+        }
 
         // The catch Block's top-level LexicallyDeclaredNames: let/const/class and
         // any directly-nested FunctionDeclaration (which is lexical in a Block).
@@ -523,7 +604,11 @@ public ref partial struct JsParser
             switch (stmt)
             {
                 case VariableDeclaration vd when vd.Kind is "let" or "const":
-                    foreach (var n in BoundNamesOf(vd)) lexical.Add(n.Name);
+                    foreach (var n in BoundNamesOf(vd))
+                    {
+                        lexical.Add(n.Name);
+                    }
+
                     break;
                 case ClassDeclaration cd:
                     lexical.Add(cd.Name.Name);
@@ -537,9 +622,13 @@ public ref partial struct JsParser
             }
         }
         foreach (var (name, pos) in names)
+        {
             if (lexical.Contains(name))
+            {
                 throw new JsParseException(
                     $"catch parameter '{name}' is redeclared in the catch body", pos);
+            }
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -564,14 +653,24 @@ public ref partial struct JsParser
                 Expect(JsTokenKind.RParen, "expected ')' after catch parameter");
             }
             var body = ParseBlock();
-            if (param is not null) CheckCatchBindings(param, body);
+            if (param is not null)
+            {
+                CheckCatchBindings(param, body);
+            }
+
             handler = new CatchClause(param, body, cstart, body.End);
         }
         BlockStatement? finalizer = null;
         if (Match(JsTokenKind.Finally))
+        {
             finalizer = ParseBlock();
+        }
+
         if (handler is null && finalizer is null)
+        {
             throw new JsParseException("'try' requires 'catch' or 'finally'", start);
+        }
+
         var end = (Statement?)finalizer ?? handler?.Body ?? block;
         return new TryStatement(block, handler, finalizer, start, end.End);
     }
@@ -592,8 +691,11 @@ public ref partial struct JsParser
         // an Identifier only outside a generator; the in-generator `yield:` form
         // is rejected earlier as a yield expression).
         if (_inAsync && label == "await")
+        {
             throw new JsParseException(
                 "'await' may not be used as a label in an async context", start);
+        }
+
         Advance(); // identifier
         Advance(); // ':'
         // §14.13.1 — a LabelledStatement body is a LabelledItem, which forbids
@@ -612,7 +714,11 @@ public ref partial struct JsParser
             && _lex.Peek().Kind == JsTokenKind.Colon;
         var allowFn = !_forbidLabelledFunction;
         var savedForbid = _forbidLabelledFunction;
-        if (bodyIsLabel) _forbidLabelledFunction = true;
+        if (bodyIsLabel)
+        {
+            _forbidLabelledFunction = true;
+        }
+
         Statement body;
         try { body = ParseSubStatement(allowSloppyFunction: allowFn); }
         finally { _forbidLabelledFunction = savedForbid; }
@@ -660,7 +766,11 @@ public ref partial struct JsParser
         // §14.12.1 — the whole CaseBlock is one lexical scope: concatenate
         // every clause's StatementList and apply the Block early errors.
         var caseBody = new List<Statement>();
-        foreach (var c in cases) caseBody.AddRange(c.Consequent);
+        foreach (var c in cases)
+        {
+            caseBody.AddRange(c.Consequent);
+        }
+
         CheckScopeEarlyErrors(caseBody, ScopeKind.Block);
         return new SwitchStatement(disc, cases, start, end);
     }
@@ -680,9 +790,13 @@ public ref partial struct JsParser
         if (kind == "const")
         {
             foreach (var d in decl.Declarations)
+            {
                 if (d.Init is null)
+                {
                     throw new JsParseException(
                         "missing initializer in const declaration", d.Start);
+                }
+            }
         }
         ConsumeSemicolonOrAsi();
         return decl;
@@ -710,13 +824,22 @@ public ref partial struct JsParser
             // §14.3.1.1 — a LexicalDeclaration (let/const) may not bind the
             // name `let` (in any mode). `var let` is legal in sloppy code.
             if (kind is "let" or "const")
+            {
                 CheckLexicalBindingNotLet(idNode);
+            }
+
             Expression? init = null;
             if (Match(JsTokenKind.Eq))
+            {
                 init = ParseAssignment();
+            }
+
             decls.Add(new VariableDeclarator(idNode, init, dstart,
                 (init ?? idNode).End));
-            if (!Match(JsTokenKind.Comma)) break;
+            if (!Match(JsTokenKind.Comma))
+            {
+                break;
+            }
         }
         var end = decls[^1].End;
         var result = new VariableDeclaration(kind, decls, start, end);
@@ -728,9 +851,13 @@ public ref partial struct JsParser
         {
             var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var n in BoundNamesOf(result))
+            {
                 if (!seen.Add(n.Name))
+                {
                     throw new JsParseException(
                         $"'{n.Name}' has already been declared", n.Pos);
+                }
+            }
         }
         return result;
     }
@@ -768,8 +895,11 @@ public ref partial struct JsParser
                 // [+Await], so it may not be `await` (`async function await(){}`,
                 // `async function* await(){}`).
                 if (isAsync && tok.TextEquals("await"))
+                {
                     throw new JsParseException(
                         "'await' may not be used as the name of an async function", tok.Start);
+                }
+
                 fnName = new Identifier(tok.Lexeme, tok.Start, tok.End);
             }
             // §15.2.1 / §12.7.1 — a non-generator FunctionExpression's
@@ -799,7 +929,11 @@ public ref partial struct JsParser
             // §15.2.1 — the function-name and parameter early errors use the
             // function's OWN strictness (the body may have flipped to strict).
             CheckUseStrictSimpleParams(parameters, start);
-            if (strict && fnName is not null) CheckBindingIdentifier(fnName.Name, fnName.Start);
+            if (strict && fnName is not null)
+            {
+                CheckBindingIdentifier(fnName.Name, fnName.Start);
+            }
+
             ValidateParameters(parameters, strict);
             CheckParamsVsLexicalBody(parameters, body);
             return new FunctionExpression(fnName, parameters, body, generator, start, body.End,
@@ -841,7 +975,11 @@ public ref partial struct JsParser
             // §15.2.1 — name + parameter early errors use the function's own
             // strictness (a "use strict" body directive applies to both).
             CheckUseStrictSimpleParams(parameters, start);
-            if (strict) CheckBindingIdentifier(name.Name, name.Start);
+            if (strict)
+            {
+                CheckBindingIdentifier(name.Name, name.Start);
+            }
+
             ValidateParameters(parameters, strict);
             CheckParamsVsLexicalBody(parameters, body);
             return new FunctionDeclaration(name, parameters, body, generator, start, body.End,
@@ -874,7 +1012,10 @@ public ref partial struct JsParser
                     break;
                 }
                 parameters.Add(ParseParameter());
-                if (!Match(JsTokenKind.Comma)) break;
+                if (!Match(JsTokenKind.Comma))
+                {
+                    break;
+                }
             }
         }
         finally { _inFormalParameters = savedInParams; }
@@ -918,9 +1059,21 @@ public ref partial struct JsParser
     /// </summary>
     private void ConsumeSemicolonOrAsi()
     {
-        if (Match(JsTokenKind.Semicolon)) return;
-        if (Check(JsTokenKind.EndOfFile) || Check(JsTokenKind.RBrace)) return;
-        if (_current.PrecededByLineTerminator) return;
+        if (Match(JsTokenKind.Semicolon))
+        {
+            return;
+        }
+
+        if (Check(JsTokenKind.EndOfFile) || Check(JsTokenKind.RBrace))
+        {
+            return;
+        }
+
+        if (_current.PrecededByLineTerminator)
+        {
+            return;
+        }
+
         throw new JsParseException(
             $"expected ';' after statement (got {_current.Kind} '{_current.Lexeme}')",
             _current.Start);

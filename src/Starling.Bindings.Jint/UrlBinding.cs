@@ -88,26 +88,44 @@ internal static class UrlBinding
         var baseParsed = baseUrl is null ? (StarlingUrl?)null
             : (StarlingUrlParser.Parse(baseUrl) is { IsOk: true } br ? br.Value : null);
         var result = baseParsed is null ? StarlingUrlParser.Parse(input) : StarlingUrlParser.Parse(input, baseParsed);
-        if (result.IsOk) return result.Value;
+        if (result.IsOk)
+        {
+            return result.Value;
+        }
+
         throw new JavaScriptException(engine.Intrinsics.TypeError, "Invalid URL");
     }
 
     private static StarlingUrl ApplyHost(StarlingUrl url, string value)
     {
-        if (value.Length == 0) return url;
+        if (value.Length == 0)
+        {
+            return url;
+        }
+
         var hp = value.Split(':', 2);
         var host = hp[0];
         int? port = url.Port;
         if (hp.Length > 1 && int.TryParse(hp[1], NumberStyles.None, CultureInfo.InvariantCulture, out var p) && p is >= 0 and <= 65535)
+        {
             port = p == url.DefaultPort ? null : p;
+        }
+
         return url with { Host = host, Port = port };
     }
 
     private static StarlingUrl ApplyPort(StarlingUrl url, string value)
     {
-        if (value.Length == 0) return url with { Port = null };
+        if (value.Length == 0)
+        {
+            return url with { Port = null };
+        }
+
         if (int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var p) && p is >= 0 and <= 65535)
+        {
             return url with { Port = p == url.DefaultPort ? null : p };
+        }
+
         return url;
     }
 

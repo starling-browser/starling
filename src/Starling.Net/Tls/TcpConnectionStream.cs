@@ -53,7 +53,10 @@ internal sealed class TcpConnectionStream : Stream
     protected override void Dispose(bool disposing)
     {
         if (disposing)
+        {
             _connection.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+
         base.Dispose(disposing);
     }
 }

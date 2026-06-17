@@ -133,7 +133,10 @@ internal static class IntrinsicHelpers
         if (thisV.IsObject && AbstractOperations.IsConstructor(thisV))
         {
             var proto = AbstractOperations.Get(vm, thisV.AsObject, "prototype");
-            if (proto.IsObject) return proto.AsObject;
+            if (proto.IsObject)
+            {
+                return proto.AsObject;
+            }
         }
         return defaultProto;
     }

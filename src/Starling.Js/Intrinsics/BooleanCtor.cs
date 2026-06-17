@@ -21,7 +21,11 @@ public static class BooleanCtor
             {
                 var box = realm.BoxBoolean(JsValue.Boolean(b));
                 var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, proto);
-                if (!ReferenceEquals(instProto, proto)) box.SetPrototypeOf(instProto);
+                if (!ReferenceEquals(instProto, proto))
+                {
+                    box.SetPrototypeOf(instProto);
+                }
+
                 return JsValue.Object(box);
             }
             return JsValue.Boolean(b);
@@ -44,11 +48,18 @@ public static class BooleanCtor
 
     private static bool ThisBoolean(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsBoolean) return thisV.AsBool;
+        if (thisV.IsBoolean)
+        {
+            return thisV.AsBool;
+        }
+
         if (thisV.IsObject)
         {
             var slot = thisV.AsObject.GetOwnPropertyDescriptor("__primitiveValue");
-            if (slot is { } d && d.Value.IsBoolean) return d.Value.AsBool;
+            if (slot is { } d && d.Value.IsBoolean)
+            {
+                return d.Value.AsBool;
+            }
         }
         throw new JsThrow(realm.NewTypeError("Boolean.prototype method called on incompatible receiver"));
     }

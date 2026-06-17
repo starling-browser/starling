@@ -88,7 +88,11 @@ public static class IFrameBinding
     public static BrowsingContext EnsureContext(Element frame)
     {
         ArgumentNullException.ThrowIfNull(frame);
-        if (Contexts.TryGetValue(frame, out var existing)) return existing;
+        if (Contexts.TryGetValue(frame, out var existing))
+        {
+            return existing;
+        }
+
         var ctx = new BrowsingContext(frame, BuildBlankDocument());
         Contexts.Add(frame, ctx);
         return ctx;
@@ -107,8 +111,13 @@ public static class IFrameBinding
     public static JsObject? WindowForDocument(JsRealm parentRealm, Document doc)
     {
         foreach (var kv in Contexts)
+        {
             if (ReferenceEquals(kv.Value.Document, doc))
+            {
                 return EnsureContentWindow(parentRealm, kv.Value);
+            }
+        }
+
         return null;
     }
 
@@ -121,11 +130,14 @@ public static class IFrameBinding
     public static JsRealm? RealmForDocument(JsRealm parentRealm, Document doc)
     {
         foreach (var kv in Contexts)
+        {
             if (ReferenceEquals(kv.Value.Document, doc))
             {
                 EnsureContentWindow(parentRealm, kv.Value); // lazily stands up the nested realm
                 return kv.Value.Runtime?.Realm;
             }
+        }
+
         return null;
     }
 
@@ -145,7 +157,11 @@ public static class IFrameBinding
     /// works even for srcless iframes.</summary>
     public static JsObject EnsureContentWindow(JsRealm parentRealm, BrowsingContext ctx)
     {
-        if (ctx.WindowObject is not null) return ctx.WindowObject;
+        if (ctx.WindowObject is not null)
+        {
+            return ctx.WindowObject;
+        }
+
         var parent = Parents.TryGetValue(parentRealm, out var p) ? p : new ParentEnv(parentRealm, null, "about:blank", NullLoggerFactory.Instance);
         EnsureRuntime(ctx, parent);
         return ctx.WindowObject!;
@@ -153,7 +169,11 @@ public static class IFrameBinding
 
     private static void EnsureRuntime(BrowsingContext ctx, ParentEnv parent)
     {
-        if (ctx.Runtime is not null && ctx.WindowObject is not null) return;
+        if (ctx.Runtime is not null && ctx.WindowObject is not null)
+        {
+            return;
+        }
+
         var runtime = new JsRuntime();
         WindowBinding.Install(runtime, ctx.Document, new WindowInstallOptions(
             DocumentUrl: ctx.DocumentUrl,
@@ -175,7 +195,9 @@ public static class IFrameBinding
         var parentWindow = parent.Realm.GlobalObject;
         var parentTop = parentWindow.Get("top");
         if (parentTop.IsUndefined || !parentTop.IsObject)
+        {
             parentTop = JsValue.Object(parentWindow);
+        }
 
         child.DefineOwnProperty("parent",
             PropertyDescriptor.Data(JsValue.Object(parentWindow), writable: true, enumerable: true, configurable: true));
@@ -198,9 +220,17 @@ public static class IFrameBinding
     {
         ArgumentNullException.ThrowIfNull(parentRealm);
         ArgumentNullException.ThrowIfNull(frame);
-        if (!IsFrameElement(frame)) return;
+        if (!IsFrameElement(frame))
+        {
+            return;
+        }
+
         var src = frame.GetAttribute("src");
-        if (string.IsNullOrEmpty(src)) return;
+        if (string.IsNullOrEmpty(src))
+        {
+            return;
+        }
+
         var parentEnv = Parents.TryGetValue(parentRealm, out var p) ? p : new ParentEnv(parentRealm, null, "about:blank", NullLoggerFactory.Instance);
         var ctx = EnsureContext(frame);
         var resolved = ResolveUrl(parentEnv.DocumentUrl, src);
@@ -226,7 +256,10 @@ public static class IFrameBinding
                 try
                 {
                     if (body is not null)
+                    {
                         LoadIntoFrame(ctx, parentEnv, resolved, body, contentType);
+                    }
+
                     FireLoad(parentRealm, frame);
                 }
                 catch (Exception ex)
@@ -237,9 +270,13 @@ public static class IFrameBinding
             }
 
             if (parentRuntime is { } pr)
+            {
                 parentRealm.Microtasks.Enqueue(() => pr.WithActiveVm(Settle));
+            }
             else
+            {
                 Settle();
+            }
         });
     }
 
@@ -249,9 +286,14 @@ public static class IFrameBinding
         Document doc;
         var ct = contentType.ToLowerInvariant();
         if (ct.Contains("xml") || ct.Contains("xhtml"))
+        {
             doc = ParseXmlIntoDocument(body);
+        }
         else
+        {
             doc = HtmlParser.Parse(body, scriptingEnabled: true);
+        }
+
         AssignDocument(ctx, doc, url);
         EnsureRuntime(ctx, parent);
         ExecuteFrameScripts(ctx, parent, url);
@@ -265,16 +307,25 @@ public static class IFrameBinding
     /// scripts) doesn't need them.</summary>
     private static void ExecuteFrameScripts(BrowsingContext ctx, ParentEnv parent, string frameUrl)
     {
-        if (ctx.Runtime is null) return;
+        if (ctx.Runtime is null)
+        {
+            return;
+        }
+
         foreach (var node in ctx.Document.Descendants())
         {
-            if (node is not Element { LocalName: "script" } sc) continue;
+            if (node is not Element { LocalName: "script" } sc)
+            {
+                continue;
+            }
             // Skip script type other than classic JS.
             var type = sc.GetAttribute("type");
             if (!string.IsNullOrEmpty(type)
                 && !type.Equals("text/javascript", StringComparison.OrdinalIgnoreCase)
                 && !type.Equals("application/javascript", StringComparison.OrdinalIgnoreCase))
+            {
                 continue;
+            }
 
             string source;
             string label;
@@ -328,11 +379,23 @@ public static class IFrameBinding
     {
         ArgumentNullException.ThrowIfNull(parentRealm);
         ArgumentNullException.ThrowIfNull(frame);
-        if (!IsFrameElement(frame)) return;
+        if (!IsFrameElement(frame))
+        {
+            return;
+        }
+
         var src = frame.GetAttribute("src");
-        if (string.IsNullOrEmpty(src)) return;
+        if (string.IsNullOrEmpty(src))
+        {
+            return;
+        }
+
         var parentEnv = Parents.TryGetValue(parentRealm, out var p) ? p : new ParentEnv(parentRealm, null, "about:blank", NullLoggerFactory.Instance);
-        if (parentEnv.Http is null) return; // no HTTP client → nothing to fetch through
+        if (parentEnv.Http is null)
+        {
+            return; // no HTTP client → nothing to fetch through
+        }
+
         var ctx = EnsureContext(frame);
         var resolved = ResolveUrl(parentEnv.DocumentUrl, src);
         try
@@ -360,7 +423,11 @@ public static class IFrameBinding
         // on{event} handler attached via `iframe.onload = fn` lives on the
         // JS wrapper, not the host EventTarget. Invoke it explicitly.
         var parentRuntime = WindowBinding.RuntimeForRealm(parentRealm);
-        if (parentRuntime is null) return;
+        if (parentRuntime is null)
+        {
+            return;
+        }
+
         var wrapper = DomWrappers.Wrap(parentRealm, frame);
         var handler = wrapper.Get("onload");
         if (AbstractOperations.IsCallable(handler))
@@ -389,8 +456,15 @@ public static class IFrameBinding
         // an absolute base also correctly passes a truly absolute href through.
         if (Uri.TryCreate(baseUrl, UriKind.Absolute, out var bu)
             && Uri.TryCreate(bu, href, out var combined))
+        {
             return combined.ToString();
-        if (Uri.TryCreate(href, UriKind.Absolute, out var abs)) return abs.ToString();
+        }
+
+        if (Uri.TryCreate(href, UriKind.Absolute, out var abs))
+        {
+            return abs.ToString();
+        }
+
         return href;
     }
 
@@ -404,17 +478,31 @@ public static class IFrameBinding
             return (await File.ReadAllTextAsync(path).ConfigureAwait(false), GuessTypeFromExt(path));
         }
         if (http is null)
+        {
             throw new InvalidOperationException("subframe fetch requires an HTTP client on the parent realm");
+        }
+
         var parsed = StarlingUrlParser.Parse(url);
-        if (parsed.IsErr) throw new IOException($"subframe URL parse failed: {parsed.Error}");
+        if (parsed.IsErr)
+        {
+            throw new IOException($"subframe URL parse failed: {parsed.Error}");
+        }
+
         var req = HttpRequest.Get(parsed.Value);
         var res = await http.SendAsync(req, CancellationToken.None).ConfigureAwait(false);
-        if (res.IsErr) throw new IOException($"subframe fetch failed: {res.Error}");
+        if (res.IsErr)
+        {
+            throw new IOException($"subframe fetch failed: {res.Error}");
+        }
+
         var resp = res.Value;
         var body = Encoding.UTF8.GetString(resp.Body.Span);
         string ct = "text/html";
         foreach (var kv in resp.Headers)
+        {
             if (kv.Key.Equals("content-type", StringComparison.OrdinalIgnoreCase)) { ct = kv.Value; break; }
+        }
+
         return (body, ct);
     }
 
@@ -493,7 +581,11 @@ public static class IFrameBinding
                             break;
                         }
                     case System.Xml.XmlNodeType.EndElement:
-                        if (stack.Count > 0) current = stack.Pop();
+                        if (stack.Count > 0)
+                        {
+                            current = stack.Pop();
+                        }
+
                         break;
                     case System.Xml.XmlNodeType.Text:
                     case System.Xml.XmlNodeType.Whitespace:
@@ -519,7 +611,11 @@ public static class IFrameBinding
         catch (System.Xml.XmlException)
         {
             // Not well-formed: browsers replace the document with a parsererror tree.
-            while (doc.FirstChild is { } c) c.RemoveFromParent();
+            while (doc.FirstChild is { } c)
+            {
+                c.RemoveFromParent();
+            }
+
             doc.AppendChild(doc.CreateElementNS(
                 "http://www.mozilla.org/newlayout/xml/parsererror.xml", "parsererror"));
         }

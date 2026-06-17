@@ -97,11 +97,19 @@ public sealed class TimersTests
         // ahead before the first fire reschedules, so reschedules land at
         // now+delay (not original_due+delay) and only one fire happens. Step
         // the clock to model real-world wall-clock ticks.
-        for (var i = 0; i < 3; i++) loop.AdvanceBy(10);
+        for (var i = 0; i < 3; i++)
+        {
+            loop.AdvanceBy(10);
+        }
+
         runtime.GetGlobal("__count").AsNumber.Should().Be(3);
 
         Eval(runtime, "clearInterval(__id);");
-        for (var i = 0; i < 3; i++) loop.AdvanceBy(10);
+        for (var i = 0; i < 3; i++)
+        {
+            loop.AdvanceBy(10);
+        }
+
         runtime.GetGlobal("__count").AsNumber.Should().Be(3);
     }
 
@@ -325,7 +333,11 @@ public sealed class TimersTests
             }, 10);
         ");
 
-        for (var i = 0; i < 5; i++) loop.AdvanceBy(10);
+        for (var i = 0; i < 5; i++)
+        {
+            loop.AdvanceBy(10);
+        }
+
         runtime.GetGlobal("__count").AsNumber.Should().Be(2);
     }
 
@@ -338,7 +350,10 @@ public sealed class TimersTests
         var errors = new List<string>();
         runtime.Realm.ConsoleSink = (level, msg) =>
         {
-            if (level == ConsoleLevel.Error) errors.Add(msg);
+            if (level == ConsoleLevel.Error)
+            {
+                errors.Add(msg);
+            }
         };
         TimersBinding.Install(runtime, loop);
         return (runtime, loop, errors);

@@ -20,7 +20,11 @@ public sealed class UnionEmitter(WebIdlModel model, TypeMapper mapper, ClrMap cl
         var unions = new SortedDictionary<string, IdlType>(StringComparer.Ordinal);
         foreach (string name in interfaceNames)
         {
-            if (!model.Interfaces.TryGetValue(name, out var iface)) continue;
+            if (!model.Interfaces.TryGetValue(name, out var iface))
+            {
+                continue;
+            }
+
             foreach (var member in iface.Members)
             {
                 switch (member)
@@ -30,7 +34,11 @@ public sealed class UnionEmitter(WebIdlModel model, TypeMapper mapper, ClrMap cl
                         break;
                     case IdlOperation op:
                         Collect(op.ReturnType, unions);
-                        foreach (var arg in op.Arguments) Collect(arg.Type, unions);
+                        foreach (var arg in op.Arguments)
+                        {
+                            Collect(arg.Type, unions);
+                        }
+
                         break;
                 }
             }
@@ -55,7 +63,10 @@ public sealed class UnionEmitter(WebIdlModel model, TypeMapper mapper, ClrMap cl
             // compile. Members that map to a not-yet-generated dictionary,
             // callback, or enum type are skipped — those wait on dictionary and
             // enum emission. NodeOrString and similar all-known unions compile.
-            if (!utype.Union.All(Known)) continue;
+            if (!utype.Union.All(Known))
+            {
+                continue;
+            }
 
             var caseTypes = utype.Union
                 .Select(m => mapper.Map(m, TypePosition.Parameter).CSharp.TrimEnd('?'))
@@ -64,7 +75,10 @@ public sealed class UnionEmitter(WebIdlModel model, TypeMapper mapper, ClrMap cl
 
             // A C# union needs at least two distinct case types. Web IDL
             // distinguishability normally guarantees this, but skip defensively.
-            if (caseTypes.Count < 2) continue;
+            if (caseTypes.Count < 2)
+            {
+                continue;
+            }
 
             sb.AppendLine(CultureInfo.InvariantCulture, $"public union {uname}({string.Join(", ", caseTypes)});");
             count++;
@@ -99,8 +113,14 @@ public sealed class UnionEmitter(WebIdlModel model, TypeMapper mapper, ClrMap cl
         if (r.IsUnion)
         {
             unions.TryAdd(mapper.UnionName(r), r);
-            foreach (var m in r.Union) Collect(m, unions);   // nested unions
+            foreach (var m in r.Union)
+            {
+                Collect(m, unions);   // nested unions
+            }
         }
-        foreach (var arg in r.TypeArgs) Collect(arg, unions);   // sequence<union>, etc.
+        foreach (var arg in r.TypeArgs)
+        {
+            Collect(arg, unions);   // sequence<union>, etc.
+        }
     }
 }

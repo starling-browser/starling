@@ -156,7 +156,11 @@ public sealed class DevToolsPanel : Grid, IDisposable
 
     public void SetActive(DevToolsTab tab)
     {
-        if (_active == tab) return;
+        if (_active == tab)
+        {
+            return;
+        }
+
         _active = tab;
         // Tear down the previous panel's subscription, swap the body, then
         // refresh the strip so the new tab reads as selected.
@@ -173,7 +177,11 @@ public sealed class DevToolsPanel : Grid, IDisposable
     /// </summary>
     public void SetDock(DevToolsDock dock)
     {
-        if (_dock == dock) return;
+        if (_dock == dock)
+        {
+            return;
+        }
+
         _dock = dock;
         RebuildStrip();
     }

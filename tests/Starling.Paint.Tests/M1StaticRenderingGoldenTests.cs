@@ -46,12 +46,16 @@ public sealed class M1StaticRenderingGoldenTests
         BitmapPixels.CountNonWhite(image).Should().BeGreaterThanOrEqualTo(testCase.MinNonWhite, testCase.Name);
 
         foreach (var required in testCase.RequiredColors)
+        {
             BitmapPixels.CountExact(image, required.R, required.G, required.B)
                 .Should().BeGreaterThanOrEqualTo(required.MinCount, testCase.Name);
+        }
 
         foreach (var forbidden in testCase.ForbiddenColors)
+        {
             BitmapPixels.CountExact(image, forbidden.R, forbidden.G, forbidden.B)
                 .Should().Be(0, testCase.Name);
+        }
     }
 
     private static GoldenCase Case(

@@ -17,7 +17,10 @@ public static class ArrayBufferCtor
             // §25.1.4.1 step 1: requires `new`. OrdinaryCreateFromConstructor
             // picks the prototype from new.target for `class B extends ArrayBuffer {}`.
             if (!IntrinsicHelpers.IsConstructInvocation(newTarget))
+            {
                 throw new JsThrow(realm.NewTypeError("ArrayBuffer constructor requires 'new'"));
+            }
+
             var length = ToIndex(realm, args.Length > 0 ? args[0] : JsValue.Undefined);
             var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, proto);
             return JsValue.Object(new JsArrayBuffer(instProto, length));
@@ -57,12 +60,22 @@ public static class ArrayBufferCtor
     internal static int ToIndex(JsRealm realm, JsValue value)
     {
         var n = Number(realm, value);
-        if (double.IsNaN(n) || n == 0) return 0;
+        if (double.IsNaN(n) || n == 0)
+        {
+            return 0;
+        }
+
         n = Math.Truncate(n);
         if (n < 0)
+        {
             throw new JsThrow(realm.NewRangeError("ArrayBuffer length is out of range"));
+        }
+
         if (!double.IsFinite(n) || n > int.MaxValue)
+        {
             throw new JsThrow(realm.NewRangeError("ArrayBuffer length is out of range"));
+        }
+
         return (int)n;
     }
 
@@ -80,8 +93,16 @@ public static class ArrayBufferCtor
 
     private static double ToIntegerOrInfinityCore(double n)
     {
-        if (double.IsNaN(n) || n == 0) return 0;
-        if (double.IsInfinity(n)) return n;
+        if (double.IsNaN(n) || n == 0)
+        {
+            return 0;
+        }
+
+        if (double.IsInfinity(n))
+        {
+            return n;
+        }
+
         return Math.Truncate(n);
     }
 

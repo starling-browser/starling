@@ -148,11 +148,16 @@ internal sealed class StarlingJintModuleLoader : IModuleLoader
 
     private StarlingUrl ResolveBase(string? referencingModuleLocation)
     {
-        if (string.IsNullOrEmpty(referencingModuleLocation)) return _baseUrl;
+        if (string.IsNullOrEmpty(referencingModuleLocation))
+        {
+            return _baseUrl;
+        }
 
         // Inline modules carry the document base for their imports.
         if (_inlineBases.TryGetValue(referencingModuleLocation, out var inlineBase))
+        {
             return inlineBase;
+        }
 
         var parsed = UrlParser.Parse(referencingModuleLocation);
         return parsed.IsOk ? parsed.Value : _baseUrl;
@@ -161,7 +166,10 @@ internal sealed class StarlingJintModuleLoader : IModuleLoader
     private string? FetchSource(string resolvedUrl)
     {
         var parsed = UrlParser.Parse(resolvedUrl);
-        if (parsed.IsErr) return null;
+        if (parsed.IsErr)
+        {
+            return null;
+        }
         // The IModuleLoader contract is synchronous; block on the async fetch the
         // same way the Starling backend's StarlingModuleHost does. The session's
         // ScriptFetcher cache is shared, so parser-discovered modules hit warm.

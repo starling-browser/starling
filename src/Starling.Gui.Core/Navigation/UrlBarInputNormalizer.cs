@@ -24,16 +24,29 @@ public static class UrlBarInputNormalizer
     /// </summary>
     public static string? Normalize(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return null;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
         var input = raw.Trim();
 
-        if (ContainsWhitespace(input)) return null;
+        if (ContainsWhitespace(input))
+        {
+            return null;
+        }
 
         // Protocol-relative — promote to https.
-        if (input.StartsWith("//")) return "https:" + input;
+        if (input.StartsWith("//"))
+        {
+            return "https:" + input;
+        }
 
         // Path-only input has no host to navigate to.
-        if (input.StartsWith('/')) return null;
+        if (input.StartsWith('/'))
+        {
+            return null;
+        }
 
         // Detect an explicit URL scheme. The tricky case is "localhost:8080"
         // or "example.com:8443" — both technically match the scheme grammar
@@ -49,19 +62,26 @@ public static class UrlBarInputNormalizer
         }
 
         var hostCandidate = ExtractHostCandidate(input);
-        if (hostCandidate.Length == 0) return null;
+        if (hostCandidate.Length == 0)
+        {
+            return null;
+        }
 
         var bareHost = StripPort(hostCandidate);
 
         // localhost and IPv4 literals default to http, matching Chrome and
         // Firefox: developers expect plain http for these.
         if (IsLocalhost(bareHost) || Ipv4Regex.IsMatch(bareHost))
+        {
             return "http://" + input;
+        }
 
         // Anything that looks like a hostname (has a dot) or carries an
         // explicit port defaults to https — the modern-browser default.
         if (bareHost.Contains('.') || HasExplicitPort(hostCandidate))
+        {
             return "https://" + input;
+        }
 
         // Single bare word: search query, not a URL.
         return null;
@@ -69,16 +89,26 @@ public static class UrlBarInputNormalizer
 
     private static bool IsSchemeChars(System.ReadOnlySpan<char> s)
     {
-        if (s.Length == 0) return false;
+        if (s.Length == 0)
+        {
+            return false;
+        }
+
         var first = s[0];
         if (!((first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z')))
+        {
             return false;
+        }
+
         for (var i = 1; i < s.Length; i++)
         {
             var c = s[i];
             var ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
                      (c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.';
-            if (!ok) return false;
+            if (!ok)
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -93,8 +123,16 @@ public static class UrlBarInputNormalizer
         for (; i < input.Length; i++)
         {
             var c = input[i];
-            if (c is '/' or '?' or '#') break;
-            if (c < '0' || c > '9') return false;
+            if (c is '/' or '?' or '#')
+            {
+                break;
+            }
+
+            if (c < '0' || c > '9')
+            {
+                return false;
+            }
+
             sawDigit = true;
         }
         return sawDigit;
@@ -120,9 +158,19 @@ public static class UrlBarInputNormalizer
     private static bool HasExplicitPort(string hostCandidate)
     {
         var colon = hostCandidate.IndexOf(':');
-        if (colon < 0 || colon == hostCandidate.Length - 1) return false;
+        if (colon < 0 || colon == hostCandidate.Length - 1)
+        {
+            return false;
+        }
+
         for (var i = colon + 1; i < hostCandidate.Length; i++)
-            if (hostCandidate[i] < '0' || hostCandidate[i] > '9') return false;
+        {
+            if (hostCandidate[i] < '0' || hostCandidate[i] > '9')
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -132,7 +180,13 @@ public static class UrlBarInputNormalizer
     private static bool ContainsWhitespace(string s)
     {
         foreach (var c in s)
-            if (char.IsWhiteSpace(c)) return true;
+        {
+            if (char.IsWhiteSpace(c))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 }

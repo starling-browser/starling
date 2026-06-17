@@ -65,7 +65,10 @@ public class CaretDiagTests
             lines.Add($"   after pump: caretX={CaretX(panel)}, idx={CaretIndex(panel)}");
         }
         File.WriteAllLines("/tmp/caret-diag.txt", lines);
-        foreach (var l in lines) _out.WriteLine(l);
+        foreach (var l in lines)
+        {
+            _out.WriteLine(l);
+        }
     }
 
     private static double? CaretX(WebviewPanel panel)
@@ -87,7 +90,10 @@ public class CaretDiagTests
     {
         var dir = AppContext.BaseDirectory;
         while (dir is not null && !File.Exists(Path.Combine(dir, "testdata", "sites", "todo", "index.html")))
+        {
             dir = Path.GetDirectoryName(dir);
+        }
+
         return "file://" + Path.Combine(dir!, "testdata", "sites", "todo", "index.html").Replace('\\', '/');
     }
 
@@ -104,12 +110,26 @@ public class CaretDiagTests
     {
         var fx = ox + box.Frame.X;
         var fy = oy + box.Frame.Y;
-        if (ReferenceEquals(box.Element, target)) return (fx + box.Frame.Width / 2, fy + box.Frame.Height / 2);
-        if (box is Starling.Layout.Box.TextBox) return null;
+        if (ReferenceEquals(box.Element, target))
+        {
+            return (fx + box.Frame.Width / 2, fy + box.Frame.Height / 2);
+        }
+
+        if (box is Starling.Layout.Box.TextBox)
+        {
+            return null;
+        }
+
         var cx = fx + box.Border.Left + box.Padding.Left;
         var cy = fy + box.Border.Top + box.Padding.Top;
         foreach (var child in box.Children)
-            if (CenterOf(child, target, cx, cy) is { } r) return r;
+        {
+            if (CenterOf(child, target, cx, cy) is { } r)
+            {
+                return r;
+            }
+        }
+
         return null;
     }
 }

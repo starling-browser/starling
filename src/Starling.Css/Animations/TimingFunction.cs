@@ -132,9 +132,20 @@ public abstract record TimingFunction
         }
 
         var n = outputs.Count;
-        if (n == 0) return null;
-        if (inputs[0] is null) inputs[0] = 0.0;
-        if (inputs[n - 1] is null) inputs[n - 1] = 1.0;
+        if (n == 0)
+        {
+            return null;
+        }
+
+        if (inputs[0] is null)
+        {
+            inputs[0] = 0.0;
+        }
+
+        if (inputs[n - 1] is null)
+        {
+            inputs[n - 1] = 1.0;
+        }
 
         // Evenly distribute runs of missing interior inputs between defined anchors.
         var i = 0;
@@ -142,21 +153,35 @@ public abstract record TimingFunction
         {
             if (inputs[i] is not null) { i++; continue; }
             var j = i;
-            while (j < n && inputs[j] is null) j++;
+            while (j < n && inputs[j] is null)
+            {
+                j++;
+            }
+
             var lo = inputs[i - 1]!.Value;
             var hi = inputs[j]!.Value;
             for (var k = i; k < j; k++)
+            {
                 inputs[k] = lo + (hi - lo) * (k - (i - 1)) / (j - (i - 1));
+            }
+
             i = j;
         }
         // Monotonic non-decreasing (§4 step 3).
         for (var k = 1; k < n; k++)
+        {
             if (inputs[k]!.Value < inputs[k - 1]!.Value)
+            {
                 inputs[k] = inputs[k - 1];
+            }
+        }
 
         var points = new List<(double Input, double Output)>(n);
         for (var k = 0; k < n; k++)
+        {
             points.Add((inputs[k]!.Value, outputs[k]));
+        }
+
         return points;
     }
 
@@ -191,16 +216,40 @@ public sealed record LinearEasingFunction : TimingFunction
     public override double Evaluate(double t)
     {
         var count = _points.Count;
-        if (count == 0) return t;
-        if (count == 1) return _points[0].Output;
-        if (t <= _points[0].Input) return _points[0].Output;
-        if (t >= _points[count - 1].Input) return _points[count - 1].Output;
+        if (count == 0)
+        {
+            return t;
+        }
+
+        if (count == 1)
+        {
+            return _points[0].Output;
+        }
+
+        if (t <= _points[0].Input)
+        {
+            return _points[0].Output;
+        }
+
+        if (t >= _points[count - 1].Input)
+        {
+            return _points[count - 1].Output;
+        }
+
         for (var k = 0; k < count - 1; k++)
         {
             var (inK, outK) = _points[k];
             var (inNext, outNext) = _points[k + 1];
-            if (t > inNext) continue;
-            if (inNext <= inK) return outNext; // zero-width segment → jump
+            if (t > inNext)
+            {
+                continue;
+            }
+
+            if (inNext <= inK)
+            {
+                return outNext; // zero-width segment → jump
+            }
+
             var frac = (t - inK) / (inNext - inK);
             return outK + frac * (outNext - outK);
         }
@@ -214,7 +263,11 @@ public sealed record LinearEasingFunction : TimingFunction
     public override int GetHashCode()
     {
         var hash = new HashCode();
-        foreach (var p in _points) hash.Add(p);
+        foreach (var p in _points)
+        {
+            hash.Add(p);
+        }
+
         return hash.ToHashCode();
     }
 }
@@ -233,8 +286,15 @@ public sealed record CubicBezierTimingFunction(double X1, double Y1, double X2, 
 
     public override double Evaluate(double t)
     {
-        if (t <= 0) return 0;
-        if (t >= 1) return 1;
+        if (t <= 0)
+        {
+            return 0;
+        }
+
+        if (t >= 1)
+        {
+            return 1;
+        }
 
         var s = SolveCurveX(t);
         return SampleCurveY(s);
@@ -249,9 +309,17 @@ public sealed record CubicBezierTimingFunction(double X1, double Y1, double X2, 
         for (var i = 0; i < NewtonIterations; i++)
         {
             var fx = SampleCurveX(s) - x;
-            if (Math.Abs(fx) < NewtonEpsilon) return s;
+            if (Math.Abs(fx) < NewtonEpsilon)
+            {
+                return s;
+            }
+
             var dx = SampleCurveDerivativeX(s);
-            if (Math.Abs(dx) < NewtonEpsilon) break;
+            if (Math.Abs(dx) < NewtonEpsilon)
+            {
+                break;
+            }
+
             s -= fx / dx;
         }
 
@@ -262,10 +330,25 @@ public sealed record CubicBezierTimingFunction(double X1, double Y1, double X2, 
         while (lo < hi)
         {
             var fx = SampleCurveX(s);
-            if (Math.Abs(fx - x) < NewtonEpsilon) return s;
-            if (x > fx) lo = s; else hi = s;
+            if (Math.Abs(fx - x) < NewtonEpsilon)
+            {
+                return s;
+            }
+
+            if (x > fx)
+            {
+                lo = s;
+            }
+            else
+            {
+                hi = s;
+            }
+
             s = (lo + hi) * 0.5;
-            if (hi - lo < NewtonEpsilon) break;
+            if (hi - lo < NewtonEpsilon)
+            {
+                break;
+            }
         }
         return s;
     }
@@ -324,16 +407,31 @@ public sealed record StepsTimingFunction(int StepCount, StepPosition Position) :
         var step = (int)Math.Floor(t * n);
         // jump-start shifts every interval up by one — at t=0 the output is
         // already 1/n. jump-both shifts up by one AND uses n+1 levels.
-        if (Position is StepPosition.JumpStart or StepPosition.JumpBoth) step++;
+        if (Position is StepPosition.JumpStart or StepPosition.JumpBoth)
+        {
+            step++;
+        }
         // Edge case at t=1 with jump-end: floor(1.0 * n) == n which would
         // produce step/n == 1.0 — that's actually correct. With jump-none we
         // need to cap at (n-1)/(n-1) == 1.0 (divisor is n-1).
         var divisor = Position == StepPosition.JumpBoth ? n + 1
             : Position == StepPosition.JumpNone ? Math.Max(1, n - 1)
             : n;
-        if (Position == StepPosition.JumpNone && t >= 1.0) step = divisor;
-        if (step < 0) step = 0;
-        if (step > divisor) step = divisor;
+        if (Position == StepPosition.JumpNone && t >= 1.0)
+        {
+            step = divisor;
+        }
+
+        if (step < 0)
+        {
+            step = 0;
+        }
+
+        if (step > divisor)
+        {
+            step = divisor;
+        }
+
         return (double)step / divisor;
     }
 }

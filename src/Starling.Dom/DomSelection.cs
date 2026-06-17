@@ -41,7 +41,11 @@ public sealed class DomSelection
     {
         get
         {
-            if (_range is null) return "None";
+            if (_range is null)
+            {
+                return "None";
+            }
+
             return _range.Collapsed ? "Caret" : "Range";
         }
     }
@@ -50,7 +54,11 @@ public sealed class DomSelection
     {
         get
         {
-            if (_range is null) return null;
+            if (_range is null)
+            {
+                return null;
+            }
+
             return _direction == SelectionDirection.Backwards ? _range.EndContainer : _range.StartContainer;
         }
     }
@@ -59,7 +67,11 @@ public sealed class DomSelection
     {
         get
         {
-            if (_range is null) return 0;
+            if (_range is null)
+            {
+                return 0;
+            }
+
             return _direction == SelectionDirection.Backwards ? _range.EndOffset : _range.StartOffset;
         }
     }
@@ -68,7 +80,11 @@ public sealed class DomSelection
     {
         get
         {
-            if (_range is null) return null;
+            if (_range is null)
+            {
+                return null;
+            }
+
             return _direction == SelectionDirection.Backwards ? _range.StartContainer : _range.EndContainer;
         }
     }
@@ -77,7 +93,11 @@ public sealed class DomSelection
     {
         get
         {
-            if (_range is null) return 0;
+            if (_range is null)
+            {
+                return 0;
+            }
+
             return _direction == SelectionDirection.Backwards ? _range.StartOffset : _range.EndOffset;
         }
     }
@@ -91,8 +111,16 @@ public sealed class DomSelection
     {
         ArgumentNullException.ThrowIfNull(range);
         // Spec: if range's root is not the document, abort.
-        if (!ReferenceEquals(Root(range.StartContainer), Document)) return;
-        if (_range is not null) return;
+        if (!ReferenceEquals(Root(range.StartContainer), Document))
+        {
+            return;
+        }
+
+        if (_range is not null)
+        {
+            return;
+        }
+
         _range = range;
         _direction = SelectionDirection.Directionless;
     }
@@ -103,7 +131,10 @@ public sealed class DomSelection
     {
         ArgumentNullException.ThrowIfNull(range);
         if (!ReferenceEquals(_range, range))
+        {
             throw DomRangeException.Create("NotFoundError", "removeRange: range is not in the selection");
+        }
+
         _range = null;
         _direction = SelectionDirection.Directionless;
     }
@@ -119,7 +150,10 @@ public sealed class DomSelection
     public DomRange GetRangeAt(int index)
     {
         if (_range is null || index != 0)
+        {
             throw DomRangeException.Create("IndexSizeError", $"getRangeAt: no range at index {index}");
+        }
+
         return _range;
     }
 
@@ -130,9 +164,16 @@ public sealed class DomSelection
     {
         if (node is null) { RemoveAllRanges(); return; }
         if (node is DocumentType)
+        {
             throw DomRangeException.Create("InvalidNodeTypeError", "collapse: doctype nodes cannot be boundary points");
+        }
+
         ValidateOffset(node, offset, "collapse");
-        if (!ReferenceEquals(Root(node), Document)) return; // spec: silently abort
+        if (!ReferenceEquals(Root(node), Document))
+        {
+            return; // spec: silently abort
+        }
+
         _range = new DomRange(Document);
         _range.SetStart(node, offset);
         _range.SetEnd(node, offset);
@@ -143,7 +184,10 @@ public sealed class DomSelection
     public void CollapseToStart()
     {
         if (_range is null)
+        {
             throw DomRangeException.Create("InvalidStateError", "collapseToStart: no range");
+        }
+
         var n = _range.StartContainer;
         var o = _range.StartOffset;
         _range = new DomRange(Document);
@@ -156,7 +200,10 @@ public sealed class DomSelection
     public void CollapseToEnd()
     {
         if (_range is null)
+        {
             throw DomRangeException.Create("InvalidStateError", "collapseToEnd: no range");
+        }
+
         var n = _range.EndContainer;
         var o = _range.EndOffset;
         _range = new DomRange(Document);
@@ -176,13 +223,21 @@ public sealed class DomSelection
     {
         ArgumentNullException.ThrowIfNull(node);
         // Step 1: silent no-op when node isn't in our document.
-        if (!ReferenceEquals(Root(node), Document)) return;
+        if (!ReferenceEquals(Root(node), Document))
+        {
+            return;
+        }
         // Step 2: range required.
         if (_range is null)
+        {
             throw DomRangeException.Create("InvalidStateError", "extend: no range");
+        }
         // Step 3: validate the new focus.
         if (node is DocumentType)
+        {
             throw DomRangeException.Create("InvalidNodeTypeError", "extend: doctype nodes cannot be boundary points");
+        }
+
         ValidateOffset(node, offset, "extend");
 
         var anchorNode = AnchorNode!;
@@ -224,7 +279,9 @@ public sealed class DomSelection
         ValidateOffset(anchorNode, anchorOffset, "setBaseAndExtent");
         ValidateOffset(focusNode, focusOffset, "setBaseAndExtent");
         if (!ReferenceEquals(Root(anchorNode), Document) || !ReferenceEquals(Root(focusNode), Document))
+        {
             return;
+        }
 
         var newRange = new DomRange(Document);
         var cmp = ComparePoints(anchorNode, anchorOffset, focusNode, focusOffset);
@@ -249,8 +306,15 @@ public sealed class DomSelection
     {
         ArgumentNullException.ThrowIfNull(node);
         if (node is DocumentType)
+        {
             throw DomRangeException.Create("InvalidNodeTypeError", "selectAllChildren: doctype nodes cannot be boundary points");
-        if (!ReferenceEquals(Root(node), Document)) return;
+        }
+
+        if (!ReferenceEquals(Root(node), Document))
+        {
+            return;
+        }
+
         var len = DomRange.NodeLength(node);
         var newRange = new DomRange(Document);
         newRange.SetStart(node, 0);
@@ -264,8 +328,15 @@ public sealed class DomSelection
     public bool ContainsNode(Node node, bool allowPartialContainment)
     {
         ArgumentNullException.ThrowIfNull(node);
-        if (_range is null) return false;
-        if (!ReferenceEquals(Root(node), Document)) return false;
+        if (_range is null)
+        {
+            return false;
+        }
+
+        if (!ReferenceEquals(Root(node), Document))
+        {
+            return false;
+        }
 
         var len = DomRange.NodeLength(node);
         var parent = node.ParentNode;
@@ -312,7 +383,11 @@ public sealed class DomSelection
     private static Node Root(Node n)
     {
         var cur = n;
-        while (cur.ParentNode is not null) cur = cur.ParentNode;
+        while (cur.ParentNode is not null)
+        {
+            cur = cur.ParentNode;
+        }
+
         return cur;
     }
 
@@ -320,19 +395,30 @@ public sealed class DomSelection
     {
         var len = DomRange.NodeLength(node);
         if (offset < 0 || offset > len)
+        {
             throw DomRangeException.Create("IndexSizeError",
                 $"{op}: offset {offset} is out of range [0, {len}]");
+        }
     }
 
     private static int ComparePoints(Node nodeA, int offsetA, Node nodeB, int offsetB)
     {
-        if (ReferenceEquals(nodeA, nodeB)) return offsetA.CompareTo(offsetB);
+        if (ReferenceEquals(nodeA, nodeB))
+        {
+            return offsetA.CompareTo(offsetB);
+        }
+
         var ancestorsA = AncestorsFromRoot(nodeA);
         var ancestorsB = AncestorsFromRoot(nodeB);
         var minLen = Math.Min(ancestorsA.Count, ancestorsB.Count);
         int i;
         for (i = 0; i < minLen; i++)
-            if (!ReferenceEquals(ancestorsA[i], ancestorsB[i])) break;
+        {
+            if (!ReferenceEquals(ancestorsA[i], ancestorsB[i]))
+            {
+                break;
+            }
+        }
 
         if (i == minLen)
         {
@@ -353,14 +439,24 @@ public sealed class DomSelection
         var siblingA = ancestorsA[i];
         var siblingB = ancestorsB[i];
         for (var s = siblingA.NextSibling; s is not null; s = s.NextSibling)
-            if (ReferenceEquals(s, siblingB)) return -1;
+        {
+            if (ReferenceEquals(s, siblingB))
+            {
+                return -1;
+            }
+        }
+
         return 1;
     }
 
     private static List<Node> AncestorsFromRoot(Node node)
     {
         var chain = new List<Node>();
-        for (var n = node; n is not null; n = n.ParentNode) chain.Add(n);
+        for (var n = node; n is not null; n = n.ParentNode)
+        {
+            chain.Add(n);
+        }
+
         chain.Reverse();
         return chain;
     }

@@ -16,7 +16,11 @@ public sealed class EnumEmitter(WebIdlModel model)
         var used = new SortedSet<string>(StringComparer.Ordinal);
         foreach (string name in interfaceNames)
         {
-            if (!model.Interfaces.TryGetValue(name, out var iface)) continue;
+            if (!model.Interfaces.TryGetValue(name, out var iface))
+            {
+                continue;
+            }
+
             foreach (var member in iface.Members)
             {
                 switch (member)
@@ -24,7 +28,11 @@ public sealed class EnumEmitter(WebIdlModel model)
                     case IdlAttribute a: CollectEnums(a.Type, used); break;
                     case IdlOperation op:
                         CollectEnums(op.ReturnType, used);
-                        foreach (var arg in op.Arguments) CollectEnums(arg.Type, used);
+                        foreach (var arg in op.Arguments)
+                        {
+                            CollectEnums(arg.Type, used);
+                        }
+
                         break;
                 }
             }
@@ -41,19 +49,28 @@ public sealed class EnumEmitter(WebIdlModel model)
         count = 0;
         foreach (string enumName in used)
         {
-            if (!model.Enums.TryGetValue(enumName, out var e)) continue;
+            if (!model.Enums.TryGetValue(enumName, out var e))
+            {
+                continue;
+            }
 
             var members = e.Values
                 .Select(v => (Wire: v, Ident: Identifier(v)))
                 .ToList();
             // Skip if two values sanitize to the same identifier (needs manual care).
-            if (members.Select(m => m.Ident).Distinct(StringComparer.Ordinal).Count() != members.Count) continue;
+            if (members.Select(m => m.Ident).Distinct(StringComparer.Ordinal).Count() != members.Count)
+            {
+                continue;
+            }
 
             sb.AppendLine();
             sb.AppendLine(CultureInfo.InvariantCulture, $"public enum {enumName}");
             sb.AppendLine("{");
             foreach (var m in members)
+            {
                 sb.AppendLine(CultureInfo.InvariantCulture, $"    {m.Ident},");
+            }
+
             sb.AppendLine("}");
 
             sb.AppendLine();
@@ -62,13 +79,19 @@ public sealed class EnumEmitter(WebIdlModel model)
             sb.AppendLine(CultureInfo.InvariantCulture, $"    public static string ToWire({enumName} value) => value switch");
             sb.AppendLine("    {");
             foreach (var m in members)
+            {
                 sb.AppendLine(CultureInfo.InvariantCulture, $"        {enumName}.{m.Ident} => \"{m.Wire}\",");
+            }
+
             sb.AppendLine("        _ => \"\",");
             sb.AppendLine("    };");
             sb.AppendLine(CultureInfo.InvariantCulture, $"    public static {enumName}? FromWire(string s) => s switch");
             sb.AppendLine("    {");
             foreach (var m in members)
+            {
                 sb.AppendLine(CultureInfo.InvariantCulture, $"        \"{m.Wire}\" => {enumName}.{m.Ident},");
+            }
+
             sb.AppendLine("        _ => null,");
             sb.AppendLine("    };");
             sb.AppendLine("}");
@@ -82,16 +105,30 @@ public sealed class EnumEmitter(WebIdlModel model)
     {
         var r = model.ResolveTypedef(type);
         if (!r.IsUnion && r.TypeArgs.Count == 0 && model.Enums.ContainsKey(r.Name))
+        {
             used.Add(r.Name);
-        foreach (var m in r.Union) CollectEnums(m, used);
-        foreach (var arg in r.TypeArgs) CollectEnums(arg, used);
+        }
+
+        foreach (var m in r.Union)
+        {
+            CollectEnums(m, used);
+        }
+
+        foreach (var arg in r.TypeArgs)
+        {
+            CollectEnums(arg, used);
+        }
     }
 
     // Turns an IDL enum value into a C# identifier: split on non-alphanumeric,
     // PascalCase the parts, prefix a leading digit, map empty to "None".
     private static string Identifier(string wire)
     {
-        if (wire.Length == 0) return "None";
+        if (wire.Length == 0)
+        {
+            return "None";
+        }
+
         var sb = new StringBuilder();
         bool upper = true;
         foreach (char c in wire)
@@ -107,8 +144,16 @@ public sealed class EnumEmitter(WebIdlModel model)
             }
         }
         string id = sb.ToString();
-        if (id.Length == 0) return "None";
-        if (char.IsAsciiDigit(id[0])) id = "_" + id;
+        if (id.Length == 0)
+        {
+            return "None";
+        }
+
+        if (char.IsAsciiDigit(id[0]))
+        {
+            id = "_" + id;
+        }
+
         return id;
     }
 }

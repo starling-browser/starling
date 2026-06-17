@@ -36,11 +36,17 @@ internal static class CssomBinding
     public static JsValue StyleElementSheetAccessor(JsRealm realm, JsValue thisV)
     {
         var el = DomWrappers.UnwrapElement(thisV);
-        if (el is null) return JsValue.Null;
+        if (el is null)
+        {
+            return JsValue.Null;
+        }
         // Only <style> elements carry inline CSS text. <link> external sheets have
         // no source available in this binding context.
         if (!el.LocalName.Equals("style", StringComparison.OrdinalIgnoreCase))
+        {
             return JsValue.Null;
+        }
+
         var source = el.TextContent ?? string.Empty;
         var entry = SheetPerStyleElement.GetValue(el, static _ => new StyleElementSheet());
         if (entry.Sheet is null || !string.Equals(entry.Source, source, StringComparison.Ordinal))
@@ -56,7 +62,11 @@ internal static class CssomBinding
     public static JsValue StyleSheetsAccessor(JsRealm realm, JsValue thisV)
     {
         var doc = DomWrappers.UnwrapDocument(thisV);
-        if (doc is null) return JsValue.Null;
+        if (doc is null)
+        {
+            return JsValue.Null;
+        }
+
         var sheets = GetOrBuildSheets(doc);
         return JsValue.Object(BuildStyleSheetList(realm, sheets));
     }
@@ -64,7 +74,10 @@ internal static class CssomBinding
     private static List<CssomStyleSheet> GetOrBuildSheets(Document doc)
     {
         if (SheetsPerDocument.TryGetValue(doc, out var existing))
+        {
             return existing;
+        }
+
         var list = new List<CssomStyleSheet>();
         foreach (var el in doc.DescendantElements())
         {
@@ -96,7 +109,11 @@ internal static class CssomBinding
             PropertyDescriptor.Data(JsValue.Number(sheets.Count), writable: false, enumerable: false, configurable: true));
         EventTargetBinding.DefineMethod(realm, obj, "item", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.Null;
+            if (args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var idx = (int)JsValue.ToNumber(args[0]);
             return idx >= 0 && idx < sheets.Count
                 ? JsValue.Object(BuildStyleSheet(realm, sheets[idx])) : JsValue.Null;
@@ -137,9 +154,17 @@ internal static class CssomBinding
             PropertyDescriptor.Data(JsValue.Number(rules.Count), writable: false, enumerable: false, configurable: true));
         EventTargetBinding.DefineMethod(realm, obj, "item", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.Null;
+            if (args.Length == 0)
+            {
+                return JsValue.Null;
+            }
+
             var idx = (int)JsValue.ToNumber(args[0]);
-            if (idx < 0 || idx >= rules.Count) return JsValue.Null;
+            if (idx < 0 || idx >= rules.Count)
+            {
+                return JsValue.Null;
+            }
+
             return rules[idx] is { } r
                 ? JsValue.Object(BuildStyleRule(realm, r))
                 : JsValue.Object(BuildAtRulePlaceholder(realm, sheet.AtRuleNameAt(idx)));
@@ -190,7 +215,10 @@ internal static class CssomBinding
             (_, args) =>
             {
                 if (args.Length > 0)
+                {
                     rule.TrySetSelectorText(JsValue.ToStringValue(args[0]));
+                }
+
                 return JsValue.Undefined;
             });
         EventTargetBinding.DefineAccessor(realm, obj, "style",
@@ -228,7 +256,11 @@ internal static class CssomBinding
 
         EventTargetBinding.DefineMethod(realm, obj, "setProperty", (_, args) =>
         {
-            if (args.Length < 2) return JsValue.Undefined;
+            if (args.Length < 2)
+            {
+                return JsValue.Undefined;
+            }
+
             var name = JsValue.ToStringValue(args[0]);
             var value = JsValue.ToStringValue(args[1]);
             var priority = args.Length > 2 && !args[2].IsNullish ? JsValue.ToStringValue(args[2]) : null;
@@ -241,7 +273,11 @@ internal static class CssomBinding
 
         EventTargetBinding.DefineMethod(realm, obj, "item", (_, args) =>
         {
-            if (args.Length == 0) return JsValue.String("");
+            if (args.Length == 0)
+            {
+                return JsValue.String("");
+            }
+
             var idx = (int)JsValue.ToNumber(args[0]);
             return JsValue.String(block.ItemName(idx));
         }, length: 1);

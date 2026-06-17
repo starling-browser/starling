@@ -107,8 +107,10 @@ internal sealed class TelemetryAnalyzer
             .ToArray();
 
         if (matches.Length == 0)
+        {
             return new SpanCorrelation(spanName, 0, 0, 0, 0, 0, 0, 0,
                 "No spans with this name in the window.");
+        }
 
         var durations = matches.Select(m => m.Duration.TotalMilliseconds).ToArray();
         var cpus = new List<double>();
@@ -119,8 +121,15 @@ internal sealed class TelemetryAnalyzer
             var endMs = startMs + (long)m.Duration.TotalMilliseconds;
             var cpu = series.AverageCpu(startMs, endMs);
             var ws = series.AverageWorkingSetMb(startMs, endMs);
-            if (!double.IsNaN(cpu)) cpus.Add(cpu);
-            if (!double.IsNaN(ws)) wss.Add(ws);
+            if (!double.IsNaN(cpu))
+            {
+                cpus.Add(cpu);
+            }
+
+            if (!double.IsNaN(ws))
+            {
+                wss.Add(ws);
+            }
         }
 
         var avgCpu = cpus.Count > 0 ? cpus.Average() : double.NaN;
@@ -142,10 +151,17 @@ internal sealed class TelemetryAnalyzer
         var groups = new Dictionary<(string, string), List<ActivityRecord>>();
         foreach (var s in spans)
         {
-            if (s.StartUtc < cutoff) continue;
+            if (s.StartUtc < cutoff)
+            {
+                continue;
+            }
+
             var key = (s.Source, s.OperationName);
             if (!groups.TryGetValue(key, out var list))
+            {
                 groups[key] = list = [];
+            }
+
             list.Add(s);
         }
 
@@ -161,8 +177,15 @@ internal sealed class TelemetryAnalyzer
                 var endMs = startMs + (long)s.Duration.TotalMilliseconds;
                 var c = series.AverageCpu(startMs, endMs);
                 var w = series.AverageWorkingSetMb(startMs, endMs);
-                if (!double.IsNaN(c)) cpus.Add(c);
-                if (!double.IsNaN(w)) wss.Add(w);
+                if (!double.IsNaN(c))
+                {
+                    cpus.Add(c);
+                }
+
+                if (!double.IsNaN(w))
+                {
+                    wss.Add(w);
+                }
             }
 
             result.Add(new SpanAggregate(
@@ -204,7 +227,9 @@ internal sealed class TelemetryAnalyzer
         }
 
         if (samples.Count == 0)
+        {
             return new FrameReport(signal, _budgetMs, 0, 0, 0, 0, 0, 0, 0, 0, 0, []);
+        }
 
         var values = samples.Select(s => s.val).OrderBy(v => v).ToArray();
         var over = samples.Count(s => s.val > _budgetMs);
@@ -229,12 +254,22 @@ internal sealed class TelemetryAnalyzer
 
     private static string Interpret(double avgMs, double avgCpu)
     {
-        if (double.IsNaN(avgCpu)) return $"avg {avgMs:F1}ms; no overlapping CPU samples to correlate.";
+        if (double.IsNaN(avgCpu))
+        {
+            return $"avg {avgMs:F1}ms; no overlapping CPU samples to correlate.";
+        }
+
         var cpuPct = avgCpu * 100;
         if (avgMs > 16 && cpuPct > 70)
+        {
             return $"avg {avgMs:F1}ms while CPU ~{cpuPct:F0}% — CPU-bound; this span is a prime lag suspect.";
+        }
+
         if (avgMs > 16 && cpuPct <= 70)
+        {
             return $"avg {avgMs:F1}ms but CPU only ~{cpuPct:F0}% — likely blocked/waiting (GPU/IO/lock), not CPU work.";
+        }
+
         return $"avg {avgMs:F1}ms, CPU ~{cpuPct:F0}% during — within budget.";
     }
 
@@ -242,12 +277,24 @@ internal sealed class TelemetryAnalyzer
 
     internal static double Percentile(double[] sortedAsc, double q)
     {
-        if (sortedAsc.Length == 0) return 0;
-        if (sortedAsc.Length == 1) return sortedAsc[0];
+        if (sortedAsc.Length == 0)
+        {
+            return 0;
+        }
+
+        if (sortedAsc.Length == 1)
+        {
+            return sortedAsc[0];
+        }
+
         var rank = q * (sortedAsc.Length - 1);
         var lo = (int)Math.Floor(rank);
         var hi = (int)Math.Ceiling(rank);
-        if (lo == hi) return sortedAsc[lo];
+        if (lo == hi)
+        {
+            return sortedAsc[lo];
+        }
+
         var frac = rank - lo;
         return sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * frac;
     }

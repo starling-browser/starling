@@ -45,7 +45,11 @@ internal static class HistoryBinding
             (_, args) =>
             {
                 var v = args.Length > 0 ? args[0].ToString() : "";
-                if (v is "auto" or "manual") history!.ScrollRestoration = v;
+                if (v is "auto" or "manual")
+                {
+                    history!.ScrollRestoration = v;
+                }
+
                 return JsValue.Undefined;
             });
 
@@ -64,10 +68,17 @@ internal static class HistoryBinding
             if (args.Length > 0 && !args[0].IsUndefined())
             {
                 var n = global::Jint.Runtime.TypeConverter.ToNumber(args[0]);
-                if (!double.IsNaN(n) && !double.IsInfinity(n)) delta = (int)n;
+                if (!double.IsNaN(n) && !double.IsInfinity(n))
+                {
+                    delta = (int)n;
+                }
             }
             // go(0) is reload per spec; cross-document reload is not wired.
-            if (delta != 0) Traverse(ctx, history!, delta);
+            if (delta != 0)
+            {
+                Traverse(ctx, history!, delta);
+            }
+
             return JsValue.Undefined;
         }, length: 0);
 
@@ -83,11 +94,22 @@ internal static class HistoryBinding
 
     internal static bool NavigateSameDocument(JintBackendContext ctx, string target, bool replace)
     {
-        if (!Histories.TryGetValue(ctx, out var history)) return false;
+        if (!Histories.TryGetValue(ctx, out var history))
+        {
+            return false;
+        }
+
         var oldUrl = history.CurrentUrl;
         var newUrl = ResolveUrl(oldUrl, string.IsNullOrEmpty(target) ? JsValue.Undefined : new JsString(target));
-        if (!IsSameDocumentUrl(oldUrl, newUrl)) return false;
-        if (string.Equals(oldUrl, newUrl, StringComparison.Ordinal)) return true;
+        if (!IsSameDocumentUrl(oldUrl, newUrl))
+        {
+            return false;
+        }
+
+        if (string.Equals(oldUrl, newUrl, StringComparison.Ordinal))
+        {
+            return true;
+        }
 
         var oldHash = ParsedFragment(oldUrl);
         var newHash = ParsedFragment(newUrl);
@@ -111,23 +133,41 @@ internal static class HistoryBinding
 
     private static void Traverse(JintBackendContext ctx, SessionHistory history, int delta)
     {
-        if (!history.TryTraverse(delta, out var newState)) return;
+        if (!history.TryTraverse(delta, out var newState))
+        {
+            return;
+        }
 
-        if (ctx.Wrappers.Unwrap(ctx.Engine.Global) is not EventTarget windowHost) return;
+        if (ctx.Wrappers.Unwrap(ctx.Engine.Global) is not EventTarget windowHost)
+        {
+            return;
+        }
+
         windowHost.DispatchEvent(new PopStateEvent("popstate") { State = newState });
     }
 
     private static string ResolveUrl(string baseUrl, JsValue arg)
     {
-        if (arg.IsUndefined() || arg.IsNull()) return baseUrl;
+        if (arg.IsUndefined() || arg.IsNull())
+        {
+            return baseUrl;
+        }
+
         var raw = arg.ToString();
-        if (raw.Length == 0) return baseUrl;
+        if (raw.Length == 0)
+        {
+            return baseUrl;
+        }
 
         if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri))
+        {
             return raw;
+        }
 
         if (HasExplicitScheme(raw) && Uri.TryCreate(raw, UriKind.Absolute, out var absolute))
+        {
             return absolute.ToString();
+        }
 
         try { return new Uri(baseUri, raw).ToString(); }
         catch { return baseUrl; }
@@ -136,13 +176,20 @@ internal static class HistoryBinding
     private static bool HasExplicitScheme(string raw)
     {
         var colon = raw.IndexOf(':');
-        if (colon <= 0) return false;
+        if (colon <= 0)
+        {
+            return false;
+        }
+
         for (var i = 0; i < colon; i++)
         {
             var ch = raw[i];
             var ok = i == 0 ? char.IsAsciiLetter(ch)
                 : char.IsAsciiLetterOrDigit(ch) || ch == '+' || ch == '-' || ch == '.';
-            if (!ok) return false;
+            if (!ok)
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -151,7 +198,9 @@ internal static class HistoryBinding
     {
         if (!Uri.TryCreate(oldUrl, UriKind.Absolute, out var oldUri)
             || !Uri.TryCreate(newUrl, UriKind.Absolute, out var newUri))
+        {
             return false;
+        }
 
         return string.Equals(oldUri.Scheme, newUri.Scheme, StringComparison.OrdinalIgnoreCase)
             && string.Equals(oldUri.Authority, newUri.Authority, StringComparison.OrdinalIgnoreCase)
@@ -183,7 +232,10 @@ internal sealed class SessionHistory
     {
         if (replace) { _entries[_index] = new Entry(state, url); return; }
         if (_index + 1 < _entries.Count)
+        {
             _entries.RemoveRange(_index + 1, _entries.Count - _index - 1);
+        }
+
         _entries.Add(new Entry(state, url));
         _index = _entries.Count - 1;
     }

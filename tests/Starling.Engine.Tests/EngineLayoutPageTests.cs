@@ -44,7 +44,10 @@ public class EngineLayoutPageTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 
@@ -68,7 +71,10 @@ public class EngineLayoutPageTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 
@@ -110,7 +116,10 @@ public class EngineLayoutPageTests
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 
@@ -138,21 +147,31 @@ public class EngineLayoutPageTests
             wide.Root.Frame.Width.Should().BeGreaterThan(0);
             wide.Document.Should().NotBeNull();
             using (var bmp = engine.RenderFrame(wide, 0))
+            {
                 bmp.Should().NotBeNull("the successor's resolvers are still alive");
+            }
 
             wide.Dispose();
         }
         finally
         {
-            if (File.Exists(fixture)) File.Delete(fixture);
+            if (File.Exists(fixture))
+            {
+                File.Delete(fixture);
+            }
         }
     }
 
     private static double WidthOf(Box root, string id)
     {
         foreach (var b in Walk(root))
+        {
             if (string.Equals(b.Element?.GetAttribute("id"), id, StringComparison.Ordinal))
+            {
                 return b.Frame.Width;
+            }
+        }
+
         throw new InvalidOperationException($"no box found for #{id}");
     }
 
@@ -160,8 +179,12 @@ public class EngineLayoutPageTests
     {
         yield return box;
         foreach (var child in box.Children)
+        {
             foreach (var d in Walk(child))
+            {
                 yield return d;
+            }
+        }
     }
 
     private static IEnumerable<(string Text, double Y)> CollectTextFragments(Box box)
@@ -169,10 +192,16 @@ public class EngineLayoutPageTests
         if (box is TextBox tb)
         {
             foreach (var f in tb.Fragments)
+            {
                 yield return (f.Text, box.Frame.Y + f.Y);
+            }
         }
         foreach (var child in box.Children)
+        {
             foreach (var f in CollectTextFragments(child))
+            {
                 yield return f;
+            }
+        }
     }
 }

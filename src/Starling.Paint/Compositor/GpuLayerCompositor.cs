@@ -223,7 +223,11 @@ internal sealed unsafe class GpuLayerCompositor : IGpuLayerTextureCache, IDispos
 
     private void EnsureTarget(int width, int height)
     {
-        if (_outTex != null && _outW == width && _outH == height) return;
+        if (_outTex != null && _outW == width && _outH == height)
+        {
+            return;
+        }
+
         var api = _engine.Api;
 
         if (_outView != null) { api.TextureViewRelease(_outView); _outView = null; }
@@ -281,21 +285,33 @@ internal sealed unsafe class GpuLayerCompositor : IGpuLayerTextureCache, IDispos
         {
             api.BufferMapAsync(_readback, MapMode.Read, 0, _readbackSize, cb, null);
             if (!WaitForMap(mapReady) || status != BufferMapAsyncStatus.Success)
+            {
                 throw new InvalidOperationException($"WebGPU readback map failed: {status}");
+            }
+
             mapped = true;
 
             var padded = (int)GpuBlendEngine.Align256((uint)(width * 4));
             var rowBytes = width * 4;
             var src = (byte*)api.BufferGetConstMappedRange(_readback, 0, _readbackSize);
-            if (src == null) throw new InvalidOperationException("WebGPU readback returned no data.");
+            if (src == null)
+            {
+                throw new InvalidOperationException("WebGPU readback returned no data.");
+            }
 
             var srcSpan = new ReadOnlySpan<byte>(src, (int)_readbackSize);
             for (var row = 0; row < height; row++)
+            {
                 srcSpan.Slice(row * padded, rowBytes).CopyTo(output.AsSpan(row * rowBytes, rowBytes));
+            }
         }
         finally
         {
-            if (mapped) api.BufferUnmap(_readback);
+            if (mapped)
+            {
+                api.BufferUnmap(_readback);
+            }
+
             ((IDisposable)cb).Dispose();
             mapReady.Dispose();
         }
@@ -304,10 +320,17 @@ internal sealed unsafe class GpuLayerCompositor : IGpuLayerTextureCache, IDispos
     private bool WaitForMap(ManualResetEventSlim signal)
     {
         var poll = _engine.Poll;
-        if (poll is null) return signal.Wait(5000);
+        if (poll is null)
+        {
+            return signal.Wait(5000);
+        }
+
         var deadline = Environment.TickCount64 + 5000;
         while (!signal.IsSet && Environment.TickCount64 < deadline)
+        {
             poll.DevicePoll(_engine.Device, true, (Silk.NET.WebGPU.Extensions.WGPU.WrappedSubmissionIndex*)null);
+        }
+
         return signal.IsSet;
     }
 

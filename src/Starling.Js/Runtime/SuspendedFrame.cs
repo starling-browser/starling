@@ -33,7 +33,10 @@ public sealed class SuspendedFrame
     public void Start(Action body)
     {
         if (_body is not null)
+        {
             throw new InvalidOperationException("SuspendedFrame already started");
+        }
+
         _body = body ?? throw new ArgumentNullException(nameof(body));
     }
 
@@ -43,7 +46,11 @@ public sealed class SuspendedFrame
         int suspendKind,
         ContinuationResumeAction resumeAction)
     {
-        if (Completed) return;
+        if (Completed)
+        {
+            return;
+        }
+
         State = state ?? throw new ArgumentNullException(nameof(state));
         YieldedValue = yieldedValue;
         SuspendKind = suspendKind;
@@ -91,9 +98,15 @@ public sealed class SuspendedFrame
 
     public void Resume(JsValue value, bool withThrow = false, bool withReturn = false)
     {
-        if (Completed) return;
+        if (Completed)
+        {
+            return;
+        }
+
         if (_body is null)
+        {
             throw new InvalidOperationException("SuspendedFrame has not been started");
+        }
 
         ResumeValue = value;
         ResumeWithThrow = withThrow;

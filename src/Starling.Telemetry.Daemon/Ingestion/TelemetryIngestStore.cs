@@ -42,24 +42,48 @@ internal sealed class TelemetryIngestStore : IDisposable
 
     public void IngestSpans(IReadOnlyList<ActivityRecord> records)
     {
-        if (records.Count == 0) return;
-        foreach (var r in records) Activities.Ingest(r);
+        if (records.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var r in records)
+        {
+            Activities.Ingest(r);
+        }
+
         Interlocked.Add(ref _spansIngested, records.Count);
         Touch();
     }
 
     public void IngestMetrics(IReadOnlyList<MeterRecord> records)
     {
-        if (records.Count == 0) return;
-        foreach (var r in records) Metrics.Ingest(r);
+        if (records.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var r in records)
+        {
+            Metrics.Ingest(r);
+        }
+
         Interlocked.Add(ref _metricsIngested, records.Count);
         Touch();
     }
 
     public void IngestLogs(IReadOnlyList<LogRecord> records)
     {
-        if (records.Count == 0) return;
-        foreach (var r in records) Logs.Ingest(r);
+        if (records.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var r in records)
+        {
+            Logs.Ingest(r);
+        }
+
         Interlocked.Add(ref _logsIngested, records.Count);
         Touch();
     }

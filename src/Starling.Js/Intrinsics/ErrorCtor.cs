@@ -207,7 +207,10 @@ public static class ErrorCtor
     private static JsValue ToStringImpl(JsValue thisV)
     {
         if (!thisV.IsObject)
+        {
             return JsValue.String("Error");
+        }
+
         var o = thisV.AsObject;
 
         var nameV = o.Get("name");
@@ -216,8 +219,16 @@ public static class ErrorCtor
         var msgV = o.Get("message");
         var msg = msgV.IsUndefined ? "" : JsValue.ToStringValue(msgV);
 
-        if (name.Length == 0) return JsValue.String(msg);
-        if (msg.Length == 0) return JsValue.String(name);
+        if (name.Length == 0)
+        {
+            return JsValue.String(msg);
+        }
+
+        if (msg.Length == 0)
+        {
+            return JsValue.String(name);
+        }
+
         return JsValue.String(name + ": " + msg);
     }
 
@@ -251,15 +262,22 @@ public static class ErrorCtor
     private static JsValue CopyErrorsArrayLike(JsRealm realm, JsValue value)
     {
         if (!value.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("AggregateError: errors must be an iterable / array-like"));
+        }
 
         var src = value.AsObject;
         var lengthV = src.Get("length");
         if (!lengthV.IsNumber)
+        {
             throw new JsThrow(realm.NewTypeError("AggregateError: errors must be an iterable / array-like"));
+        }
 
         var len = (int)lengthV.AsNumber;
-        if (len < 0) len = 0;
+        if (len < 0)
+        {
+            len = 0;
+        }
 
         var dst = realm.NewOrdinaryObject();
         for (var i = 0; i < len; i++)

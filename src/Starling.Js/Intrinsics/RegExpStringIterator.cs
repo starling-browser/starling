@@ -51,7 +51,11 @@ internal sealed class JsRegExpStringIterator : JsObject
 
     public JsValue Next(JsRealm realm)
     {
-        if (_done) return IteratorIntrinsics.MakeResult(realm, JsValue.Undefined, done: true);
+        if (_done)
+        {
+            return IteratorIntrinsics.MakeResult(realm, JsValue.Undefined, done: true);
+        }
+
         int bufLen = 2 * (_regex.Compiled.CaptureCount + 1);
         var spanBuffer = ArrayPool<int>.Shared.Rent(bufLen);
         try
@@ -64,8 +68,15 @@ internal sealed class JsRegExpStringIterator : JsObject
             // Advance cursor; guard against zero-width matches.
             _cursor = matchEnd;
             if (matchEnd == matchStart)
+            {
                 _cursor = RegExpCtor.AdvanceStringIndex(_input, _cursor, _unicode);
-            if (!_global) _done = true;
+            }
+
+            if (!_global)
+            {
+                _done = true;
+            }
+
             var matchArr = RegExpCtor.BuildMatchArrayForIterator(realm, _regex, _input, spanBuffer);
             return IteratorIntrinsics.MakeResult(realm, JsValue.Object(matchArr), done: false);
         }

@@ -29,7 +29,10 @@ internal static class TraversalBinding
         ArgumentNullException.ThrowIfNull(ctx);
         var engine = ctx.Engine;
         var docProto = ctx.Wrappers.DocumentPrototype;
-        if (docProto is null) return; // Node bindings must run first.
+        if (docProto is null)
+        {
+            return; // Node bindings must run first.
+        }
 
         InstallNodeFilter(engine);
         var twProto = BuildTreeWalkerProto(ctx);
@@ -39,7 +42,11 @@ internal static class TraversalBinding
         JintInterop.DefineMethod(engine, docProto, "createTreeWalker", (_, args) =>
         {
             var root = args.Length > 0 ? ctx.Wrappers.UnwrapNode(args[0]) : null;
-            if (root is null) throw new JavaScriptException(engine.Intrinsics.TypeError, "createTreeWalker: root must be a Node");
+            if (root is null)
+            {
+                throw new JavaScriptException(engine.Intrinsics.TypeError, "createTreeWalker: root must be a Node");
+            }
+
             var whatToShow = WhatToShow(args, 1);
             var filterVal = args.Length < 3 || args[2].IsUndefined() ? JsValue.Null : args[2];
             return new JintTreeWalkerObject(ctx, twProto, new HostTreeWalker(ctx, root, whatToShow, filterVal));
@@ -49,7 +56,11 @@ internal static class TraversalBinding
         JintInterop.DefineMethod(engine, docProto, "createNodeIterator", (_, args) =>
         {
             var root = args.Length > 0 ? ctx.Wrappers.UnwrapNode(args[0]) : null;
-            if (root is null) throw new JavaScriptException(engine.Intrinsics.TypeError, "createNodeIterator: root must be a Node");
+            if (root is null)
+            {
+                throw new JavaScriptException(engine.Intrinsics.TypeError, "createNodeIterator: root must be a Node");
+            }
+
             var whatToShow = WhatToShow(args, 1);
             var filterVal = args.Length < 3 || args[2].IsUndefined() ? JsValue.Null : args[2];
             return new JintNodeIteratorObject(ctx, niProto, new HostNodeIterator(ctx, root, whatToShow, filterVal));
@@ -59,8 +70,16 @@ internal static class TraversalBinding
     // whatToShow: undefined → 0xFFFFFFFF; null → 0; otherwise ToUint32.
     private static uint WhatToShow(JsValue[] args, int i)
     {
-        if (args.Length <= i || args[i].IsUndefined()) return 0xFFFF_FFFFu;
-        if (args[i].IsNull()) return 0u;
+        if (args.Length <= i || args[i].IsUndefined())
+        {
+            return 0xFFFF_FFFFu;
+        }
+
+        if (args[i].IsNull())
+        {
+            return 0u;
+        }
+
         return TypeConverter.ToUint32(args[i]);
     }
 
@@ -78,12 +97,18 @@ internal static class TraversalBinding
 
     private static void InstallNodeFilter(global::Jint.Engine engine)
     {
-        if (engine.Global.HasOwnProperty("NodeFilter")) return;
+        if (engine.Global.HasOwnProperty("NodeFilter"))
+        {
+            return;
+        }
         // Exposed as a no-op function so `typeof NodeFilter === "function"`, with
         // all constants as own properties.
         var nf = new ClrFunction(engine, "NodeFilter", (_, _) => JsValue.Undefined, 0, PropertyFlag.Configurable);
         foreach (var (name, val) in NodeFilterConstants)
+        {
             nf.FastSetProperty(name, new PropertyDescriptor(JintInterop.Num(val), writable: false, enumerable: true, configurable: false));
+        }
+
         JintInterop.DefineDataProp(engine.Global, "NodeFilter", nf, writable: true, enumerable: false, configurable: true);
     }
 
@@ -105,9 +130,17 @@ internal static class TraversalBinding
             (t, _) => Walker(t) is { } w ? ctx.Wrappers.Wrap(w.CurrentNode) : JsValue.Undefined,
             (t, a) =>
             {
-                if (Walker(t) is not { } w) return JsValue.Undefined;
+                if (Walker(t) is not { } w)
+                {
+                    return JsValue.Undefined;
+                }
+
                 var node = a.Length > 0 ? ctx.Wrappers.UnwrapNode(a[0]) : null;
-                if (node is null) throw new JavaScriptException(engine.Intrinsics.TypeError, "TreeWalker.currentNode must be a Node");
+                if (node is null)
+                {
+                    throw new JavaScriptException(engine.Intrinsics.TypeError, "TreeWalker.currentNode must be a Node");
+                }
+
                 w.CurrentNode = node;
                 return JsValue.Undefined;
             });
@@ -179,8 +212,15 @@ internal static class TraversalBinding
     /// call; propagates any callback exception.</summary>
     internal static uint InvokeFilter(JintBackendContext ctx, JsValue filterVal, Node node, ref bool active)
     {
-        if (filterVal.IsNull() || filterVal.IsUndefined()) return Accept;
-        if (active) throw DomExceptionBinding.Throw(ctx, "InvalidStateError", "NodeFilter is already active (recursive filter call)");
+        if (filterVal.IsNull() || filterVal.IsUndefined())
+        {
+            return Accept;
+        }
+
+        if (active)
+        {
+            throw DomExceptionBinding.Throw(ctx, "InvalidStateError", "NodeFilter is already active (recursive filter call)");
+        }
 
         active = true;
         try
@@ -195,7 +235,10 @@ internal static class TraversalBinding
             {
                 var fn = filterVal.AsObject().Get("acceptNode");
                 if (!fn.IsCallable())
+                {
                     throw new JavaScriptException(ctx.Engine.Intrinsics.TypeError, "NodeFilter object must have a callable 'acceptNode'");
+                }
+
                 result = fn.Call(filterVal, new[] { nodeJs });
             }
             else
@@ -214,7 +257,11 @@ internal static class TraversalBinding
     internal static uint FilterNode(JintBackendContext ctx, Node node, uint whatToShow, JsValue filterVal, ref bool active)
     {
         var bit = 1u << (NodeTypeOf(node) - 1);
-        if ((whatToShow & bit) == 0) return Skip;
+        if ((whatToShow & bit) == 0)
+        {
+            return Skip;
+        }
+
         return (filterVal.IsNull() || filterVal.IsUndefined())
             ? Accept
             : InvokeFilter(ctx, filterVal, node, ref active);
@@ -237,9 +284,19 @@ internal static class TraversalBinding
 
     internal static Node? NextNodeInTree(Node node)
     {
-        if (node.FirstChild is not null) return node.FirstChild;
+        if (node.FirstChild is not null)
+        {
+            return node.FirstChild;
+        }
+
         for (var n = node; n is not null; n = n.ParentNode)
-            if (n.NextSibling is not null) return n.NextSibling;
+        {
+            if (n.NextSibling is not null)
+            {
+                return n.NextSibling;
+            }
+        }
+
         return null;
     }
 
@@ -248,7 +305,11 @@ internal static class TraversalBinding
         if (node.PreviousSibling is not null)
         {
             var n = node.PreviousSibling;
-            while (n.LastChild is not null) n = n.LastChild;
+            while (n.LastChild is not null)
+            {
+                n = n.LastChild;
+            }
+
             return n;
         }
         return node.ParentNode;
@@ -257,7 +318,13 @@ internal static class TraversalBinding
     internal static bool IsInclusiveDescendant(Node node, Node root)
     {
         for (var n = node; n is not null; n = n.ParentNode)
-            if (ReferenceEquals(n, root)) return true;
+        {
+            if (ReferenceEquals(n, root))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -327,7 +394,11 @@ internal sealed class HostTreeWalker
                 var sibling = first ? node.NextSibling : node.PreviousSibling;
                 if (sibling is not null) { node = sibling; break; }
                 var parent = node.ParentNode;
-                if (parent is null || ReferenceEquals(parent, Root) || ReferenceEquals(parent, CurrentNode)) return null;
+                if (parent is null || ReferenceEquals(parent, Root) || ReferenceEquals(parent, CurrentNode))
+                {
+                    return null;
+                }
+
                 node = parent;
             }
         }
@@ -337,7 +408,11 @@ internal sealed class HostTreeWalker
     private Node? TraverseSiblings(bool next)
     {
         var node = CurrentNode;
-        if (ReferenceEquals(node, Root)) return null;
+        if (ReferenceEquals(node, Root))
+        {
+            return null;
+        }
+
         while (true)
         {
             var sibling = next ? node.NextSibling : node.PreviousSibling;
@@ -350,8 +425,15 @@ internal sealed class HostTreeWalker
                 sibling ??= next ? node.NextSibling : node.PreviousSibling;
             }
             node = node.ParentNode!;
-            if (node is null || ReferenceEquals(node, Root)) return null;
-            if (ApplyFilter(node) == TraversalBinding.Accept) return null;
+            if (node is null || ReferenceEquals(node, Root))
+            {
+                return null;
+            }
+
+            if (ApplyFilter(node) == TraversalBinding.Accept)
+            {
+                return null;
+            }
         }
     }
 
@@ -361,7 +443,11 @@ internal sealed class HostTreeWalker
         while (!ReferenceEquals(node, Root))
         {
             node = node.ParentNode!;
-            if (node is null) return null;
+            if (node is null)
+            {
+                return null;
+            }
+
             if (ApplyFilter(node) == TraversalBinding.Accept) { CurrentNode = node; return node; }
         }
         return null;
@@ -387,10 +473,18 @@ internal sealed class HostTreeWalker
             Node? next = null;
             for (var tmp = node; tmp is not null; tmp = tmp.ParentNode)
             {
-                if (ReferenceEquals(tmp, Root)) return null;
+                if (ReferenceEquals(tmp, Root))
+                {
+                    return null;
+                }
+
                 if (tmp.NextSibling is not null) { next = tmp.NextSibling; break; }
             }
-            if (next is null) return null;
+            if (next is null)
+            {
+                return null;
+            }
+
             node = next;
             result = ApplyFilter(node);
             if (result == TraversalBinding.Accept) { CurrentNode = node; return node; }
@@ -415,9 +509,17 @@ internal sealed class HostTreeWalker
                 if (result == TraversalBinding.Accept) { CurrentNode = node; return node; }
                 sibling = node.PreviousSibling;
             }
-            if (ReferenceEquals(node, Root)) return null;
+            if (ReferenceEquals(node, Root))
+            {
+                return null;
+            }
+
             node = node.ParentNode!;
-            if (node is null) return null;
+            if (node is null)
+            {
+                return null;
+            }
+
             if (ApplyFilter(node) == TraversalBinding.Accept) { CurrentNode = node; return node; }
         }
         return null;
@@ -459,20 +561,34 @@ internal sealed class HostNodeIterator
                 if (!beforeNode)
                 {
                     var nx = TraversalBinding.NextNodeInTree(node);
-                    if (nx is null || !TraversalBinding.IsInclusiveDescendant(nx, Root)) return null;
+                    if (nx is null || !TraversalBinding.IsInclusiveDescendant(nx, Root))
+                    {
+                        return null;
+                    }
+
                     node = nx;
                 }
-                else beforeNode = false;
+                else
+                {
+                    beforeNode = false;
+                }
             }
             else
             {
                 if (beforeNode)
                 {
                     var pv = TraversalBinding.PreviousNodeInTree(node);
-                    if (pv is null || !TraversalBinding.IsInclusiveDescendant(pv, Root)) return null;
+                    if (pv is null || !TraversalBinding.IsInclusiveDescendant(pv, Root))
+                    {
+                        return null;
+                    }
+
                     node = pv;
                 }
-                else beforeNode = true;
+                else
+                {
+                    beforeNode = true;
+                }
             }
 
             if (ApplyFilter(node) == TraversalBinding.Accept)

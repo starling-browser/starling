@@ -51,7 +51,10 @@ public sealed class LayerTreeRelayoutFrameTests
         {
             // A layout-relevant mutation (the status-text write the demo makes) —
             // this is what forced the old gate onto the flat path every frame.
-            if (label.FirstChild is Text t) t.Data = "frame " + f;
+            if (label.FirstChild is Text t)
+            {
+                t.Data = "frame " + f;
+            }
             // A composite-time, transform-only change on the promoted layer. Start
             // non-zero so the layer is promoted (a stacking context) from the first
             // frame — rotate(0deg) is the identity and would only promote later.
@@ -99,7 +102,11 @@ public sealed class LayerTreeRelayoutFrameTests
         public MetricRecorder()
         {
             _l.InstrumentPublished = (inst, lst) =>
-            { if (inst.Meter.Name == StarlingTelemetry.SourceName) lst.EnableMeasurementEvents(inst); };
+            { if (inst.Meter.Name == StarlingTelemetry.SourceName)
+                {
+                    lst.EnableMeasurementEvents(inst);
+                }
+            };
             _l.SetMeasurementEventCallback<double>((inst, m, t, s) => Add(inst.Name, m));
             _l.SetMeasurementEventCallback<long>((inst, m, t, s) => Add(inst.Name, m));
             _l.Start();

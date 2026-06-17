@@ -105,7 +105,9 @@ public class DynamicImportTests
             // Bare specifiers resolve by identity (the entry module's URL).
             if (!specifier.StartsWith("./", StringComparison.Ordinal)
                 && !specifier.StartsWith("../", StringComparison.Ordinal))
+            {
                 return modules.ContainsKey(specifier) ? specifier : null;
+            }
 
             // Relative specifier: join against the referrer's directory.
             var baseDir = referrer is null ? "" : DirOf(referrer);
@@ -127,13 +129,24 @@ public class DynamicImportTests
             var absolute = baseDir.StartsWith('/');
             var segments = new List<string>();
             if (baseDir.Length > 0)
+            {
                 segments.AddRange(baseDir.Split('/', StringSplitOptions.RemoveEmptyEntries));
+            }
+
             foreach (var part in rel.Split('/', StringSplitOptions.RemoveEmptyEntries))
             {
-                if (part == ".") continue;
+                if (part == ".")
+                {
+                    continue;
+                }
+
                 if (part == "..")
                 {
-                    if (segments.Count > 0) segments.RemoveAt(segments.Count - 1);
+                    if (segments.Count > 0)
+                    {
+                        segments.RemoveAt(segments.Count - 1);
+                    }
+
                     continue;
                 }
                 segments.Add(part);

@@ -6,7 +6,10 @@ public static class SpecificityCalculator
     {
         var result = Specificity.Zero;
         foreach (var part in selector.Parts)
+        {
             result += Calculate(part.Compound);
+        }
+
         return result;
     }
 

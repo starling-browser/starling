@@ -45,7 +45,10 @@ internal static class CssBinding
         EventTargetBinding.DefineMethod(realm, css, "registerProperty", (_, args) =>
         {
             if (args.Length < 1 || !args[0].IsObject)
+            {
                 throw new JsThrow(realm.NewTypeError("registerProperty requires a descriptor object"));
+            }
+
             var def = args[0].AsObject;
 
             var name = GetString(def, "name");
@@ -54,15 +57,25 @@ internal static class CssBinding
             var initial = GetString(def, "initialValue");
 
             if (name is null || !name.StartsWith("--", StringComparison.Ordinal))
+            {
                 throw new JsThrow(realm.NewTypeError("@property name must start with --"));
+            }
+
             if (inheritsVal.IsUndefined)
+            {
                 throw new JsThrow(realm.NewTypeError("registerProperty requires an 'inherits' flag"));
+            }
 
             var isUniversal = syntax.Trim() == "*";
             if (!isUniversal && string.IsNullOrEmpty(initial))
+            {
                 throw new JsThrow(realm.NewTypeError("initialValue is required for a non-universal syntax"));
+            }
+
             if (!registered.Add(name))
+            {
                 throw new JsThrow(realm.NewTypeError($"property {name} is already registered"));
+            }
 
             // Descriptor is valid (validity rules mirror the @property at-rule model).
             return JsValue.Undefined;
@@ -78,7 +91,11 @@ internal static class CssBinding
                 var value = JsValue.ToStringValue(args[1]);
                 // The 2-arg form is false for an empty value or one that smuggles in
                 // a priority / extra declaration.
-                if (value.Length == 0 || value.Contains('!') || value.Contains(';')) return JsValue.False;
+                if (value.Length == 0 || value.Contains('!') || value.Contains(';'))
+                {
+                    return JsValue.False;
+                }
+
                 condition = $"({prop}:{value})";
             }
             else if (args.Length >= 1)
@@ -120,9 +137,14 @@ internal static class CssBinding
         {
             var sheet = Starling.Css.Parser.CssParser.ParseStyleSheet($"@supports {condition} {{}}");
             foreach (var rule in sheet.Rules)
+            {
                 if (rule is Starling.Css.Parser.AtRule at &&
                     string.Equals(at.Name, "supports", StringComparison.OrdinalIgnoreCase))
+                {
                     return Starling.Css.Cascade.SupportsEvaluator.Evaluate(at.Prelude);
+                }
+            }
+
             return false;
         }
         catch
@@ -195,9 +217,13 @@ internal static class CssBinding
                 continue;
             }
             if (char.IsAsciiLetterOrDigit(c) || c == '-' || c == '_' || c > 0x7F)
+            {
                 sb.Append(c);
+            }
             else
+            {
                 sb.Append('\\').Append(c);
+            }
         }
         return sb.ToString();
     }

@@ -25,14 +25,21 @@ public static class AnbParser
         // Drop the trailing EOF the tokenizer appends; keep whitespace tokens.
         var tokens = new List<CssToken>(rawTokens.Count);
         foreach (var t in rawTokens)
+        {
             if (t.Type != CssTokenType.Eof)
+            {
                 tokens.Add(t);
+            }
+        }
 
         var p = new Cursor(tokens);
         p.SkipWhitespace();
         var result = ParseAnb(ref p);
         if (result is null)
+        {
             return null;
+        }
+
         p.SkipWhitespace();
         return p.AtEnd ? result : null;
     }
@@ -82,7 +89,11 @@ public static class AnbParser
             {
                 p.Advance();
                 var sb = ParseSignlessInteger(ref p);
-                if (sb is null) return null;
+                if (sb is null)
+                {
+                    return null;
+                }
+
                 return new NthPattern(a, -sb.Value);
             }
 
@@ -95,14 +106,19 @@ public static class AnbParser
         {
             // '+' must be immediately followed (no whitespace) by an ident.
             if (p.PeekType(1) != CssTokenType.Ident)
+            {
                 return null;
+            }
+
             p.Advance(); // consume '+'
             return ParseNIdent(ref p, sign: 1);
         }
 
         // n | -n | n-5 | -n-5 | n+1 | -n+1 ... (ident-led)
         if (t.Type == CssTokenType.Ident)
+        {
             return ParseNIdent(ref p, sign: 1);
+        }
 
         return null;
     }
@@ -111,7 +127,11 @@ public static class AnbParser
     private static NthPattern? ParseNIdent(ref Cursor p, int sign)
     {
         var t = p.Current;
-        if (t.Type != CssTokenType.Ident) return null;
+        if (t.Type != CssTokenType.Ident)
+        {
+            return null;
+        }
+
         var v = t.Value.ToLowerInvariant();
 
         // n
@@ -144,7 +164,11 @@ public static class AnbParser
         {
             p.Advance();
             var sb = ParseSignlessInteger(ref p);
-            if (sb is null) return null;
+            if (sb is null)
+            {
+                return null;
+            }
+
             return new NthPattern(sign, -sb.Value);
         }
         // "-n-" → following <signless-integer>
@@ -152,7 +176,11 @@ public static class AnbParser
         {
             p.Advance();
             var sb = ParseSignlessInteger(ref p);
-            if (sb is null) return null;
+            if (sb is null)
+            {
+                return null;
+            }
+
             return new NthPattern(-sign, -sb.Value);
         }
 
@@ -168,7 +196,9 @@ public static class AnbParser
 
         // End → B = 0
         if (p.AtEnd)
+        {
             return new NthPattern(a, 0);
+        }
 
         // <signed-integer>: a Number with an explicit sign (e.g. "+5", "-5").
         var t = p.Current;
@@ -184,7 +214,11 @@ public static class AnbParser
             var bsign = t.Delimiter == '-' ? -1 : 1;
             p.Advance();
             var sb = ParseSignlessInteger(ref p);
-            if (sb is null) return null;
+            if (sb is null)
+            {
+                return null;
+            }
+
             return new NthPattern(a, bsign * sb.Value);
         }
 
@@ -225,9 +259,19 @@ public static class AnbParser
     private static bool TryParseDigits(string s, out int value)
     {
         value = 0;
-        if (s.Length == 0) return false;
+        if (s.Length == 0)
+        {
+            return false;
+        }
+
         foreach (var c in s)
-            if (!char.IsAsciiDigit(c)) return false;
+        {
+            if (!char.IsAsciiDigit(c))
+            {
+                return false;
+            }
+        }
+
         return int.TryParse(s, NumberStyles.None, CultureInfo.InvariantCulture, out value);
     }
 
@@ -255,7 +299,9 @@ public static class AnbParser
         public void SkipWhitespace()
         {
             while (_pos < _tokens.Count && _tokens[_pos].Type == CssTokenType.Whitespace)
+            {
                 _pos++;
+            }
         }
     }
 }

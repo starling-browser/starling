@@ -26,7 +26,10 @@ internal static class FontFamilyKey
     {
         var span = family.AsSpan().Trim();
         if (span.Length >= 2 && (span[0] == '"' || span[0] == '\'') && span[^1] == span[0])
+        {
             span = span[1..^1].Trim();
+        }
+
         return span.Length == family.Length ? family : span.ToString();
     }
 }

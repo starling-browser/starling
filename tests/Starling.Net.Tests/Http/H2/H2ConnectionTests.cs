@@ -151,7 +151,10 @@ public class H2ConnectionTests
             while (true)
             {
                 var maybe = await reader.ReadFrameAsync(ct).ConfigureAwait(false);
-                if (maybe is not { } frame) break;
+                if (maybe is not { } frame)
+                {
+                    break;
+                }
 
                 switch (frame.Type)
                 {

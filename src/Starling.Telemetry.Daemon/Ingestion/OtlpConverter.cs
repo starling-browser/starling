@@ -33,7 +33,9 @@ internal static class OtlpConverter
                         resourceTags.Count + span.Attributes.Count);
                     tags.AddRange(resourceTags);
                     foreach (var kv in span.Attributes)
+                    {
                         tags.Add(new KeyValuePair<string, object?>(kv.Key, AnyValueToObject(kv.Value)));
+                    }
 
                     var start = UnixNanosToUtc(span.StartTimeUnixNano);
                     var duration = span.EndTimeUnixNano > span.StartTimeUnixNano
@@ -75,7 +77,10 @@ internal static class OtlpConverter
                         Metric.DataOneofCase.Sum => metric.Sum.DataPoints,
                         _ => null,
                     };
-                    if (points is null) continue;
+                    if (points is null)
+                    {
+                        continue;
+                    }
 
                     foreach (var p in points)
                     {
@@ -116,7 +121,10 @@ internal static class OtlpConverter
                         if (kv.Key is "exception.stacktrace" or "exception.message")
                         {
                             exception = AnyValueToObject(kv.Value)?.ToString();
-                            if (kv.Key == "exception.stacktrace") break; // prefer full stack
+                            if (kv.Key == "exception.stacktrace")
+                            {
+                                break; // prefer full stack
+                            }
                         }
                     }
 
@@ -138,15 +146,26 @@ internal static class OtlpConverter
         IEnumerable<KeyValue>? attributes)
     {
         var tags = new List<KeyValuePair<string, object?>>();
-        if (attributes is null) return tags;
+        if (attributes is null)
+        {
+            return tags;
+        }
+
         foreach (var kv in attributes)
+        {
             tags.Add(new KeyValuePair<string, object?>(kv.Key, AnyValueToObject(kv.Value)));
+        }
+
         return tags;
     }
 
     private static object? AnyValueToObject(AnyValue? value)
     {
-        if (value is null) return null;
+        if (value is null)
+        {
+            return null;
+        }
+
         return value.ValueCase switch
         {
             AnyValue.ValueOneofCase.StringValue => value.StringValue,
@@ -184,7 +203,9 @@ internal static class OtlpConverter
         // if the producer set one, else treat the record as the lowest level
         // (Trace).
         if (severity == SeverityNumber.Unspecified)
+        {
             return ParseSeverityText(severityText) ?? LogLevel.Trace;
+        }
 
         return (int)severity switch
         {
@@ -199,17 +220,45 @@ internal static class OtlpConverter
 
     private static LogLevel? ParseSeverityText(string? text)
     {
-        if (string.IsNullOrWhiteSpace(text)) return null;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
         var t = text.Trim();
-        if (t.Equals("TRACE", StringComparison.OrdinalIgnoreCase)) return LogLevel.Trace;
-        if (t.Equals("DEBUG", StringComparison.OrdinalIgnoreCase)) return LogLevel.Debug;
+        if (t.Equals("TRACE", StringComparison.OrdinalIgnoreCase))
+        {
+            return LogLevel.Trace;
+        }
+
+        if (t.Equals("DEBUG", StringComparison.OrdinalIgnoreCase))
+        {
+            return LogLevel.Debug;
+        }
+
         if (t.Equals("INFO", StringComparison.OrdinalIgnoreCase) ||
-            t.Equals("INFORMATION", StringComparison.OrdinalIgnoreCase)) return LogLevel.Information;
+            t.Equals("INFORMATION", StringComparison.OrdinalIgnoreCase))
+        {
+            return LogLevel.Information;
+        }
+
         if (t.Equals("WARN", StringComparison.OrdinalIgnoreCase) ||
-            t.Equals("WARNING", StringComparison.OrdinalIgnoreCase)) return LogLevel.Warning;
-        if (t.Equals("ERROR", StringComparison.OrdinalIgnoreCase)) return LogLevel.Error;
+            t.Equals("WARNING", StringComparison.OrdinalIgnoreCase))
+        {
+            return LogLevel.Warning;
+        }
+
+        if (t.Equals("ERROR", StringComparison.OrdinalIgnoreCase))
+        {
+            return LogLevel.Error;
+        }
+
         if (t.Equals("FATAL", StringComparison.OrdinalIgnoreCase) ||
-            t.Equals("CRITICAL", StringComparison.OrdinalIgnoreCase)) return LogLevel.Critical;
+            t.Equals("CRITICAL", StringComparison.OrdinalIgnoreCase))
+        {
+            return LogLevel.Critical;
+        }
+
         return null;
     }
 }

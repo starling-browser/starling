@@ -111,7 +111,7 @@ public sealed class EngineParallelResourceFetchTests
         }
         finally
         {
-            try { if (File.Exists(tempPng)) File.Delete(tempPng); } catch { /* best-effort */ }
+            try { if (File.Exists(tempPng)) { File.Delete(tempPng); } } catch { /* best-effort */ }
         }
     }
 }

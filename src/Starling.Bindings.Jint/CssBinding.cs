@@ -47,7 +47,9 @@ internal static class CssBinding
         JintInterop.DefineMethod(engine, css, "registerProperty", (_, args) =>
         {
             if (args.Length < 1 || args[0] is not ObjectInstance def)
+            {
                 throw TypeErr(engine, "registerProperty requires a descriptor object");
+            }
 
             var name = GetString(def, "name");
             var syntax = GetString(def, "syntax") ?? "*";
@@ -55,15 +57,25 @@ internal static class CssBinding
             var initial = def.HasProperty("initialValue") ? GetString(def, "initialValue") : null;
 
             if (name is null || !name.StartsWith("--", StringComparison.Ordinal))
+            {
                 throw TypeErr(engine, "@property name must start with --");
+            }
+
             if (inheritsVal.IsUndefined())
+            {
                 throw TypeErr(engine, "registerProperty requires an 'inherits' flag");
+            }
 
             var isUniversal = syntax.Trim() == "*";
             if (!isUniversal && string.IsNullOrEmpty(initial))
+            {
                 throw TypeErr(engine, "initialValue is required for a non-universal syntax");
+            }
+
             if (!registered.Add(name))
+            {
                 throw TypeErr(engine, $"property {name} is already registered");
+            }
 
             // Descriptor is valid (validity rules mirror the @property at-rule model).
             return JsValue.Undefined;
@@ -148,9 +160,13 @@ internal static class CssBinding
                 continue;
             }
             if (char.IsAsciiLetterOrDigit(c) || c == '-' || c == '_' || c > 0x7F)
+            {
                 sb.Append(c);
+            }
             else
+            {
                 sb.Append('\\').Append(c);
+            }
         }
         return sb.ToString();
     }

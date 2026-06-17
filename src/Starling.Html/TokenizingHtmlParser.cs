@@ -50,11 +50,15 @@ internal static class TokenizingHtmlParser
     {
         var element = document.CreateElement(token.Name);
         foreach (var attribute in token.Attributes)
+        {
             element.SetAttribute(attribute.Name, attribute.Value);
+        }
 
         stack.Peek().AppendChild(element);
         if (token.SelfClosing || IsVoidElement(token.Name))
+        {
             return;
+        }
 
         stack.Push(element);
         tokenizer.SetState(StateForElement(token.Name));
@@ -72,7 +76,9 @@ internal static class TokenizingHtmlParser
     private static void AppendText(Document document, Stack<Node> stack, string text)
     {
         if (text.Length == 0)
+        {
             return;
+        }
 
         if (stack.Peek().LastChild is Text existing)
         {
@@ -88,11 +94,15 @@ internal static class TokenizingHtmlParser
         foreach (var node in stack.ToArray())
         {
             if (node is Document)
+            {
                 return;
+            }
 
             stack.Pop();
             if (node is Element element && element.TagName == tagName)
+            {
                 return;
+            }
         }
     }
 

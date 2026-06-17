@@ -52,7 +52,11 @@ public class TcpDialerTests
         while (total < buf.Length)
         {
             var n = await conn.ReadAsync(buf.AsMemory(total), ct);
-            if (n == 0) break;
+            if (n == 0)
+            {
+                break;
+            }
+
             total += n;
         }
         total.Should().Be(payload.Length);
@@ -190,9 +194,16 @@ public class TcpDialerTests
                     while (true)
                     {
                         var n = await s.ReadAsync(buf);
-                        if (n == 0) break;
+                        if (n == 0)
+                        {
+                            break;
+                        }
+
                         await s.WriteAsync(buf.AsMemory(0, n));
-                        if (closeAfterFirstByte) break;
+                        if (closeAfterFirstByte)
+                        {
+                            break;
+                        }
                     }
                 }
             }
@@ -225,7 +236,9 @@ public class TcpDialerTests
         {
             _callbacks.Writer.Complete();
             await foreach (var (callback, state) in _callbacks.Reader.ReadAllAsync())
+            {
                 callback(state);
+            }
         }
     }
 }

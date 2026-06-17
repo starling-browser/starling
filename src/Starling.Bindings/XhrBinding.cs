@@ -40,7 +40,10 @@ public static class XhrBinding
         ArgumentNullException.ThrowIfNull(document);
 
         var realm = runtime.Realm;
-        if (realm.XmlHttpRequestConstructor is not null) return;
+        if (realm.XmlHttpRequestConstructor is not null)
+        {
+            return;
+        }
 
         // XMLHttpRequest.prototype inherits from EventTarget so addEventListener works.
         var proto = new JsObject(realm.EventTargetPrototype ?? realm.ObjectPrototype);
@@ -125,12 +128,18 @@ public static class XhrBinding
         {
             var x = XhrObject.Require(realm, thisV);
             if (args.Length < 2)
+            {
                 throw new JsThrow(realm.NewTypeError("XHR.open requires (method, url)"));
+            }
+
             var method = JsValue.ToStringValue(args[0]).ToUpperInvariant();
             var url = JsValue.ToStringValue(args[1]);
             if (args.Length > 2 && !args[2].IsUndefined && !JsValue.ToBoolean(args[2]))
+            {
                 throw new JsThrow(realm.NewError(realm.ErrorPrototype,
                     "Synchronous XMLHttpRequest is not supported"));
+            }
+
             x.Reset();
             x.Method = method;
             x.RequestUrl = ResolveUrl(url, document);
@@ -143,7 +152,10 @@ public static class XhrBinding
         {
             var x = XhrObject.Require(realm, thisV);
             if (x.ReadyState != 1)
+            {
                 throw new JsThrow(realm.NewError(realm.ErrorPrototype, "setRequestHeader: state must be OPENED"));
+            }
+
             var name = args.Length > 0 ? JsValue.ToStringValue(args[0]) : "";
             var value = args.Length > 1 ? JsValue.ToStringValue(args[1]) : "";
             x.RequestHeaders.Append(name, value);
@@ -154,7 +166,10 @@ public static class XhrBinding
         {
             var x = XhrObject.Require(realm, thisV);
             if (x.ReadyState != 1)
+            {
                 throw new JsThrow(realm.NewError(realm.ErrorPrototype, "XHR.send: state must be OPENED"));
+            }
+
             var bodyV = args.Length > 0 ? args[0] : JsValue.Undefined;
             var bodyBytes = FetchBinding.BodyToBytes(realm, bodyV);
             SendImpl(runtime, client, x, bodyBytes);
@@ -181,7 +196,10 @@ public static class XhrBinding
             var x = XhrObject.Require(realm, thisV);
             var sb = new StringBuilder();
             foreach (var (k, v) in x.ResponseHeaders)
+            {
                 sb.Append(k).Append(": ").Append(v).Append("\r\n");
+            }
+
             return JsValue.String(sb.ToString());
         }, length: 0);
 
@@ -190,7 +208,13 @@ public static class XhrBinding
             var x = XhrObject.Require(realm, thisV);
             var name = args.Length > 0 ? JsValue.ToStringValue(args[0]).ToLowerInvariant() : "";
             foreach (var (k, v) in x.ResponseHeaders)
-                if (k.ToLowerInvariant() == name) return JsValue.String(v);
+            {
+                if (k.ToLowerInvariant() == name)
+                {
+                    return JsValue.String(v);
+                }
+            }
+
             return JsValue.Null;
         }, length: 1);
 
@@ -212,7 +236,10 @@ public static class XhrBinding
         }
         var hdrs = new HttpHeaders();
         foreach (var (k, v) in x.RequestHeaders.Entries())
+        {
             try { hdrs.Add(k, v); } catch (Exception ex) { XhrBindingLog.InvalidHeaderSkipped(Log, ex, k); }
+        }
+
         var wire = new HttpRequest(x.Method, parsed.Value, hdrs, body);
 
         x.Cts = new CancellationTokenSource();
@@ -223,7 +250,9 @@ public static class XhrBinding
         // observable from the browser MCP without instrumenting the page.
         var diagNet = Environment.GetEnvironmentVariable("STARLING_DIAG_NET") == "1";
         if (diagNet)
+        {
             realm.ConsoleSink(ConsoleLevel.Info, $"[net:xhr] {x.Method} {x.RequestUrl}");
+        }
 
         _ = Task.Run(async () =>
         {
@@ -232,12 +261,19 @@ public static class XhrBinding
                 var result = await client.SendAsync(wire, x.Cts.Token).ConfigureAwait(false);
                 realm.Microtasks.Enqueue(() => runtime.WithActiveVm(() =>
                 {
-                    if (x.Aborted) return;
+                    if (x.Aborted)
+                    {
+                        return;
+                    }
+
                     if (result.IsErr)
                     {
                         if (diagNet)
+                        {
                             realm.ConsoleSink(ConsoleLevel.Warn,
                                 $"[net:xhr] ERR {x.Method} {x.RequestUrl}: {result.Error}");
+                        }
+
                         x.ReadyState = 4;
                         x.Status = 0;
                         FireReadyStateChange(realm, x);
@@ -247,13 +283,20 @@ public static class XhrBinding
                     }
                     var resp = result.Value;
                     if (diagNet)
+                    {
                         realm.ConsoleSink(ConsoleLevel.Info,
                             $"[net:xhr] {resp.StatusCode} {x.Method} {x.RequestUrl} ({resp.Body.Length} bytes)");
+                    }
+
                     x.Status = resp.StatusCode;
                     x.StatusText = resp.ReasonPhrase ?? "";
                     x.ResponseUrl = x.RequestUrl;
                     x.ResponseHeaders.Clear();
-                    foreach (var kv in resp.Headers) x.ResponseHeaders.Add((kv.Key, kv.Value));
+                    foreach (var kv in resp.Headers)
+                    {
+                        x.ResponseHeaders.Add((kv.Key, kv.Value));
+                    }
+
                     x.ResponseBytes = resp.Body.ToArray();
                     x.ResponseText = Encoding.UTF8.GetString(x.ResponseBytes);
                     x.ReadyState = 2; FireReadyStateChange(realm, x);
@@ -267,7 +310,11 @@ public static class XhrBinding
             {
                 realm.Microtasks.Enqueue(() => runtime.WithActiveVm(() =>
                 {
-                    if (x.Aborted) return;
+                    if (x.Aborted)
+                    {
+                        return;
+                    }
+
                     x.ReadyState = 4;
                     x.Status = 0;
                     FireReadyStateChange(realm, x);
@@ -320,7 +367,10 @@ public static class XhrBinding
         if (baseRaw is not null)
         {
             var parsedBase = StarlingUrlParser.Parse(baseRaw);
-            if (parsedBase.IsOk) baseUrl = parsedBase.Value;
+            if (parsedBase.IsOk)
+            {
+                baseUrl = parsedBase.Value;
+            }
         }
         var parsed = StarlingUrlParser.Parse(input, baseUrl);
         return parsed.IsOk ? parsed.Value.ToString() : input;
@@ -338,9 +388,17 @@ public static class XhrBinding
         try
         {
             var json = realm.GlobalObject.Get("JSON");
-            if (!json.IsObject) return JsValue.Null;
+            if (!json.IsObject)
+            {
+                return JsValue.Null;
+            }
+
             var parse = json.AsObject.Get("parse");
-            if (!AbstractOperations.IsCallable(parse)) return JsValue.Null;
+            if (!AbstractOperations.IsCallable(parse))
+            {
+                return JsValue.Null;
+            }
+
             return AbstractOperations.Call(realm.ActiveVm, parse, json, new[] { JsValue.String(text) });
         }
         catch (Exception ex) { XhrBindingLog.JsonParseFailed(Log, ex); return JsValue.Null; }
@@ -375,7 +433,11 @@ internal sealed class XhrObject : JsObject
 
     public static XhrObject Require(JsRealm realm, JsValue thisV)
     {
-        if (thisV.IsObject && thisV.AsObject is XhrObject x) return x;
+        if (thisV.IsObject && thisV.AsObject is XhrObject x)
+        {
+            return x;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not an XMLHttpRequest"));
     }
 }

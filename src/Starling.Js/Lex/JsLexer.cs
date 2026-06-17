@@ -101,7 +101,10 @@ public ref struct JsLexer
     public void PushBack(JsToken token)
     {
         if (_peeked is not null)
+        {
             throw new InvalidOperationException("PushBack called with a token already peeked");
+        }
+
         _peeked = token;
     }
 
@@ -151,7 +154,11 @@ public ref struct JsLexer
                 i++;
                 while (i < _src.Length && _src[i] != quote)
                 {
-                    if (_src[i] == '\\') i++;
+                    if (_src[i] == '\\')
+                    {
+                        i++;
+                    }
+
                     i++;
                 }
                 continue;
@@ -159,22 +166,37 @@ public ref struct JsLexer
             if (c == '`')
             {
                 i++;
-                while (i < _src.Length && _src[i] != '`') i++;
+                while (i < _src.Length && _src[i] != '`')
+                {
+                    i++;
+                }
+
                 continue;
             }
             if (c == '/' && i + 1 < _src.Length && _src[i + 1] == '/')
             {
-                while (i < _src.Length && _src[i] != '\n') i++;
+                while (i < _src.Length && _src[i] != '\n')
+                {
+                    i++;
+                }
+
                 continue;
             }
             if (c == '/' && i + 1 < _src.Length && _src[i + 1] == '*')
             {
                 i += 2;
-                while (i + 1 < _src.Length && !(_src[i] == '*' && _src[i + 1] == '/')) i++;
+                while (i + 1 < _src.Length && !(_src[i] == '*' && _src[i + 1] == '/'))
+                {
+                    i++;
+                }
+
                 i++; // skip the '/'
                 continue;
             }
-            if (c == '(') depth++;
+            if (c == '(')
+            {
+                depth++;
+            }
             else if (c == ')')
             {
                 depth--;
@@ -199,7 +221,10 @@ public ref struct JsLexer
         {
             var t = Next();
             tokens.Add(t);
-            if (t.Kind == JsTokenKind.EndOfFile) return tokens;
+            if (t.Kind == JsTokenKind.EndOfFile)
+            {
+                return tokens;
+            }
         }
     }
 
@@ -212,7 +237,10 @@ public ref struct JsLexer
         // mirrors Node/V8/JSC. Treat as a line comment.
         if (_i == 0 && _src.Length >= 2 && _src[0] == '#' && _src[1] == '!')
         {
-            while (_i < _src.Length && !IsLineTerminator(_src[_i])) Advance();
+            while (_i < _src.Length && !IsLineTerminator(_src[_i]))
+            {
+                Advance();
+            }
         }
 
         SkipWhitespaceAndComments();
@@ -221,7 +249,9 @@ public ref struct JsLexer
         _precedingLineTerm = false;
 
         if (_i >= _src.Length)
+        {
             return MakeToken(JsTokenKind.EndOfFile, ReadOnlyMemory<char>.Empty, start, start, precededByLT);
+        }
 
         var c = _src[_i];
 
@@ -230,7 +260,9 @@ public ref struct JsLexer
         // surrogate pair, or a \u escape that decodes to one (§12.6).
         if (IsIdStart(c) || (c == '\\' && StartsIdentifierEscape(_i))
             || TryAstralIdChar(_i, first: true, out _))
+        {
             return ScanIdentifier(start, precededByLT);
+        }
 
         // Private identifier — #name, only valid in class bodies (parser
         // enforces). The name part likewise allows a leading \u escape or an
@@ -238,19 +270,27 @@ public ref struct JsLexer
         if (c == '#' && _i + 1 < _src.Length
             && (IsIdStart(_src[_i + 1]) || (_src[_i + 1] == '\\' && StartsIdentifierEscape(_i + 1))
                 || TryAstralIdChar(_i + 1, first: true, out _)))
+        {
             return ScanPrivateIdentifier(start, precededByLT);
+        }
 
         // Numeric literal
         if (c >= '0' && c <= '9')
+        {
             return ScanNumber(start, precededByLT);
+        }
 
         // String literal
         if (c == '"' || c == '\'')
+        {
             return ScanString(c, start, precededByLT);
+        }
 
         // Template literal — parser-driven thereafter for substitutions.
         if (c == '`')
+        {
             return ScanTemplateBody(start, precededByLT, head: true);
+        }
 
         // Punctuator
         return ScanPunctuator(start, precededByLT);
@@ -278,7 +318,9 @@ public ref struct JsLexer
         _precedingLineTerm = false;
 
         if (_i >= _src.Length || _src[_i] != '/')
+        {
             throw new InvalidOperationException("ScanRegExp called at non-slash position");
+        }
 
         Advance(); // opening /
         var patternStart = _i;
@@ -294,12 +336,20 @@ public ref struct JsLexer
             if (c == '\\')
             {
                 Advance();
-                if (_i < _src.Length) Advance();
+                if (_i < _src.Length)
+                {
+                    Advance();
+                }
+
                 continue;
             }
             if (c == '[') { inClass = true; Advance(); continue; }
             if (c == ']') { inClass = false; Advance(); continue; }
-            if (c == '/' && !inClass) break;
+            if (c == '/' && !inClass)
+            {
+                break;
+            }
+
             Advance();
         }
         if (_i >= _src.Length || _src[_i] != '/')
@@ -310,7 +360,11 @@ public ref struct JsLexer
         var patternEnd = _i;
         Advance(); // closing /
         var flagsStart = _i;
-        while (_i < _src.Length && IsIdPart(_src[_i])) Advance();
+        while (_i < _src.Length && IsIdPart(_src[_i]))
+        {
+            Advance();
+        }
+
         return JsToken.RegExpLiteral(
             _srcMemory,
             start.Offset,
@@ -342,7 +396,10 @@ public ref struct JsLexer
         if (head)
         {
             if (_i >= _src.Length || _src[_i] != '`')
+            {
                 throw new InvalidOperationException("template head called at non-backtick");
+            }
+
             Advance();
         }
         var begin = _i;
@@ -376,24 +433,39 @@ public ref struct JsLexer
                 if (c == '\\')
                 {
                     Advance();
-                    if (_i >= _src.Length) break;
+                    if (_i >= _src.Length)
+                    {
+                        break;
+                    }
                     // Line continuation \<LineTerminator> is dropped.
                     if (IsLineTerminator(_src[_i]))
                     {
-                        if (_src[_i] == '\r' && _i + 1 < _src.Length && _src[_i + 1] == '\n') AdvanceRaw();
+                        if (_src[_i] == '\r' && _i + 1 < _src.Length && _src[_i + 1] == '\n')
+                        {
+                            AdvanceRaw();
+                        }
+
                         _i++; _line++; _col = 1; _precedingLineTerm = true;
                         continue;
                     }
                     _lastEscapeWasInvalid = false;
                     sb.Append(ScanEscape(start));
-                    if (_lastEscapeWasInvalid) segmentInvalid = true;
+                    if (_lastEscapeWasInvalid)
+                    {
+                        segmentInvalid = true;
+                    }
+
                     continue;
                 }
                 if (IsLineTerminator(c))
                 {
                     // Raw newlines are legal inside templates; track them for ASI.
                     _precedingLineTerm = true;
-                    if (c == '\r' && _i + 1 < _src.Length && _src[_i + 1] == '\n') AdvanceRaw();
+                    if (c == '\r' && _i + 1 < _src.Length && _src[_i + 1] == '\n')
+                    {
+                        AdvanceRaw();
+                    }
+
                     sb.Append('\n');
                     _i++; _line++; _col = 1;
                     continue;
@@ -432,7 +504,10 @@ public ref struct JsLexer
                 _precedingLineTerm = true;
                 // CRLF counts as one line break.
                 if (c == '\r' && _i + 1 < _src.Length && _src[_i + 1] == '\n')
+                {
                     AdvanceRaw();
+                }
+
                 _i++;
                 _line++;
                 _col = 1;
@@ -452,7 +527,10 @@ public ref struct JsLexer
     {
         // Already at "//".
         Advance(); Advance();
-        while (_i < _src.Length && !IsLineTerminator(_src[_i])) Advance();
+        while (_i < _src.Length && !IsLineTerminator(_src[_i]))
+        {
+            Advance();
+        }
     }
 
     private void SkipBlockComment()
@@ -469,10 +547,17 @@ public ref struct JsLexer
             if (IsLineTerminator(_src[_i]))
             {
                 _precedingLineTerm = true;
-                if (_src[_i] == '\r' && _i + 1 < _src.Length && _src[_i + 1] == '\n') AdvanceRaw();
+                if (_src[_i] == '\r' && _i + 1 < _src.Length && _src[_i + 1] == '\n')
+                {
+                    AdvanceRaw();
+                }
+
                 _i++; _line++; _col = 1;
             }
-            else Advance();
+            else
+            {
+                Advance();
+            }
         }
         _errors.Report(JsLexError.UnterminatedComment, start, "block comment without */");
     }
@@ -500,12 +585,20 @@ public ref struct JsLexer
                 }
                 sb ??= new StringBuilder(_src.Slice(begin, _i - begin).ToString());
                 sb.Append(char.ConvertFromUtf32(cp));
-                for (var k = 0; k < len; k++) Advance();
+                for (var k = 0; k < len; k++)
+                {
+                    Advance();
+                }
+
                 containsEscape = true;
             }
             else if (first ? IsIdStart(c) : IsIdPart(c))
             {
-                if (sb is not null) sb.Append(c);
+                if (sb is not null)
+                {
+                    sb.Append(c);
+                }
+
                 Advance();
             }
             else if (TryAstralIdChar(_i, first, out _))
@@ -518,7 +611,11 @@ public ref struct JsLexer
                 Advance();
                 Advance();
             }
-            else break;
+            else
+            {
+                break;
+            }
+
             first = false;
         }
         var end = CurrentPos();
@@ -568,7 +665,11 @@ public ref struct JsLexer
                     break;
                 }
                 sb.Append(char.ConvertFromUtf32(cp));
-                for (var k = 0; k < len; k++) Advance();
+                for (var k = 0; k < len; k++)
+                {
+                    Advance();
+                }
+
                 hasEscape = true;
             }
             else if (first ? IsIdStart(c) : IsIdPart(c))
@@ -585,7 +686,11 @@ public ref struct JsLexer
                 Advance();
                 Advance();
             }
-            else break;
+            else
+            {
+                break;
+            }
+
             first = false;
         }
         return hasEscape;
@@ -689,11 +794,19 @@ public ref struct JsLexer
         {
             var p = _src[_i + 1];
             if (p == 'x' || p == 'X')
+            {
                 return ScanRadixNumber(start, precededByLT, begin, radix: 16);
+            }
+
             if (p == 'b' || p == 'B')
+            {
                 return ScanRadixNumber(start, precededByLT, begin, radix: 2);
+            }
+
             if (p == 'o' || p == 'O')
+            {
                 return ScanRadixNumber(start, precededByLT, begin, radix: 8);
+            }
         }
 
         // Decimal: digits [. digits] [eE [+-]? digits] [n]?
@@ -720,9 +833,15 @@ public ref struct JsLexer
             // `_` immediately before the exponent letter is rejected by the
             // fact that ScanDecimalDigits already banned a trailing separator.
             Advance();
-            if (_i < _src.Length && (_src[_i] == '+' || _src[_i] == '-')) Advance();
+            if (_i < _src.Length && (_src[_i] == '+' || _src[_i] == '-'))
+            {
+                Advance();
+            }
+
             if (_i >= _src.Length || !IsAsciiDigit(_src[_i]))
+            {
                 _errors.Report(JsLexError.InvalidNumericLiteral, start, "exponent has no digits");
+            }
             // `_` immediately after exponent sign / letter is a SyntaxError:
             // no leading separator in the exponent digit-run.
             if (_i < _src.Length && _src[_i] == '_')
@@ -746,8 +865,11 @@ public ref struct JsLexer
             // (a leading `0` immediately followed by a decimal digit) cannot carry
             // a BigInt suffix: `00n`, `01n`, `08n` are SyntaxErrors.
             if (digitsSpan.Length >= 2 && digitsSpan[0] == '0' && IsAsciiDigit(digitsSpan[1]))
+            {
                 _errors.Report(JsLexError.InvalidNumericLiteral, start,
                     "legacy octal / non-octal-decimal literal cannot have a BigInt suffix");
+            }
+
             Advance(); // consume n
             CheckNoIdentifierAfterNumber(start);
             return JsToken.BigIntLiteral(_srcMemory, begin, _i - begin, begin, _i - begin - 1,
@@ -774,15 +896,20 @@ public ref struct JsLexer
         // not permit numeric separators. If the raw lexeme contains `_` and the
         // stripped form qualifies as a legacy-leading-zero literal, report it.
         if (legacyOctal && lex.IndexOf('_') >= 0)
+        {
             _errors.Report(JsLexError.InvalidNumericLiteral, start,
                 "numeric separator is not allowed in legacy octal / non-octal decimal literals");
+        }
         // Legacy octal literals (`010`) denote a base-8 value; .NET parses the
         // lexeme as decimal above (`010` → 10). Recompute octal-style when every
         // digit is 0-7 so the runtime sees the spec value in sloppy mode.
         if (legacyOctal && AllOctalDigits(parseSpan))
         {
             value = 0;
-            for (var k = 0; k < parseSpan.Length; k++) value = value * 8 + (parseSpan[k] - '0');
+            for (var k = 0; k < parseSpan.Length; k++)
+            {
+                value = value * 8 + (parseSpan[k] - '0');
+            }
         }
         CheckNoIdentifierAfterNumber(start);
         return MakeSourceToken(JsTokenKind.NumericLiteral, begin, _i - begin,
@@ -835,16 +962,29 @@ public ref struct JsLexer
     /// fraction and is consumed before this runs.)</summary>
     private void CheckNoIdentifierAfterNumber(JsPosition start)
     {
-        if (_i >= _src.Length) return;
+        if (_i >= _src.Length)
+        {
+            return;
+        }
+
         var c = _src[_i];
         if (IsAsciiDigit(c) || IsIdStart(c) || TryAstralIdChar(_i, first: true, out _))
+        {
             _errors.Report(JsLexError.InvalidNumericLiteral, start,
                 "identifier or digit immediately after numeric literal");
+        }
     }
 
     private static bool AllOctalDigits(ReadOnlySpan<char> s)
     {
-        foreach (var ch in s) if (ch < '0' || ch > '7') return false;
+        foreach (var ch in s)
+        {
+            if (ch < '0' || ch > '7')
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -864,7 +1004,10 @@ public ref struct JsLexer
         }
         ScanRadixDigits(start, radix);
         if (_i == digitStart)
+        {
             _errors.Report(JsLexError.InvalidNumericLiteral, start, "radix literal has no digits");
+        }
+
         var isInteger = true; // always for these prefixes
         _ = isInteger; // silence unused
         // BigInt suffix permitted on integer radix forms too.
@@ -948,9 +1091,15 @@ public ref struct JsLexer
         if (_i < _src.Length && (_src[_i] == 'e' || _src[_i] == 'E'))
         {
             Advance();
-            if (_i < _src.Length && (_src[_i] == '+' || _src[_i] == '-')) Advance();
+            if (_i < _src.Length && (_src[_i] == '+' || _src[_i] == '-'))
+            {
+                Advance();
+            }
+
             if (_i >= _src.Length || !IsAsciiDigit(_src[_i]))
+            {
                 _errors.Report(JsLexError.InvalidNumericLiteral, start, "exponent has no digits");
+            }
             // `_` immediately after exponent sign/marker is a SyntaxError.
             if (_i < _src.Length && _src[_i] == '_')
             {
@@ -986,7 +1135,11 @@ public ref struct JsLexer
                 >= 'a' and <= 'f' => ch - 'a' + 10,
                 _ => throw new FormatException(),
             };
-            if (digit >= radix) throw new FormatException();
+            if (digit >= radix)
+            {
+                throw new FormatException();
+            }
+
             value = value * radix + digit;
         }
         return value;
@@ -1049,10 +1202,18 @@ public ref struct JsLexer
                     break;
                 }
                 sb.Append(ScanEscape(start));
-                if (_lastEscapeWasLegacyOctal) legacyOctal = true;
+                if (_lastEscapeWasLegacyOctal)
+                {
+                    legacyOctal = true;
+                }
+
                 continue;
             }
-            if (sb is not null) sb.Append(c);
+            if (sb is not null)
+            {
+                sb.Append(c);
+            }
+
             Advance();
         }
         sb ??= new StringBuilder(_src.Slice(valueBegin, _i - valueBegin).ToString());
@@ -1113,7 +1274,11 @@ public ref struct JsLexer
             case '\\': return "\\";
             case '\n': return "";     // line continuation
             case '\r':
-                if (_i < _src.Length && _src[_i] == '\n') Advance();
+                if (_i < _src.Length && _src[_i] == '\n')
+                {
+                    Advance();
+                }
+
                 return "";
             case 'x':
                 return ScanHexEscape(start, 2);
@@ -1134,16 +1299,31 @@ public ref struct JsLexer
                         sb.Append(_src[_i]);
                         Advance();
                     }
-                    if (_i < _src.Length && _src[_i] == '}') Advance();
-                    if (sawBadHex) return "�";
+                    if (_i < _src.Length && _src[_i] == '}')
+                    {
+                        Advance();
+                    }
+
+                    if (sawBadHex)
+                    {
+                        return "�";
+                    }
+
                     if (sb.Length == 0)
                     {
-                        if (_inTemplateBody) _lastEscapeWasInvalid = true;
+                        if (_inTemplateBody)
+                        {
+                            _lastEscapeWasInvalid = true;
+                        }
+
                         return "";
                     }
                     var code = Convert.ToInt32(sb.ToString(), 16);
                     if (code > 0x10FFFF)
+                    {
                         return ReportEscapeError(JsLexError.InvalidUnicodeEscape, start, "code point out of range", "�");
+                    }
+
                     return char.ConvertFromUtf32(code);
                 }
                 return ScanHexEscape(start, 4);
@@ -1164,7 +1344,11 @@ public ref struct JsLexer
         var maxMore = first <= '3' ? 2 : 1;
         for (var k = 0; k < maxMore; k++)
         {
-            if (_i >= _src.Length || _src[_i] < '0' || _src[_i] > '7') break;
+            if (_i >= _src.Length || _src[_i] < '0' || _src[_i] > '7')
+            {
+                break;
+            }
+
             value = value * 8 + (_src[_i] - '0');
             Advance();
         }
@@ -1174,17 +1358,29 @@ public ref struct JsLexer
     private string ScanHexEscape(JsPosition start, int digits)
     {
         if (_i + digits > _src.Length)
+        {
             return ReportEscapeError(JsLexError.InvalidEscape, start, "truncated hex escape", "�");
+        }
+
         var slice = _src.Slice(_i, digits);
         foreach (var ch in slice)
         {
             if (!IsHex(ch))
+            {
                 return ReportEscapeError(JsLexError.InvalidEscape, start, "bad hex digit", "�");
+            }
         }
         var value = 0;
         foreach (var ch in slice)
+        {
             value = (value * 16) + HexDigit(ch);
-        for (var k = 0; k < digits; k++) Advance();
+        }
+
+        for (var k = 0; k < digits; k++)
+        {
+            Advance();
+        }
+
         return ((char)value).ToString();
     }
 
@@ -1202,53 +1398,179 @@ public ref struct JsLexer
         // Must be checked BEFORE the '...' three-char check so that the three-dot
         // case (p1 == '.' && p2 == '.') still falls through to Ellipsis below.
         if (c == '.' && p1 >= '0' && p1 <= '9')
+        {
             return ScanLeadingDotNumber(start, precededByLT);
+        }
 
         // 3-char punctuators
-        if (c == '=' && p1 == '=' && p2 == '=') return Punct(JsTokenKind.EqEqEq, 3, start, precededByLT);
-        if (c == '!' && p1 == '=' && p2 == '=') return Punct(JsTokenKind.BangEqEq, 3, start, precededByLT);
-        if (c == '<' && p1 == '<' && p2 == '=') return Punct(JsTokenKind.LtLtEq, 3, start, precededByLT);
+        if (c == '=' && p1 == '=' && p2 == '=')
+        {
+            return Punct(JsTokenKind.EqEqEq, 3, start, precededByLT);
+        }
+
+        if (c == '!' && p1 == '=' && p2 == '=')
+        {
+            return Punct(JsTokenKind.BangEqEq, 3, start, precededByLT);
+        }
+
+        if (c == '<' && p1 == '<' && p2 == '=')
+        {
+            return Punct(JsTokenKind.LtLtEq, 3, start, precededByLT);
+        }
+
         if (c == '>' && p1 == '>' && p2 == '>')
         {
             char p3 = _i + 3 < _src.Length ? _src[_i + 3] : '\0';
-            if (p3 == '=') return Punct(JsTokenKind.GtGtGtEq, 4, start, precededByLT);
+            if (p3 == '=')
+            {
+                return Punct(JsTokenKind.GtGtGtEq, 4, start, precededByLT);
+            }
+
             return Punct(JsTokenKind.GtGtGt, 3, start, precededByLT);
         }
-        if (c == '>' && p1 == '>' && p2 == '=') return Punct(JsTokenKind.GtGtEq, 3, start, precededByLT);
-        if (c == '*' && p1 == '*' && p2 == '=') return Punct(JsTokenKind.StarStarEq, 3, start, precededByLT);
-        if (c == '&' && p1 == '&' && p2 == '=') return Punct(JsTokenKind.AmpAmpEq, 3, start, precededByLT);
-        if (c == '|' && p1 == '|' && p2 == '=') return Punct(JsTokenKind.PipePipeEq, 3, start, precededByLT);
-        if (c == '?' && p1 == '?' && p2 == '=') return Punct(JsTokenKind.QuestionQuestionEq, 3, start, precededByLT);
-        if (c == '.' && p1 == '.' && p2 == '.') return Punct(JsTokenKind.Ellipsis, 3, start, precededByLT);
+        if (c == '>' && p1 == '>' && p2 == '=')
+        {
+            return Punct(JsTokenKind.GtGtEq, 3, start, precededByLT);
+        }
+
+        if (c == '*' && p1 == '*' && p2 == '=')
+        {
+            return Punct(JsTokenKind.StarStarEq, 3, start, precededByLT);
+        }
+
+        if (c == '&' && p1 == '&' && p2 == '=')
+        {
+            return Punct(JsTokenKind.AmpAmpEq, 3, start, precededByLT);
+        }
+
+        if (c == '|' && p1 == '|' && p2 == '=')
+        {
+            return Punct(JsTokenKind.PipePipeEq, 3, start, precededByLT);
+        }
+
+        if (c == '?' && p1 == '?' && p2 == '=')
+        {
+            return Punct(JsTokenKind.QuestionQuestionEq, 3, start, precededByLT);
+        }
+
+        if (c == '.' && p1 == '.' && p2 == '.')
+        {
+            return Punct(JsTokenKind.Ellipsis, 3, start, precededByLT);
+        }
 
         // 2-char punctuators
-        if (c == '=' && p1 == '=') return Punct(JsTokenKind.EqEq, 2, start, precededByLT);
-        if (c == '!' && p1 == '=') return Punct(JsTokenKind.BangEq, 2, start, precededByLT);
-        if (c == '<' && p1 == '=') return Punct(JsTokenKind.LtEq, 2, start, precededByLT);
-        if (c == '>' && p1 == '=') return Punct(JsTokenKind.GtEq, 2, start, precededByLT);
-        if (c == '<' && p1 == '<') return Punct(JsTokenKind.LtLt, 2, start, precededByLT);
-        if (c == '>' && p1 == '>') return Punct(JsTokenKind.GtGt, 2, start, precededByLT);
-        if (c == '+' && p1 == '+') return Punct(JsTokenKind.PlusPlus, 2, start, precededByLT);
-        if (c == '-' && p1 == '-') return Punct(JsTokenKind.MinusMinus, 2, start, precededByLT);
-        if (c == '*' && p1 == '*') return Punct(JsTokenKind.StarStar, 2, start, precededByLT);
-        if (c == '&' && p1 == '&') return Punct(JsTokenKind.AmpAmp, 2, start, precededByLT);
-        if (c == '|' && p1 == '|') return Punct(JsTokenKind.PipePipe, 2, start, precededByLT);
-        if (c == '?' && p1 == '?') return Punct(JsTokenKind.QuestionQuestion, 2, start, precededByLT);
+        if (c == '=' && p1 == '=')
+        {
+            return Punct(JsTokenKind.EqEq, 2, start, precededByLT);
+        }
+
+        if (c == '!' && p1 == '=')
+        {
+            return Punct(JsTokenKind.BangEq, 2, start, precededByLT);
+        }
+
+        if (c == '<' && p1 == '=')
+        {
+            return Punct(JsTokenKind.LtEq, 2, start, precededByLT);
+        }
+
+        if (c == '>' && p1 == '=')
+        {
+            return Punct(JsTokenKind.GtEq, 2, start, precededByLT);
+        }
+
+        if (c == '<' && p1 == '<')
+        {
+            return Punct(JsTokenKind.LtLt, 2, start, precededByLT);
+        }
+
+        if (c == '>' && p1 == '>')
+        {
+            return Punct(JsTokenKind.GtGt, 2, start, precededByLT);
+        }
+
+        if (c == '+' && p1 == '+')
+        {
+            return Punct(JsTokenKind.PlusPlus, 2, start, precededByLT);
+        }
+
+        if (c == '-' && p1 == '-')
+        {
+            return Punct(JsTokenKind.MinusMinus, 2, start, precededByLT);
+        }
+
+        if (c == '*' && p1 == '*')
+        {
+            return Punct(JsTokenKind.StarStar, 2, start, precededByLT);
+        }
+
+        if (c == '&' && p1 == '&')
+        {
+            return Punct(JsTokenKind.AmpAmp, 2, start, precededByLT);
+        }
+
+        if (c == '|' && p1 == '|')
+        {
+            return Punct(JsTokenKind.PipePipe, 2, start, precededByLT);
+        }
+
+        if (c == '?' && p1 == '?')
+        {
+            return Punct(JsTokenKind.QuestionQuestion, 2, start, precededByLT);
+        }
         // §12.10 OptionalChainingPunctuator: `?.` is optional-chaining ONLY when
         // not immediately followed by a decimal digit, so `x ? .5 : y` stays a
         // conditional with a leading-dot number, and `a?.b` / `a?.[i]` / `a?.(x)`
         // still chain. `?.` + digit falls through to a `?` Question token.
         if (c == '?' && p1 == '.' && !(p2 >= '0' && p2 <= '9'))
+        {
             return Punct(JsTokenKind.QuestionDot, 2, start, precededByLT);
-        if (c == '=' && p1 == '>') return Punct(JsTokenKind.Arrow, 2, start, precededByLT);
-        if (c == '+' && p1 == '=') return Punct(JsTokenKind.PlusEq, 2, start, precededByLT);
-        if (c == '-' && p1 == '=') return Punct(JsTokenKind.MinusEq, 2, start, precededByLT);
-        if (c == '*' && p1 == '=') return Punct(JsTokenKind.StarEq, 2, start, precededByLT);
-        if (c == '/' && p1 == '=') return Punct(JsTokenKind.SlashEq, 2, start, precededByLT);
-        if (c == '%' && p1 == '=') return Punct(JsTokenKind.PercentEq, 2, start, precededByLT);
-        if (c == '&' && p1 == '=') return Punct(JsTokenKind.AmpEq, 2, start, precededByLT);
-        if (c == '|' && p1 == '=') return Punct(JsTokenKind.PipeEq, 2, start, precededByLT);
-        if (c == '^' && p1 == '=') return Punct(JsTokenKind.CaretEq, 2, start, precededByLT);
+        }
+
+        if (c == '=' && p1 == '>')
+        {
+            return Punct(JsTokenKind.Arrow, 2, start, precededByLT);
+        }
+
+        if (c == '+' && p1 == '=')
+        {
+            return Punct(JsTokenKind.PlusEq, 2, start, precededByLT);
+        }
+
+        if (c == '-' && p1 == '=')
+        {
+            return Punct(JsTokenKind.MinusEq, 2, start, precededByLT);
+        }
+
+        if (c == '*' && p1 == '=')
+        {
+            return Punct(JsTokenKind.StarEq, 2, start, precededByLT);
+        }
+
+        if (c == '/' && p1 == '=')
+        {
+            return Punct(JsTokenKind.SlashEq, 2, start, precededByLT);
+        }
+
+        if (c == '%' && p1 == '=')
+        {
+            return Punct(JsTokenKind.PercentEq, 2, start, precededByLT);
+        }
+
+        if (c == '&' && p1 == '=')
+        {
+            return Punct(JsTokenKind.AmpEq, 2, start, precededByLT);
+        }
+
+        if (c == '|' && p1 == '=')
+        {
+            return Punct(JsTokenKind.PipeEq, 2, start, precededByLT);
+        }
+
+        if (c == '^' && p1 == '=')
+        {
+            return Punct(JsTokenKind.CaretEq, 2, start, precededByLT);
+        }
 
         // 1-char punctuators
         var k = c switch
@@ -1280,14 +1602,21 @@ public ref struct JsLexer
             _ => JsTokenKind.Invalid,
         };
         if (k == JsTokenKind.Invalid)
+        {
             _errors.Report(JsLexError.InvalidCharacter, start, $"unexpected character '{c}' (U+{(int)c:X4})");
+        }
+
         return Punct(k, 1, start, precededByLT);
     }
 
     private JsToken Punct(JsTokenKind kind, int len, JsPosition start, bool precededByLT)
     {
         var begin = _i;
-        for (var k = 0; k < len; k++) Advance();
+        for (var k = 0; k < len; k++)
+        {
+            Advance();
+        }
+
         return MakeSourceToken(kind, begin, len, start, CurrentPos(), precededByLT);
     }
 
@@ -1321,9 +1650,21 @@ public ref struct JsLexer
         // (U+202F), medium mathematical space (U+205F), ideographic space
         // (U+3000), and Ogham space mark (U+1680). ASCII fast path first to
         // keep the lexer loop cheap for the common cases.
-        if (c == ' ' || c == '\t' || c == '\v' || c == '\f') return true;
-        if (c < 0x80) return false;
-        if (c == '\uFEFF') return true; // ZWNBSP is not in Zs
+        if (c == ' ' || c == '\t' || c == '\v' || c == '\f')
+        {
+            return true;
+        }
+
+        if (c < 0x80)
+        {
+            return false;
+        }
+
+        if (c == '\uFEFF')
+        {
+            return true; // ZWNBSP is not in Zs
+        }
+
         return CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.SpaceSeparator;
     }
 
@@ -1339,13 +1680,32 @@ public ref struct JsLexer
     /// for the cases this slice covers.</summary>
     private static bool IsIdStart(char c)
     {
-        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) return true;
-        if (c == '_' || c == '$') return true;
-        if (c < 0x80) return false;
-        if (IsOtherIdStart(c)) return true; // \u00A712.6 Other_ID_Start
+        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+        {
+            return true;
+        }
+
+        if (c == '_' || c == '$')
+        {
+            return true;
+        }
+
+        if (c < 0x80)
+        {
+            return false;
+        }
+
+        if (IsOtherIdStart(c))
+        {
+            return true; // \u00A712.6 Other_ID_Start
+        }
         // U+2E2F VERTICAL TILDE is a ModifierLetter but is in Unicode
         // Pattern_Syntax, so it is excluded from ID_Start/ID_Continue (\u00A712.6).
-        if (c == '\u2E2F') return false;
+        if (c == '\u2E2F')
+        {
+            return false;
+        }
+
         var cat = CharUnicodeInfo.GetUnicodeCategory(c);
         return cat is UnicodeCategory.UppercaseLetter
             or UnicodeCategory.LowercaseLetter
@@ -1357,10 +1717,26 @@ public ref struct JsLexer
 
     private static bool IsIdPart(char c)
     {
-        if (IsIdStart(c)) return true;
-        if (c >= '0' && c <= '9') return true;
-        if (c == '\u200C' || c == '\u200D') return true; // ZWNJ/ZWJ
-        if (IsOtherIdContinue(c)) return true; // \u00A712.6 Other_ID_Continue
+        if (IsIdStart(c))
+        {
+            return true;
+        }
+
+        if (c >= '0' && c <= '9')
+        {
+            return true;
+        }
+
+        if (c == '\u200C' || c == '\u200D')
+        {
+            return true; // ZWNJ/ZWJ
+        }
+
+        if (IsOtherIdContinue(c))
+        {
+            return true; // \u00A712.6 Other_ID_Continue
+        }
+
         var cat = CharUnicodeInfo.GetUnicodeCategory(c);
         return cat is UnicodeCategory.NonSpacingMark
             or UnicodeCategory.SpacingCombiningMark
@@ -1411,7 +1787,11 @@ public ref struct JsLexer
     /// points produced by a <c>\u{...}</c> escape).</summary>
     private static bool IsIdStartCp(int cp)
     {
-        if (cp <= 0xFFFF) return IsIdStart((char)cp);
+        if (cp <= 0xFFFF)
+        {
+            return IsIdStart((char)cp);
+        }
+
         var cat = CharUnicodeInfo.GetUnicodeCategory(char.ConvertFromUtf32(cp), 0);
         return cat is UnicodeCategory.UppercaseLetter or UnicodeCategory.LowercaseLetter
             or UnicodeCategory.TitlecaseLetter or UnicodeCategory.ModifierLetter
@@ -1421,7 +1801,11 @@ public ref struct JsLexer
     /// <summary>Code-point-aware IdentifierPart test.</summary>
     private static bool IsIdPartCp(int cp)
     {
-        if (cp <= 0xFFFF) return IsIdPart((char)cp);
+        if (cp <= 0xFFFF)
+        {
+            return IsIdPart((char)cp);
+        }
+
         var cat = CharUnicodeInfo.GetUnicodeCategory(char.ConvertFromUtf32(cp), 0);
         return IsIdStartCp(cp) || cat is UnicodeCategory.NonSpacingMark
             or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.DecimalDigitNumber
@@ -1437,10 +1821,18 @@ public ref struct JsLexer
     private bool TryAstralIdChar(int pos, bool first, out int cp)
     {
         cp = -1;
-        if (pos + 1 >= _src.Length) return false;
+        if (pos + 1 >= _src.Length)
+        {
+            return false;
+        }
+
         var hi = _src[pos];
         var lo = _src[pos + 1];
-        if (!char.IsHighSurrogate(hi) || !char.IsLowSurrogate(lo)) return false;
+        if (!char.IsHighSurrogate(hi) || !char.IsLowSurrogate(lo))
+        {
+            return false;
+        }
+
         cp = char.ConvertToUtf32(hi, lo);
         return first ? IsIdStartCp(cp) : IsIdPartCp(cp);
     }
@@ -1453,7 +1845,11 @@ public ref struct JsLexer
     private int PeekUnicodeEscape(int pos, out int len)
     {
         len = 0;
-        if (pos + 1 >= _src.Length || _src[pos] != '\\' || _src[pos + 1] != 'u') return -1;
+        if (pos + 1 >= _src.Length || _src[pos] != '\\' || _src[pos + 1] != 'u')
+        {
+            return -1;
+        }
+
         var p = pos + 2;
         if (p < _src.Length && _src[p] == '{')
         {
@@ -1461,17 +1857,33 @@ public ref struct JsLexer
             int val = 0; var any = false;
             while (p < _src.Length && _src[p] != '}')
             {
-                var d = HexDigit(_src[p]); if (d < 0) return -1;
-                val = val * 16 + d; if (val > 0x10FFFF) return -1;
+                var d = HexDigit(_src[p]); if (d < 0)
+                {
+                    return -1;
+                }
+
+                val = val * 16 + d; if (val > 0x10FFFF)
+                {
+                    return -1;
+                }
+
                 any = true; p++;
             }
-            if (!any || p >= _src.Length || _src[p] != '}') return -1;
+            if (!any || p >= _src.Length || _src[p] != '}')
+            {
+                return -1;
+            }
+
             len = (p - pos) + 1;
             return val;
         }
-        if (p + 4 > _src.Length) return -1;
+        if (p + 4 > _src.Length)
+        {
+            return -1;
+        }
+
         int v = 0;
-        for (var k = 0; k < 4; k++) { var d = HexDigit(_src[p + k]); if (d < 0) return -1; v = v * 16 + d; }
+        for (var k = 0; k < 4; k++) { var d = HexDigit(_src[p + k]); if (d < 0) { return -1; } v = v * 16 + d; }
         len = (p + 4) - pos;
         return v;
     }
@@ -1505,7 +1917,9 @@ public ref struct JsLexer
         foreach (var ch in source)
         {
             if (ch != '_')
+            {
                 chars[count++] = ch;
+            }
         }
         return new string(chars, 0, count);
     }

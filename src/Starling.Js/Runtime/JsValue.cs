@@ -129,18 +129,31 @@ public readonly struct JsValue : IEquatable<JsValue>
     private static double ParseNumber(string s)
     {
         s = s.Trim();
-        if (s.Length == 0) return 0;
+        if (s.Length == 0)
+        {
+            return 0;
+        }
+
         if (TryParsePrefixedInteger(s, out var integer))
+        {
             return (double)integer;
+        }
+
         if (double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var d))
+        {
             return d;
+        }
+
         return double.NaN;
     }
 
     private static bool TryParsePrefixedInteger(string s, out BigInteger value)
     {
         value = default;
-        if (s.Length < 3 || s[0] != '0') return false;
+        if (s.Length < 3 || s[0] != '0')
+        {
+            return false;
+        }
 
         var radix = s[1] switch
         {
@@ -149,7 +162,11 @@ public readonly struct JsValue : IEquatable<JsValue>
             'b' or 'B' => 2,
             _ => 0,
         };
-        if (radix == 0) return false;
+        if (radix == 0)
+        {
+            return false;
+        }
+
         return TryParseIntegerDigits(s.AsSpan(2), radix, out value);
     }
 
@@ -163,7 +180,9 @@ public readonly struct JsValue : IEquatable<JsValue>
         }
 
         if (TryParsePrefixedInteger(s, out value))
+        {
             return true;
+        }
 
         return BigInteger.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
     }
@@ -171,17 +190,36 @@ public readonly struct JsValue : IEquatable<JsValue>
     private static bool TryParseIntegerDigits(ReadOnlySpan<char> digits, int radix, out BigInteger value)
     {
         value = BigInteger.Zero;
-        if (digits.Length == 0) return false;
+        if (digits.Length == 0)
+        {
+            return false;
+        }
 
         foreach (var ch in digits)
         {
             int digit;
-            if (ch is >= '0' and <= '9') digit = ch - '0';
-            else if (ch is >= 'a' and <= 'f') digit = ch - 'a' + 10;
-            else if (ch is >= 'A' and <= 'F') digit = ch - 'A' + 10;
-            else return false;
+            if (ch is >= '0' and <= '9')
+            {
+                digit = ch - '0';
+            }
+            else if (ch is >= 'a' and <= 'f')
+            {
+                digit = ch - 'a' + 10;
+            }
+            else if (ch is >= 'A' and <= 'F')
+            {
+                digit = ch - 'A' + 10;
+            }
+            else
+            {
+                return false;
+            }
 
-            if (digit >= radix) return false;
+            if (digit >= radix)
+            {
+                return false;
+            }
+
             value = value * radix + digit;
         }
 
@@ -204,10 +242,25 @@ public readonly struct JsValue : IEquatable<JsValue>
 
     private static string NumberToString(double d)
     {
-        if (double.IsNaN(d)) return "NaN";
-        if (double.IsPositiveInfinity(d)) return "Infinity";
-        if (double.IsNegativeInfinity(d)) return "-Infinity";
-        if (d == 0) return "0";
+        if (double.IsNaN(d))
+        {
+            return "NaN";
+        }
+
+        if (double.IsPositiveInfinity(d))
+        {
+            return "Infinity";
+        }
+
+        if (double.IsNegativeInfinity(d))
+        {
+            return "-Infinity";
+        }
+
+        if (d == 0)
+        {
+            return "0";
+        }
 
         var sign = string.Empty;
         if (d < 0)
@@ -218,12 +271,21 @@ public readonly struct JsValue : IEquatable<JsValue>
 
         // Fast path for small integers that fit without exponent rewriting.
         if (d == Math.Truncate(d) && d <= long.MaxValue)
+        {
             return sign + ((long)d).ToString(CultureInfo.InvariantCulture);
+        }
 
         var raw = d.ToString("R", CultureInfo.InvariantCulture);
         var exponentPos = raw.IndexOf('E');
-        if (exponentPos < 0) exponentPos = raw.IndexOf('e');
-        if (exponentPos < 0) return sign + raw;
+        if (exponentPos < 0)
+        {
+            exponentPos = raw.IndexOf('e');
+        }
+
+        if (exponentPos < 0)
+        {
+            return sign + raw;
+        }
 
         return sign + FormatEcmaScientific(raw, exponentPos);
     }
@@ -243,12 +305,17 @@ public readonly struct JsValue : IEquatable<JsValue>
         if (decimalPoint is > 0 and <= 21)
         {
             if (digits.Length <= decimalPoint)
+            {
                 return digits + new string('0', decimalPoint - digits.Length);
+            }
+
             return digits[..decimalPoint] + "." + digits[decimalPoint..];
         }
 
         if (decimalPoint is <= 0 and > -6)
+        {
             return "0." + new string('0', -decimalPoint) + digits;
+        }
 
         var exponentText = exponent >= 0
             ? "+" + exponent.ToString(CultureInfo.InvariantCulture)
@@ -261,7 +328,11 @@ public readonly struct JsValue : IEquatable<JsValue>
     /// <summary>Strict equality per §7.2.16 (no coercion).</summary>
     public static bool StrictEquals(JsValue a, JsValue b)
     {
-        if (a.Kind != b.Kind) return false;
+        if (a.Kind != b.Kind)
+        {
+            return false;
+        }
+
         return a.Kind switch
         {
             JsValueKind.Undefined => true,
@@ -282,22 +353,55 @@ public readonly struct JsValue : IEquatable<JsValue>
     /// <summary>Abstract (loose) equality per §7.2.15. Performs type coercion.</summary>
     public static bool AbstractEquals(JsValue a, JsValue b)
     {
-        if (a.Kind == b.Kind) return StrictEquals(a, b);
+        if (a.Kind == b.Kind)
+        {
+            return StrictEquals(a, b);
+        }
         // null == undefined.
-        if (a.IsNullish && b.IsNullish) return true;
+        if (a.IsNullish && b.IsNullish)
+        {
+            return true;
+        }
         // Number == String → coerce string to number.
         if (a.IsNumber && b.IsString)
+        {
             return !double.IsNaN(b._num /* unused */) && a._num == ParseNumber((string)b._ref!);
+        }
+
         if (a.IsString && b.IsNumber)
+        {
             return ParseNumber((string)a._ref!) == b._num;
+        }
         // §7.2.15 — BigInt cross-type loose equality (Number / String).
-        if (a.IsBigInt && b.IsNumber) return BigIntEqualsNumber((BigInteger)a._ref!, b._num);
-        if (a.IsNumber && b.IsBigInt) return BigIntEqualsNumber((BigInteger)b._ref!, a._num);
-        if (a.IsBigInt && b.IsString) return BigIntEqualsString((BigInteger)a._ref!, (string)b._ref!);
-        if (a.IsString && b.IsBigInt) return BigIntEqualsString((BigInteger)b._ref!, (string)a._ref!);
+        if (a.IsBigInt && b.IsNumber)
+        {
+            return BigIntEqualsNumber((BigInteger)a._ref!, b._num);
+        }
+
+        if (a.IsNumber && b.IsBigInt)
+        {
+            return BigIntEqualsNumber((BigInteger)b._ref!, a._num);
+        }
+
+        if (a.IsBigInt && b.IsString)
+        {
+            return BigIntEqualsString((BigInteger)a._ref!, (string)b._ref!);
+        }
+
+        if (a.IsString && b.IsBigInt)
+        {
+            return BigIntEqualsString((BigInteger)b._ref!, (string)a._ref!);
+        }
         // Boolean → Number (either side).
-        if (a.IsBoolean) return AbstractEquals(Number(a._num), b);
-        if (b.IsBoolean) return AbstractEquals(a, Number(b._num));
+        if (a.IsBoolean)
+        {
+            return AbstractEquals(Number(a._num), b);
+        }
+
+        if (b.IsBoolean)
+        {
+            return AbstractEquals(a, Number(b._num));
+        }
         // Number-or-String == Object → coerce object to primitive (simplified: false).
         return false;
     }
@@ -306,8 +410,16 @@ public readonly struct JsValue : IEquatable<JsValue>
     /// integer-valued Number with the same value.</summary>
     private static bool BigIntEqualsNumber(BigInteger b, double n)
     {
-        if (double.IsNaN(n) || double.IsInfinity(n)) return false;
-        if (n != Math.Truncate(n)) return false;
+        if (double.IsNaN(n) || double.IsInfinity(n))
+        {
+            return false;
+        }
+
+        if (n != Math.Truncate(n))
+        {
+            return false;
+        }
+
         return b == new BigInteger(n);
     }
 
@@ -316,7 +428,10 @@ public readonly struct JsValue : IEquatable<JsValue>
     private static bool BigIntEqualsString(BigInteger b, string s)
     {
         if (!TryStringToBigInt(s, out var parsed))
+        {
             return false;
+        }
+
         return b == parsed;
     }
 

@@ -31,7 +31,9 @@ public sealed class TcpDialer
     {
         var dnsResult = await _dns.ResolveAsync(endpoint.Hostname, ct).ConfigureAwait(false);
         if (dnsResult.IsErr)
+        {
             return Result<ITcpConnection, TcpError>.Err(TcpError.DnsFailed);
+        }
 
         Exception? last = null;
         foreach (var ip in dnsResult.Value.Addresses)

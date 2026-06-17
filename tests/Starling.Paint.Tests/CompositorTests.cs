@@ -163,7 +163,10 @@ public sealed class CompositorTests
         var tree1 = new LayerTreeBuilder(null, null, layerIdFor: tiles.LayerIdFor).Build(root1);
         byte[] first;
         using (var r1 = compositor.Render(tree1, new LayoutRect(0, 0, W, H), scale))
+        {
             first = (byte[])r1.Rgba.Clone();
+        }
+
         var rendersAfterFirst = backend.RenderCalls;
         rendersAfterFirst.Should().BeGreaterThan(0, "the first render must raster the layer tiles");
 
@@ -174,7 +177,9 @@ public sealed class CompositorTests
         var tree2 = new LayerTreeBuilder(null, null, layerIdFor: tiles.LayerIdFor).Build(root2);
         byte[] second;
         using (var r2 = compositor.Render(tree2, new LayoutRect(0, 0, W, H), scale))
+        {
             second = (byte[])r2.Rgba.Clone();
+        }
 
         backend.RenderCalls.Should().Be(rendersAfterFirst,
             "the rotating layer content re-blits from cache; only the composite transform changed");
@@ -208,7 +213,10 @@ public sealed class CompositorTests
         var tree1 = new LayerTreeBuilder(null, null, layerIdFor: tiles.LayerIdFor).Build(root1);
         byte[] first;
         using (var r1 = compositor.Render(tree1, new LayoutRect(0, 0, W, H), scale))
+        {
             first = (byte[])r1.Rgba.Clone();
+        }
+
         var rendersAfterFirst = backend.RenderCalls;
         rendersAfterFirst.Should().BeGreaterThan(0, "the first render must raster the layer tiles");
 
@@ -220,7 +228,9 @@ public sealed class CompositorTests
         var tree2 = new LayerTreeBuilder(null, null, layerIdFor: tiles.LayerIdFor).Build(root2);
         byte[] second;
         using (var r2 = compositor.Render(tree2, new LayoutRect(0, 0, W, H), scale))
+        {
             second = (byte[])r2.Rgba.Clone();
+        }
 
         backend.RenderCalls.Should().Be(rendersAfterFirst,
             "the layer content is reused from cache; only the composite-time opacity changed");
@@ -278,9 +288,19 @@ public sealed class CompositorTests
 
     private static Box? FindByElement(Box box, Starling.Dom.Element el)
     {
-        if (ReferenceEquals(box.Element, el)) return box;
+        if (ReferenceEquals(box.Element, el))
+        {
+            return box;
+        }
+
         foreach (var c in box.Children)
-            if (FindByElement(c, el) is { } found) return found;
+        {
+            if (FindByElement(c, el) is { } found)
+            {
+                return found;
+            }
+        }
+
         return null;
     }
 

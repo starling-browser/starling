@@ -44,7 +44,10 @@ public sealed class BrowserSession : IDisposable
         {
             var result = await _engine.RenderAsync(url, options, outputPath, ct).ConfigureAwait(false);
             if (result.IsOk)
+            {
                 History.Navigate(url);
+            }
+
             return result;
         }).ConfigureAwait(false);
     }
@@ -72,7 +75,11 @@ public sealed class BrowserSession : IDisposable
             var committed = false;
             void Commit()
             {
-                if (committed) return;
+                if (committed)
+                {
+                    return;
+                }
+
                 committed = true;
                 History.Navigate(url);
             }
@@ -85,7 +92,11 @@ public sealed class BrowserSession : IDisposable
             // Script-free pages skip the progressive path: OnCommit never
             // fires, so commit on a successful settle instead. Cancelled or
             // failed loads that never first-painted stay out of history.
-            if (result.IsOk) Commit();
+            if (result.IsOk)
+            {
+                Commit();
+            }
+
             return result;
         }).ConfigureAwait(false);
     }
@@ -192,7 +203,10 @@ public sealed class BrowserSession : IDisposable
     {
         using var span = StarlingTelemetry.Span("session", op);
         if (!string.IsNullOrEmpty(url))
+        {
             Activity.Current?.SetTag("http.url", url);
+        }
+
         StarlingTelemetry.Counter("session.navigations", 1);
 
         var result = await work().ConfigureAwait(false);

@@ -73,20 +73,29 @@ internal static class Program
             // post-mortem telemetry. Exits on Ctrl+C with the subcommand's
             // return code preserved.
             if (mcp is not null)
+            {
                 WaitForShutdownSignal(mcp.Endpoint);
+            }
+
             return exitCode;
         }
         finally
         {
             if (mcp is not null)
+            {
                 mcp.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
         }
     }
 
     private static Uri? ResolveMcpUrl()
     {
         var raw = Environment.GetEnvironmentVariable("STARLING_HEADLESS_MCP_URL");
-        if (string.IsNullOrWhiteSpace(raw)) return null;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
         if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri))
         {
             Console.Error.WriteLine(
@@ -183,9 +192,16 @@ internal static class Program
                 Console.WriteLine("   (this file exercises tokenizer states that are not implemented yet)");
                 break;
             }
-            if (tok is null) break;
+            if (tok is null)
+            {
+                break;
+            }
+
             Console.WriteLine($"{++n,4}: {FormatToken(tok)}");
-            if (tok is EndOfFileToken) break;
+            if (tok is EndOfFileToken)
+            {
+                break;
+            }
         }
 
         if (sink.Count > 0)
@@ -216,7 +232,11 @@ internal static class Program
 
     private static string FormatAttrs(IReadOnlyList<HtmlAttribute> attrs)
     {
-        if (attrs.Count == 0) return "";
+        if (attrs.Count == 0)
+        {
+            return "";
+        }
+
         var parts = attrs.Select(a => $" {a.Name}=\"{a.Value}\"");
         return string.Concat(parts);
     }
@@ -358,7 +378,11 @@ internal static class Program
                     var dir = Path.GetDirectoryName(outputTemplate);
                     var stem = Path.GetFileNameWithoutExtension(outputTemplate);
                     var ext = Path.GetExtension(outputTemplate);
-                    if (string.IsNullOrEmpty(ext)) ext = ".png";
+                    if (string.IsNullOrEmpty(ext))
+                    {
+                        ext = ".png";
+                    }
+
                     try
                     {
                         using var renderer = engine.CreateCompositedRenderer(page);
@@ -371,7 +395,11 @@ internal static class Program
                             {
                                 var name = $"{stem}{i.ToString("D" + pad, System.Globalization.CultureInfo.InvariantCulture)}{ext}";
                                 var path = string.IsNullOrEmpty(dir) ? name : Path.Combine(dir, name);
-                                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                                if (!string.IsNullOrEmpty(dir))
+                                {
+                                    Directory.CreateDirectory(dir);
+                                }
+
                                 using var image = Image.LoadPixelData<SixLabors.ImageSharp.PixelFormats.Rgba32>(
                                     bitmap.Rgba, bitmap.Width, bitmap.Height);
                                 image.SaveAsPng(path);
@@ -404,18 +432,31 @@ internal static class Program
     private static bool TryParseFrameStep(string raw, out long ms)
     {
         ms = 0;
-        if (string.IsNullOrWhiteSpace(raw)) return false;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return false;
+        }
+
         var s = raw.Trim();
-        if (s.EndsWith("ms", StringComparison.OrdinalIgnoreCase)) s = s[..^2];
+        if (s.EndsWith("ms", StringComparison.OrdinalIgnoreCase))
+        {
+            s = s[..^2];
+        }
         else if (s.EndsWith("s", StringComparison.OrdinalIgnoreCase))
         {
             if (!double.TryParse(s[..^1], System.Globalization.CultureInfo.InvariantCulture, out var sec) || sec <= 0)
+            {
                 return false;
+            }
+
             ms = (long)(sec * 1000);
             return ms > 0;
         }
         if (!long.TryParse(s, System.Globalization.CultureInfo.InvariantCulture, out ms) || ms <= 0)
+        {
             return false;
+        }
+
         return true;
     }
 
@@ -435,18 +476,29 @@ internal static class Program
         var tag = el?.TagName ?? box.Kind.ToString();
         var cls = el is null ? "" : string.Join(".", el.ClassList);
         var label = string.IsNullOrEmpty(cls) ? tag : $"{tag}.{cls}";
-        if (!string.IsNullOrEmpty(el?.Id)) label += $"#{el!.Id}";
+        if (!string.IsNullOrEmpty(el?.Id))
+        {
+            label += $"#{el!.Id}";
+        }
+
         var txt = "";
         if (box is Starling.Layout.Box.TextBox t)
         {
             var fw = 0d;
-            foreach (var fr in t.Fragments) fw += fr.Width;
+            foreach (var fr in t.Fragments)
+            {
+                fw += fr.Width;
+            }
+
             var preview = t.Text.Length > 30 ? t.Text[..30] : t.Text;
             txt = $" \"{preview}\" frags={t.Fragments.Count} fw={fw:F0}";
         }
         var f = box.Frame;
         Console.Error.WriteLine($"{new string(' ', depth * 2)}{label}{txt}  [x={f.X:F0} y={f.Y:F0} w={f.Width:F0} h={f.Height:F0}]");
-        foreach (var c in box.Children) DumpLayout(c, depth + 1);
+        foreach (var c in box.Children)
+        {
+            DumpLayout(c, depth + 1);
+        }
     }
 
     private static int StubSubcommand(string name)
@@ -487,18 +539,41 @@ internal static class Program
     {
         size = default;
         var x = s.IndexOf('x', StringComparison.OrdinalIgnoreCase);
-        if (x <= 0 || x == s.Length - 1) return false;
-        if (!int.TryParse(s[..x], out var w) || !int.TryParse(s[(x + 1)..], out var h)) return false;
-        if (w <= 0 || h <= 0) return false;
+        if (x <= 0 || x == s.Length - 1)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(s[..x], out var w) || !int.TryParse(s[(x + 1)..], out var h))
+        {
+            return false;
+        }
+
+        if (w <= 0 || h <= 0)
+        {
+            return false;
+        }
+
         size = new Size(w, h);
         return true;
     }
 
     private static string NormalizeUrlOrPath(string input)
     {
-        if (input.StartsWith("file://", StringComparison.OrdinalIgnoreCase)) return input;
-        if (input.StartsWith("http://", StringComparison.OrdinalIgnoreCase)) return input;
-        if (input.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) return input;
+        if (input.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        {
+            return input;
+        }
+
+        if (input.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            return input;
+        }
+
+        if (input.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return input;
+        }
         // Bare path → file://
         var full = Path.GetFullPath(input);
         return "file://" + (full.StartsWith('/') ? full : "/" + full.Replace('\\', '/'));

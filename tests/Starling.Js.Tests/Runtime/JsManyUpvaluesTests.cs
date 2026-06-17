@@ -30,13 +30,18 @@ public class JsManyUpvaluesTests
         var sb = new StringBuilder();
         sb.Append("function outer(){\n");
         for (var i = 0; i < 300; i++)
+        {
             sb.Append($"  var v{i} = {i};\n");
+        }
         // Inner captures all 300 outer vars and sums them. Capturing every
         // binding forces 300 distinct upvalue indices (well past the old 255).
         sb.Append("  function inner(){\n");
         sb.Append("    return ");
         for (var i = 0; i < 300; i++)
+        {
             sb.Append($"v{i}{(i < 299 ? " + " : "")}");
+        }
+
         sb.Append(";\n");
         sb.Append("  }\n");
         sb.Append("  return inner();\n");
@@ -57,12 +62,18 @@ public class JsManyUpvaluesTests
         var sb = new StringBuilder();
         sb.Append("function outer(){\n");
         for (var i = 0; i < 300; i++)
+        {
             sb.Append($"  var v{i} = {i * 2};\n");
+        }
+
         sb.Append("  function inner(){\n");
         // Force capture of all 300, then return the 299th specifically.
         sb.Append("    var sum = 0;\n");
         for (var i = 0; i < 300; i++)
+        {
             sb.Append($"    if (v{i} < 0) sum += v{i};\n");
+        }
+
         sb.Append("    return v299;\n");
         sb.Append("  }\n");
         sb.Append("  return inner();\n");
@@ -82,13 +93,19 @@ public class JsManyUpvaluesTests
         var sb = new StringBuilder();
         sb.Append("function outer(){\n");
         for (var i = 0; i < 300; i++)
+        {
             sb.Append($"  var v{i} = {i};\n");
+        }
+
         sb.Append("  function writer(){\n");
         // Reference every var so all 300 are captured; then write back to the
         // high-index 299th binding through its shared cell.
         sb.Append("    var t = 0;\n");
         for (var i = 0; i < 300; i++)
+        {
             sb.Append($"    if (v{i} < 0) t += v{i};\n");
+        }
+
         sb.Append("    v299 = 5000;\n");
         sb.Append("  }\n");
         sb.Append("  writer();\n");

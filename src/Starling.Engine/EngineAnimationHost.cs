@@ -51,28 +51,71 @@ internal sealed class EngineAnimationHost : IAnimationHost
         return id;
     }
 
-    public void Play(int id) { if (_byId.TryGetValue(id, out var i)) i.ScriptPlay(); }
-    public void Pause(int id) { if (_byId.TryGetValue(id, out var i)) i.ScriptPause(); }
-    public void Cancel(int id) { if (_byId.TryGetValue(id, out var i)) i.ScriptCancel(); }
-    public void Finish(int id) { if (_byId.TryGetValue(id, out var i)) i.ScriptFinish(); }
+    public void Play(int id) { if (_byId.TryGetValue(id, out var i))
+        {
+            i.ScriptPlay();
+        }
+    }
+    public void Pause(int id) { if (_byId.TryGetValue(id, out var i))
+        {
+            i.ScriptPause();
+        }
+    }
+    public void Cancel(int id) { if (_byId.TryGetValue(id, out var i))
+        {
+            i.ScriptCancel();
+        }
+    }
+    public void Finish(int id) { if (_byId.TryGetValue(id, out var i))
+        {
+            i.ScriptFinish();
+        }
+    }
 
     public double CurrentTime(int id) => _byId.TryGetValue(id, out var i) ? i.ScriptCurrentTime() : 0;
-    public void SetCurrentTime(int id, double ms) { if (_byId.TryGetValue(id, out var i)) i.ScriptSetCurrentTime(ms); }
+    public void SetCurrentTime(int id, double ms) { if (_byId.TryGetValue(id, out var i))
+        {
+            i.ScriptSetCurrentTime(ms);
+        }
+    }
 
     public double PlaybackRate(int id) => _byId.TryGetValue(id, out var i) ? i.ScriptPlaybackRate : 1;
-    public void SetPlaybackRate(int id, double rate) { if (_byId.TryGetValue(id, out var i)) i.ScriptSetPlaybackRate(rate); }
+    public void SetPlaybackRate(int id, double rate) { if (_byId.TryGetValue(id, out var i))
+        {
+            i.ScriptSetPlaybackRate(rate);
+        }
+    }
 
     public void Observe(int id, Action onFinished, Action onCanceled)
     {
-        if (_byId.TryGetValue(id, out var i)) i.SetScriptObservers(onFinished, onCanceled);
+        if (_byId.TryGetValue(id, out var i))
+        {
+            i.SetScriptObservers(onFinished, onCanceled);
+        }
     }
 
     public string PlayState(int id)
     {
-        if (!_byId.TryGetValue(id, out var i)) return "idle";
-        if (i.IsCanceled) return "idle";
-        if (i.IsPaused) return "paused";
-        if (i.IsCompleted) return "finished";
+        if (!_byId.TryGetValue(id, out var i))
+        {
+            return "idle";
+        }
+
+        if (i.IsCanceled)
+        {
+            return "idle";
+        }
+
+        if (i.IsPaused)
+        {
+            return "paused";
+        }
+
+        if (i.IsCompleted)
+        {
+            return "finished";
+        }
+
         return "running";
     }
 
@@ -88,7 +131,9 @@ internal sealed class EngineAnimationHost : IAnimationHost
             foreach (var (prop, text) in kf.Declarations)
             {
                 if (ParseValue($"{prop}: {text}") is { } parsed)
+                {
                     decls.Add(new KeyframeDeclaration(prop.ToLowerInvariant(), parsed));
+                }
             }
             frames.Add(new Keyframe(kf.Offset, decls));
         }

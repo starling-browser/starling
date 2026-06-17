@@ -498,7 +498,10 @@ public sealed class EngineSamplingTests
         var rules = KeyframesParser.ParseAll(sheet).ToList();
 
         var engine = new AnimationEngine();
-        foreach (var r in rules) engine.RegisterKeyframes(r);
+        foreach (var r in rules)
+        {
+            engine.RegisterKeyframes(r);
+        }
 
         var elA = new Element("div");
         var elB = new Element("div");

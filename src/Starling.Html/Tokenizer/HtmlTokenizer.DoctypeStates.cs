@@ -109,7 +109,11 @@ public sealed partial class HtmlTokenizer
     // 13.2.5.54 Before DOCTYPE name state
     private void StepBeforeDoctypeName(int c)
     {
-        if (IsAsciiWhitespace(c)) return;
+        if (IsAsciiWhitespace(c))
+        {
+            return;
+        }
+
         if (IsAsciiUpper(c))
         {
             StartDoctype();
@@ -173,7 +177,11 @@ public sealed partial class HtmlTokenizer
     // 13.2.5.56 After DOCTYPE name state
     private void StepAfterDoctypeName(int c)
     {
-        if (IsAsciiWhitespace(c)) return;
+        if (IsAsciiWhitespace(c))
+        {
+            return;
+        }
+
         if (c == '>')
         {
             _state = TokenizerState.Data;
@@ -201,7 +209,11 @@ public sealed partial class HtmlTokenizer
             _state = TokenizerState.AfterDoctypeSystemKeyword;
             return;
         }
-        if (publicViable || systemViable) return; // need more
+        if (publicViable || systemViable)
+        {
+            return; // need more
+        }
+
         _errors.Report(HtmlParseError.InvalidCharacterSequenceAfterDoctypeName, _line, _column);
         _doctypeForceQuirks = true;
         _tempBuffer.Clear();
@@ -245,7 +257,11 @@ public sealed partial class HtmlTokenizer
     // 13.2.5.58 Before DOCTYPE public identifier state
     private void StepBeforeDoctypePublicId(int c)
     {
-        if (IsAsciiWhitespace(c)) return;
+        if (IsAsciiWhitespace(c))
+        {
+            return;
+        }
+
         switch (c)
         {
             case '"':
@@ -355,7 +371,11 @@ public sealed partial class HtmlTokenizer
     // 13.2.5.62 Between DOCTYPE public and system identifiers state
     private void StepBetweenDoctypePublicSystem(int c)
     {
-        if (IsAsciiWhitespace(c)) return;
+        if (IsAsciiWhitespace(c))
+        {
+            return;
+        }
+
         switch (c)
         {
             case '>':
@@ -415,7 +435,11 @@ public sealed partial class HtmlTokenizer
     // 13.2.5.64 Before DOCTYPE system identifier state
     private void StepBeforeDoctypeSystemId(int c)
     {
-        if (IsAsciiWhitespace(c)) return;
+        if (IsAsciiWhitespace(c))
+        {
+            return;
+        }
+
         switch (c)
         {
             case '"':
@@ -493,7 +517,11 @@ public sealed partial class HtmlTokenizer
     // 13.2.5.67 After DOCTYPE system identifier state
     private void StepAfterDoctypeSystemId(int c)
     {
-        if (IsAsciiWhitespace(c)) return;
+        if (IsAsciiWhitespace(c))
+        {
+            return;
+        }
+
         if (c == '>')
         {
             _state = TokenizerState.Data;

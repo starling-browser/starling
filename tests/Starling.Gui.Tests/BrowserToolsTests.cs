@@ -44,7 +44,9 @@ public sealed class BrowserToolsTests
 
         // Every declared descriptor must be dispatchable, and vice versa.
         foreach (var name in names)
+        {
             tools.HasTool(name!).Should().BeTrue($"'{name}' is declared so it must be dispatchable");
+        }
 
         tools.HasTool("browser_highlight").Should().BeTrue();
         tools.HasTool("browser_select").Should().BeTrue();

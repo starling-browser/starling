@@ -9,11 +9,19 @@ public static class MediaQueryEvaluator
     {
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(ctx);
-        if (list.Queries.Count == 0) return true;
+        if (list.Queries.Count == 0)
+        {
+            return true;
+        }
         // Comma list = OR.
         foreach (var q in list.Queries)
+        {
             if (Evaluate(q, ctx))
+            {
                 return true;
+            }
+        }
+
         return false;
     }
 
@@ -29,7 +37,11 @@ public static class MediaQueryEvaluator
 
     private static bool MatchType(string? mediaType, MediaContext ctx)
     {
-        if (mediaType is null or "all") return true;
+        if (mediaType is null or "all")
+        {
+            return true;
+        }
+
         return mediaType.Equals(ctx.MediaType, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -78,17 +90,27 @@ public static class MediaQueryEvaluator
 
     private static bool EvaluatePlain(string name, MediaFeatureValue? value, MediaContext ctx)
     {
-        if (value is null) return EvaluateBoolean(name, ctx);
+        if (value is null)
+        {
+            return EvaluateBoolean(name, ctx);
+        }
 
         // min-/max- prefixes are sugar for >= / <=.
         if (name.StartsWith("min-", StringComparison.OrdinalIgnoreCase))
+        {
             return CompareNumeric(name[4..], value, ctx, RangeOp.GreaterOrEqual);
+        }
+
         if (name.StartsWith("max-", StringComparison.OrdinalIgnoreCase))
+        {
             return CompareNumeric(name[4..], value, ctx, RangeOp.LessOrEqual);
+        }
 
         // discrete-keyword features
         if (TryEvaluateKeyword(name, value, ctx, out var kw))
+        {
             return kw;
+        }
 
         return CompareNumeric(name, value, ctx, RangeOp.Equal);
     }
@@ -103,12 +125,16 @@ public static class MediaQueryEvaluator
             // The parser stores the value in V1 with the operator as written. We re-flip when V2 is also present.
             var op = r.V2 is null ? r.Op1 : ReverseOp(r.Op1);
             if (!CompareNumeric(name, r.V1, ctx, op))
+            {
                 return false;
+            }
         }
         if (r.Op2 != RangeOp.None && r.V2 is not null)
         {
             if (!CompareNumeric(name, r.V2, ctx, r.Op2))
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -125,7 +151,11 @@ public static class MediaQueryEvaluator
     private static bool TryEvaluateKeyword(string name, MediaFeatureValue value, MediaContext ctx, out bool result)
     {
         result = false;
-        if (value is not MediaFeatureIdent ident) return false;
+        if (value is not MediaFeatureIdent ident)
+        {
+            return false;
+        }
+
         var k = ident.Name;
         switch (name)
         {
@@ -242,13 +272,18 @@ public static class MediaQueryEvaluator
         {
             // Fall back to keyword match if the value is an ident.
             if (TryEvaluateKeyword(name, value, ctx, out var kw))
+            {
                 return kw;
+            }
+
             return false;
         }
 
         var rhs = ResolveValue(name, value);
         if (double.IsNaN(rhs))
+        {
             return false;
+        }
 
         return op switch
         {

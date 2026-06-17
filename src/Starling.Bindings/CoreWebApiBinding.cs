@@ -11,7 +11,10 @@ public static class CoreWebApiBinding
     {
         ArgumentNullException.ThrowIfNull(runtime);
         var realm = runtime.Realm;
-        if (realm.GlobalObject.GetOwnPropertyDescriptor("URL") is not null) return;
+        if (realm.GlobalObject.GetOwnPropertyDescriptor("URL") is not null)
+        {
+            return;
+        }
 
         InstallUrlSearchParams(realm);
         InstallUrl(realm);
@@ -47,7 +50,10 @@ public static class CoreWebApiBinding
         {
             var arr = new JsArray(realm);
             foreach (var v in UrlSearchParamsObject.Require(realm, thisV).GetAll(ArgString(args, 0)))
+            {
                 arr.Push(JsValue.String(v));
+            }
+
             return JsValue.Object(arr);
         }, 1);
         EventTargetBinding.DefineMethod(realm, proto, "has", (thisV, args) =>
@@ -68,12 +74,18 @@ public static class CoreWebApiBinding
         EventTargetBinding.DefineMethod(realm, proto, "forEach", (thisV, args) =>
         {
             if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
                 throw new JsThrow(realm.NewTypeError("URLSearchParams.forEach requires a callable"));
+            }
+
             var p = UrlSearchParamsObject.Require(realm, thisV);
             var cb = args[0];
             var thisArg = args.Length > 1 ? args[1] : JsValue.Undefined;
             foreach (var (name, value) in p.Entries)
+            {
                 AbstractOperations.Call(realm.ActiveVm, cb, thisArg, new[] { JsValue.String(value), JsValue.String(name), thisV });
+            }
+
             return JsValue.Undefined;
         }, 1);
         InstallPairIterators(realm, proto, thisV => UrlSearchParamsObject.Require(realm, thisV).Entries);
@@ -158,7 +170,10 @@ public static class CoreWebApiBinding
         var ctor = new JsNativeFunction(realm, "URL", 1, (_, args) =>
         {
             if (args.Length == 0)
+            {
                 throw new JsThrow(realm.NewTypeError("URL requires an input"));
+            }
+
             var input = JsValue.ToStringValue(args[0]);
             var baseUrl = args.Length > 1 && !args[1].IsUndefined ? JsValue.ToStringValue(args[1]) : null;
             return JsValue.Object(new UrlObject(proto, realm, input, baseUrl));
@@ -196,7 +211,10 @@ public static class CoreWebApiBinding
             if (args.Length > 1 && args[1].IsObject)
             {
                 var t = args[1].AsObject.Get("type");
-                if (!t.IsUndefined) type = NormalizeMimeType(JsValue.ToStringValue(t));
+                if (!t.IsUndefined)
+                {
+                    type = NormalizeMimeType(JsValue.ToStringValue(t));
+                }
             }
             return JsValue.Object(new BlobObject(blobProto, bytes, type));
         }, isConstructor: true);
@@ -210,7 +228,10 @@ public static class CoreWebApiBinding
         var fileCtor = new JsNativeFunction(realm, "File", 2, (_, args) =>
         {
             if (args.Length < 2)
+            {
                 throw new JsThrow(realm.NewTypeError("File requires fileBits and fileName"));
+            }
+
             var bytes = BytesFromBlobParts(realm, args[0]);
             var name = JsValue.ToStringValue(args[1]);
             var type = "";
@@ -219,9 +240,16 @@ public static class CoreWebApiBinding
             {
                 var obj = args[2].AsObject;
                 var t = obj.Get("type");
-                if (!t.IsUndefined) type = NormalizeMimeType(JsValue.ToStringValue(t));
+                if (!t.IsUndefined)
+                {
+                    type = NormalizeMimeType(JsValue.ToStringValue(t));
+                }
+
                 var lm = obj.Get("lastModified");
-                if (lm.IsNumber) lastModified = (long)lm.AsNumber;
+                if (lm.IsNumber)
+                {
+                    lastModified = (long)lm.AsNumber;
+                }
             }
             return JsValue.Object(new FileObject(fileProto, bytes, type, name, lastModified));
         }, isConstructor: true);
@@ -257,7 +285,10 @@ public static class CoreWebApiBinding
         {
             var arr = new JsArray(realm);
             foreach (var v in FormDataObject.Require(realm, thisV).GetAll(ArgString(args, 0)))
+            {
                 arr.Push(v);
+            }
+
             return JsValue.Object(arr);
         }, 1);
         EventTargetBinding.DefineMethod(realm, proto, "has", (thisV, args) =>
@@ -265,11 +296,17 @@ public static class CoreWebApiBinding
         EventTargetBinding.DefineMethod(realm, proto, "forEach", (thisV, args) =>
         {
             if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
                 throw new JsThrow(realm.NewTypeError("FormData.forEach requires a callable"));
+            }
+
             var cb = args[0];
             var thisArg = args.Length > 1 ? args[1] : JsValue.Undefined;
             foreach (var entry in FormDataObject.Require(realm, thisV).Entries)
+            {
                 AbstractOperations.Call(realm.ActiveVm, cb, thisArg, new[] { entry.Value, JsValue.String(entry.Name), thisV });
+            }
+
             return JsValue.Undefined;
         }, 1);
         InstallFormDataIterators(realm, proto);
@@ -288,13 +325,20 @@ public static class CoreWebApiBinding
         {
             var source = ArgString(args, 0);
             if (args.Length < 2 || !args[1].IsObject || args[1].AsObject is not JsTypedArray dest || dest.Kind != JsTypedArrayKind.Uint8)
+            {
                 throw new JsThrow(realm.NewTypeError("encodeInto requires a Uint8Array destination"));
+            }
+
             var written = 0;
             var read = 0;
             foreach (var rune in source.EnumerateRunes())
             {
                 var bytes = Encoding.UTF8.GetBytes(rune.ToString());
-                if (written + bytes.Length > dest.ByteLength) break;
+                if (written + bytes.Length > dest.ByteLength)
+                {
+                    break;
+                }
+
                 bytes.CopyTo(dest.Buffer.GetSpan(dest.ByteOffset + written, bytes.Length));
                 written += bytes.Length;
                 read += rune.Utf16SequenceLength;
@@ -349,7 +393,10 @@ public static class CoreWebApiBinding
             for (var i = 0; i < s.Length; i++)
             {
                 if (s[i] > 0xFF)
+                {
                     throw DomExceptionBinding.Throw(realm, "InvalidCharacterError", "String contains an invalid character");
+                }
+
                 bytes[i] = (byte)s[i];
             }
             return JsValue.String(Convert.ToBase64String(bytes));
@@ -358,15 +405,24 @@ public static class CoreWebApiBinding
         {
             var s = RemoveAsciiWhitespace(ArgString(args, 0));
             if (s.Length % 4 == 1)
+            {
                 throw DomExceptionBinding.Throw(realm, "InvalidCharacterError", "The string to be decoded is not correctly encoded");
+            }
+
             if (s.Length % 4 != 0)
+            {
                 s = s.PadRight(s.Length + (4 - s.Length % 4), '=');
+            }
+
             try
             {
                 var bytes = Convert.FromBase64String(s);
                 return JsValue.String(string.Create(bytes.Length, bytes, static (span, state) =>
                 {
-                    for (var i = 0; i < state.Length; i++) span[i] = (char)state[i];
+                    for (var i = 0; i < state.Length; i++)
+                    {
+                        span[i] = (char)state[i];
+                    }
                 }));
             }
             catch (FormatException)
@@ -390,27 +446,49 @@ public static class CoreWebApiBinding
         if (!value.IsObject)
         {
             if (value.IsSymbol)
+            {
                 throw DomExceptionBinding.Throw(realm, "DataCloneError", "Symbol values cannot be cloned");
+            }
+
             return value;
         }
 
         var obj = value.AsObject;
-        if (seen.TryGetValue(obj, out var existing)) return JsValue.Object(existing);
+        if (seen.TryGetValue(obj, out var existing))
+        {
+            return JsValue.Object(existing);
+        }
+
         if (obj is JsArrayBuffer buffer)
+        {
             return JsValue.Object(NewArrayBuffer(realm, buffer.GetSpan().ToArray()));
+        }
+
         if (obj is JsTypedArray ta)
+        {
             return JsValue.Object(NewUint8Array(realm, ta.Buffer.GetSpan(ta.ByteOffset, ta.ByteLength).ToArray()));
+        }
+
         if (obj is BlobObject blob)
+        {
             return JsValue.Object(blob.CloneForRealm(realm));
+        }
+
         if (AbstractOperations.IsCallable(value))
+        {
             throw DomExceptionBinding.Throw(realm, "DataCloneError", "Function objects cannot be cloned");
+        }
 
         JsObject clone;
         if (obj is JsArray arr)
         {
             var c = new JsArray(realm);
             seen[obj] = c;
-            for (var i = 0; i < arr.Length; i++) c.Push(CloneValue(realm, arr[i], seen));
+            for (var i = 0; i < arr.Length; i++)
+            {
+                c.Push(CloneValue(realm, arr[i], seen));
+            }
+
             clone = c;
         }
         else
@@ -418,7 +496,9 @@ public static class CoreWebApiBinding
             clone = new JsObject(realm.ObjectPrototype);
             seen[obj] = clone;
             foreach (var key in obj.EnumerableKeys())
+            {
                 clone.DefineOwnProperty(key, PropertyDescriptor.Data(CloneValue(realm, obj.Get(key), seen), true, true, true));
+            }
         }
         return JsValue.Object(clone);
     }
@@ -437,9 +517,18 @@ public static class CoreWebApiBinding
         var arr = new JsArray(realm);
         foreach (var (name, value) in entries)
         {
-            if (kind == PairIteratorKind.Key) arr.Push(JsValue.String(name));
-            else if (kind == PairIteratorKind.Value) arr.Push(JsValue.String(value));
-            else arr.Push(JsValue.Object(new JsArray(realm, new[] { JsValue.String(name), JsValue.String(value) })));
+            if (kind == PairIteratorKind.Key)
+            {
+                arr.Push(JsValue.String(name));
+            }
+            else if (kind == PairIteratorKind.Value)
+            {
+                arr.Push(JsValue.String(value));
+            }
+            else
+            {
+                arr.Push(JsValue.Object(new JsArray(realm, new[] { JsValue.String(name), JsValue.String(value) })));
+            }
         }
         return IteratorIntrinsics.CreateArrayIterator(realm, JsValue.Object(arr), ArrayIteratorKind.Value);
     }
@@ -458,16 +547,29 @@ public static class CoreWebApiBinding
         var arr = new JsArray(realm);
         foreach (var entry in entries)
         {
-            if (kind == PairIteratorKind.Key) arr.Push(JsValue.String(entry.Name));
-            else if (kind == PairIteratorKind.Value) arr.Push(entry.Value);
-            else arr.Push(JsValue.Object(new JsArray(realm, new[] { JsValue.String(entry.Name), entry.Value })));
+            if (kind == PairIteratorKind.Key)
+            {
+                arr.Push(JsValue.String(entry.Name));
+            }
+            else if (kind == PairIteratorKind.Value)
+            {
+                arr.Push(entry.Value);
+            }
+            else
+            {
+                arr.Push(JsValue.Object(new JsArray(realm, new[] { JsValue.String(entry.Name), entry.Value })));
+            }
         }
         return IteratorIntrinsics.CreateArrayIterator(realm, JsValue.Object(arr), ArrayIteratorKind.Value);
     }
 
     private static byte[] BytesFromBlobParts(JsRealm realm, JsValue parts)
     {
-        if (!parts.IsObject) return Array.Empty<byte>();
+        if (!parts.IsObject)
+        {
+            return Array.Empty<byte>();
+        }
+
         var obj = parts.AsObject;
         var len = LengthOf(obj);
         using var ms = new MemoryStream();
@@ -483,9 +585,15 @@ public static class CoreWebApiBinding
     {
         if (value.IsObject)
         {
-            if (value.AsObject is BlobObject blob) return blob.Bytes.ToArray();
+            if (value.AsObject is BlobObject blob)
+            {
+                return blob.Bytes.ToArray();
+            }
+
             if (value.AsObject is JsArrayBuffer or JsTypedArray)
+            {
                 return BytesFromBufferSource(realm, value);
+            }
         }
         return Encoding.UTF8.GetBytes(JsValue.ToStringValue(value));
     }
@@ -493,10 +601,20 @@ public static class CoreWebApiBinding
     internal static byte[] BytesFromBufferSource(JsRealm realm, JsValue value)
     {
         if (!value.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Expected BufferSource"));
-        if (value.AsObject is JsArrayBuffer ab) return ab.GetSpan().ToArray();
+        }
+
+        if (value.AsObject is JsArrayBuffer ab)
+        {
+            return ab.GetSpan().ToArray();
+        }
+
         if (value.AsObject is JsTypedArray ta)
+        {
             return ta.Buffer.GetSpan(ta.ByteOffset, ta.ByteLength).ToArray();
+        }
+
         throw new JsThrow(realm.NewTypeError("Expected BufferSource"));
     }
 
@@ -527,7 +645,11 @@ public static class CoreWebApiBinding
             {
                 var filename = entry.FileName ?? (blob is FileObject file ? file.Name : "blob");
                 WriteAscii(ms, disposition + "; filename=\"" + EscapeQuoted(filename) + "\"\r\n");
-                if (blob.Type.Length > 0) WriteAscii(ms, "Content-Type: " + blob.Type + "\r\n");
+                if (blob.Type.Length > 0)
+                {
+                    WriteAscii(ms, "Content-Type: " + blob.Type + "\r\n");
+                }
+
                 WriteAscii(ms, "\r\n");
                 ms.Write(blob.Bytes, 0, blob.Bytes.Length);
                 WriteAscii(ms, "\r\n");
@@ -549,15 +671,26 @@ public static class CoreWebApiBinding
     {
         var form = new FormDataObject(proto);
         foreach (var (name, value) in UrlSearchParamsObject.ParsePairs(body))
+        {
             form.AppendString(name, value);
+        }
+
         return form;
     }
 
     private static int ClampSlice(JsValue value, int size, int defaultValue)
     {
-        if (value.IsUndefined) return defaultValue;
+        if (value.IsUndefined)
+        {
+            return defaultValue;
+        }
+
         var n = (int)Math.Truncate(JsValue.ToNumber(value));
-        if (n < 0) return Math.Max(size + n, 0);
+        if (n < 0)
+        {
+            return Math.Max(size + n, 0);
+        }
+
         return Math.Min(n, size);
     }
 
@@ -580,7 +713,13 @@ public static class CoreWebApiBinding
     private static string NormalizeMimeType(string type)
     {
         foreach (var ch in type)
-            if (ch < 0x20 || ch > 0x7E) return "";
+        {
+            if (ch < 0x20 || ch > 0x7E)
+            {
+                return "";
+            }
+        }
+
         return type.ToLowerInvariant();
     }
 
@@ -588,7 +727,13 @@ public static class CoreWebApiBinding
     {
         var sb = new StringBuilder(value.Length);
         foreach (var ch in value)
-            if (ch is not ('\t' or '\n' or '\f' or '\r' or ' ')) sb.Append(ch);
+        {
+            if (ch is not ('\t' or '\n' or '\f' or '\r' or ' '))
+            {
+                sb.Append(ch);
+            }
+        }
+
         return sb.ToString();
     }
 
@@ -618,15 +763,26 @@ internal sealed class UrlSearchParamsObject : JsObject
 
     public void Populate(JsRealm realm, JsValue init)
     {
-        if (init.IsUndefined || init.IsNull) return;
+        if (init.IsUndefined || init.IsNull)
+        {
+            return;
+        }
+
         if (init.IsString)
         {
             foreach (var pair in ParsePairs(init.AsString.TrimStart('?')))
+            {
                 _entries.Add(pair);
+            }
+
             Notify();
             return;
         }
-        if (!init.IsObject) return;
+        if (!init.IsObject)
+        {
+            return;
+        }
+
         if (init.AsObject is UrlSearchParamsObject other)
         {
             _entries.AddRange(other._entries);
@@ -639,13 +795,19 @@ internal sealed class UrlSearchParamsObject : JsObject
             for (var i = 0; i < arr.Length; i++)
             {
                 var pair = arr[i];
-                if (!pair.IsObject) continue;
+                if (!pair.IsObject)
+                {
+                    continue;
+                }
+
                 Append(JsValue.ToStringValue(pair.AsObject.Get("0")), JsValue.ToStringValue(pair.AsObject.Get("1")));
             }
             return;
         }
         foreach (var key in obj.EnumerableKeys())
+        {
             Append(key, JsValue.ToStringValue(obj.Get(key)));
+        }
     }
 
     public void Append(string name, string value)
@@ -663,20 +825,37 @@ internal sealed class UrlSearchParamsObject : JsObject
     public string? GetEntry(string name)
     {
         foreach (var entry in _entries)
-            if (entry.Name == name) return entry.Value;
+        {
+            if (entry.Name == name)
+            {
+                return entry.Value;
+            }
+        }
+
         return null;
     }
 
     public IEnumerable<string> GetAll(string name)
     {
         foreach (var entry in _entries)
-            if (entry.Name == name) yield return entry.Value;
+        {
+            if (entry.Name == name)
+            {
+                yield return entry.Value;
+            }
+        }
     }
 
     public bool HasEntry(string name)
     {
         foreach (var entry in _entries)
-            if (entry.Name == name) return true;
+        {
+            if (entry.Name == name)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -697,7 +876,11 @@ internal sealed class UrlSearchParamsObject : JsObject
                 _entries.RemoveAt(i);
             }
         }
-        if (!inserted) _entries.Add((name, value));
+        if (!inserted)
+        {
+            _entries.Add((name, value));
+        }
+
         Notify();
     }
 
@@ -716,7 +899,11 @@ internal sealed class UrlSearchParamsObject : JsObject
         var sb = new StringBuilder();
         foreach (var (name, value) in _entries)
         {
-            if (sb.Length > 0) sb.Append('&');
+            if (sb.Length > 0)
+            {
+                sb.Append('&');
+            }
+
             sb.Append(Encode(name)).Append('=').Append(Encode(value));
         }
         return sb.ToString();
@@ -725,7 +912,11 @@ internal sealed class UrlSearchParamsObject : JsObject
     public static IReadOnlyList<(string Name, string Value)> ParsePairs(string query)
     {
         var entries = new List<(string Name, string Value)>();
-        if (query.Length == 0) return entries;
+        if (query.Length == 0)
+        {
+            return entries;
+        }
+
         foreach (var part in query.Split('&'))
         {
             var eq = part.IndexOf('=');
@@ -738,7 +929,11 @@ internal sealed class UrlSearchParamsObject : JsObject
 
     public static UrlSearchParamsObject Require(JsRealm realm, JsValue value)
     {
-        if (value.IsObject && value.AsObject is UrlSearchParamsObject p) return p;
+        if (value.IsObject && value.AsObject is UrlSearchParamsObject p)
+        {
+            return p;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not a URLSearchParams"));
     }
 
@@ -789,7 +984,10 @@ internal sealed class UrlObject : JsObject
         Mutate(b =>
         {
             b.Host = parts[0];
-            if (parts.Length > 1 && int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var p)) b.Port = p;
+            if (parts.Length > 1 && int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var p))
+            {
+                b.Port = p;
+            }
         });
     }
     public void SetHostname(string value) => Mutate(b => b.Host = value);
@@ -802,7 +1000,9 @@ internal sealed class UrlObject : JsObject
         }
         if (int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var port)
             && port is >= 0 and <= 65535)
+        {
             b.Port = port;
+        }
     });
     public void SetPathname(string value) => Mutate(b => b.Path = value.Length == 0 || value[0] == '/' ? value : "/" + value);
     public void SetSearch(string value)
@@ -814,7 +1014,11 @@ internal sealed class UrlObject : JsObject
 
     public static UrlObject Require(JsRealm realm, JsValue value)
     {
-        if (value.IsObject && value.AsObject is UrlObject u) return u;
+        if (value.IsObject && value.AsObject is UrlObject u)
+        {
+            return u;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not a URL"));
     }
 
@@ -822,7 +1026,10 @@ internal sealed class UrlObject : JsObject
     {
         if (baseUrl is null)
         {
-            if (Uri.TryCreate(input, UriKind.Absolute, out var abs)) return abs;
+            if (Uri.TryCreate(input, UriKind.Absolute, out var abs))
+            {
+                return abs;
+            }
         }
         else if (Uri.TryCreate(baseUrl, UriKind.Absolute, out var b) && Uri.TryCreate(b, input, out var rel))
         {
@@ -842,7 +1049,9 @@ internal sealed class UrlObject : JsObject
     {
         SearchParams.DeleteAllSilently();
         foreach (var pair in UrlSearchParamsObject.ParsePairs(_uri.Query.TrimStart('?')))
+        {
             SearchParams.AppendSilently(pair.Name, pair.Value);
+        }
     }
 }
 
@@ -862,7 +1071,11 @@ internal class BlobObject : JsObject
 
     public static BlobObject Require(JsRealm realm, JsValue value)
     {
-        if (value.IsObject && value.AsObject is BlobObject b) return b;
+        if (value.IsObject && value.AsObject is BlobObject b)
+        {
+            return b;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not a Blob"));
     }
 }
@@ -883,7 +1096,11 @@ internal sealed class FileObject : BlobObject
 
     public static FileObject RequireFile(JsRealm realm, JsValue value)
     {
-        if (value.IsObject && value.AsObject is FileObject f) return f;
+        if (value.IsObject && value.AsObject is FileObject f)
+        {
+            return f;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not a File"));
     }
 }
@@ -906,7 +1123,10 @@ internal sealed class FormDataObject : JsObject
         if (value.IsObject && value.AsObject is BlobObject)
         {
             stored = value;
-            if (!fileName.IsUndefined) fn = JsValue.ToStringValue(fileName);
+            if (!fileName.IsUndefined)
+            {
+                fn = JsValue.ToStringValue(fileName);
+            }
         }
         else
         {
@@ -924,19 +1144,34 @@ internal sealed class FormDataObject : JsObject
     public JsValue? GetEntry(string name)
     {
         foreach (var entry in _entries)
-            if (entry.Name == name) return entry.Value;
+        {
+            if (entry.Name == name)
+            {
+                return entry.Value;
+            }
+        }
+
         return null;
     }
 
     public IEnumerable<JsValue> GetAll(string name)
     {
         foreach (var entry in _entries)
-            if (entry.Name == name) yield return entry.Value;
+        {
+            if (entry.Name == name)
+            {
+                yield return entry.Value;
+            }
+        }
     }
 
     public static FormDataObject Require(JsRealm realm, JsValue value)
     {
-        if (value.IsObject && value.AsObject is FormDataObject f) return f;
+        if (value.IsObject && value.AsObject is FormDataObject f)
+        {
+            return f;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not a FormData"));
     }
 }
@@ -964,7 +1199,11 @@ internal sealed class TextDecoderObject : JsObject
 
     public static TextDecoderObject Require(JsRealm realm, JsValue value)
     {
-        if (value.IsObject && value.AsObject is TextDecoderObject d) return d;
+        if (value.IsObject && value.AsObject is TextDecoderObject d)
+        {
+            return d;
+        }
+
         throw new JsThrow(realm.NewTypeError("'this' is not a TextDecoder"));
     }
 

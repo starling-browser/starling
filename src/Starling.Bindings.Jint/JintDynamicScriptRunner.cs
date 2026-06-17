@@ -78,7 +78,11 @@ internal sealed class JintDynamicScriptRunner
     /// JS thread, so it only kicks off the background fetch.</summary>
     public void OnSrcSet(Element script)
     {
-        if (_started.TryGetValue(script, out _)) return;
+        if (_started.TryGetValue(script, out _))
+        {
+            return;
+        }
+
         _started.AddOrUpdate(script, Marker);
         Begin(script);
     }

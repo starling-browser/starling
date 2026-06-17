@@ -86,7 +86,9 @@ public sealed class LayoutEngine
             var root = LayoutOnce(document, viewport, nowMs);
 
             if (VerifyLayout)
+            {
                 Verify(root, document, viewport, nowMs);
+            }
 
             if (scroll is not null)
             {

@@ -42,7 +42,11 @@ public class Event
     /// cancelable and clears the propagation + canceled flags.</summary>
     public void InitEvent(string type, bool bubbles, bool cancelable)
     {
-        if (DispatchFlag) return;
+        if (DispatchFlag)
+        {
+            return;
+        }
+
         Initialized = true;
         Type = type;
         Bubbles = bubbles;
@@ -85,7 +89,9 @@ public class Event
     {
         // DOM §2.9: preventDefault is a no-op inside a passive listener.
         if (Cancelable && !InPassiveListener)
+        {
             DefaultPrevented = true;
+        }
     }
 
     /// <summary>DOM §2.9 dispatch step: after dispatch, unset the stop-propagation

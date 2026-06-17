@@ -32,9 +32,20 @@ internal sealed class H2ConnectionManager : IAsyncDisposable
     {
         lock (_gate)
         {
-            if (_disposed) return null;
-            if (!_byOrigin.TryGetValue(origin, out var conn)) return null;
-            if (conn.IsUsable) return conn;
+            if (_disposed)
+            {
+                return null;
+            }
+
+            if (!_byOrigin.TryGetValue(origin, out var conn))
+            {
+                return null;
+            }
+
+            if (conn.IsUsable)
+            {
+                return conn;
+            }
             // Stale (GOAWAY/closed) — drop the reference; it disposes itself.
             _byOrigin.Remove(origin);
             return null;
@@ -67,7 +78,9 @@ internal sealed class H2ConnectionManager : IAsyncDisposable
         lock (_gate)
         {
             if (_byOrigin.TryGetValue(origin, out var current) && ReferenceEquals(current, conn))
+            {
                 _byOrigin.Remove(origin);
+            }
         }
     }
 

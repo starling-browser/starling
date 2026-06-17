@@ -53,7 +53,9 @@ internal sealed class BoxTreeBuilder
 
         var root = document.DocumentElement;
         if (root is null)
+        {
             return new BlockBox(style: null, element: null);
+        }
 
         // One cache per box-tree-build pass: the cascade for a given element
         // is identical across every visit during this traversal, so we can
@@ -68,7 +70,11 @@ internal sealed class BoxTreeBuilder
         _style.PrecomputeTree(root, cache);
         var rootStyle = Compute(root, cache);
         var rootBox = new BlockBox(rootStyle, root);
-        if (_elementMap is not null) _elementMap[root] = rootBox;
+        if (_elementMap is not null)
+        {
+            _elementMap[root] = rootBox;
+        }
+
         rootBox.Hints = StackingContextResolver.Resolve(rootBox, rootStyle, isRoot: true);
         BuildChildren(root, rootStyle, rootBox, cache);
         WrapInlinesInAnonymousBlocks(rootBox);
@@ -94,9 +100,17 @@ internal sealed class BoxTreeBuilder
                     break;
                 case Starling.Dom.Text text:
                     var data = text.Data;
-                    if (data.Length == 0) continue;
+                    if (data.Length == 0)
+                    {
+                        continue;
+                    }
+
                     var textBox = new TextBox(data, parentStyle);
-                    if (_textMap is not null) _textMap[text] = textBox;
+                    if (_textMap is not null)
+                    {
+                        _textMap[text] = textBox;
+                    }
+
                     parentBox.AppendChild(textBox);
                     break;
             }
@@ -113,7 +127,11 @@ internal sealed class BoxTreeBuilder
     {
         var elementStyle = Compute(element, cache);
         var display = DisplayKeyword(elementStyle);
-        if (display == "none") return;
+        if (display == "none")
+        {
+            return;
+        }
+
         if (display == "contents")
         {
             BuildChildren(element, elementStyle, parentBox, cache);
@@ -139,28 +157,40 @@ internal sealed class BoxTreeBuilder
             ? new InlineBox(elementStyle, element)
             : new BlockBox(elementStyle, element);
         box.Hints = StackingContextResolver.Resolve(box, elementStyle);
-        if (_elementMap is not null) _elementMap[element] = box;
+        if (_elementMap is not null)
+        {
+            _elementMap[element] = box;
+        }
+
         parentBox.AppendChild(box);
 
         // CSS Lists 3 §3 — a list-item synthesizes a marker box as its first
         // in-flow child. Markers paint through the normal text path (no dedicated
         // display item), so we prepend a TextBox carrying the marker string.
         if (display == "list-item")
+        {
             AppendListMarker(element, elementStyle, box);
+        }
 
         // CSS Content 3 §2 — synthesize ::before before children.
         AppendPseudoElement(element, elementStyle, box, PseudoElement.Before, cache);
         if (element.LocalName is "select" or "textarea")
+        {
             AppendFormControlLabel(element, elementStyle, box);
+        }
         else
+        {
             BuildChildren(element, elementStyle, box, cache);
+        }
         // ::after after children.
         AppendPseudoElement(element, elementStyle, box, PseudoElement.After, cache);
         // <input> is a void element with no DOM children — synthesize a TextBox
         // from its value/placeholder so the search box and submit button labels
         // actually show up.
         if (string.Equals(element.LocalName, "input", StringComparison.OrdinalIgnoreCase))
+        {
             AppendInputLabel(element, elementStyle, box);
+        }
     }
 
     /// <summary>
@@ -181,7 +211,11 @@ internal sealed class BoxTreeBuilder
         // child box (if exactly one was produced).
         var scratch = new BlockBox(parentStyle, element: null);
         BuildElementInto(element, parentStyle, scratch, blockifyParent, cache);
-        if (scratch.Children.Count != 1) return null; // none / contents / multi
+        if (scratch.Children.Count != 1)
+        {
+            return null; // none / contents / multi
+        }
+
         var box = scratch.Children[0];
         WrapInlinesInAnonymousBlocks(box);
         box.Parent = null;
@@ -221,8 +255,16 @@ internal sealed class BoxTreeBuilder
                 case Element el:
                     var style = Compute(el, cache);
                     var display = DisplayKeyword(style);
-                    if (display == "none") continue;
-                    if (display == "contents") return false; // hoisting — fall back
+                    if (display == "none")
+                    {
+                        continue;
+                    }
+
+                    if (display == "contents")
+                    {
+                        return false; // hoisting — fall back
+                    }
+
                     kept.Add(el);
                     if (_elementMap is not null
                         && _elementMap.TryGetValue(el, out var existing)
@@ -234,12 +276,20 @@ internal sealed class BoxTreeBuilder
                     else
                     {
                         var boxes = BuildElementBoxes(el, parentBox.Style, blockify, cache);
-                        if (boxes.Count != 1) return false; // unexpected shape — fall back
+                        if (boxes.Count != 1)
+                        {
+                            return false; // unexpected shape — fall back
+                        }
+
                         newChildren.Add(boxes[0]);
                     }
                     break;
                 case Starling.Dom.Text t:
-                    if (t.Data.Length == 0) continue;
+                    if (t.Data.Length == 0)
+                    {
+                        continue;
+                    }
+
                     if (_textMap is not null && _textMap.TryGetValue(t, out var tb) && tb.Text == t.Data)
                     {
                         newChildren.Add(tb);
@@ -247,7 +297,11 @@ internal sealed class BoxTreeBuilder
                     else
                     {
                         var fresh = new TextBox(t.Data, parentBox.Style);
-                        if (_textMap is not null) _textMap[t] = fresh;
+                        if (_textMap is not null)
+                        {
+                            _textMap[t] = fresh;
+                        }
+
                         newChildren.Add(fresh);
                     }
                     break;
@@ -257,8 +311,12 @@ internal sealed class BoxTreeBuilder
         // Prune the maps of removed subtrees so a later re-insert rebuilds fresh
         // (a detached node may have been mutated without a recorded batch entry).
         foreach (var old in oldElementBoxes)
+        {
             if (old.Element is { } e && !kept.Contains(e))
+            {
                 PruneElementEntries(old);
+            }
+        }
 
         parentBox.Children.Clear();
         foreach (var c in newChildren)
@@ -295,10 +353,18 @@ internal sealed class BoxTreeBuilder
     private bool SubtreeStylesUnchanged(Box.Box box, CascadeCache cache)
     {
         if (box.Element is { } e && (box.Style is null || !box.Style.ValuesEqual(Compute(e, cache))))
+        {
             return false;
+        }
+
         foreach (var child in box.Children)
+        {
             if (!SubtreeStylesUnchanged(child, cache))
+            {
                 return false;
+            }
+        }
+
         return true;
     }
 
@@ -310,19 +376,40 @@ internal sealed class BoxTreeBuilder
         var list = new List<Box.Box>();
         foreach (var c in parentBox.Children)
         {
-            if (c.Element is not null) list.Add(c);
+            if (c.Element is not null)
+            {
+                list.Add(c);
+            }
             else if (c.Kind == BoxKind.AnonymousBlock)
+            {
                 foreach (var gc in c.Children)
-                    if (gc.Element is not null) list.Add(gc);
+                {
+                    if (gc.Element is not null)
+                    {
+                        list.Add(gc);
+                    }
+                }
+            }
         }
         return list;
     }
 
     private void PruneElementEntries(Box.Box box)
     {
-        if (_elementMap is null) return;
-        if (box.Element is { } e) _elementMap.Remove(e);
-        foreach (var child in box.Children) PruneElementEntries(child);
+        if (_elementMap is null)
+        {
+            return;
+        }
+
+        if (box.Element is { } e)
+        {
+            _elementMap.Remove(e);
+        }
+
+        foreach (var child in box.Children)
+        {
+            PruneElementEntries(child);
+        }
     }
 
     /// <summary>
@@ -341,16 +428,23 @@ internal sealed class BoxTreeBuilder
     {
         // Text and Replaced boxes have no children worth recursing into.
         if (parent.Kind == BoxKind.Text || parent.Kind == BoxKind.Replaced)
+        {
             return;
+        }
 
         // Bucket this level's inline runs (unless the node flattens into the
         // enclosing IFC), then descend. An anonymous block never re-buckets its
         // own children but is still descended through, because it may host an
         // inline-block with mixed children that needs its own wrapping.
         if (ShouldWrapDirectChildren(parent))
+        {
             WrapDirectChildren(parent);
+        }
 
-        foreach (var child in parent.Children) WrapInlinesInAnonymousBlocks(child);
+        foreach (var child in parent.Children)
+        {
+            WrapInlinesInAnonymousBlocks(child);
+        }
     }
 
     /// <summary>
@@ -362,14 +456,19 @@ internal sealed class BoxTreeBuilder
     private static bool ShouldWrapDirectChildren(Box.Box parent)
     {
         if (parent.Kind is BoxKind.Text or BoxKind.Replaced or BoxKind.AnonymousBlock)
+        {
             return false;
+        }
         // An inline-flex / inline-grid box establishes a flex/grid context, so
         // its raw text/inline runs must still be wrapped into anonymous items —
         // otherwise a bare TextBox becomes a flex item the formatting context
         // can't lay out (the text silently vanishes).
         if (parent.Kind == BoxKind.Inline && !HasBlockLevelChild(parent)
             && !EstablishesFlexOrGridItems(parent.Style))
+        {
             return false;
+        }
+
         return true;
     }
 
@@ -421,7 +520,9 @@ internal sealed class BoxTreeBuilder
     private static void WrapDirectChildrenForReconcile(Box.Box parent)
     {
         if (ShouldWrapDirectChildren(parent))
+        {
             WrapDirectChildren(parent);
+        }
     }
 
     private static bool HasBlockLevelChild(Box.Box parent)
@@ -429,7 +530,9 @@ internal sealed class BoxTreeBuilder
         foreach (var child in parent.Children)
         {
             if (child.Kind is BoxKind.BlockContainer or BoxKind.AnonymousBlock)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -445,9 +548,15 @@ internal sealed class BoxTreeBuilder
     private static void FlushBucket(AnonymousBlockBox? bucket, List<Box.Box> newChildren, Box.Box parent)
     {
         if (bucket is null || bucket.Children.Count == 0)
+        {
             return;
+        }
+
         if (IsCollapsibleWhitespaceOnly(bucket))
+        {
             return;
+        }
+
         bucket.Parent = parent;
         newChildren.Add(bucket);
     }
@@ -457,10 +566,14 @@ internal sealed class BoxTreeBuilder
         foreach (var child in bucket.Children)
         {
             if (child is not TextBox text || !string.IsNullOrWhiteSpace(text.Text))
+            {
                 return false;
+            }
             // `white-space: pre*` keeps whitespace significant — don't drop it.
             if (text.Style?.Get(PropertyId.WhiteSpace) is CssKeyword { Name: "pre" or "pre-wrap" or "pre-line" })
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -497,13 +610,21 @@ internal sealed class BoxTreeBuilder
             // other element — without this, opacity / transform / filter on an
             // <img> never reach the compositor and paint at full strength.
             box.Hints = StackingContextResolver.Resolve(box, style);
-            if (_elementMap is not null) _elementMap[img] = box;
+            if (_elementMap is not null)
+            {
+                _elementMap[img] = box;
+            }
+
             parentBox.AppendChild(box);
             return;
         }
 
         var label = AccessibleName(img);
-        if (string.IsNullOrEmpty(label)) return;
+        if (string.IsNullOrEmpty(label))
+        {
+            return;
+        }
+
         parentBox.AppendChild(new TextBox(label, style));
     }
 
@@ -538,13 +659,20 @@ internal sealed class BoxTreeBuilder
                 && string.IsNullOrEmpty(svg.GetAttribute("height"));
             var svgBox = new ImageBox(style, svg, width, height, resolved.Source, ratioOnly);
             svgBox.Hints = StackingContextResolver.Resolve(svgBox, style);
-            if (_elementMap is not null) _elementMap[svg] = svgBox;
+            if (_elementMap is not null)
+            {
+                _elementMap[svg] = svgBox;
+            }
+
             parentBox.AppendChild(svgBox);
             return;
         }
 
         var label = AccessibleName(svg);
-        if (string.IsNullOrEmpty(label)) return;
+        if (string.IsNullOrEmpty(label))
+        {
+            return;
+        }
         // Inline the label; the surrounding context controls block/inline
         // flow on the parent.
         parentBox.AppendChild(new TextBox(label, style));
@@ -558,11 +686,23 @@ internal sealed class BoxTreeBuilder
     private static string AccessibleName(Element element)
     {
         var aria = element.GetAttribute("aria-label");
-        if (!string.IsNullOrEmpty(aria)) return aria;
+        if (!string.IsNullOrEmpty(aria))
+        {
+            return aria;
+        }
+
         var alt = element.GetAttribute("alt");
-        if (!string.IsNullOrEmpty(alt)) return alt;
+        if (!string.IsNullOrEmpty(alt))
+        {
+            return alt;
+        }
+
         var title = element.GetAttribute("title");
-        if (!string.IsNullOrEmpty(title)) return title;
+        if (!string.IsNullOrEmpty(title))
+        {
+            return title;
+        }
+
         return string.Empty;
     }
 
@@ -578,9 +718,21 @@ internal sealed class BoxTreeBuilder
         var iw = resolved.Width > 0 ? resolved.Width : 1;
         var ih = resolved.Height > 0 ? resolved.Height : 1;
 
-        if (attrW is { } w && attrH is { } h) return (w, h);
-        if (attrW is { } onlyW) return (onlyW, onlyW * ih / iw);
-        if (attrH is { } onlyH) return (onlyH * iw / ih, onlyH);
+        if (attrW is { } w && attrH is { } h)
+        {
+            return (w, h);
+        }
+
+        if (attrW is { } onlyW)
+        {
+            return (onlyW, onlyW * ih / iw);
+        }
+
+        if (attrH is { } onlyH)
+        {
+            return (onlyH * iw / ih, onlyH);
+        }
+
         return (iw, ih);
     }
 
@@ -591,7 +743,9 @@ internal sealed class BoxTreeBuilder
         // Controls whose label isn't text content (checkbox/radio glyph, file
         // picker, image button, hidden) get no synthetic text.
         if (type is "checkbox" or "radio" or "file" or "image" or "hidden" or "color" or "range")
+        {
             return;
+        }
 
         // The live IDL value (typed text / scripted assignment) shadows the
         // `value` content attribute once the field has been edited; until then
@@ -621,11 +775,16 @@ internal sealed class BoxTreeBuilder
             // hint text. Flag the run so the painter draws it in the UA
             // placeholder gray instead of the element's color.
             if (input.GetAttribute("placeholder") is { Length: > 0 } placeholder)
+            {
                 box.AppendChild(new TextBox(placeholder, style) { IsPlaceholder = true });
+            }
+
             return;
         }
         if (!string.IsNullOrEmpty(fallback))
+        {
             box.AppendChild(new TextBox(fallback, style));
+        }
     }
 
     private static void AppendFormControlLabel(Element element, ComputedStyle style, Box.Box box)
@@ -634,7 +793,10 @@ internal sealed class BoxTreeBuilder
         {
             var label = SelectedOptionLabel(element);
             if (!string.IsNullOrEmpty(label))
+            {
                 box.AppendChild(new TextBox(label, style));
+            }
+
             return;
         }
 
@@ -648,7 +810,9 @@ internal sealed class BoxTreeBuilder
         // Like text inputs, the placeholder shows until the user types — focus
         // alone does not clear it. Flagged so the painter mutes it.
         if (element.GetAttribute("placeholder") is { Length: > 0 } placeholder)
+        {
             box.AppendChild(new TextBox(placeholder, style) { IsPlaceholder = true });
+        }
     }
 
     private static string SelectedOptionLabel(Element select)
@@ -656,10 +820,16 @@ internal sealed class BoxTreeBuilder
         Element? first = null;
         foreach (var option in select.DescendantElements())
         {
-            if (option.LocalName != "option") continue;
+            if (option.LocalName != "option")
+            {
+                continue;
+            }
+
             first ??= option;
             if (option.HasAttribute("selected"))
+            {
                 return option.TextContent.Trim();
+            }
         }
         return first?.TextContent.Trim() ?? string.Empty;
     }
@@ -679,13 +849,22 @@ internal sealed class BoxTreeBuilder
         CascadeCache cache)
     {
         var pseudoStyle = _style.ComputeGeneratedPseudoElement(element, pseudo, elementStyle);
-        if (pseudoStyle is null) return;
+        if (pseudoStyle is null)
+        {
+            return;
+        }
 
         // `display: none` on the pseudo suppresses it entirely.
-        if (DisplayKeyword(pseudoStyle) == "none") return;
+        if (DisplayKeyword(pseudoStyle) == "none")
+        {
+            return;
+        }
 
         var text = ContentText(pseudoStyle.Get(PropertyId.Content));
-        if (text is null) return; // none/normal/unrenderable (e.g. counter()).
+        if (text is null)
+        {
+            return; // none/normal/unrenderable (e.g. counter()).
+        }
 
         // The generated box is an inline box; its text inherits the pseudo's
         // computed style. Empty strings still generate a (zero-width) box per
@@ -763,7 +942,10 @@ internal sealed class BoxTreeBuilder
 
         var ordinal = ListItemOrdinal(element);
         var marker = ListMarker.Render(listType, ordinal);
-        if (marker is null) return;
+        if (marker is null)
+        {
+            return;
+        }
 
         // The marker is rendered through the normal text path. A trailing space
         // separates the marker from the item's content for `inside` markers and
@@ -782,7 +964,9 @@ internal sealed class BoxTreeBuilder
     private static int ListItemOrdinal(Element element)
     {
         if (TryParseInt(element.GetAttribute("value"), out var explicitValue))
+        {
             return explicitValue;
+        }
 
         var start = 1;
         if (element.ParentNode is Element parent &&
@@ -795,12 +979,22 @@ internal sealed class BoxTreeBuilder
         var index = 0;
         for (var sibling = element.ParentNode?.FirstChild; sibling is not null; sibling = sibling.NextSibling)
         {
-            if (sibling is not Element sib) continue;
-            if (!IsListItem(sib)) continue;
+            if (sibling is not Element sib)
+            {
+                continue;
+            }
+
+            if (!IsListItem(sib))
+            {
+                continue;
+            }
             // A preceding sibling with its own value attribute resets the count
             // is a refinement we skip; per the WP, ordinal = sibling index.
             if (sib == element)
+            {
                 return start + index;
+            }
+
             index++;
         }
         return start + index;
@@ -815,7 +1009,10 @@ internal sealed class BoxTreeBuilder
 
     private static double? ParseDimensionAttribute(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return null;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
         // HTML allows trailing "px"; we accept that and bare integers/decimals.
         var trimmed = raw.Trim().TrimEnd('p', 'P', 'x', 'X');
         return double.TryParse(trimmed, System.Globalization.NumberStyles.Float,

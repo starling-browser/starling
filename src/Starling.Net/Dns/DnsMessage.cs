@@ -79,22 +79,36 @@ public static class DnsMessage
     /// </summary>
     public static byte[] EncodeName(string name)
     {
-        if (string.IsNullOrEmpty(name)) return [0];
+        if (string.IsNullOrEmpty(name))
+        {
+            return [0];
+        }
         // Strip trailing dot for consistency.
-        if (name[^1] == '.') name = name[..^1];
+        if (name[^1] == '.')
+        {
+            name = name[..^1];
+        }
 
         var labels = name.Split('.');
         var totalLen = 1; // trailing root null
         foreach (var label in labels)
         {
             if (label.Length == 0)
+            {
                 throw new FormatException("Empty label in DNS name.");
+            }
+
             if (label.Length > 63)
+            {
                 throw new FormatException($"Label '{label}' exceeds 63 chars.");
+            }
+
             totalLen += 1 + label.Length;
         }
         if (totalLen > 255)
+        {
             throw new FormatException($"Encoded name '{name}' exceeds 255 bytes.");
+        }
 
         var buf = new byte[totalLen];
         var o = 0;
@@ -104,8 +118,11 @@ public static class DnsMessage
             foreach (var ch in label)
             {
                 if (ch >= 0x80)
+                {
                     throw new FormatException(
                         "Non-ASCII labels require IDNA Punycode conversion, which is not implemented yet.");
+                }
+
                 buf[o++] = (byte)ch;
             }
         }
@@ -123,7 +140,11 @@ public static class DnsMessage
     public static (Header Header, List<Question> Questions, List<Answer> Answers)
         Parse(ReadOnlySpan<byte> packet)
     {
-        if (packet.Length < 12) throw new FormatException("Packet shorter than DNS header.");
+        if (packet.Length < 12)
+        {
+            throw new FormatException("Packet shorter than DNS header.");
+        }
+
         var id = BinaryPrimitives.ReadUInt16BigEndian(packet[..2]);
         var f1 = packet[2];
         var f2 = packet[3];
@@ -147,7 +168,11 @@ public static class DnsMessage
         {
             var (qname, qoff) = DecodeName(packet, off);
             off = qoff;
-            if (off + 4 > packet.Length) throw new FormatException("Truncated question.");
+            if (off + 4 > packet.Length)
+            {
+                throw new FormatException("Truncated question.");
+            }
+
             var qtype = (QType)BinaryPrimitives.ReadUInt16BigEndian(packet.Slice(off, 2));
             var qclass = (QClass)BinaryPrimitives.ReadUInt16BigEndian(packet.Slice(off + 2, 2));
             off += 4;
@@ -159,13 +184,20 @@ public static class DnsMessage
         {
             var (aname, anoff) = DecodeName(packet, off);
             off = anoff;
-            if (off + 10 > packet.Length) throw new FormatException("Truncated answer.");
+            if (off + 10 > packet.Length)
+            {
+                throw new FormatException("Truncated answer.");
+            }
+
             var atype = (QType)BinaryPrimitives.ReadUInt16BigEndian(packet.Slice(off, 2));
             var aclass = (QClass)BinaryPrimitives.ReadUInt16BigEndian(packet.Slice(off + 2, 2));
             var ttl = BinaryPrimitives.ReadUInt32BigEndian(packet.Slice(off + 4, 4));
             var rdlen = BinaryPrimitives.ReadUInt16BigEndian(packet.Slice(off + 8, 2));
             off += 10;
-            if (off + rdlen > packet.Length) throw new FormatException("Truncated rdata.");
+            if (off + rdlen > packet.Length)
+            {
+                throw new FormatException("Truncated rdata.");
+            }
 
             Answer ans = atype switch
             {
@@ -209,20 +241,42 @@ public static class DnsMessage
             if ((lenByte & 0xC0) == 0xC0)
             {
                 // Pointer: high 2 bits set; next 14 bits = offset.
-                if (off + 1 >= packet.Length) throw new FormatException("Truncated pointer.");
+                if (off + 1 >= packet.Length)
+                {
+                    throw new FormatException("Truncated pointer.");
+                }
+
                 var ptr = ((lenByte & 0x3F) << 8) | packet[off + 1];
-                if (++hops > 32) throw new FormatException("DNS name compression loop.");
+                if (++hops > 32)
+                {
+                    throw new FormatException("DNS name compression loop.");
+                }
+
                 endOffset ??= off + 2;
                 off = ptr;
                 continue;
             }
             if ((lenByte & 0xC0) != 0)
+            {
                 throw new FormatException($"Reserved label type 0x{lenByte:X2}.");
+            }
+
             off++;
-            if (off + lenByte > packet.Length) throw new FormatException("Label past end.");
-            if (sb.Length > 0) sb.Append('.');
+            if (off + lenByte > packet.Length)
+            {
+                throw new FormatException("Label past end.");
+            }
+
+            if (sb.Length > 0)
+            {
+                sb.Append('.');
+            }
+
             for (var i = 0; i < lenByte; i++)
+            {
                 sb.Append((char)packet[off + i]);
+            }
+
             off += lenByte;
         }
         throw new FormatException("Unterminated name.");

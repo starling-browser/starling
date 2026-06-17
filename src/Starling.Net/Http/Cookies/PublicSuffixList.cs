@@ -50,9 +50,16 @@ public sealed class PublicSuffixList
     /// </summary>
     public bool IsPublicSuffix(string domain)
     {
-        if (string.IsNullOrEmpty(domain)) return false;
+        if (string.IsNullOrEmpty(domain))
+        {
+            return false;
+        }
+
         var labels = Normalize(domain).Split('.');
-        if (labels.Length == 0) return false;
+        if (labels.Length == 0)
+        {
+            return false;
+        }
 
         var prevailingLabels = 0;
         var prevailingException = false;
@@ -72,25 +79,36 @@ public sealed class PublicSuffixList
                 continue;
             }
 
-            if (prevailingException) continue; // already locked into an exception
+            if (prevailingException)
+            {
+                continue; // already locked into an exception
+            }
 
             if (_exact.Contains(suffix) && labels.Length - i > prevailingLabels)
+            {
                 prevailingLabels = labels.Length - i;
+            }
 
             // Wildcard "*.suffix": matches when our current label has a parent in _wildcard.
             if (i + 1 < labels.Length)
             {
                 var wcParent = string.Join('.', labels, i + 1, labels.Length - i - 1);
                 if (_wildcard.Contains(wcParent) && labels.Length - i > prevailingLabels)
+                {
                     prevailingLabels = labels.Length - i;
+                }
             }
         }
 
         if (prevailingLabels == 0)
+        {
             prevailingLabels = 1; // default rule "*"
+        }
 
         if (prevailingException)
+        {
             prevailingLabels--; // strip leftmost label of the exception rule
+        }
 
         return prevailingLabels == labels.Length;
     }
@@ -110,13 +128,23 @@ public sealed class PublicSuffixList
         foreach (var raw in text.Split('\n'))
         {
             var line = raw.TrimEnd('\r').Trim();
-            if (line.Length == 0) continue;
-            if (line.StartsWith("//", StringComparison.Ordinal)) continue;
+            if (line.Length == 0)
+            {
+                continue;
+            }
+
+            if (line.StartsWith("//", StringComparison.Ordinal))
+            {
+                continue;
+            }
 
             // Many entries have inline whitespace separating extra commentary.
             // The rule is the first whitespace-separated token.
             var space = line.IndexOf(' ', StringComparison.Ordinal);
-            if (space > 0) line = line[..space];
+            if (space > 0)
+            {
+                line = line[..space];
+            }
 
             line = line.ToLowerInvariant();
 

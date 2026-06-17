@@ -32,7 +32,10 @@ public static class AnimationFrameBinding
         var raf = new JsNativeFunction(realm, "requestAnimationFrame", 1, (_, args) =>
         {
             if (args.Length == 0 || !AbstractOperations.IsCallable(args[0]))
+            {
                 throw new JsThrow(realm.NewTypeError("requestAnimationFrame argument is not callable"));
+            }
+
             var handler = args[0];
             var id = loop.RequestAnimationFrame(timestamp =>
                 InvokeCallback(runtime, handler, timestamp));
@@ -42,7 +45,10 @@ public static class AnimationFrameBinding
         var caf = new JsNativeFunction(realm, "cancelAnimationFrame", 1, (_, args) =>
         {
             if (TryCoerceId(args, out var id))
+            {
                 loop.CancelAnimationFrame(id);
+            }
+
             return JsValue.Undefined;
         }, isConstructor: false);
 
@@ -59,10 +65,22 @@ public static class AnimationFrameBinding
     private static bool TryCoerceId(JsValue[] args, out int id)
     {
         id = 0;
-        if (args.Length == 0) return false;
+        if (args.Length == 0)
+        {
+            return false;
+        }
+
         var n = JsValue.ToNumber(args[0]);
-        if (double.IsNaN(n) || double.IsInfinity(n)) return false;
-        if (n < int.MinValue || n > int.MaxValue) return false;
+        if (double.IsNaN(n) || double.IsInfinity(n))
+        {
+            return false;
+        }
+
+        if (n < int.MinValue || n > int.MaxValue)
+        {
+            return false;
+        }
+
         id = (int)n;
         return true;
     }
@@ -76,9 +94,13 @@ public static class AnimationFrameBinding
             {
                 var args = new[] { JsValue.Number(timestamp) };
                 if (handler.IsObject && handler.AsObject is JsFunction fn && realm.ActiveVm is { } vm)
+                {
                     vm.CallFunction(fn, JsValue.Undefined, args);
+                }
                 else
+                {
                     AbstractOperations.Call(realm.ActiveVm, handler, JsValue.Undefined, args);
+                }
             }
             catch (JsThrow ex)
             {
@@ -96,7 +118,10 @@ public static class AnimationFrameBinding
         if (value.IsObject)
         {
             var msg = value.AsObject.Get("message");
-            if (!msg.IsUndefined) return JsValue.ToStringValue(msg);
+            if (!msg.IsUndefined)
+            {
+                return JsValue.ToStringValue(msg);
+            }
         }
         return JsValue.ToStringValue(value);
     }

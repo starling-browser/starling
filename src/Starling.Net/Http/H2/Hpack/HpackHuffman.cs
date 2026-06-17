@@ -77,7 +77,11 @@ internal static class HpackHuffman
     {
         // Worst case one internal node per code bit; over-allocate then trim.
         var capacity = 1;
-        foreach (var (_, bits) in Table) capacity += bits;
+        foreach (var (_, bits) in Table)
+        {
+            capacity += bits;
+        }
+
         Zero = new int[capacity];
         One = new int[capacity];
         Symbol = new int[capacity];
@@ -127,7 +131,10 @@ internal static class HpackHuffman
                     allOnesSinceRoot = true;
                 }
                 bitsInNode++;
-                if (bit == 0) allOnesSinceRoot = false;
+                if (bit == 0)
+                {
+                    allOnesSinceRoot = false;
+                }
 
                 node = bit == 0 ? Zero[node] : One[node];
                 if (node < 0)
@@ -164,7 +171,11 @@ internal static class HpackHuffman
     public static int EncodedLength(ReadOnlySpan<byte> src)
     {
         var bits = 0L;
-        foreach (var b in src) bits += Table[b].Bits;
+        foreach (var b in src)
+        {
+            bits += Table[b].Bits;
+        }
+
         return (int)((bits + 7) / 8);
     }
 

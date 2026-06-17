@@ -27,7 +27,10 @@ public sealed record CssTransform(IReadOnlyList<CssTransformFunction> Functions)
     {
         var result = Matrix2D.Identity;
         foreach (var fn in Functions)
+        {
             result = result.Multiply(fn.ToMatrix(referenceWidth, referenceHeight));
+        }
+
         return result;
     }
 }

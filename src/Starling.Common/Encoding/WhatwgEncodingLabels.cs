@@ -90,9 +90,17 @@ public static class WhatwgEncodingLabels
     /// </summary>
     public static string? Normalize(string? label)
     {
-        if (label is null) return null;
+        if (label is null)
+        {
+            return null;
+        }
+
         var trimmed = label.Trim(AsciiWhitespace);
-        if (trimmed.Length == 0) return null;
+        if (trimmed.Length == 0)
+        {
+            return null;
+        }
+
         return trimmed.ToLowerInvariant();
     }
 
@@ -103,7 +111,11 @@ public static class WhatwgEncodingLabels
     public static string? TryGetCanonicalName(string? label)
     {
         var normalized = Normalize(label);
-        if (normalized is null) return null;
+        if (normalized is null)
+        {
+            return null;
+        }
+
         return Map.TryGetValue(normalized, out var canonical) ? canonical : null;
     }
 
@@ -120,7 +132,11 @@ public static class WhatwgEncodingLabels
     {
         encoding = null!;
         var canonical = TryGetCanonicalName(label);
-        if (canonical is null) return false;
+        if (canonical is null)
+        {
+            return false;
+        }
+
         try
         {
             encoding = System.Text.Encoding.GetEncoding(canonical);
@@ -267,6 +283,8 @@ public static class WhatwgEncodingLabels
         params string[] labels)
     {
         foreach (var label in labels)
+        {
             map[label] = canonical;
+        }
     }
 }

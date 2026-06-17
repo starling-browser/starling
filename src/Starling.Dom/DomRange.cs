@@ -35,7 +35,10 @@ public sealed class DomRange
             // Walk from start container; stop when we reach an inclusive ancestor of end.
             var container = StartContainer;
             while (!IsInclusiveAncestor(container, EndContainer))
+            {
                 container = container.ParentNode!;
+            }
+
             return container;
         }
     }
@@ -63,7 +66,10 @@ public sealed class DomRange
         StartOffset = startOffset;
         EndContainer = endContainer;
         EndOffset = endOffset;
-        if ((startContainer.OwnerDocument ?? startContainer as Document) is { } d) Register(d);
+        if ((startContainer.OwnerDocument ?? startContainer as Document) is { } d)
+        {
+            Register(d);
+        }
     }
 
     // ---- Live-range registry (§5.3.4 mutation algorithms) -------------------
@@ -77,7 +83,10 @@ public sealed class DomRange
     private void Register(Document doc)
     {
         var list = LiveRanges.GetValue(doc, _ => new List<WeakReference<DomRange>>());
-        lock (list) list.Add(new WeakReference<DomRange>(this));
+        lock (list)
+        {
+            list.Add(new WeakReference<DomRange>(this));
+        }
     }
 
     /// <summary>DOM §5.3.4 — when a CharacterData node has data replaced at
@@ -88,16 +97,31 @@ public sealed class DomRange
     {
         ArgumentNullException.ThrowIfNull(node);
         var doc = node.OwnerDocument;
-        if (doc is null || !LiveRanges.TryGetValue(doc, out var list)) return;
+        if (doc is null || !LiveRanges.TryGetValue(doc, out var list))
+        {
+            return;
+        }
+
         List<WeakReference<DomRange>>? snapshot;
-        lock (list) snapshot = new List<WeakReference<DomRange>>(list);
+        lock (list)
+        {
+            snapshot = new List<WeakReference<DomRange>>(list);
+        }
+
         foreach (var wr in snapshot)
         {
-            if (!wr.TryGetTarget(out var range)) continue;
+            if (!wr.TryGetTarget(out var range))
+            {
+                continue;
+            }
+
             range.ShiftForCharacterDataReplace(node, offset, count, insertedLength);
         }
         // Compact dead refs occasionally.
-        lock (list) list.RemoveAll(w => !w.TryGetTarget(out _));
+        lock (list)
+        {
+            list.RemoveAll(w => !w.TryGetTarget(out _));
+        }
     }
 
     /// <summary>DOM §5.3.4 "split a Text node" — after splitting
@@ -109,16 +133,26 @@ public sealed class DomRange
         ArgumentNullException.ThrowIfNull(original);
         ArgumentNullException.ThrowIfNull(newText);
         var doc = original.OwnerDocument;
-        if (doc is null || !LiveRanges.TryGetValue(doc, out var list)) return;
+        if (doc is null || !LiveRanges.TryGetValue(doc, out var list))
+        {
+            return;
+        }
+
         List<WeakReference<DomRange>> snapshot;
-        lock (list) snapshot = new List<WeakReference<DomRange>>(list);
+        lock (list)
+        {
+            snapshot = new List<WeakReference<DomRange>>(list);
+        }
         // newText is already linked into the tree (the binding inserts it
         // before calling here), so its index is original's index + 1.
         var parent = original.ParentNode;
         var newTextIndex = parent is null ? -1 : IndexOf(newText);
         foreach (var wr in snapshot)
         {
-            if (!wr.TryGetTarget(out var range)) continue;
+            if (!wr.TryGetTarget(out var range))
+            {
+                continue;
+            }
             // Boundary on original past offset → move to newText with shifted offset.
             if (ReferenceEquals(range.StartContainer, original) && range.StartOffset > offset)
             {
@@ -137,9 +171,14 @@ public sealed class DomRange
             if (parent is not null)
             {
                 if (ReferenceEquals(range.StartContainer, parent) && range.StartOffset == newTextIndex)
+                {
                     range.StartOffset++;
+                }
+
                 if (ReferenceEquals(range.EndContainer, parent) && range.EndOffset == newTextIndex)
+                {
                     range.EndOffset++;
+                }
             }
         }
     }
@@ -153,21 +192,40 @@ public sealed class DomRange
     {
         ArgumentNullException.ThrowIfNull(parent);
         var doc = parent.OwnerDocument ?? parent as Document;
-        if (doc is null || !LiveRanges.TryGetValue(doc, out var list)) return;
+        if (doc is null || !LiveRanges.TryGetValue(doc, out var list))
+        {
+            return;
+        }
+
         List<WeakReference<DomRange>> snapshot;
-        lock (list) snapshot = new List<WeakReference<DomRange>>(list);
+        lock (list)
+        {
+            snapshot = new List<WeakReference<DomRange>>(list);
+        }
+
         foreach (var wr in snapshot)
         {
-            if (!wr.TryGetTarget(out var range)) continue;
+            if (!wr.TryGetTarget(out var range))
+            {
+                continue;
+            }
             // §5.3.4 insert: "For each live range whose start node is parent and
             // start offset is greater than index, increase its start offset by
             // count." Same for end.
             if (ReferenceEquals(range.StartContainer, parent) && range.StartOffset > index)
+            {
                 range.StartOffset += count;
+            }
+
             if (ReferenceEquals(range.EndContainer, parent) && range.EndOffset > index)
+            {
                 range.EndOffset += count;
+            }
         }
-        lock (list) list.RemoveAll(w => !w.TryGetTarget(out _));
+        lock (list)
+        {
+            list.RemoveAll(w => !w.TryGetTarget(out _));
+        }
     }
 
     /// <summary>DOM §5.3.4 — when <paramref name="node"/> is being removed
@@ -177,12 +235,24 @@ public sealed class DomRange
     {
         ArgumentNullException.ThrowIfNull(node);
         var doc = oldParent.OwnerDocument ?? oldParent as Document;
-        if (doc is null || !LiveRanges.TryGetValue(doc, out var list)) return;
+        if (doc is null || !LiveRanges.TryGetValue(doc, out var list))
+        {
+            return;
+        }
+
         List<WeakReference<DomRange>> snapshot;
-        lock (list) snapshot = new List<WeakReference<DomRange>>(list);
+        lock (list)
+        {
+            snapshot = new List<WeakReference<DomRange>>(list);
+        }
+
         foreach (var wr in snapshot)
         {
-            if (!wr.TryGetTarget(out var range)) continue;
+            if (!wr.TryGetTarget(out var range))
+            {
+                continue;
+            }
+
             range.ShiftForNodeRemoval(node, oldParent, oldIndex);
         }
     }
@@ -195,13 +265,25 @@ public sealed class DomRange
         // * end: same with endOffset
         if (ReferenceEquals(StartContainer, node))
         {
-            if (StartOffset > offset && StartOffset <= offset + count) StartOffset = offset;
-            else if (StartOffset > offset + count) StartOffset += insertedLength - count;
+            if (StartOffset > offset && StartOffset <= offset + count)
+            {
+                StartOffset = offset;
+            }
+            else if (StartOffset > offset + count)
+            {
+                StartOffset += insertedLength - count;
+            }
         }
         if (ReferenceEquals(EndContainer, node))
         {
-            if (EndOffset > offset && EndOffset <= offset + count) EndOffset = offset;
-            else if (EndOffset > offset + count) EndOffset += insertedLength - count;
+            if (EndOffset > offset && EndOffset <= offset + count)
+            {
+                EndOffset = offset;
+            }
+            else if (EndOffset > offset + count)
+            {
+                EndOffset += insertedLength - count;
+            }
         }
     }
 
@@ -222,8 +304,15 @@ public sealed class DomRange
         // For ranges whose container is the parent and whose offset is greater
         // than oldIndex, decrease by 1 (the removed child shifted everything
         // after it down).
-        if (ReferenceEquals(StartContainer, parent) && StartOffset > oldIndex) StartOffset--;
-        if (ReferenceEquals(EndContainer, parent) && EndOffset > oldIndex) EndOffset--;
+        if (ReferenceEquals(StartContainer, parent) && StartOffset > oldIndex)
+        {
+            StartOffset--;
+        }
+
+        if (ReferenceEquals(EndContainer, parent) && EndOffset > oldIndex)
+        {
+            EndOffset--;
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -344,7 +433,10 @@ public sealed class DomRange
     {
         ArgumentNullException.ThrowIfNull(node);
         if (node is DocumentType)
+        {
             throw DomRangeException.Create("InvalidNodeTypeError", "selectNodeContents: cannot select a doctype node");
+        }
+
         StartContainer = node;
         StartOffset = 0;
         EndContainer = node;
@@ -365,12 +457,16 @@ public sealed class DomRange
         ArgumentNullException.ThrowIfNull(other);
 
         if (how is < 0 or > 3)
+        {
             throw DomRangeException.Create("NotSupportedError", $"compareBoundaryPoints: invalid 'how' argument {how}");
+        }
 
         // If the two ranges are not in the same tree, throw WrongDocumentError.
         if (!SameRoot(StartContainer, other.StartContainer))
+        {
             throw DomRangeException.Create("WrongDocumentError",
                 "compareBoundaryPoints: ranges are not in the same tree");
+        }
 
         Node thisPoint, otherPoint;
         int thisOffset, otherOffset;
@@ -405,14 +501,28 @@ public sealed class DomRange
     {
         ArgumentNullException.ThrowIfNull(node);
         if (!SameRoot(node, StartContainer))
+        {
             throw DomRangeException.Create("WrongDocumentError",
                 "comparePoint: node and range are not in the same tree");
+        }
+
         if (node is DocumentType)
+        {
             throw DomRangeException.Create("InvalidNodeTypeError", "comparePoint: doctype node is not allowed");
+        }
+
         ValidateOffset(node, offset, "comparePoint");
 
-        if (ComparePoints(node, offset, StartContainer, StartOffset) < 0) return -1;
-        if (ComparePoints(node, offset, EndContainer, EndOffset) > 0) return 1;
+        if (ComparePoints(node, offset, StartContainer, StartOffset) < 0)
+        {
+            return -1;
+        }
+
+        if (ComparePoints(node, offset, EndContainer, EndOffset) > 0)
+        {
+            return 1;
+        }
+
         return 0;
     }
 
@@ -420,9 +530,16 @@ public sealed class DomRange
     public bool IsPointInRange(Node node, int offset)
     {
         ArgumentNullException.ThrowIfNull(node);
-        if (!SameRoot(node, StartContainer)) return false;
+        if (!SameRoot(node, StartContainer))
+        {
+            return false;
+        }
+
         if (node is DocumentType)
+        {
             throw DomRangeException.Create("InvalidNodeTypeError", "isPointInRange: doctype node is not allowed");
+        }
+
         ValidateOffset(node, offset, "isPointInRange");
 
         return ComparePoints(node, offset, StartContainer, StartOffset) >= 0
@@ -433,10 +550,16 @@ public sealed class DomRange
     public bool IntersectsNode(Node node)
     {
         ArgumentNullException.ThrowIfNull(node);
-        if (!SameRoot(node, StartContainer)) return false;
+        if (!SameRoot(node, StartContainer))
+        {
+            return false;
+        }
 
         var parent = node.ParentNode;
-        if (parent is null) return true; // orphan root intersects any range in the same tree
+        if (parent is null)
+        {
+            return true; // orphan root intersects any range in the same tree
+        }
 
         var offset = IndexOf(node);
         // The node overlaps the range if [offset, offset+1) intersects [start, end).
@@ -478,7 +601,10 @@ public sealed class DomRange
                 for (var c = StartContainer.FirstChild; c is not null; c = c.NextSibling)
                 {
                     if (i >= StartOffset && i < EndOffset)
+                    {
                         CollectText(c, sb);
+                    }
+
                     i++;
                 }
             }
@@ -502,7 +628,9 @@ public sealed class DomRange
             {
                 // Fully contained? Check it's after start and before end.
                 if (IsAfterOrAt(textNode) && IsBeforeOrAt(textNode))
+                {
                     sb.Append(textNode.Data);
+                }
             }
         }
 
@@ -513,33 +641,50 @@ public sealed class DomRange
     {
         if (node is CharacterData cd) { sb.Append(cd.Data); return; }
         for (var c = node.FirstChild; c is not null; c = c.NextSibling)
+        {
             CollectText(c, sb);
+        }
     }
 
     private IEnumerable<CharacterData> TextNodesInPreOrder(Node root)
     {
         if (root is CharacterData rootCd) { yield return rootCd; yield break; }
         var stack = new Stack<Node>();
-        for (var c = root.LastChild; c is not null; c = c.PreviousSibling) stack.Push(c);
+        for (var c = root.LastChild; c is not null; c = c.PreviousSibling)
+        {
+            stack.Push(c);
+        }
+
         while (stack.Count > 0)
         {
             var n = stack.Pop();
             if (n is CharacterData cd) { yield return cd; continue; }
-            for (var c = n.LastChild; c is not null; c = c.PreviousSibling) stack.Push(c);
+            for (var c = n.LastChild; c is not null; c = c.PreviousSibling)
+            {
+                stack.Push(c);
+            }
         }
     }
 
     private bool IsAfterOrAt(Node node)
     {
         // Is node at or after StartContainer?
-        if (ReferenceEquals(node, StartContainer)) return true;
+        if (ReferenceEquals(node, StartContainer))
+        {
+            return true;
+        }
+
         return ComparePoints(StartContainer, StartOffset, node, 0) <= 0;
     }
 
     private bool IsBeforeOrAt(Node node)
     {
         // Is node at or before EndContainer?
-        if (ReferenceEquals(node, EndContainer)) return true;
+        if (ReferenceEquals(node, EndContainer))
+        {
+            return true;
+        }
+
         return ComparePoints(node, NodeLength(node), EndContainer, EndOffset) <= 0;
     }
 
@@ -551,7 +696,10 @@ public sealed class DomRange
     /// handles the most common cases (single-node and same-parent).</summary>
     public void DeleteContents()
     {
-        if (Collapsed) return;
+        if (Collapsed)
+        {
+            return;
+        }
 
         // Clone boundary points to be stable during mutation.
         var sc = StartContainer; var so = StartOffset;
@@ -574,15 +722,21 @@ public sealed class DomRange
 
         // Collect fully-contained nodes and remove them.
         foreach (var node in NodesInRange().ToList())
+        {
             node.RemoveFromParent();
+        }
 
         // Trim the end container character data.
         if (ec is CharacterData ecd)
+        {
             ecd.Data = ecd.Data[eo..];
+        }
 
         // Trim the start container character data.
         if (sc is CharacterData scd)
+        {
             scd.Data = scd.Data[..so];
+        }
 
         Collapse(true);
     }
@@ -600,7 +754,10 @@ public sealed class DomRange
     {
         var doc = StartContainer.OwnerDocument ?? (StartContainer as Document) ?? new Document();
         var fragment = doc.CreateDocumentFragment();
-        if (Collapsed) return fragment;
+        if (Collapsed)
+        {
+            return fragment;
+        }
 
         var sn = StartContainer; var so = StartOffset;
         var en = EndContainer; var eo = EndOffset;
@@ -617,25 +774,41 @@ public sealed class DomRange
         // §4.6.13 step 5–6 — common ancestor.
         var commonAncestor = sn;
         while (!IsInclusiveAncestor(commonAncestor, en))
+        {
             commonAncestor = commonAncestor.ParentNode ?? throw new InvalidOperationException("range nodes have no common ancestor");
+        }
 
         // §4.6.13 step 7–10 — partially contained children + contained children.
         Node? firstPartial = null;
         if (!IsInclusiveAncestor(sn, en))
+        {
             firstPartial = FirstChildPartiallyContaining(commonAncestor, sn);
+        }
+
         Node? lastPartial = null;
         if (!IsInclusiveAncestor(en, sn))
+        {
             lastPartial = LastChildPartiallyContaining(commonAncestor, en);
+        }
 
         var contained = new List<Node>();
         for (var c = commonAncestor.FirstChild; c is not null; c = c.NextSibling)
-            if (IsContainedInRange(c)) contained.Add(c);
+        {
+            if (IsContainedInRange(c))
+            {
+                contained.Add(c);
+            }
+        }
 
         // §4.6.13 step 12 — doctype contained → HierarchyRequestError.
         foreach (var c in contained)
+        {
             if (c is DocumentType)
+            {
                 throw DomRangeException.Create("HierarchyRequestError",
                     "cloneContents: doctype in range");
+            }
+        }
 
         // §4.6.13 step 13 — first partial is CharacterData → clone + substring.
         if (firstPartial is CharacterData fcd)
@@ -657,7 +830,9 @@ public sealed class DomRange
 
         // §4.6.13 step 15 — fully-contained children deep-cloned.
         foreach (var c in contained)
+        {
             fragment.AppendChild(NodeClone.Deep(c));
+        }
 
         // §4.6.13 step 16 — last partial is CharacterData.
         if (lastPartial is CharacterData lcd)
@@ -685,7 +860,10 @@ public sealed class DomRange
     {
         var doc = StartContainer.OwnerDocument ?? (StartContainer as Document) ?? new Document();
         var fragment = doc.CreateDocumentFragment();
-        if (Collapsed) return fragment;
+        if (Collapsed)
+        {
+            return fragment;
+        }
 
         var sn = StartContainer; var so = StartOffset;
         var en = EndContainer; var eo = EndOffset;
@@ -704,23 +882,39 @@ public sealed class DomRange
         // §4.6.14 step 5–10 — common ancestor + partials + contained.
         var commonAncestor = sn;
         while (!IsInclusiveAncestor(commonAncestor, en))
+        {
             commonAncestor = commonAncestor.ParentNode ?? throw new InvalidOperationException("range nodes have no common ancestor");
+        }
 
         Node? firstPartial = null;
         if (!IsInclusiveAncestor(sn, en))
+        {
             firstPartial = FirstChildPartiallyContaining(commonAncestor, sn);
+        }
+
         Node? lastPartial = null;
         if (!IsInclusiveAncestor(en, sn))
+        {
             lastPartial = LastChildPartiallyContaining(commonAncestor, en);
+        }
 
         var contained = new List<Node>();
         for (var c = commonAncestor.FirstChild; c is not null; c = c.NextSibling)
-            if (IsContainedInRange(c)) contained.Add(c);
+        {
+            if (IsContainedInRange(c))
+            {
+                contained.Add(c);
+            }
+        }
 
         foreach (var c in contained)
+        {
             if (c is DocumentType)
+            {
                 throw DomRangeException.Create("HierarchyRequestError",
                     "extractContents: doctype in range");
+            }
+        }
 
         // §4.6.14 step 12 — compute new boundary post-extraction. With a
         // descendant boundary, the new start is the common ancestor at the
@@ -736,7 +930,10 @@ public sealed class DomRange
             // ancestor of sn in commonAncestor's children that contains sn
             var reference = sn;
             while (reference.ParentNode is { } p && !ReferenceEquals(p, commonAncestor))
+            {
                 reference = p;
+            }
+
             newNode = commonAncestor;
             newOffset = IndexOf(reference) + 1;
         }
@@ -760,7 +957,10 @@ public sealed class DomRange
         }
 
         // §4.6.14 step 15 — append fully-contained nodes (no cloning).
-        foreach (var c in contained) fragment.AppendChild(c);
+        foreach (var c in contained)
+        {
+            fragment.AppendChild(c);
+        }
 
         // §4.6.14 step 16 — last partial is CharacterData.
         if (lastPartial is CharacterData lcd)
@@ -797,8 +997,10 @@ public sealed class DomRange
         if (reference is ProcessingInstruction or Comment
             || (reference is Text t && t.ParentNode is null)
             || ReferenceEquals(node, reference))
+        {
             throw DomRangeException.Create("HierarchyRequestError",
                 "insertNode: invalid insertion point");
+        }
 
         // Determine the eventual parent (Text container's parent, or the
         // start container itself).
@@ -808,19 +1010,26 @@ public sealed class DomRange
         // into a non-Document parent is forbidden; ditto inserting a
         // bare-Document anywhere.
         if (node is Document)
+        {
             throw DomRangeException.Create("HierarchyRequestError",
                 "insertNode: Document cannot be inserted as a child");
+        }
+
         if (node is DocumentType && prospectiveParent is not Document)
+        {
             throw DomRangeException.Create("HierarchyRequestError",
                 "insertNode: DocumentType cannot be inserted outside a Document");
+        }
 
         // Descendant guard: inserting an inclusive-ancestor would create a
         // cycle. (Spec defers this to the pre-insertion validity check; we
         // surface it as the spec-named throw so the runtime catch picks it
         // up as a DOMException rather than a host InvalidOperationException.)
         if (IsInclusiveAncestor(node, prospectiveParent))
+        {
             throw DomRangeException.Create("HierarchyRequestError",
                 "insertNode: node is an ancestor of the insertion point");
+        }
 
         // §4.6.16 step 3 — figure out the parent we'll insert into.
         Node parent;
@@ -835,9 +1044,14 @@ public sealed class DomRange
             var tail = doc.CreateTextNode(SafeSubstring(txt.Data, StartOffset, txt.Data.Length - StartOffset));
             txt.Data = SafeSubstring(txt.Data, 0, StartOffset);
             if (txt.NextSibling is { } ns)
+            {
                 parent.InsertBefore(tail, ns);
+            }
             else
+            {
                 parent.AppendChild(tail);
+            }
+
             insertBefore = tail;
         }
         else
@@ -847,10 +1061,16 @@ public sealed class DomRange
         }
 
         // §4.6.16 step 8 — ensure the reference sibling isn't node itself.
-        if (ReferenceEquals(node, insertBefore)) insertBefore = node.NextSibling;
+        if (ReferenceEquals(node, insertBefore))
+        {
+            insertBefore = node.NextSibling;
+        }
 
         // Spec step 8.4 — detach if already in tree.
-        if (node.ParentNode is not null) node.RemoveFromParent();
+        if (node.ParentNode is not null)
+        {
+            node.RemoveFromParent();
+        }
 
         // §4.6.16 step 9–10 — insert + adjust the range end if it was collapsed.
         // The collapsed flag must be read BEFORE the InsertBefore below, since
@@ -864,8 +1084,14 @@ public sealed class DomRange
         int inserted = node is DocumentFragment df ? ChildCount(df) : 1;
         try
         {
-            if (insertBefore is not null) parent.InsertBefore(node, insertBefore);
-            else parent.AppendChild(node);
+            if (insertBefore is not null)
+            {
+                parent.InsertBefore(node, insertBefore);
+            }
+            else
+            {
+                parent.AppendChild(node);
+            }
         }
         catch (InvalidOperationException ex)
         {
@@ -890,27 +1116,38 @@ public sealed class DomRange
 
         // §4.6.17 step 1 — partial CharacterData isn't surroundable; reject.
         foreach (var n in PartiallyContainedNodes())
+        {
             if (n is not CharacterData)
+            {
                 throw DomRangeException.Create("InvalidStateError",
                     "surroundContents: range partially contains non-text nodes");
+            }
+        }
 
         // §4.6.17 step 2 — newParent must not be Document/DocumentType/DocumentFragment.
         if (newParent is Document or DocumentType or DocumentFragment)
+        {
             throw DomRangeException.Create("InvalidNodeTypeError",
                 "surroundContents: newParent is not a valid wrapper");
+        }
 
         // §4.6.17 step 5 implicitly relies on pre-insertion validity, which
         // rejects parents that aren't {Document, DocumentFragment, Element}.
         // Document/DF were filtered above, so what's left is: must be Element.
         if (newParent is not Element)
+        {
             throw DomRangeException.Create("HierarchyRequestError",
                 "surroundContents: newParent cannot have children");
+        }
 
         // §4.6.17 step 3 — extract contents.
         var fragment = ExtractContents();
 
         // §4.6.17 step 4 — clear newParent.
-        while (newParent.FirstChild is { } c) c.RemoveFromParent();
+        while (newParent.FirstChild is { } c)
+        {
+            c.RemoveFromParent();
+        }
 
         // §4.6.17 step 5 — insert newParent at the range start (which now
         // equals the range end since extract collapses).
@@ -928,9 +1165,17 @@ public sealed class DomRange
 
     private static string SafeSubstring(string s, int start, int length)
     {
-        if (length <= 0) return string.Empty;
+        if (length <= 0)
+        {
+            return string.Empty;
+        }
+
         if (start < 0) { length += start; start = 0; }
-        if (start >= s.Length) return string.Empty;
+        if (start >= s.Length)
+        {
+            return string.Empty;
+        }
+
         var avail = s.Length - start;
         return s.Substring(start, Math.Min(length, avail));
     }
@@ -940,7 +1185,11 @@ public sealed class DomRange
         var i = 0;
         for (var c = parent.FirstChild; c is not null; c = c.NextSibling)
         {
-            if (i == index) return c;
+            if (i == index)
+            {
+                return c;
+            }
+
             i++;
         }
         return null;
@@ -961,14 +1210,26 @@ public sealed class DomRange
     private static Node? FirstChildPartiallyContaining(Node ancestor, Node boundary)
     {
         for (var c = ancestor.FirstChild; c is not null; c = c.NextSibling)
-            if (IsInclusiveAncestor(c, boundary)) return c;
+        {
+            if (IsInclusiveAncestor(c, boundary))
+            {
+                return c;
+            }
+        }
+
         return null;
     }
 
     private static Node? LastChildPartiallyContaining(Node ancestor, Node boundary)
     {
         for (var c = ancestor.LastChild; c is not null; c = c.PreviousSibling)
-            if (IsInclusiveAncestor(c, boundary)) return c;
+        {
+            if (IsInclusiveAncestor(c, boundary))
+            {
+                return c;
+            }
+        }
+
         return null;
     }
 
@@ -979,10 +1240,16 @@ public sealed class DomRange
         // start-of-range &lt;= start-of-node AND end-of-node &lt;= end-of-range
         if (ComparePoints(StartContainer, StartOffset,
                 n.ParentNode ?? n, n.ParentNode is null ? 0 : IndexOf(n)) > 0)
+        {
             return false;
+        }
+
         if (ComparePoints(n.ParentNode ?? n, n.ParentNode is null ? NodeLength(n) : IndexOf(n) + 1,
                 EndContainer, EndOffset) > 0)
+        {
             return false;
+        }
+
         return true;
     }
 
@@ -997,14 +1264,25 @@ public sealed class DomRange
         var seen = new HashSet<Node>(ReferenceEqualityComparer.Instance);
         var commonAncestor = StartContainer;
         while (!IsInclusiveAncestor(commonAncestor, EndContainer))
+        {
             commonAncestor = commonAncestor.ParentNode ?? throw new InvalidOperationException("range has no common ancestor");
+        }
 
         for (var n = StartContainer; n is not null && !ReferenceEquals(n, commonAncestor); n = n.ParentNode)
+        {
             if (!IsInclusiveAncestor(n, EndContainer) && seen.Add(n))
+            {
                 yield return n;
+            }
+        }
+
         for (var n = EndContainer; n is not null && !ReferenceEquals(n, commonAncestor); n = n.ParentNode)
+        {
             if (!IsInclusiveAncestor(n, StartContainer) && seen.Add(n))
+            {
                 yield return n;
+            }
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -1022,7 +1300,11 @@ public sealed class DomRange
     private static int ChildCount(Node node)
     {
         var count = 0;
-        for (var c = node.FirstChild; c is not null; c = c.NextSibling) count++;
+        for (var c = node.FirstChild; c is not null; c = c.NextSibling)
+        {
+            count++;
+        }
+
         return count;
     }
 
@@ -1031,7 +1313,10 @@ public sealed class DomRange
     {
         var index = 0;
         for (var c = node.ParentNode?.FirstChild; c is not null && !ReferenceEquals(c, node); c = c.NextSibling)
+        {
             index++;
+        }
+
         return index;
     }
 
@@ -1039,7 +1324,13 @@ public sealed class DomRange
     private static bool IsInclusiveAncestor(Node a, Node b)
     {
         for (var n = b; n is not null; n = n.ParentNode)
-            if (ReferenceEquals(n, a)) return true;
+        {
+            if (ReferenceEquals(n, a))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -1051,7 +1342,11 @@ public sealed class DomRange
     private static Node Root(Node n)
     {
         var cur = n;
-        while (cur.ParentNode is not null) cur = cur.ParentNode;
+        while (cur.ParentNode is not null)
+        {
+            cur = cur.ParentNode;
+        }
+
         return cur;
     }
 
@@ -1060,7 +1355,10 @@ public sealed class DomRange
     /// 0 if equal, &gt;0 if after.</summary>
     private static int ComparePoints(Node nodeA, int offsetA, Node nodeB, int offsetB)
     {
-        if (ReferenceEquals(nodeA, nodeB)) return offsetA.CompareTo(offsetB);
+        if (ReferenceEquals(nodeA, nodeB))
+        {
+            return offsetA.CompareTo(offsetB);
+        }
 
         // Find positions in a pre-order list.
         // Collect ancestors of both from root downward.
@@ -1071,7 +1369,12 @@ public sealed class DomRange
         var minLen = Math.Min(ancestorsA.Count, ancestorsB.Count);
         int i;
         for (i = 0; i < minLen; i++)
-            if (!ReferenceEquals(ancestorsA[i], ancestorsB[i])) break;
+        {
+            if (!ReferenceEquals(ancestorsA[i], ancestorsB[i]))
+            {
+                break;
+            }
+        }
 
         if (i == minLen)
         {
@@ -1099,14 +1402,24 @@ public sealed class DomRange
         var siblingA = ancestorsA[i];
         var siblingB = ancestorsB[i];
         for (var s = siblingA.NextSibling; s is not null; s = s.NextSibling)
-            if (ReferenceEquals(s, siblingB)) return -1; // A is before B
+        {
+            if (ReferenceEquals(s, siblingB))
+            {
+                return -1; // A is before B
+            }
+        }
+
         return 1; // B is before A
     }
 
     private static List<Node> AncestorsFromRoot(Node node)
     {
         var chain = new List<Node>();
-        for (var n = node; n is not null; n = n.ParentNode) chain.Add(n);
+        for (var n = node; n is not null; n = n.ParentNode)
+        {
+            chain.Add(n);
+        }
+
         chain.Reverse(); // root first
         return chain;
     }
@@ -1115,16 +1428,20 @@ public sealed class DomRange
     {
         // setStart/setEnd: if node is a doctype, throw InvalidNodeTypeError.
         if (node is DocumentType)
+        {
             throw DomRangeException.Create("InvalidNodeTypeError",
                 $"{op}: doctype nodes cannot be boundary points");
+        }
     }
 
     private static void ValidateOffset(Node node, int offset, string op)
     {
         var len = NodeLength(node);
         if (offset < 0 || offset > len)
+        {
             throw DomRangeException.Create("IndexSizeError",
                 $"{op}: offset {offset} is out of range [0, {len}]");
+        }
     }
 
     /// <summary>Enumerate nodes that are <em>fully</em> between start and end
@@ -1139,7 +1456,9 @@ public sealed class DomRange
         // Collect all descendants of the common ancestor in pre-order.
         var stack = new Stack<Node>();
         for (var c = root.LastChild; c is not null; c = c.PreviousSibling)
+        {
             stack.Push(c);
+        }
 
         while (stack.Count > 0)
         {
@@ -1159,7 +1478,9 @@ public sealed class DomRange
 
             // Push children for further examination.
             for (var c = n.LastChild; c is not null; c = c.PreviousSibling)
+            {
                 stack.Push(c);
+            }
         }
     }
 
@@ -1169,10 +1490,17 @@ public sealed class DomRange
         var i = 0;
         for (var c = parent.FirstChild; c is not null; c = c.NextSibling)
         {
-            if (i >= fromIndex && i < toIndex) toRemove.Add(c);
+            if (i >= fromIndex && i < toIndex)
+            {
+                toRemove.Add(c);
+            }
+
             i++;
         }
-        foreach (var c in toRemove) c.RemoveFromParent();
+        foreach (var c in toRemove)
+        {
+            c.RemoveFromParent();
+        }
     }
 }
 

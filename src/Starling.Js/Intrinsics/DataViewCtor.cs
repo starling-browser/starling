@@ -34,15 +34,28 @@ public static class DataViewCtor
         ctor = new JsNativeFunction("DataView", (newTarget, args) =>
         {
             if (!IntrinsicHelpers.IsConstructInvocation(newTarget))
+            {
                 throw new JsThrow(realm.NewTypeError("DataView constructor requires 'new'"));
+            }
+
             if (args.Length == 0 || !args[0].IsObject || args[0].AsObject is not JsArrayBuffer buffer)
+            {
                 throw new JsThrow(realm.NewTypeError("DataView buffer must be an ArrayBuffer"));
+            }
+
             var offset = args.Length > 1 ? ArrayBufferCtor.ToIndex(realm, args[1]) : 0;
-            if (offset > buffer.ByteLength) throw new JsThrow(realm.NewRangeError("DataView byteOffset out of range"));
+            if (offset > buffer.ByteLength)
+            {
+                throw new JsThrow(realm.NewRangeError("DataView byteOffset out of range"));
+            }
+
             var length = args.Length > 2 && !args[2].IsUndefined
                 ? ArrayBufferCtor.ToIndex(realm, args[2])
                 : buffer.ByteLength - offset;
-            if (length > buffer.ByteLength - offset) throw new JsThrow(realm.NewRangeError("DataView byteLength out of range"));
+            if (length > buffer.ByteLength - offset)
+            {
+                throw new JsThrow(realm.NewRangeError("DataView byteLength out of range"));
+            }
             // §25.3.2.1 step 10: OrdinaryCreateFromConstructor — prototype from new.target.
             var instProto = IntrinsicHelpers.NewTargetPrototype(realm.ActiveVm, newTarget, proto);
             return JsValue.Object(new JsDataView(instProto, buffer, offset, length));
@@ -72,8 +85,24 @@ public static class DataViewCtor
         DefineSet(realm, proto, "setUint16", 2, 3, (s, v, le) => Write(le, s, unchecked((ushort)ToUint32(ArrayBufferCtor.Number(realm, v)))));
         DefineSet(realm, proto, "setInt32", 4, 3, (s, v, le) => Write(le, s, ToInt32(ArrayBufferCtor.Number(realm, v))));
         DefineSet(realm, proto, "setUint32", 4, 3, (s, v, le) => Write(le, s, ToUint32(ArrayBufferCtor.Number(realm, v))));
-        DefineSet(realm, proto, "setFloat32", 4, 3, (s, v, le) => { var n = (float)ArrayBufferCtor.Number(realm, v); if (le) BinaryPrimitives.WriteSingleLittleEndian(s, n); else BinaryPrimitives.WriteSingleBigEndian(s, n); });
-        DefineSet(realm, proto, "setFloat64", 8, 3, (s, v, le) => { var n = ArrayBufferCtor.Number(realm, v); if (le) BinaryPrimitives.WriteDoubleLittleEndian(s, n); else BinaryPrimitives.WriteDoubleBigEndian(s, n); });
+        DefineSet(realm, proto, "setFloat32", 4, 3, (s, v, le) => { var n = (float)ArrayBufferCtor.Number(realm, v); if (le)
+            {
+                BinaryPrimitives.WriteSingleLittleEndian(s, n);
+            }
+            else
+            {
+                BinaryPrimitives.WriteSingleBigEndian(s, n);
+            }
+        });
+        DefineSet(realm, proto, "setFloat64", 8, 3, (s, v, le) => { var n = ArrayBufferCtor.Number(realm, v); if (le)
+            {
+                BinaryPrimitives.WriteDoubleLittleEndian(s, n);
+            }
+            else
+            {
+                BinaryPrimitives.WriteDoubleBigEndian(s, n);
+            }
+        });
         DefineSet(realm, proto, "setBigInt64", 8, 3, (s, v, le) => WriteBigInt64(realm, s, v, le));
         DefineSet(realm, proto, "setBigUint64", 8, 3, (s, v, le) => WriteBigUint64(realm, s, v, le));
 
@@ -110,7 +139,10 @@ public static class DataViewCtor
     private static Span<byte> CheckedSpan(JsRealm realm, JsDataView view, int offset, int size)
     {
         if (offset > view.ByteLength - size)
+        {
             throw new JsThrow(realm.NewRangeError("DataView byteOffset out of range"));
+        }
+
         return view.Buffer.GetSpan(view.ByteOffset + offset, size);
     }
 
@@ -129,21 +161,36 @@ public static class DataViewCtor
     private static void WriteBigInt64(JsRealm realm, Span<byte> s, JsValue value, bool le)
     {
         var n = (long)BigIntOps.AsIntN(realm, 64, ToBigInt(realm, value));
-        if (le) BinaryPrimitives.WriteInt64LittleEndian(s, n);
-        else BinaryPrimitives.WriteInt64BigEndian(s, n);
+        if (le)
+        {
+            BinaryPrimitives.WriteInt64LittleEndian(s, n);
+        }
+        else
+        {
+            BinaryPrimitives.WriteInt64BigEndian(s, n);
+        }
     }
 
     private static void WriteBigUint64(JsRealm realm, Span<byte> s, JsValue value, bool le)
     {
         var n = (ulong)BigIntOps.AsUintN(realm, 64, ToBigInt(realm, value));
-        if (le) BinaryPrimitives.WriteUInt64LittleEndian(s, n);
-        else BinaryPrimitives.WriteUInt64BigEndian(s, n);
+        if (le)
+        {
+            BinaryPrimitives.WriteUInt64LittleEndian(s, n);
+        }
+        else
+        {
+            BinaryPrimitives.WriteUInt64BigEndian(s, n);
+        }
     }
 
     private static BigInteger ToBigInt(JsRealm realm, JsValue value)
     {
         if (value.IsObject)
+        {
             value = AbstractOperations.ToPrimitive(value, "number");
+        }
+
         return value.Kind switch
         {
             JsValueKind.BigInt => value.AsBigInt,
@@ -158,14 +205,50 @@ public static class DataViewCtor
 
     private static uint ToUint32(double n)
     {
-        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0) return 0;
+        if (double.IsNaN(n) || double.IsInfinity(n) || n == 0)
+        {
+            return 0;
+        }
+
         var t = Math.Truncate(n);
         var mod = t - Math.Floor(t / 4294967296d) * 4294967296d;
         return (uint)mod;
     }
 
-    private static void Write(bool le, Span<byte> s, short v) { if (le) BinaryPrimitives.WriteInt16LittleEndian(s, v); else BinaryPrimitives.WriteInt16BigEndian(s, v); }
-    private static void Write(bool le, Span<byte> s, ushort v) { if (le) BinaryPrimitives.WriteUInt16LittleEndian(s, v); else BinaryPrimitives.WriteUInt16BigEndian(s, v); }
-    private static void Write(bool le, Span<byte> s, int v) { if (le) BinaryPrimitives.WriteInt32LittleEndian(s, v); else BinaryPrimitives.WriteInt32BigEndian(s, v); }
-    private static void Write(bool le, Span<byte> s, uint v) { if (le) BinaryPrimitives.WriteUInt32LittleEndian(s, v); else BinaryPrimitives.WriteUInt32BigEndian(s, v); }
+    private static void Write(bool le, Span<byte> s, short v) { if (le)
+        {
+            BinaryPrimitives.WriteInt16LittleEndian(s, v);
+        }
+        else
+        {
+            BinaryPrimitives.WriteInt16BigEndian(s, v);
+        }
+    }
+    private static void Write(bool le, Span<byte> s, ushort v) { if (le)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(s, v);
+        }
+        else
+        {
+            BinaryPrimitives.WriteUInt16BigEndian(s, v);
+        }
+    }
+    private static void Write(bool le, Span<byte> s, int v) { if (le)
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(s, v);
+        }
+        else
+        {
+            BinaryPrimitives.WriteInt32BigEndian(s, v);
+        }
+    }
+    private static void Write(bool le, Span<byte> s, uint v) { if (le)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(s, v);
+        }
+        else
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(s, v);
+        }
+    }
 }

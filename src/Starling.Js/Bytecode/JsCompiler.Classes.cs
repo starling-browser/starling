@@ -69,7 +69,9 @@ public sealed partial class JsCompiler
         // Evaluate the base class first (if any) so it's on the stack before
         // method upvalues.
         if (baseExpr is not null)
+        {
             EmitExpression(baseExpr);
+        }
 
         var classId = ClassTemplate.NextClassId();
 
@@ -186,20 +188,36 @@ public sealed partial class JsCompiler
         finally
         {
             _privateScopes.Pop();
-            if (pushedSelfNameScope) PopScope();
+            if (pushedSelfNameScope)
+            {
+                PopScope();
+            }
         }
     }
 
     private static void CollectPrivateNames(ClassBody body, int classId, Dictionary<string, string> scope)
     {
-        if (body.Constructor is not null) AddIfPrivate(body.Constructor.Key, classId, scope);
-        foreach (var m in body.Methods) AddIfPrivate(m.Key, classId, scope);
-        foreach (var f in body.Fields) AddIfPrivate(f.Key, classId, scope);
+        if (body.Constructor is not null)
+        {
+            AddIfPrivate(body.Constructor.Key, classId, scope);
+        }
+
+        foreach (var m in body.Methods)
+        {
+            AddIfPrivate(m.Key, classId, scope);
+        }
+
+        foreach (var f in body.Fields)
+        {
+            AddIfPrivate(f.Key, classId, scope);
+        }
 
         static void AddIfPrivate(Expression key, int classId, Dictionary<string, string> scope)
         {
             if (key is PrivateNameExpression pne)
+            {
                 scope[pne.Name] = ClassTemplate.MangledPrivateName(classId, pne.Name);
+            }
         }
     }
 
@@ -285,7 +303,10 @@ public sealed partial class JsCompiler
             // cell starts undefined and EmitSuperCall re-stores it once super()
             // binds `this` (StoreLexicalThisCell).
             sub.MaybeBindLexicalThis();
-            foreach (var s in bodyBlock.Body) sub.EmitStatement(s);
+            foreach (var s in bodyBlock.Body)
+            {
+                sub.EmitStatement(s);
+            }
         }
 
         sub._b.Emit(Opcode.ReturnUndefined);
@@ -334,7 +355,11 @@ public sealed partial class JsCompiler
         // generator / async / async-generator methods; see EmitFunctionBody.
         sub.EmitPrologueEndIfSuspendable(md.Async, md.Generator);
         sub._currentIsAsyncGenerator = md.Async && md.Generator;
-        foreach (var s in md.Body.Body) sub.EmitStatement(s);
+        foreach (var s in md.Body.Body)
+        {
+            sub.EmitStatement(s);
+        }
+
         sub._b.Emit(Opcode.ReturnUndefined);
         // §16.1.7 — stamp in-scope private names for a direct eval in the body.
         sub._b.PrivateNameScope = sub.FlattenPrivateScopes();
@@ -423,8 +448,10 @@ public sealed partial class JsCompiler
         // ArgRefExpr computes. (The PropertyName is excluded, so a computed key
         // referencing `arguments` is unaffected.)
         if (CaptureAnalysis.ContainsArguments(field.Initializer))
+        {
             throw new Parse.JsParseException(
                 "'arguments' is not allowed in a class field initializer", field.Initializer.Start);
+        }
 
         // Compile the initializer thunk.
         //   Static / non-computed keys: `this.<key> = <init>` (or
@@ -497,7 +524,11 @@ public sealed partial class JsCompiler
         sub.HoistFunctionDeclarations(block.Body);
         // §10.2.1.1 — box `this` (the constructor) for a nested arrow.
         sub.MaybeBindLexicalThis();
-        foreach (var s in block.Body) sub.EmitStatement(s);
+        foreach (var s in block.Body)
+        {
+            sub.EmitStatement(s);
+        }
+
         sub._b.Emit(Opcode.ReturnUndefined);
         // §16.1.7 — stamp in-scope private names for a direct eval in the block.
         sub._b.PrivateNameScope = sub.FlattenPrivateScopes();
@@ -511,10 +542,16 @@ public sealed partial class JsCompiler
     {
         foreach (var u in upvalues)
         {
-            if (u.IsLocalCapture) _b.EmitSlot(Opcode.LoadLocal, u.Index);
+            if (u.IsLocalCapture)
+            {
+                _b.EmitSlot(Opcode.LoadLocal, u.Index);
+            }
             // Class elements can re-capture a binding that the enclosing chunk
             // already sees as an upvalue. Pass the cell, not its current value.
-            else _b.EmitUpvalue(Opcode.LoadUpvalueCell, u.Index);
+            else
+            {
+                _b.EmitUpvalue(Opcode.LoadUpvalueCell, u.Index);
+            }
         }
     }
 
@@ -568,9 +605,19 @@ public sealed partial class JsCompiler
                 flat.TryAdd(kv.Key, kv.Value); // inner (visited first) wins
             }
         }
-        foreach (var scope in _privateScopes) Merge(scope);
+        foreach (var scope in _privateScopes)
+        {
+            Merge(scope);
+        }
+
         for (var p = _parent; p is not null; p = p._parent)
-            foreach (var scope in p._privateScopes) Merge(scope);
+        {
+            foreach (var scope in p._privateScopes)
+            {
+                Merge(scope);
+            }
+        }
+
         return flat;
     }
 
@@ -582,13 +629,19 @@ public sealed partial class JsCompiler
     {
         foreach (var scope in _privateScopes)
         {
-            if (scope.TryGetValue(privateName, out var mangled)) return mangled;
+            if (scope.TryGetValue(privateName, out var mangled))
+            {
+                return mangled;
+            }
         }
         for (var p = _parent; p is not null; p = p._parent)
         {
             foreach (var scope in p._privateScopes)
             {
-                if (scope.TryGetValue(privateName, out var mangled)) return mangled;
+                if (scope.TryGetValue(privateName, out var mangled))
+                {
+                    return mangled;
+                }
             }
         }
         throw new Parse.JsParseException(

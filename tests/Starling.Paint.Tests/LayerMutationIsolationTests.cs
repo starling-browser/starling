@@ -98,7 +98,13 @@ public sealed class LayerMutationIsolationTests
     private static Text? FirstText(Element element)
     {
         for (var child = element.FirstChild; child is not null; child = child.NextSibling)
-            if (child is Text t) return t;
+        {
+            if (child is Text t)
+            {
+                return t;
+            }
+        }
+
         return null;
     }
 

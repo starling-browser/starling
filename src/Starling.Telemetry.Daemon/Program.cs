@@ -52,7 +52,10 @@ using var heartbeat = new Timer(_ => PrintHeartbeat(analyzer, store), null,
 
 app.Lifetime.ApplicationStopping.Register(() =>
 {
-    if (mcp is not null) mcp.DisposeAsync().AsTask().GetAwaiter().GetResult();
+    if (mcp is not null)
+    {
+        mcp.DisposeAsync().AsTask().GetAwaiter().GetResult();
+    }
 });
 
 await app.RunAsync();
@@ -65,7 +68,9 @@ static int EnvInt(string name, int fallback)
 static void PrintHeartbeat(TelemetryAnalyzer analyzer, TelemetryIngestStore store)
 {
     if (store.SpansIngested == 0 && store.MetricsIngested == 0 && store.LogsIngested == 0)
+    {
         return; // stay quiet until a host connects
+    }
 
     var o = analyzer.Overview(TimeSpan.FromSeconds(10), topLimit: 3);
     var f = o.Frames;

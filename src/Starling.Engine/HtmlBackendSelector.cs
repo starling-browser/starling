@@ -35,7 +35,9 @@ internal static class HtmlBackendSelector
     internal static HtmlBackendKind Parse(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
+        {
             return HtmlBackendKind.Starling;
+        }
 
         return raw.Trim().ToLowerInvariant() switch
         {

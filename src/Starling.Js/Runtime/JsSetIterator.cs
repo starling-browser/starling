@@ -26,12 +26,19 @@ public sealed class JsSetIterator : JsObject
 
     public JsValue Next(JsRealm realm)
     {
-        if (_done) return IteratorIntrinsics.MakeResult(realm, JsValue.Undefined, done: true);
+        if (_done)
+        {
+            return IteratorIntrinsics.MakeResult(realm, JsValue.Undefined, done: true);
+        }
 
         while (_nextIndex < _set.SlotCount)
         {
             var index = _nextIndex++;
-            if (!_set.TryGetSlot(index, out var value)) continue;
+            if (!_set.TryGetSlot(index, out var value))
+            {
+                continue;
+            }
+
             return _kind switch
             {
                 SetIteratorKind.Value => IteratorIntrinsics.MakeResult(realm, value, done: false),

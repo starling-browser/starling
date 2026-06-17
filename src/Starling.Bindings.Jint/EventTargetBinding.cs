@@ -31,7 +31,11 @@ internal static class EventTargetBinding
     public static void Install(JintBackendContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
-        if (ctx.Wrappers.EventTargetPrototype is not null) return; // idempotent
+        if (ctx.Wrappers.EventTargetPrototype is not null)
+        {
+            return; // idempotent
+        }
+
         var engine = ctx.Engine;
         var state = EventState.For(ctx);
 
@@ -88,13 +92,23 @@ internal static class EventTargetBinding
         JintInterop.DefineMethod(engine, customProto, "initCustomEvent", (thisV, a) =>
         {
             if (a.Length == 0)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError,
                     "Failed to execute 'initCustomEvent' on 'CustomEvent': 1 argument required, but only 0 present.");
+            }
+
             if (TryGetNative(state, thisV, out var e))
+            {
                 e.InitEvent(a[0].ToString(),
                     a.Length > 1 && TypeConverter.ToBoolean(a[1]),
                     a.Length > 2 && TypeConverter.ToBoolean(a[2]));
-            if (thisV is ObjectInstance oi && a.Length > 3) state.SetDetail(oi, a[3]);
+            }
+
+            if (thisV is ObjectInstance oi && a.Length > 3)
+            {
+                state.SetDetail(oi, a[3]);
+            }
+
             return JsValue.Undefined;
         }, length: 4);
 
@@ -105,7 +119,10 @@ internal static class EventTargetBinding
             if (args.Length > 1 && args[1] is ObjectInstance initObj)
             {
                 var d = initObj.Get("detail");
-                if (!d.IsUndefined()) detail = d;
+                if (!d.IsUndefined())
+                {
+                    detail = d;
+                }
             }
             var host = new DomCustomEvent(type, init);
             var wrapper = state.WrapNativeEvent(host, customProto);
@@ -148,8 +165,11 @@ internal static class EventTargetBinding
             var subCtor = new NativeConstructor(engine, name, 1, (args, _) =>
             {
                 if (args.Length == 0 || args[0].IsUndefined())
+                {
                     throw new JavaScriptException(engine.Intrinsics.TypeError,
                         $"Failed to construct '{name}': 1 argument required, but only 0 present.");
+                }
+
                 var type = args[0].ToString();
                 var init = args.Length > 1 ? args[1] : JsValue.Undefined;
                 // UIEvents §3.5 — `view` must be a Window or null; a primitive is a TypeError.
@@ -157,8 +177,10 @@ internal static class EventTargetBinding
                 {
                     var view = io.Get("view");
                     if (!view.IsUndefined() && !view.IsNull() && view is not ObjectInstance)
+                    {
                         throw new JavaScriptException(engine.Intrinsics.TypeError,
                             $"Failed to construct '{name}': member view is not a Window.");
+                    }
                 }
                 return state.WrapNativeEvent(build(type, init), subProto, init);
             });
@@ -300,7 +322,10 @@ internal static class EventTargetBinding
         if (thisV is ObjectInstance oi && state.TryGetInitDict(oi, out var init) && init is ObjectInstance io)
         {
             var v = io.Get(key);
-            if (!v.IsUndefined()) return v;
+            if (!v.IsUndefined())
+            {
+                return v;
+            }
         }
         return fallback;
     }
@@ -332,29 +357,55 @@ internal static class EventTargetBinding
     private static JsValue AddListener(JintBackendContext ctx, EventState state, JsValue thisV, JsValue[] args)
     {
         var host = ResolveHost(ctx, thisV);
-        if (host is null) return JsValue.Undefined;
-        if (args.Length < 1) return JsValue.Undefined;
+        if (host is null)
+        {
+            return JsValue.Undefined;
+        }
+
+        if (args.Length < 1)
+        {
+            return JsValue.Undefined;
+        }
+
         var type = TypeArg(args);
 
         // listener may be null/undefined (spec: no-op), a callable, or an object
         // with a `handleEvent` method (the EventListener callback-interface form).
         var listenerArg = args.Length > 1 ? args[1] : JsValue.Undefined;
-        if (listenerArg.IsNull() || listenerArg.IsUndefined()) return JsValue.Undefined;
-        if (listenerArg is not ObjectInstance listenerObj) return JsValue.Undefined;
-        if (!IsValidListener(listenerObj)) return JsValue.Undefined;
+        if (listenerArg.IsNull() || listenerArg.IsUndefined())
+        {
+            return JsValue.Undefined;
+        }
+
+        if (listenerArg is not ObjectInstance listenerObj)
+        {
+            return JsValue.Undefined;
+        }
+
+        if (!IsValidListener(listenerObj))
+        {
+            return JsValue.Undefined;
+        }
 
         var (capture, once, passive) = ParseListenerOptions(args.Length > 2 ? args[2] : JsValue.Undefined);
 
         var registry = state.RegistryFor(host);
         var key = new ListenerKey(type, capture);
-        if (registry.Contains(key, listenerObj)) return JsValue.Undefined; // dedup per spec
+        if (registry.Contains(key, listenerObj))
+        {
+            return JsValue.Undefined; // dedup per spec
+        }
 
         EventListener wrapper = null!;
         wrapper = ev =>
         {
             // `once` removal happens host-side, but mirror it in our identity
             // map so re-adding the same listener registers cleanly.
-            if (once) registry.Remove(key, listenerObj);
+            if (once)
+            {
+                registry.Remove(key, listenerObj);
+            }
+
             InvokeJsListener(ctx, state, listenerObj, ev);
         };
         registry.Add(key, listenerObj, wrapper);
@@ -365,15 +416,31 @@ internal static class EventTargetBinding
     private static JsValue RemoveListener(JintBackendContext ctx, EventState state, JsValue thisV, JsValue[] args)
     {
         var host = ResolveHost(ctx, thisV);
-        if (host is null) return JsValue.Undefined;
-        if (args.Length < 2 || args[1] is not ObjectInstance listenerObj) return JsValue.Undefined;
+        if (host is null)
+        {
+            return JsValue.Undefined;
+        }
+
+        if (args.Length < 2 || args[1] is not ObjectInstance listenerObj)
+        {
+            return JsValue.Undefined;
+        }
+
         var type = TypeArg(args);
         var (capture, _, _) = ParseListenerOptions(args.Length > 2 ? args[2] : JsValue.Undefined);
 
         var registry = state.TryGetRegistry(host);
-        if (registry is null) return JsValue.Undefined;
+        if (registry is null)
+        {
+            return JsValue.Undefined;
+        }
+
         var key = new ListenerKey(type, capture);
-        if (!registry.TryTake(key, listenerObj, out var wrapper)) return JsValue.Undefined;
+        if (!registry.TryTake(key, listenerObj, out var wrapper))
+        {
+            return JsValue.Undefined;
+        }
+
         host.RemoveEventListener(type, wrapper, new RemoveEventListenerOptions(capture));
         return JsValue.Undefined;
     }
@@ -381,15 +448,27 @@ internal static class EventTargetBinding
     private static JsValue DispatchEvent(JintBackendContext ctx, EventState state, JsValue thisV, JsValue[] args)
     {
         var host = ResolveHost(ctx, thisV);
-        if (host is null) return JintInterop.Bool(false);
+        if (host is null)
+        {
+            return JintInterop.Bool(false);
+        }
+
         if (args.Length == 0 || args[0] is not ObjectInstance evObj || !state.TryGetNativeEvent(evObj, out var native))
+        {
             throw new JavaScriptException(ctx.Engine.Intrinsics.TypeError,
                 "Failed to execute 'dispatchEvent': parameter 1 is not of type 'Event'.");
+        }
         // DOM §2.10 — an event that is mid-dispatch or uninitialized must not be dispatched.
         if (native.IsBeingDispatched)
+        {
             throw DomExceptionBinding.Throw(ctx, "InvalidStateError", "The event is already being dispatched.");
+        }
+
         if (!native.Initialized)
+        {
             throw DomExceptionBinding.Throw(ctx, "InvalidStateError", "The event has not been initialized.");
+        }
+
         var notCanceled = host.DispatchEvent(native);
         return JintInterop.Bool(notCanceled);
     }
@@ -421,22 +500,38 @@ internal static class EventTargetBinding
 
         JintInterop.DefineMethod(engine, evProto, "preventDefault", (thisV, _) =>
         {
-            if (TryGetNative(state, thisV, out var e)) e.PreventDefault();
+            if (TryGetNative(state, thisV, out var e))
+            {
+                e.PreventDefault();
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         JintInterop.DefineMethod(engine, evProto, "stopPropagation", (thisV, _) =>
         {
-            if (TryGetNative(state, thisV, out var e)) e.StopPropagation();
+            if (TryGetNative(state, thisV, out var e))
+            {
+                e.StopPropagation();
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         JintInterop.DefineMethod(engine, evProto, "stopImmediatePropagation", (thisV, _) =>
         {
-            if (TryGetNative(state, thisV, out var e)) e.StopImmediatePropagation();
+            if (TryGetNative(state, thisV, out var e))
+            {
+                e.StopImmediatePropagation();
+            }
+
             return JsValue.Undefined;
         }, length: 0);
         JintInterop.DefineMethod(engine, evProto, "composedPath", (thisV, _) =>
         {
-            if (!TryGetNative(state, thisV, out var e)) return new JsArray(engine, Array.Empty<JsValue>());
+            if (!TryGetNative(state, thisV, out var e))
+            {
+                return new JsArray(engine, Array.Empty<JsValue>());
+            }
+
             return ComposedPath(ctx, e);
         }, length: 0);
 
@@ -445,12 +540,18 @@ internal static class EventTargetBinding
         JintInterop.DefineMethod(engine, evProto, "initEvent", (thisV, a) =>
         {
             if (a.Length == 0)
+            {
                 throw new JavaScriptException(engine.Intrinsics.TypeError,
                     "Failed to execute 'initEvent' on 'Event': 1 argument required, but only 0 present.");
+            }
+
             if (TryGetNative(state, thisV, out var e))
+            {
                 e.InitEvent(a[0].ToString(),
                     a.Length > 1 && TypeConverter.ToBoolean(a[1]),
                     a.Length > 2 && TypeConverter.ToBoolean(a[2]));
+            }
+
             return JsValue.Undefined;
         }, length: 3);
 
@@ -458,10 +559,10 @@ internal static class EventTargetBinding
         // returnValue (false ⇒ preventDefault).
         JintInterop.DefineAccessor(engine, evProto, "cancelBubble",
             (thisV, _) => TryGetNative(state, thisV, out var e) ? JintInterop.Bool(e.PropagationStopped) : JsBoolean.False,
-            (thisV, a) => { if (a.Length > 0 && TypeConverter.ToBoolean(a[0]) && TryGetNative(state, thisV, out var e)) e.StopPropagation(); return JsValue.Undefined; });
+            (thisV, a) => { if (a.Length > 0 && TypeConverter.ToBoolean(a[0]) && TryGetNative(state, thisV, out var e)) { e.StopPropagation(); } return JsValue.Undefined; });
         JintInterop.DefineAccessor(engine, evProto, "returnValue",
             (thisV, _) => TryGetNative(state, thisV, out var e) ? JintInterop.Bool(!e.DefaultPrevented) : JsBoolean.True,
-            (thisV, a) => { if (a.Length > 0 && !TypeConverter.ToBoolean(a[0]) && TryGetNative(state, thisV, out var e)) e.PreventDefault(); return JsValue.Undefined; });
+            (thisV, a) => { if (a.Length > 0 && !TypeConverter.ToBoolean(a[0]) && TryGetNative(state, thisV, out var e)) { e.PreventDefault(); } return JsValue.Undefined; });
     }
 
     /// <summary>Legacy <c>document.createEvent(interface)</c> (DOM §2.9). Returns an
@@ -496,12 +597,20 @@ internal static class EventTargetBinding
     private static JsArray ComposedPath(JintBackendContext ctx, DomEvent e)
     {
         var anchor = e.CurrentTarget ?? (e.EventPhase != EventPhase.None ? e.Target : null);
-        if (anchor is null) return new JsArray(ctx.Engine, Array.Empty<JsValue>());
+        if (anchor is null)
+        {
+            return new JsArray(ctx.Engine, Array.Empty<JsValue>());
+        }
 
         var path = new List<JsValue> { ctx.Wrappers.Wrap(anchor) };
         if (anchor is Node node)
+        {
             for (var p = node.ParentNode; p is not null; p = p.ParentNode)
+            {
                 path.Add(ctx.Wrappers.Wrap(p));
+            }
+        }
+
         return new JsArray(ctx.Engine, path.ToArray());
     }
 
@@ -524,7 +633,11 @@ internal static class EventTargetBinding
             if (!listener.IsCallable())
             {
                 var handle = listener.Get("handleEvent");
-                if (!handle.IsCallable()) return;
+                if (!handle.IsCallable())
+                {
+                    return;
+                }
+
                 callback = handle;
                 thisVal = listener;
             }
@@ -539,8 +652,10 @@ internal static class EventTargetBinding
             // HTML §"report the exception": run window.onerror first; a truthy
             // return cancels the default (logged) report.
             if (!ReportException(ctx, ex.Error, JintInterop.DescribeError(ex.Error, ex.Message)))
+            {
                 EventTargetBindingLog.UncaughtInEventListener(jsLog,
                     JintInterop.DescribeError(ex.Error, ex.Message));
+            }
         }
         catch (Exception ex)
         {
@@ -555,7 +670,11 @@ internal static class EventTargetBinding
     public static bool ReportException(JintBackendContext ctx, JsValue error, string message)
     {
         var onerror = ctx.Engine.Global.Get("onerror");
-        if (!onerror.IsCallable()) return false;
+        if (!onerror.IsCallable())
+        {
+            return false;
+        }
+
         try
         {
             var result = onerror.Call(ctx.Engine.Global, new[]
@@ -584,7 +703,11 @@ internal static class EventTargetBinding
 
     private static bool TryGetNative(EventState state, JsValue thisV, out DomEvent ev)
     {
-        if (thisV is ObjectInstance oi && state.TryGetNativeEvent(oi, out ev!)) return true;
+        if (thisV is ObjectInstance oi && state.TryGetNativeEvent(oi, out ev!))
+        {
+            return true;
+        }
+
         ev = null!;
         return false;
     }
@@ -592,27 +715,44 @@ internal static class EventTargetBinding
     private static (string Type, EventInit Init) ParseEventArgs(global::Jint.Engine engine, JsValue[] args, string ctorName)
     {
         if (args.Length == 0 || args[0].IsUndefined())
+        {
             throw new JavaScriptException(engine.Intrinsics.TypeError,
                 $"Failed to construct '{ctorName}': 1 argument required, but only 0 present.");
+        }
+
         var type = args[0].ToString();
         var init = default(EventInit);
         if (args.Length > 1 && args[1] is ObjectInstance o)
+        {
             init = new EventInit(
                 Bubbles: TypeConverter.ToBoolean(o.Get("bubbles")),
                 Cancelable: TypeConverter.ToBoolean(o.Get("cancelable")),
                 Composed: TypeConverter.ToBoolean(o.Get("composed")));
+        }
+
         return (type, init);
     }
 
     private static (bool Capture, bool Once, bool Passive) ParseListenerOptions(JsValue opt)
     {
-        if (opt.IsUndefined() || opt.IsNull()) return (false, false, false);
-        if (opt.IsBoolean()) return (opt.AsBoolean(), false, false);
+        if (opt.IsUndefined() || opt.IsNull())
+        {
+            return (false, false, false);
+        }
+
+        if (opt.IsBoolean())
+        {
+            return (opt.AsBoolean(), false, false);
+        }
+
         if (opt is ObjectInstance o)
+        {
             return (
                 TypeConverter.ToBoolean(o.Get("capture")),
                 TypeConverter.ToBoolean(o.Get("once")),
                 TypeConverter.ToBoolean(o.Get("passive")));
+        }
+
         return (false, false, false);
     }
 
@@ -721,7 +861,10 @@ internal sealed class EventState
     /// accessors can read members that have no host-class slot.</summary>
     public ObjectInstance WrapNativeEvent(DomEvent native, ObjectInstance defaultProto, JsValue initDict)
     {
-        if (_eventToWrapper.TryGetValue(native, out var existing)) return existing;
+        if (_eventToWrapper.TryGetValue(native, out var existing))
+        {
+            return existing;
+        }
 
         // A CustomEvent fired by the DOM (not via our JS constructor) should still
         // expose `detail`, so prefer the CustomEvent prototype for those.
@@ -732,12 +875,17 @@ internal sealed class EventState
         var wrapper = new JsObject(_ctx.Engine) { Prototype = proto };
         _eventToWrapper.Add(native, wrapper);
         _wrapperToEvent.Add(wrapper, native);
-        if (!initDict.IsUndefined()) _initDict.AddOrUpdate(wrapper, new JsValueBox(initDict));
+        if (!initDict.IsUndefined())
+        {
+            _initDict.AddOrUpdate(wrapper, new JsValueBox(initDict));
+        }
 
         // Surface the host CustomEvent.Detail when it carries a JsValue (e.g. an
         // event constructed by C# / a non-JS CustomEvent).
         if (native is DomCustomEvent ce && ce.Detail is JsValue hostDetail && !_detail.TryGetValue(wrapper, out _))
+        {
             SetDetail(wrapper, hostDetail);
+        }
 
         return wrapper;
     }
@@ -774,7 +922,11 @@ internal sealed class EventState
     private ObjectInstance? ResolveCustomEventProto()
     {
         var ctor = _ctx.Engine.Global.Get("CustomEvent");
-        if (ctor is ObjectInstance c && c.Get("prototype") is ObjectInstance p) return p;
+        if (ctor is ObjectInstance c && c.Get("prototype") is ObjectInstance p)
+        {
+            return p;
+        }
+
         return null;
     }
 }
@@ -806,14 +958,25 @@ internal sealed class ListenerRegistry
 
     public void Remove(ListenerKey key, ObjectInstance listener)
     {
-        if (_byKey.TryGetValue(key, out var map)) map.Remove(listener);
+        if (_byKey.TryGetValue(key, out var map))
+        {
+            map.Remove(listener);
+        }
     }
 
     public bool TryTake(ListenerKey key, ObjectInstance listener, out EventListener wrapper)
     {
         wrapper = null!;
-        if (!_byKey.TryGetValue(key, out var map)) return false;
-        if (!map.TryGetValue(listener, out wrapper!)) return false;
+        if (!_byKey.TryGetValue(key, out var map))
+        {
+            return false;
+        }
+
+        if (!map.TryGetValue(listener, out wrapper!))
+        {
+            return false;
+        }
+
         map.Remove(listener);
         return true;
     }

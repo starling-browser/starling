@@ -46,7 +46,11 @@ public sealed class ProcessResourceSampler : IDisposable
 
     private void Sample()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         try
         {
             _proc.Refresh();
@@ -95,7 +99,11 @@ public sealed class ProcessResourceSampler : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         _timer.Dispose();
         _proc.Dispose();

@@ -44,7 +44,9 @@ internal sealed class LiveElementCollection : IReadOnlyList<Element>
     private void RefreshIfNeeded()
     {
         if (_version == _document.MutationVersion)
+        {
             return;
+        }
 
         _snapshot = _document.Descendants().OfType<Element>().Where(_predicate).ToList();
         _version = _document.MutationVersion;

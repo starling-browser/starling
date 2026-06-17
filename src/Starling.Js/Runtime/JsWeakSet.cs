@@ -19,7 +19,11 @@ public sealed class JsWeakSet : JsObject
 
     public void Add(JsObject value)
     {
-        if (_table.TryGetValue(value, out _)) return;
+        if (_table.TryGetValue(value, out _))
+        {
+            return;
+        }
+
         _table.Add(value, Sentinel);
     }
 

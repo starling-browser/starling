@@ -142,12 +142,17 @@ public sealed class IdlRuntimeHarnessTests
                 // A listed gap that is already fixed must be removed from the
                 // sidecar, so flag it loudly instead of silently passing.
                 if (matches)
+                {
                     failures.Add($"{key}: listed as an expected failure ({gap}) but the runtime now matches the manifest. Remove it from the sidecar.");
+                }
+
                 continue;
             }
 
             if (!matches)
+            {
                 failures.Add($"{key}: expected surface '{wanted}' but runtime reported '{actual}'. Add a sidecar entry with a reason if this gap is known.");
+            }
         }
 
         ReportUnusedGaps(expected.Members.Keys, seenGaps, failures);
@@ -170,7 +175,9 @@ public sealed class IdlRuntimeHarnessTests
 
             string actual = ReadConstantPlacement(runtime, member, wantValue);
             if (actual != "ok")
+            {
                 failures.Add($"{MemberKey(member)}: {actual}");
+            }
         }
 
         failures.Should().BeEmpty(BuildReport(failures));
@@ -195,18 +202,25 @@ public sealed class IdlRuntimeHarnessTests
             {
                 seenGaps.Add(iface);
                 if (matches)
+                {
                     failures.Add($"chain {iface}: listed as an expected failure ({gap}) but the runtime chain now matches. Remove it from the sidecar.");
+                }
+
                 continue;
             }
 
             if (!matches)
+            {
                 failures.Add($"chain {iface}: expected '{wanted}' but runtime reported '{actual}'. Add a sidecar chain entry with a reason if this gap is known.");
+            }
         }
 
         foreach (var listed in expected.Chains.Keys)
         {
             if (!seenGaps.Contains(listed))
+            {
                 failures.Add($"chain {listed}: listed in the sidecar but the harness never checked it. Remove the stale entry.");
+            }
         }
 
         failures.Should().BeEmpty(BuildReport(failures));
@@ -392,7 +406,9 @@ public sealed class IdlRuntimeHarnessTests
 
         var chains = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var entry in file.Chains ?? [])
+        {
             chains[entry.Interface] = string.IsNullOrWhiteSpace(entry.Reason) ? "no reason given" : entry.Reason!;
+        }
 
         return new ExpectedFailureSet(members, chains);
     }
@@ -402,7 +418,9 @@ public sealed class IdlRuntimeHarnessTests
         foreach (var key in listed)
         {
             if (!seen.Contains(key))
+            {
                 failures.Add($"{key}: listed in the sidecar but it is not a required member the harness checks. Remove the stale entry.");
+            }
         }
     }
 
@@ -410,11 +428,18 @@ public sealed class IdlRuntimeHarnessTests
 
     private static string BuildReport(List<string> failures)
     {
-        if (failures.Count == 0) return "no failures";
+        if (failures.Count == 0)
+        {
+            return "no failures";
+        }
+
         var sb = new StringBuilder();
         sb.AppendLine($"{failures.Count} runtime IDL harness failure(s):");
         foreach (var f in failures)
+        {
             sb.AppendLine("  - " + f);
+        }
+
         return sb.ToString();
     }
 
@@ -422,7 +447,10 @@ public sealed class IdlRuntimeHarnessTests
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx")))
+        {
             dir = dir.Parent;
+        }
+
         return dir?.FullName ?? throw new InvalidOperationException("repo root not found");
     }
 

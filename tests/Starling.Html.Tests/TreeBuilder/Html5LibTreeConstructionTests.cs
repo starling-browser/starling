@@ -77,7 +77,11 @@ public sealed class Html5LibTreeConstructionTests
                 cur.Crash++;
                 cur.Total++;
                 var line = $"[CRASH] {c.Id}: {ex.GetType().Name}: {Truncate(ex.Message, 200)}";
-                if (crashSamples.Count < 25) crashSamples.Add(line);
+                if (crashSamples.Count < 25)
+                {
+                    crashSamples.Add(line);
+                }
+
                 allFails.Add(line);
             }
 
@@ -104,17 +108,25 @@ public sealed class Html5LibTreeConstructionTests
         {
             report.AppendLine();
             report.AppendLine($"Crash samples ({crashSamples.Count} of {crash}):");
-            foreach (var s in crashSamples) report.AppendLine("  " + s);
+            foreach (var s in crashSamples)
+            {
+                report.AppendLine("  " + s);
+            }
         }
         report.AppendLine();
         report.AppendLine($"Failure samples ({failSamples.Count} of {fail - crash}):");
-        foreach (var s in failSamples) report.AppendLine("  " + s);
+        foreach (var s in failSamples)
+        {
+            report.AppendLine("  " + s);
+        }
 
         TryWriteSidecar(report.ToString(), allFails);
         TestContext.WriteLine(report.ToString());
 
         if (floor > 0)
+        {
             Assert.IsTrue(rate >= floor, $"tree-construction pass rate {rate:F2}% < floor {floor:F2}%");
+        }
     }
 
     // ----- run one fixture --------------------------------------------------
@@ -149,9 +161,14 @@ public sealed class Html5LibTreeConstructionTests
     private static (string? ns, string localName) ParseFragmentContext(string raw)
     {
         if (raw.StartsWith("svg ", StringComparison.Ordinal))
+        {
             return ("http://www.w3.org/2000/svg", raw[4..]);
+        }
+
         if (raw.StartsWith("math ", StringComparison.Ordinal))
+        {
             return ("http://www.w3.org/1998/Math/MathML", raw[5..]);
+        }
         // A bare context name is an HTML element — give it the HTML namespace so
         // the context matches what a real innerHTML caller passes (Element built
         // via Document.CreateElement is HTML-namespaced). Without this the
@@ -167,12 +184,17 @@ public sealed class Html5LibTreeConstructionTests
         var paths = Directory.EnumerateFiles(root, "*.dat", SearchOption.AllDirectories)
             .OrderBy(p => p, StringComparer.Ordinal);
         foreach (var path in paths)
+        {
             foreach (var c in Html5LibDatFile.Read(path))
             {
                 if (filter is not null && !c.Id.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                {
                     continue;
+                }
+
                 yield return c;
             }
+        }
     }
 
     private static string? LocateCorpus()
@@ -189,14 +211,25 @@ public sealed class Html5LibTreeConstructionTests
     {
         var firstDiff = FirstDifferingLine(expected, actual);
         var line = $"[DIFF ] {c.Id}: {firstDiff}";
-        if (samples.Count < 25) samples.Add(line);
+        if (samples.Count < 25)
+        {
+            samples.Add(line);
+        }
+
         if (verbose)
         {
             all.Add(line);
             all.Add("    expected:");
-            foreach (var s in expected.Split('\n')) all.Add("      " + s);
+            foreach (var s in expected.Split('\n'))
+            {
+                all.Add("      " + s);
+            }
+
             all.Add("    actual:");
-            foreach (var s in actual.Split('\n')) all.Add("      " + s);
+            foreach (var s in actual.Split('\n'))
+            {
+                all.Add("      " + s);
+            }
         }
         else
         {
@@ -213,7 +246,9 @@ public sealed class Html5LibTreeConstructionTests
             var es = i < e.Length ? e[i] : "(none)";
             var aas = i < a.Length ? a[i] : "(none)";
             if (!string.Equals(es, aas, StringComparison.Ordinal))
+            {
                 return $"line {i + 1}: expected {Truncate(es, 80)} | actual {Truncate(aas, 80)}";
+            }
         }
         return "(documents differ but no line diff — trailing newline?)";
     }

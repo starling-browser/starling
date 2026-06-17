@@ -210,13 +210,20 @@ public sealed class StackingContextResolverTests
 
     private static Element? FindElementById(Element root, string id)
     {
-        if (root.GetAttribute("id") == id) return root;
+        if (root.GetAttribute("id") == id)
+        {
+            return root;
+        }
+
         for (var child = root.FirstChild; child is not null; child = child.NextSibling)
         {
             if (child is Element el)
             {
                 var hit = FindElementById(el, id);
-                if (hit is not null) return hit;
+                if (hit is not null)
+                {
+                    return hit;
+                }
             }
         }
         return null;

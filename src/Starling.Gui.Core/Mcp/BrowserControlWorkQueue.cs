@@ -22,7 +22,9 @@ public sealed class BrowserControlWorkQueue : IBrowserControlDispatcher
     public void Detach(IBrowserController controller)
     {
         if (ReferenceEquals(Volatile.Read(ref _controller), controller))
+        {
             Volatile.Write(ref _controller, null);
+        }
     }
 
     /// <summary>
@@ -32,7 +34,9 @@ public sealed class BrowserControlWorkQueue : IBrowserControlDispatcher
     public void Drain()
     {
         while (TryDequeue(out var call))
+        {
             Execute(call);
+        }
     }
 
     public Task<BrowserControlResult> NavigateAsync(string url, CancellationToken ct)
@@ -124,9 +128,15 @@ public sealed class BrowserControlWorkQueue : IBrowserControlDispatcher
                 TaskCreationOptions.RunContinuationsAsynchronously);
             CancellationTokenRegistration registration = default;
             if (ct.CanBeCanceled)
+            {
                 registration = ct.Register(() => completion.TrySetCanceled(ct));
+            }
+
             lock (_calls)
+            {
                 _calls.Enqueue(new QueuedCall(action, completion, registration));
+            }
+
             return await completion.Task.ConfigureAwait(false);
         }
         finally
@@ -154,7 +164,11 @@ public sealed class BrowserControlWorkQueue : IBrowserControlDispatcher
     {
         try
         {
-            if (call.Completion.Task.IsCompleted) return;
+            if (call.Completion.Task.IsCompleted)
+            {
+                return;
+            }
+
             var controller = Volatile.Read(ref _controller);
             var result = controller is null
                 ? BrowserControlResult.Failure(

@@ -33,7 +33,10 @@ internal sealed class SnapshotHttpServer : IDisposable
     public static Task<SnapshotHttpServer> StartAsync(string rootDirectory)
     {
         if (!Directory.Exists(rootDirectory))
+        {
             throw new DirectoryNotFoundException(rootDirectory);
+        }
+
         var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
         return Task.FromResult(new SnapshotHttpServer(listener, rootDirectory));
@@ -67,9 +70,16 @@ internal sealed class SnapshotHttpServer : IDisposable
                 while (pos < buffer.Length)
                 {
                     var n = await stream.ReadAsync(buffer.AsMemory(pos), _cts.Token);
-                    if (n == 0) break;
+                    if (n == 0)
+                    {
+                        break;
+                    }
+
                     pos += n;
-                    if (ContainsCrLfCrLf(buffer.AsSpan(0, pos))) break;
+                    if (ContainsCrLfCrLf(buffer.AsSpan(0, pos)))
+                    {
+                        break;
+                    }
                 }
 
                 var request = Encoding.ASCII.GetString(buffer, 0, pos);
@@ -85,20 +95,35 @@ internal sealed class SnapshotHttpServer : IDisposable
     private byte[] BuildResponse(string request)
     {
         var path = ParseRequestPath(request);
-        if (path is null) return BuildStatus(400, "Bad Request");
+        if (path is null)
+        {
+            return BuildStatus(400, "Bad Request");
+        }
 
         // Map "/" -> "/index.html" and strip any query string.
         var qIdx = path.IndexOf('?', StringComparison.Ordinal);
-        if (qIdx >= 0) path = path[..qIdx];
-        if (path == "/" || path.Length == 0) path = "/index.html";
+        if (qIdx >= 0)
+        {
+            path = path[..qIdx];
+        }
+
+        if (path == "/" || path.Length == 0)
+        {
+            path = "/index.html";
+        }
 
         // Canonicalise: forbid traversal, normalise separators.
         if (path.Contains("..", StringComparison.Ordinal))
+        {
             return BuildStatus(400, "Bad Request");
+        }
 
         var relative = path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
         var localPath = Path.Combine(_root, relative);
-        if (!File.Exists(localPath)) return BuildStatus(404, "Not Found");
+        if (!File.Exists(localPath))
+        {
+            return BuildStatus(404, "Not Found");
+        }
 
         var body = File.ReadAllBytes(localPath);
         var contentType = GuessContentType(localPath);
@@ -123,9 +148,17 @@ internal sealed class SnapshotHttpServer : IDisposable
     private static string? ParseRequestPath(string request)
     {
         var sp1 = request.IndexOf(' ', StringComparison.Ordinal);
-        if (sp1 < 0) return null;
+        if (sp1 < 0)
+        {
+            return null;
+        }
+
         var sp2 = request.IndexOf(' ', sp1 + 1);
-        if (sp2 < 0) return null;
+        if (sp2 < 0)
+        {
+            return null;
+        }
+
         return request.Substring(sp1 + 1, sp2 - sp1 - 1);
     }
 
@@ -158,7 +191,9 @@ internal sealed class SnapshotHttpServer : IDisposable
         for (var i = 0; i + 3 < data.Length; i++)
         {
             if (data[i] == 0x0D && data[i + 1] == 0x0A && data[i + 2] == 0x0D && data[i + 3] == 0x0A)
+            {
                 return true;
+            }
         }
         return false;
     }

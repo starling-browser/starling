@@ -31,9 +31,15 @@ public sealed class GithubRuntimeTests
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Starling.slnx")))
+        {
             dir = dir.Parent;
+        }
+
         if (dir is null)
+        {
             throw new InvalidOperationException("Could not locate Starling.slnx walking up from the test binary.");
+        }
+
         return Path.Combine(dir.FullName, "testdata", "sites", "github");
     }
 
@@ -45,7 +51,7 @@ public sealed class GithubRuntimeTests
 
         var runtime = new JsRuntime();
         var consoleErrors = new List<string>();
-        runtime.ConsoleSink = (level, message) => { if (level == "error") consoleErrors.Add(message); };
+        runtime.ConsoleSink = (level, message) => { if (level == "error") { consoleErrors.Add(message); } };
 
         using var http = new StarlingHttpClient();
         WindowBinding.Install(runtime, doc, new WindowInstallOptions(
@@ -58,18 +64,32 @@ public sealed class GithubRuntimeTests
         foreach (var script in doc.GetElementsByTagName("script"))
         {
             var type = script.GetAttribute("type");
-            if (type is not (null or "" or "application/javascript" or "text/javascript")) continue;
+            if (type is not (null or "" or "application/javascript" or "text/javascript"))
+            {
+                continue;
+            }
+
             var src = script.GetAttribute("src");
             var name = src ?? "<inline>";
             string source;
-            if (src is null) source = script.TextContent ?? "";
+            if (src is null)
+            {
+                source = script.TextContent ?? "";
+            }
             else
             {
                 var local = Path.Combine(ghDir, src);
-                if (!File.Exists(local)) continue;
+                if (!File.Exists(local))
+                {
+                    continue;
+                }
+
                 source = File.ReadAllText(local);
             }
-            if (string.IsNullOrWhiteSpace(source)) continue;
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                continue;
+            }
 
             Chunk chunk;
             try { chunk = JsCompiler.Compile(new JsParser(source).ParseProgram(), name); }
@@ -87,9 +107,21 @@ public sealed class GithubRuntimeTests
         report.AppendLine($"  parse/compile failures: {parseCompileFailures.Count}");
         report.AppendLine($"  eval-time throws: {runtimeThrows.Count}");
         report.AppendLine($"  console.error: {consoleErrors.Count}");
-        foreach (var f in parseCompileFailures) report.AppendLine("  PARSE/COMPILE " + f);
-        foreach (var t in runtimeThrows) report.AppendLine("  THROW " + t);
-        foreach (var e in consoleErrors.Take(40)) report.AppendLine("  console.error " + e);
+        foreach (var f in parseCompileFailures)
+        {
+            report.AppendLine("  PARSE/COMPILE " + f);
+        }
+
+        foreach (var t in runtimeThrows)
+        {
+            report.AppendLine("  THROW " + t);
+        }
+
+        foreach (var e in consoleErrors.Take(40))
+        {
+            report.AppendLine("  console.error " + e);
+        }
+
         File.WriteAllText(Path.Combine(ghDir, "RUNTIME_REPORT.txt"), report.ToString());
 
         // Bounded, proven guard: the engine parses + compiles 100% of github's

@@ -53,10 +53,16 @@ public sealed class ClrMap
     {
         string pascal = Pascal(idlAttributeName);
         var prop = clrType.GetProperty(pascal, BindingFlags.Public | BindingFlags.Instance);
-        if (prop is null) return null;
+        if (prop is null)
+        {
+            return null;
+        }
 
         var scalar = Classify(prop.PropertyType);
-        if (scalar is null) return null;
+        if (scalar is null)
+        {
+            return null;
+        }
 
         bool publicSetter = prop.SetMethod is { IsPublic: true };
         return new ClrProperty(prop.Name, scalar.Value, publicSetter);
@@ -78,13 +84,23 @@ public sealed class ClrMap
         string pascal = Pascal(idlName);
         // A variadic argument is not yet supported by the mechanical path; defer it
         // to a dispatch binding (see the NodeOrString variadic helpers).
-        if (idlArgs.Any(a => a.Variadic)) return null;
+        if (idlArgs.Any(a => a.Variadic))
+        {
+            return null;
+        }
 
         foreach (var m in clrType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
         {
-            if (m.IsSpecialName || !string.Equals(m.Name, pascal, StringComparison.Ordinal)) continue;
+            if (m.IsSpecialName || !string.Equals(m.Name, pascal, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             var pars = m.GetParameters();
-            if (pars.Length != idlArgs.Count) continue;
+            if (pars.Length != idlArgs.Count)
+            {
+                continue;
+            }
 
             var ps = new List<ClrScalar>(pars.Length);
             bool ok = true;
@@ -97,16 +113,30 @@ public sealed class ClrMap
                 // param the emitter handles today (Web IDL unsigned long); other
                 // numeric widths stay gaps until their marshalling lands.
                 if (s is ClrScalar.String)
+                {
                     ps.Add(idlArgs[i].Type.Nullable ? ClrScalar.NullableString : ClrScalar.String);
-                else if (s is ClrScalar.Bool) ps.Add(ClrScalar.Bool);
-                else if (s is ClrScalar.Number && p.ParameterType == typeof(uint)) ps.Add(ClrScalar.Number);
+                }
+                else if (s is ClrScalar.Bool)
+                {
+                    ps.Add(ClrScalar.Bool);
+                }
+                else if (s is ClrScalar.Number && p.ParameterType == typeof(uint))
+                {
+                    ps.Add(ClrScalar.Number);
+                }
                 else { ok = false; break; }
             }
-            if (!ok) continue;
+            if (!ok)
+            {
+                continue;
+            }
 
             ClrScalar? ret;
-            if (m.ReturnType == typeof(void)) ret = null;
-            else { var rs = Classify(m.ReturnType); if (rs is null) continue; ret = rs; }
+            if (m.ReturnType == typeof(void))
+            {
+                ret = null;
+            }
+            else { var rs = Classify(m.ReturnType); if (rs is null) { continue; } ret = rs; }
 
             return new ClrMethod(m.Name, ps, ret, RequiredCount(idlArgs));
         }
@@ -121,7 +151,11 @@ public sealed class ClrMap
         int count = 0;
         foreach (var a in idlArgs)
         {
-            if (a.Optional || a.Variadic) break;
+            if (a.Optional || a.Variadic)
+            {
+                break;
+            }
+
             count++;
         }
         return count;
@@ -129,19 +163,40 @@ public sealed class ClrMap
 
     private static ClrScalar? Classify(Type t)
     {
-        if (t == typeof(string)) return ClrScalar.String;
-        if (t == typeof(bool)) return ClrScalar.Bool;
-        if (IsNumber(t)) return ClrScalar.Number;
+        if (t == typeof(string))
+        {
+            return ClrScalar.String;
+        }
+
+        if (t == typeof(bool))
+        {
+            return ClrScalar.Bool;
+        }
+
+        if (IsNumber(t))
+        {
+            return ClrScalar.Number;
+        }
 
         var underlying = Nullable.GetUnderlyingType(t);
         if (underlying is not null)
         {
-            if (underlying == typeof(bool)) return ClrScalar.NullableBool;
-            if (IsNumber(underlying)) return ClrScalar.NullableNumber;
+            if (underlying == typeof(bool))
+            {
+                return ClrScalar.NullableBool;
+            }
+
+            if (IsNumber(underlying))
+            {
+                return ClrScalar.NullableNumber;
+            }
         }
 
         // Any EventTarget-derived class wraps to a JS object through DomWrappers.
-        if (typeof(EventTarget).IsAssignableFrom(t)) return ClrScalar.Node;
+        if (typeof(EventTarget).IsAssignableFrom(t))
+        {
+            return ClrScalar.Node;
+        }
 
         // A reference type that is not string is treated as a nullable string only
         // when it is actually string?; the compiler models string? as string, so a

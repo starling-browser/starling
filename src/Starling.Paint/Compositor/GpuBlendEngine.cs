@@ -128,7 +128,11 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
         {
             var api = WebGPU.GetApi();
             var instance = api.CreateInstance((InstanceDescriptor*)null);
-            if (instance == null) return null;
+            if (instance == null)
+            {
+                return null;
+            }
+
             var ok = RequestDevice(api, instance, compatibleSurface: null, out var device, out var queue, out var poll);
             api.InstanceRelease(instance);
             return ok ? new GpuBlendEngine(api, poll, device, queue) : null;
@@ -154,7 +158,10 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
         {
             var api = WebGPU.GetApi();
             var instance = api.CreateInstance((InstanceDescriptor*)null);
-            if (instance == null) return null;
+            if (instance == null)
+            {
+                return null;
+            }
 
             var surf = window.CreateWebGPUSurface(api, instance);
             return CreateForCreatedSurface(api, instance, surf, out surface, out format);
@@ -179,12 +186,19 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
     {
         surface = 0;
         format = TextureFormat.Bgra8Unorm;
-        if (caMetalLayer == 0) return null;
+        if (caMetalLayer == 0)
+        {
+            return null;
+        }
+
         try
         {
             var api = WebGPU.GetApi();
             var instance = api.CreateInstance((InstanceDescriptor*)null);
-            if (instance == null) return null;
+            if (instance == null)
+            {
+                return null;
+            }
 
             var metal = new SurfaceDescriptorFromMetalLayer
             {
@@ -206,12 +220,19 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
     {
         surface = 0;
         format = TextureFormat.Bgra8Unorm;
-        if (hwnd == 0) return null;
+        if (hwnd == 0)
+        {
+            return null;
+        }
+
         try
         {
             var api = WebGPU.GetApi();
             var instance = api.CreateInstance((InstanceDescriptor*)null);
-            if (instance == null) return null;
+            if (instance == null)
+            {
+                return null;
+            }
 
             var windows = new SurfaceDescriptorFromWindowsHWND
             {
@@ -234,12 +255,19 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
     {
         surface = 0;
         format = TextureFormat.Bgra8Unorm;
-        if (display == 0 || window == 0) return null;
+        if (display == 0 || window == 0)
+        {
+            return null;
+        }
+
         try
         {
             var api = WebGPU.GetApi();
             var instance = api.CreateInstance((InstanceDescriptor*)null);
-            if (instance == null) return null;
+            if (instance == null)
+            {
+                return null;
+            }
 
             var xlib = new SurfaceDescriptorFromXlibWindow
             {
@@ -299,7 +327,7 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
     {
         Adapter* adapter = null;
         var opts = new RequestAdapterOptions { CompatibleSurface = surf, PowerPreference = PowerPreference.HighPerformance };
-        var cb = PfnRequestAdapterCallback.From((status, a, _, _) => { if (status == RequestAdapterStatus.Success) adapter = a; });
+        var cb = PfnRequestAdapterCallback.From((status, a, _, _) => { if (status == RequestAdapterStatus.Success) { adapter = a; } });
         api.InstanceRequestAdapter(instance, in opts, cb, null);
         return adapter;
     }
@@ -312,7 +340,10 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
         for (var i = 0; i < (int)caps.FormatCount; i++)
         {
             var f = caps.Formats[i];
-            if (f == TextureFormat.Bgra8Unorm || f == TextureFormat.Rgba8Unorm) return f;
+            if (f == TextureFormat.Bgra8Unorm || f == TextureFormat.Rgba8Unorm)
+            {
+                return f;
+            }
         }
         return caps.FormatCount > 0 ? caps.Formats[0] : TextureFormat.Bgra8Unorm;
     }
@@ -330,16 +361,22 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
             CompatibleSurface = compatibleSurface,
             PowerPreference = PowerPreference.HighPerformance,
         };
-        var adapterCb = PfnRequestAdapterCallback.From((status, a, _, _) => { if (status == RequestAdapterStatus.Success) adapter = a; });
+        var adapterCb = PfnRequestAdapterCallback.From((status, a, _, _) => { if (status == RequestAdapterStatus.Success) { adapter = a; } });
         api.InstanceRequestAdapter(instance, in adapterOpts, adapterCb, null);
-        if (adapter == null) return false;
+        if (adapter == null)
+        {
+            return false;
+        }
 
         Device* dev = null;
         var deviceDesc = default(DeviceDescriptor);
-        var deviceCb = PfnRequestDeviceCallback.From((status, d, _, _) => { if (status == RequestDeviceStatus.Success) dev = d; });
+        var deviceCb = PfnRequestDeviceCallback.From((status, d, _, _) => { if (status == RequestDeviceStatus.Success) { dev = d; } });
         api.AdapterRequestDevice(adapter, in deviceDesc, deviceCb, null);
         api.AdapterRelease(adapter);
-        if (dev == null) return false;
+        if (dev == null)
+        {
+            return false;
+        }
 
         var q = api.DeviceGetQueue(dev);
         if (q == null) { api.DeviceRelease(dev); return false; }
@@ -711,7 +748,9 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
         if (byteLen > 0)
         {
             fixed (float* p = verts)
+            {
                 Api.QueueWriteBuffer(Queue, _vertexBuffer, 0, p, byteLen);
+            }
         }
         return (uint)totalVerts;
     }
@@ -735,8 +774,16 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
 
     private void EnsureVertexBuffer(nuint byteLen)
     {
-        if (byteLen == 0) return;
-        if (_vertexBuffer != null && _vertexCapacity >= byteLen) return;
+        if (byteLen == 0)
+        {
+            return;
+        }
+
+        if (_vertexBuffer != null && _vertexCapacity >= byteLen)
+        {
+            return;
+        }
+
         if (_vertexBuffer != null) { Api.BufferRelease(_vertexBuffer); _vertexBuffer = null; }
         var cap = (nuint)Align256((uint)byteLen);
         var desc = new BufferDescriptor { Usage = BufferUsage.Vertex | BufferUsage.CopyDst, Size = cap, MappedAtCreation = false };
@@ -1101,17 +1148,25 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
 
     internal void EvictStale()
     {
-        if (_textures.Count == 0) return;
+        if (_textures.Count == 0)
+        {
+            return;
+        }
+
         List<long>? drop = null;
         foreach (var kv in _textures)
         {
             if (_frame - kv.Value.LastFrame > EvictAfterFrames)
+            {
                 (drop ??= new List<long>()).Add(kv.Key);
+            }
         }
         if (drop is not null)
         {
             foreach (var key in drop)
+            {
                 DropEntry(key, _textures[key]);
+            }
         }
 
         EvictToBudget();
@@ -1124,17 +1179,27 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
     // state adds a few tiles per frame).
     private void EvictToBudget()
     {
-        if (_textureBytes <= _maxTextureBytes) return;
+        if (_textureBytes <= _maxTextureBytes)
+        {
+            return;
+        }
+
         var candidates = new List<KeyValuePair<long, CachedTexture>>(_textures.Count);
         foreach (var kv in _textures)
         {
             if (kv.Value.LastFrame != _frame)
+            {
                 candidates.Add(kv);
+            }
         }
         candidates.Sort(static (a, b) => a.Value.LastFrame.CompareTo(b.Value.LastFrame));
         foreach (var kv in candidates)
         {
-            if (_textureBytes <= _maxTextureBytes) break;
+            if (_textureBytes <= _maxTextureBytes)
+            {
+                break;
+            }
+
             DropEntry(kv.Key, kv.Value);
         }
     }
@@ -1180,7 +1245,11 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
         }
 
         _disposed = true;
-        foreach (var c in _textures.Values) ReleaseCached(c);
+        foreach (var c in _textures.Values)
+        {
+            ReleaseCached(c);
+        }
+
         _textures.Clear();
         _textureBytes = 0;
         foreach (var p in _pipelines.Values)
@@ -1205,8 +1274,15 @@ internal sealed unsafe class GpuBlendEngine : IDisposable
         // TryDispose also tears down the adapter's cached WebGPU device context,
         // so the compositor never references the ImageSharp adapter type directly.
         ImageSharpWebGpuDeviceStateCache.TryDispose((nint)Device);
-        if (Queue != null) Api.QueueRelease(Queue);
-        if (Device != null) Api.DeviceRelease(Device);
+        if (Queue != null)
+        {
+            Api.QueueRelease(Queue);
+        }
+
+        if (Device != null)
+        {
+            Api.DeviceRelease(Device);
+        }
     }
 
     // CPU uploads are premultiplied before they reach WebGPU. Adopted

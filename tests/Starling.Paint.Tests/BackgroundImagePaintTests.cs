@@ -26,6 +26,7 @@ public sealed class BackgroundImagePaintTests
             // Distinct red channel value per 60px column so a wrong slice
             // would be visually distinguishable in golden tests.
             for (var y = 0; y < height; y++)
+            {
                 for (var x = 0; x < width; x++)
                 {
                     var i = (y * width + x) * 4;
@@ -34,6 +35,7 @@ public sealed class BackgroundImagePaintTests
                     span[i + 2] = 0;
                     span[i + 3] = 255;
                 }
+            }
         });
 
     private sealed class StubResolver : IImageResolver

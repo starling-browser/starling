@@ -22,7 +22,9 @@ public sealed class BrowserControlBridge : IBrowserControlDispatcher
     public void Detach(IBrowserController controller)
     {
         if (ReferenceEquals(Volatile.Read(ref _controller), controller))
+        {
             Volatile.Write(ref _controller, null);
+        }
     }
 
     public Task<BrowserControlResult> NavigateAsync(string url, CancellationToken ct)
@@ -112,6 +114,7 @@ public sealed class BrowserControlBridge : IBrowserControlDispatcher
         {
             var controller = Volatile.Read(ref _controller);
             if (controller is null)
+            {
                 return BrowserControlResult.Failure(
                     "No Starling browser window is available.",
                     url: null,
@@ -119,6 +122,7 @@ public sealed class BrowserControlBridge : IBrowserControlDispatcher
                     canGoBack: false,
                     canGoForward: false,
                     isBusy: false);
+            }
 
             // Dispatcher.UIThread.InvokeAsync<T>(Func<Task<T>>) unwraps the
             // returned task, so the caller observes the tool action's result directly.

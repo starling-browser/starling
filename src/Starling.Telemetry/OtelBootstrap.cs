@@ -191,12 +191,20 @@ public static class OtelBootstrap
     public static void ConfigureDaemonExportFromEnv()
     {
         var daemon = Environment.GetEnvironmentVariable("STARLING_TELEMETRY_DAEMON");
-        if (string.IsNullOrWhiteSpace(daemon)) return;
+        if (string.IsNullOrWhiteSpace(daemon))
+        {
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")))
+        {
             Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", daemon);
+        }
+
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL")))
+        {
             Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
+        }
     }
 
     private static bool HasOtlpEndpoint()

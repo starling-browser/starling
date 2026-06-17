@@ -45,7 +45,11 @@ public sealed class JsPromise : JsObject
     /// Returns true on success.</summary>
     internal bool Fulfill(JsValue value)
     {
-        if (State != PromiseState.Pending) return false;
+        if (State != PromiseState.Pending)
+        {
+            return false;
+        }
+
         State = PromiseState.Fulfilled;
         Result = value;
         return true;
@@ -54,7 +58,11 @@ public sealed class JsPromise : JsObject
     /// <summary>Transition Pending → Rejected. No-op if already settled.</summary>
     internal bool Reject(JsValue reason)
     {
-        if (State != PromiseState.Pending) return false;
+        if (State != PromiseState.Pending)
+        {
+            return false;
+        }
+
         State = PromiseState.Rejected;
         Result = reason;
         return true;

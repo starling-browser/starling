@@ -62,9 +62,15 @@ internal static class ReplayReport
     private static string? ResolveDateDir(string resultsRoot, string? dateOverride)
     {
         if (dateOverride is not null)
+        {
             return Path.Combine(resultsRoot, dateOverride);
+        }
+
         if (!Directory.Exists(resultsRoot))
+        {
             return null;
+        }
+
         var dirs = Directory.GetDirectories(resultsRoot);
         Array.Sort(dirs, StringComparer.Ordinal); // yyyy-MM-dd sorts chronologically
         return dirs.Length > 0 ? dirs[^1] : null;
@@ -74,14 +80,19 @@ internal static class ReplayReport
     {
         var list = new List<ReplayResult>();
         if (dateDir is null || !Directory.Exists(dateDir))
+        {
             return list;
+        }
+
         foreach (var file in Directory.GetFiles(dateDir, "*.json"))
         {
             try
             {
                 var r = JsonSerializer.Deserialize(File.ReadAllText(file), ReplayJsonContext.Default.ReplayResult);
                 if (r is not null)
+                {
                     list.Add(r);
+                }
             }
             catch (JsonException)
             {
@@ -92,9 +103,17 @@ internal static class ReplayReport
         list.Sort((a, b) =>
         {
             var p = string.CompareOrdinal(a.Page, b.Page);
-            if (p != 0) return p;
+            if (p != 0)
+            {
+                return p;
+            }
+
             var s = string.CompareOrdinal(a.ScopeLabel, b.ScopeLabel);
-            if (s != 0) return s;
+            if (s != 0)
+            {
+                return s;
+            }
+
             return b.RasterEnabled.CompareTo(a.RasterEnabled);
         });
         return list;
@@ -105,7 +124,10 @@ internal static class ReplayReport
     {
         var list = new List<(string, string)>();
         if (!Directory.Exists(bdnDir))
+        {
             return list;
+        }
+
         foreach (var file in Directory.GetFiles(bdnDir, "*-report-github.md"))
         {
             var name = Path.GetFileNameWithoutExtension(file)
@@ -115,9 +137,13 @@ internal static class ReplayReport
             // Skip stale or failed runs: a successful BenchmarkDotNet table always
             // carries a time unit. An all-NA table (a run that errored) has none.
             if (table.Length > 0 && HasMeasurements(table))
+            {
                 list.Add((name, table));
+            }
             else if (table.Length > 0)
+            {
                 Console.WriteLine($"  skipped {name}: no successful measurements (stale or failed run).");
+            }
         }
         list.Sort((a, b) => string.CompareOrdinal(a.Item1, b.Item1));
         return list;
@@ -136,8 +162,13 @@ internal static class ReplayReport
     {
         var sb = new StringBuilder();
         foreach (var line in lines)
+        {
             if (line.StartsWith('|'))
+            {
                 sb.AppendLine(line.TrimEnd());
+            }
+        }
+
         return sb.ToString().TrimEnd();
     }
 
@@ -233,7 +264,9 @@ internal static class ReplayReport
             // Close each page block after its last row by peeking is awkward; a
             // trailing blank line per row is harmless and keeps tables separated.
             if (IsLastOfPage(replay, r))
+            {
                 sb.AppendLine();
+            }
         }
     }
 

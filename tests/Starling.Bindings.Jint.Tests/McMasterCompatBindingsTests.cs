@@ -138,7 +138,10 @@ public sealed class McMasterCompatBindingsTests
             "io.observe(document.getElementById('main'));");
         // The notification is posted to a later turn; drain the post queue.
         for (var i = 0; i < 5 && engine.Evaluate("hit").IsNull(); i++)
+        {
             _lastCtx!.DrainPosted();
+        }
+
         engine.Evaluate("hit && hit.isIntersecting").AsBoolean().Should().BeTrue();
         engine.Evaluate("hit.intersectionRatio").AsNumber().Should().Be(1);
         engine.Evaluate("hit.target === document.getElementById('main')").AsBoolean().Should().BeTrue();

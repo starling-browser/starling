@@ -19,10 +19,15 @@ public sealed class CounterStyleResolver
     public CounterStyleResolver(IEnumerable<CounterStyleRule>? userStyles = null)
     {
         _userStyles = new Dictionary<string, CounterStyleRule>(StringComparer.OrdinalIgnoreCase);
-        if (userStyles is null) return;
+        if (userStyles is null)
+        {
+            return;
+        }
         // Last definition of a given name wins, matching the cascade.
         foreach (var style in userStyles)
+        {
             _userStyles[style.Name] = style;
+        }
     }
 
     /// <summary>A resolver holding only the predefined styles (§7).</summary>
@@ -84,10 +89,14 @@ public sealed class CounterStyleResolver
     {
         // Guard against extends/fallback cycles.
         if (depth > 32)
+        {
             return value.ToString(CultureInfo.InvariantCulture);
+        }
 
         if (_userStyles.TryGetValue(styleName, out var rule))
+        {
             return RenderUserStyle(rule, value, depth);
+        }
 
         return RenderPredefined(styleName, value, depth);
     }
@@ -110,7 +119,10 @@ public sealed class CounterStyleResolver
         if (_userStyles.TryGetValue(baseName, out var baseRule))
         {
             if (baseRule.System == CounterSystem.Extends && baseRule.ExtendsName is { } grand && depth < 32)
+            {
                 baseRule = MergeExtends(baseRule, grand, depth + 1);
+            }
+
             return rule with
             {
                 System = baseRule.System,
@@ -140,14 +152,19 @@ public sealed class CounterStyleResolver
         if (rule.System == CounterSystem.Extends && rule.ExtendsName is { } baseName)
         {
             if (OutOfRange(rule, value))
+            {
                 return RenderCore(rule.Fallback, value, depth + 1);
+            }
+
             var basic = RenderPredefined(baseName, value, depth + 1);
             return Pad(rule, basic, value);
         }
 
         // Range check (§3.4 / §6 step "If value is outside style's range").
         if (OutOfRange(rule, value))
+        {
             return RenderCore(rule.Fallback, value, depth + 1);
+        }
 
         // Negative values: the sign is applied by Render(); RenderCore works on
         // the absolute value for systems that accept negatives.
@@ -183,12 +200,23 @@ public sealed class CounterStyleResolver
                 {
                     var aboveLow = lo is not { } l || value >= l;
                     var belowHigh = hi is not { } h || value <= h;
-                    if (aboveLow && belowHigh) return false;
+                    if (aboveLow && belowHigh)
+                    {
+                        return false;
+                    }
                 }
                 return true;
             }
-            if (rule.RangeLow is { } low && value < low) return true;
-            if (rule.RangeHigh is { } high && value > high) return true;
+            if (rule.RangeLow is { } low && value < low)
+            {
+                return true;
+            }
+
+            if (rule.RangeHigh is { } high && value > high)
+            {
+                return true;
+            }
+
             return false;
         }
         // Auto range (§3.4): cyclic/numeric/fixed accept all integers;
@@ -203,11 +231,18 @@ public sealed class CounterStyleResolver
 
     private string Pad(CounterStyleRule rule, string core, int value)
     {
-        if (rule.PadLength <= 0) return core;
+        if (rule.PadLength <= 0)
+        {
+            return core;
+        }
         // §3.5: pad counts the negative sign toward the length.
         var signLen = value < 0 ? rule.NegativePrefix.Length + rule.NegativeSuffix.Length : 0;
         var deficit = rule.PadLength - (core.Length + signLen);
-        if (deficit <= 0) return core;
+        if (deficit <= 0)
+        {
+            return core;
+        }
+
         var pad = rule.PadSymbol.Length == 0 ? "" : string.Concat(Enumerable.Repeat(rule.PadSymbol, deficit));
         return pad + core;
     }
@@ -217,7 +252,11 @@ public sealed class CounterStyleResolver
     private static string Cyclic(IReadOnlyList<string> symbols, int value)
     {
         // §2.1: repeatedly cycle through the symbols. Index is (value-1) mod n.
-        if (symbols.Count == 0) return value.ToString(CultureInfo.InvariantCulture);
+        if (symbols.Count == 0)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
         var i = ((value - 1) % symbols.Count + symbols.Count) % symbols.Count;
         return symbols[i];
     }
@@ -228,7 +267,10 @@ public sealed class CounterStyleResolver
         // Values outside the symbol run fall back.
         var index = value - rule.FixedFirstValue;
         if (index < 0 || index >= rule.Symbols.Count)
+        {
             return RenderCore(rule.Fallback, value, depth + 1);
+        }
+
         return rule.Symbols[index];
     }
 
@@ -236,7 +278,10 @@ public sealed class CounterStyleResolver
     {
         // §2.3: symbol = symbols[(value-1) mod n], repeated ceil(value/n) times.
         if (symbols.Count == 0 || value < 1)
+        {
             return RenderCore(rule.Fallback, value, depth + 1);
+        }
+
         var n = symbols.Count;
         var reps = (magnitude - 1) / n + 1;
         var symbol = symbols[(magnitude - 1) % n];
@@ -247,7 +292,10 @@ public sealed class CounterStyleResolver
     {
         // §2.4: bijective base-N over the symbol set.
         if (symbols.Count < 2 || value < 1)
+        {
             return RenderCore(rule.Fallback, value, depth + 1);
+        }
+
         var n = symbols.Count;
         var parts = new List<string>();
         var v = magnitude;
@@ -264,10 +312,18 @@ public sealed class CounterStyleResolver
     private static string Numeric(IReadOnlyList<string> symbols, int value)
     {
         // §2.5: positional base-N. symbols[0] is the digit for zero.
-        if (symbols.Count < 2) return value.ToString(CultureInfo.InvariantCulture);
+        if (symbols.Count < 2)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
         var n = symbols.Count;
         var v = Math.Abs(value);
-        if (v == 0) return symbols[0];
+        if (v == 0)
+        {
+            return symbols[0];
+        }
+
         var parts = new List<string>();
         while (v > 0)
         {
@@ -282,28 +338,56 @@ public sealed class CounterStyleResolver
     {
         // §2.6: greedily subtract the largest weights, emitting their symbols.
         if (rule.AdditiveSymbols.Count == 0)
+        {
             return RenderCore(rule.Fallback, magnitude, depth + 1);
+        }
+
         var v = magnitude;
         if (v == 0)
         {
             // Zero is representable only if a weight-0 symbol exists.
             foreach (var a in rule.AdditiveSymbols)
-                if (a.Weight == 0) return a.Symbol;
+            {
+                if (a.Weight == 0)
+                {
+                    return a.Symbol;
+                }
+            }
+
             return RenderCore(rule.Fallback, magnitude, depth + 1);
         }
         var sb = new StringBuilder();
         foreach (var a in rule.AdditiveSymbols)
         {
-            if (a.Weight <= 0) continue;
-            if (v <= 0) break;
+            if (a.Weight <= 0)
+            {
+                continue;
+            }
+
+            if (v <= 0)
+            {
+                break;
+            }
+
             var count = v / a.Weight;
-            if (count == 0) continue;
-            for (var i = 0; i < count; i++) sb.Append(a.Symbol);
+            if (count == 0)
+            {
+                continue;
+            }
+
+            for (var i = 0; i < count; i++)
+            {
+                sb.Append(a.Symbol);
+            }
+
             v -= count * a.Weight;
         }
         // If we couldn't represent the value exactly, fall back.
         if (v != 0)
+        {
             return RenderCore(rule.Fallback, magnitude, depth + 1);
+        }
+
         return sb.ToString();
     }
 
@@ -360,7 +444,11 @@ public sealed class CounterStyleResolver
     private static string DecimalLeadingZero(int n)
     {
         // §7 decimal-leading-zero: an additive-ish system padded to ≥ 2 digits.
-        if (n < 0) return n.ToString(CultureInfo.InvariantCulture);
+        if (n < 0)
+        {
+            return n.ToString(CultureInfo.InvariantCulture);
+        }
+
         var s = n.ToString(CultureInfo.InvariantCulture);
         return s.Length < 2 ? "0" + s : s;
     }
@@ -385,7 +473,11 @@ public sealed class CounterStyleResolver
     private string Roman(int n, bool upper, int depth)
     {
         // §7.2: roman covers 1..3999; outside that range fall back to decimal.
-        if (n is < 1 or > 3999) return RenderCore("decimal", n, depth + 1);
+        if (n is < 1 or > 3999)
+        {
+            return RenderCore("decimal", n, depth + 1);
+        }
+
         var sb = new StringBuilder();
         foreach (var (value, up, low) in RomanTable)
         {
@@ -401,7 +493,11 @@ public sealed class CounterStyleResolver
     private string AlphaLetters(int n, char first, int depth)
     {
         // §7.2: bijective base-26. Out of range (n < 1) falls back to decimal.
-        if (n < 1) return RenderCore("decimal", n, depth + 1);
+        if (n < 1)
+        {
+            return RenderCore("decimal", n, depth + 1);
+        }
+
         var sb = new StringBuilder();
         while (n > 0)
         {
@@ -416,7 +512,11 @@ public sealed class CounterStyleResolver
 
     private string Greek(int n, int depth)
     {
-        if (n < 1) return RenderCore("decimal", n, depth + 1);
+        if (n < 1)
+        {
+            return RenderCore("decimal", n, depth + 1);
+        }
+
         var sb = new StringBuilder();
         var count = GreekLetters.Length;
         while (n > 0)

@@ -46,7 +46,10 @@ internal sealed class HpackEncoder
     {
         Span<byte> tmp = stackalloc byte[HpackInteger.MaxEncodedLength];
         var n = HpackInteger.Encode(tmp, value, prefixBits, firstByteHigh);
-        for (var i = 0; i < n; i++) dst.Add(tmp[i]);
+        for (var i = 0; i < n; i++)
+        {
+            dst.Add(tmp[i]);
+        }
     }
 
     private static void WriteString(List<byte> dst, string s)

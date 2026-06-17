@@ -39,25 +39,34 @@ internal static class CryptoBinding
     private static JsTypedArray GetRandomValues(Engine engine, JsValue[] args)
     {
         if (args.Length == 0 || args[0] is not JsTypedArray ta)
+        {
             throw new JavaScriptException(engine.Intrinsics.TypeError,
                 "getRandomValues requires a TypedArray argument");
+        }
 
         var ctorName = TypedArrayConstructorName(ta);
         if (ctorName.StartsWith("Float", StringComparison.Ordinal))
+        {
             throw new JavaScriptException(engine.Intrinsics.TypeError,
                 $"getRandomValues: {ctorName} is not an integer typed array");
+        }
+
         if (ctorName.StartsWith("BigInt", StringComparison.Ordinal) ||
             ctorName.StartsWith("BigUint", StringComparison.Ordinal))
+        {
             throw new JavaScriptException(engine.Intrinsics.TypeError,
                 $"getRandomValues: {ctorName} is not supported");
+        }
 
         var byteLengthVal = ta.Get("byteLength");
         var byteLength = byteLengthVal.IsNumber()
             ? (uint)TypeConverter.ToNumber(byteLengthVal)
             : 0u;
         if (byteLength > MaxBytes)
+        {
             throw new JavaScriptException(engine.Intrinsics.TypeError,
                 $"getRandomValues: byte length {byteLength} exceeds the {MaxBytes}-byte quota");
+        }
 
         // Fill via the typed array's own set semantics: generate a 32-bit
         // random value per element; Jint coerces to the array's element width.
@@ -78,7 +87,10 @@ internal static class CryptoBinding
         if (ctor is ObjectInstance oi)
         {
             var name = oi.Get("name");
-            if (name.IsString()) return name.ToString();
+            if (name.IsString())
+            {
+                return name.ToString();
+            }
         }
         return "TypedArray";
     }

@@ -54,7 +54,10 @@ internal interface IPaintBackend : IDisposable
         wrapped.Add(new DisplayList.PushFilter(viewport, filters));
         var items = list.Items;
         for (var i = 0; i < items.Count; i++)
+        {
             wrapped.Add(items[i]);
+        }
+
         wrapped.Add(DisplayList.PopFilter.Instance);
         return Render(wrapped, viewport, scale, opaqueBackground: false);
     }

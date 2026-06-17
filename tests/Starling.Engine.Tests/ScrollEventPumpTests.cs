@@ -93,7 +93,10 @@ public sealed class ScrollEventPumpTests
         var rewrites = 0;
         el.AddEventListener("scroll", _ =>
         {
-            if (rewrites++ == 0) page.ScrollState.Write(el, 0, 77);
+            if (rewrites++ == 0)
+            {
+                page.ScrollState.Write(el, 0, 77);
+            }
         });
 
         scripting.PumpFrame(1);

@@ -55,7 +55,10 @@ public sealed class JsRegExp : JsObject
 
     private static string EscapeSource(string source)
     {
-        if (source.Length == 0) return "(?:)";
+        if (source.Length == 0)
+        {
+            return "(?:)";
+        }
 
         var sb = new System.Text.StringBuilder(source.Length);
         var inClass = false;
@@ -65,12 +68,22 @@ public sealed class JsRegExp : JsObject
             if (c == '\\')
             {
                 sb.Append(c);
-                if (i + 1 < source.Length) sb.Append(source[++i]);
+                if (i + 1 < source.Length)
+                {
+                    sb.Append(source[++i]);
+                }
+
                 continue;
             }
 
-            if (c == '[') inClass = true;
-            else if (c == ']') inClass = false;
+            if (c == '[')
+            {
+                inClass = true;
+            }
+            else if (c == ']')
+            {
+                inClass = false;
+            }
 
             switch (c)
             {

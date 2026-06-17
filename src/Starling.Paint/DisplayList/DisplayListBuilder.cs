@@ -308,7 +308,9 @@ public sealed class DisplayListBuilder
         // its OWN slice, not this one. The slice root is exempt — it is the box
         // this slice is rooted at, so it must paint here.
         if (slice is not null && !ReferenceEquals(box, slice.Root) && slice.IsBoundary(box))
+        {
             return;
+        }
 
         var frameX = originX + box.Frame.X;
         var frameY = originY + box.Frame.Y;
@@ -375,15 +377,29 @@ public sealed class DisplayListBuilder
             if (scratch.Items.Count > 0)
             {
                 if (transformed)
+                {
                     list.Add(new PushTransform(transformMatrix!.Value));
+                }
+
                 if (filterFns is not null)
+                {
                     list.Add(new PushFilter(new Rect(frameX, frameY, box.Frame.Width, box.Frame.Height), filterFns));
+                }
+
                 foreach (var item in scratch.Items)
+                {
                     list.Add(item);
+                }
+
                 if (filterFns is not null)
+                {
                     list.Add(PopFilter.Instance);
+                }
+
                 if (transformed)
+                {
                     list.Add(PopTransform.Instance);
+                }
             }
             return;
         }
@@ -405,7 +421,10 @@ public sealed class DisplayListBuilder
         if (_stickyShifts is null)
         {
             foreach (var child in box.Children)
+            {
                 Visit(child, list, contentOriginX, contentOriginY, current, cull, styleOverride, images, slice);
+            }
+
             return;
         }
 
@@ -419,11 +438,17 @@ public sealed class DisplayListBuilder
             }
             Visit(child, list, contentOriginX, contentOriginY, current, cull, styleOverride, images, slice);
         }
-        if (!anySticky) return;
+        if (!anySticky)
+        {
+            return;
+        }
+
         foreach (var child in box.Children)
         {
             if (child.Element is not null && IsStickyPositioned(child, styleOverride))
+            {
                 Visit(child, list, contentOriginX, contentOriginY, current, cull, styleOverride, images, slice);
+            }
         }
     }
 
@@ -435,13 +460,21 @@ public sealed class DisplayListBuilder
     /// </summary>
     private static void Emit(DisplayList list, DisplayItem item, Rect bounds, Matrix2D current, Rect? cull)
     {
-        if (cull is { } c && !Intersects(TransformedAabb(bounds, current), c)) return;
+        if (cull is { } c && !Intersects(TransformedAabb(bounds, current), c))
+        {
+            return;
+        }
+
         list.Add(item);
     }
 
     private static Rect TransformedAabb(Rect r, Matrix2D m)
     {
-        if (m.IsIdentity) return r;
+        if (m.IsIdentity)
+        {
+            return r;
+        }
+
         var (x0, y0) = m.Transform(r.X, r.Y);
         var (x1, y1) = m.Transform(r.X + r.Width, r.Y);
         var (x2, y2) = m.Transform(r.X + r.Width, r.Y + r.Height);
@@ -581,9 +614,13 @@ public sealed class DisplayListBuilder
                     if (colorRect.Width > 0 && colorRect.Height > 0)
                     {
                         if (colorRadii.IsZero)
+                        {
                             Emit(activeList, new FillRect(colorRect, bg, FillRectPixelAlignment.Preserve), colorRect, current, cull);
+                        }
                         else
+                        {
                             Emit(activeList, new FillRoundedRect(colorRect, colorRadii, bg), colorRect, current, cull);
+                        }
                     }
                 }
 
@@ -619,10 +656,16 @@ public sealed class DisplayListBuilder
         if (box is TextBox textBox)
         {
             if (selfVisible)
+            {
                 EmitTextFragments(textBox, frameX, frameY, activeList, current, cull, styleOverride);
+            }
+
             FlushClipPathBracket(innerList, activeList, clipPathValue, new Rect(frameX, frameY, box.Frame.Width, box.Frame.Height));
             if (maskGeometry is not null)
+            {
                 FlushMaskBracket(list, innerList, maskGeometry);
+            }
+
             return; // Text boxes have no children.
         }
 
@@ -633,10 +676,16 @@ public sealed class DisplayListBuilder
         if (box is ImageBox imageBox)
         {
             if (selfVisible)
+            {
                 EmitReplacedImage(imageBox, frameX, frameY, activeList, current, cull, styleOverride);
+            }
+
             FlushClipPathBracket(innerList, activeList, clipPathValue, new Rect(frameX, frameY, box.Frame.Width, box.Frame.Height));
             if (maskGeometry is not null)
+            {
                 FlushMaskBracket(list, innerList, maskGeometry);
+            }
+
             return; // ImageBox has no children.
         }
 
@@ -669,7 +718,9 @@ public sealed class DisplayListBuilder
             // Include border-radius in the clip so rounded overflow boxes
             // crop their children to the rounded inner edge.
             if (overflowStyle is not null && box.Frame.Width > 0 && box.Frame.Height > 0)
+            {
                 clipRadii = ReadCornerRadii(overflowStyle, box.Frame.Width, box.Frame.Height);
+            }
         }
 
         // `overflow: scroll | auto` containers carry a per-element scroll
@@ -707,14 +758,22 @@ public sealed class DisplayListBuilder
                 }
                 activeList.Add(new PushTransform(scrollMatrix));
                 foreach (var item in scratch.Items)
+                {
                     activeList.Add(item);
+                }
+
                 activeList.Add(PopTransform.Instance);
                 if (clipsOverflow && box.Frame.Width > 0 && box.Frame.Height > 0)
+                {
                     activeList.Add(PopClip.Instance);
+                }
             }
             FlushClipPathBracket(innerList, activeList, clipPathValue, refBox);
             if (maskGeometry is not null)
+            {
                 FlushMaskBracket(list, innerList, maskGeometry);
+            }
+
             return;
         }
 
@@ -728,7 +787,10 @@ public sealed class DisplayListBuilder
             activeList.Add(PopClip.Instance);
             FlushClipPathBracket(innerList, activeList, clipPathValue, refBox);
             if (maskGeometry is not null)
+            {
                 FlushMaskBracket(list, innerList, maskGeometry);
+            }
+
             return;
         }
 
@@ -736,7 +798,9 @@ public sealed class DisplayListBuilder
 
         FlushClipPathBracket(innerList, activeList, clipPathValue, refBox);
         if (maskGeometry is not null)
+        {
             FlushMaskBracket(list, innerList, maskGeometry);
+        }
     }
 
     // ---- CSS Masking 1 §7 — clip-path helpers --------------------------------
@@ -749,9 +813,21 @@ public sealed class DisplayListBuilder
     private static CssClipPath? TryResolveClipPath(ComputedStyle style)
     {
         var v = style.Get(PropertyId.ClipPath);
-        if (v is not CssClipPath clip) return null;
-        if (clip.IsNone) return null;
-        if (clip.IsUrl) return null; // url(#id) requires SVG DOM resolution — deferred
+        if (v is not CssClipPath clip)
+        {
+            return null;
+        }
+
+        if (clip.IsNone)
+        {
+            return null;
+        }
+
+        if (clip.IsUrl)
+        {
+            return null; // url(#id) requires SVG DOM resolution — deferred
+        }
+
         return clip;
     }
 
@@ -768,11 +844,22 @@ public sealed class DisplayListBuilder
         CssClipPath? clipPath,
         Rect referenceBox)
     {
-        if (clipPath is null || ReferenceEquals(target, activeList)) return;
-        if (activeList.Items.Count == 0) return; // nothing to clip
+        if (clipPath is null || ReferenceEquals(target, activeList))
+        {
+            return;
+        }
+
+        if (activeList.Items.Count == 0)
+        {
+            return; // nothing to clip
+        }
+
         target.Add(new PushClipPath(referenceBox, clipPath));
         foreach (var item in activeList.Items)
+        {
             target.Add(item);
+        }
+
         target.Add(PopClipPath.Instance);
     }
 
@@ -832,7 +919,10 @@ public sealed class DisplayListBuilder
     /// </summary>
     private bool TryEmitBackgroundTextClip(Box box, double frameX, double frameY, DisplayList list, Matrix2D current, Rect? cull, ComputedStyle style, Func<Box, ComputedStyle?>? styleOverride)
     {
-        if (box.Frame.Width <= 0 || box.Frame.Height <= 0) return false;
+        if (box.Frame.Width <= 0 || box.Frame.Height <= 0)
+        {
+            return false;
+        }
 
         // The background paint: a paintable gradient takes priority over the
         // solid color (matching the layering order of `background`).
@@ -845,7 +935,10 @@ public sealed class DisplayListBuilder
         }
 
         var color = style.GetColor(PropertyId.BackgroundColor);
-        if (gradient is null && color.A == 0) return false;
+        if (gradient is null && color.A == 0)
+        {
+            return false;
+        }
 
         // Gather descendant glyph runs in document space. The clip element's own
         // text lives in descendant text boxes whose frames are relative to this
@@ -854,9 +947,14 @@ public sealed class DisplayListBuilder
         var contentX = frameX + box.Border.Left + box.Padding.Left;
         var contentY = frameY + box.Border.Top + box.Padding.Top;
         foreach (var child in box.Children)
+        {
             CollectClipGlyphRuns(child, contentX, contentY, styleOverride, glyphs);
+        }
 
-        if (glyphs.Count == 0) return false;
+        if (glyphs.Count == 0)
+        {
+            return false;
+        }
 
         var bounds = new Rect(frameX, frameY, box.Frame.Width, box.Frame.Height);
         Emit(list, new FillBackgroundTextClip(bounds, gradient, color, glyphs), bounds, current, cull);
@@ -877,7 +975,11 @@ public sealed class DisplayListBuilder
 
         if (box is TextBox textBox)
         {
-            if (textBox.Fragments.Count == 0) return;
+            if (textBox.Fragments.Count == 0)
+            {
+                return;
+            }
+
             var style = EffectiveStyle(textBox, styleOverride);
             var fontSize = style?.Get(PropertyId.FontSize) switch
             {
@@ -887,7 +989,11 @@ public sealed class DisplayListBuilder
             var spec = FontSpec.FromStyle(style);
             foreach (var frag in textBox.Fragments)
             {
-                if (frag.Text.Length == 0 || string.IsNullOrWhiteSpace(frag.Text)) continue;
+                if (frag.Text.Length == 0 || string.IsNullOrWhiteSpace(frag.Text))
+                {
+                    continue;
+                }
+
                 glyphs.Add(new ClipGlyphRun(
                     frag.Text,
                     frameX + frag.X,
@@ -901,12 +1007,17 @@ public sealed class DisplayListBuilder
             return; // Text boxes have no children.
         }
 
-        if (box is ImageBox) return; // Replaced content contributes no glyphs.
+        if (box is ImageBox)
+        {
+            return; // Replaced content contributes no glyphs.
+        }
 
         var contentX = frameX + box.Border.Left + box.Padding.Left;
         var contentY = frameY + box.Border.Top + box.Padding.Top;
         foreach (var child in box.Children)
+        {
             CollectClipGlyphRuns(child, contentX, contentY, styleOverride, glyphs);
+        }
     }
 
     /// <summary>
@@ -935,9 +1046,12 @@ public sealed class DisplayListBuilder
             var posList = style.Get(PropertyId.BackgroundPosition);
             var sizeList = style.Get(PropertyId.BackgroundSize);
             for (var i = layers.Values.Count - 1; i >= 0; i--)
+            {
                 EmitOneBackgroundLayer(box, frameX, frameY, list, current, cull, images, radii,
                     layers.Values[i], LayerValueAt(sizeList, i), LayerValueAt(posList, i),
                     LayerValueAt(originList, i), LayerValueAt(clipList, i));
+            }
+
             return;
         }
 
@@ -975,20 +1089,39 @@ public sealed class DisplayListBuilder
             // origin-only differences are not observable without tiling.)
             var gborder = new Rect(frameX, frameY, box.Frame.Width, box.Frame.Height);
             var (gbounds, gradRadii) = ResolveBackgroundPaintBox(box, gborder, radii, layerClip, "border-box");
-            if (gbounds.Width <= 0 || gbounds.Height <= 0) return;
+            if (gbounds.Width <= 0 || gbounds.Height <= 0)
+            {
+                return;
+            }
+
             Emit(list, new FillGradient(gbounds, gradient, gradRadii), gbounds, current, cull);
             return;
         }
 
-        if (images is null) return;
+        if (images is null)
+        {
+            return;
+        }
+
         var url = layerImage switch
         {
             CssUrl u => u.Value,
             _ => null,
         };
-        if (url is null || !images.TryResolveUrl(url, out var decoded) || decoded is null) return;
-        if (box.Frame.Width <= 0 || box.Frame.Height <= 0) return;
-        if (decoded.Width <= 0 || decoded.Height <= 0) return;
+        if (url is null || !images.TryResolveUrl(url, out var decoded) || decoded is null)
+        {
+            return;
+        }
+
+        if (box.Frame.Width <= 0 || box.Frame.Height <= 0)
+        {
+            return;
+        }
+
+        if (decoded.Width <= 0 || decoded.Height <= 0)
+        {
+            return;
+        }
 
         // CSS Backgrounds 3 §2.6 — background-origin picks the positioning
         // area (border/padding/content box) that position and size resolve
@@ -997,8 +1130,15 @@ public sealed class DisplayListBuilder
         var bbounds = new Rect(frameX, frameY, box.Frame.Width, box.Frame.Height);
         var (originRect, _) = ResolveBackgroundPaintBox(box, bbounds, radii, layerOrigin, "padding-box");
         var (clipRect, clipRadii) = ResolveBackgroundPaintBox(box, bbounds, radii, layerClip, "border-box");
-        if (originRect.Width <= 0 || originRect.Height <= 0) return;
-        if (clipRect.Width <= 0 || clipRect.Height <= 0) return;
+        if (originRect.Width <= 0 || originRect.Height <= 0)
+        {
+            return;
+        }
+
+        if (clipRect.Width <= 0 || clipRect.Height <= 0)
+        {
+            return;
+        }
 
         var areaW = originRect.Width;
         var areaH = originRect.Height;
@@ -1008,7 +1148,10 @@ public sealed class DisplayListBuilder
         // Native size is the *intrinsic* size in CSS px, which can exceed the
         // pixel buffer when the decode was resolution-clamped.
         var (renderW, renderH) = ResolveBackgroundSize(layerSize, areaW, areaH, decoded.IntrinsicWidth, decoded.IntrinsicHeight);
-        if (renderW <= 0 || renderH <= 0) return;
+        if (renderW <= 0 || renderH <= 0)
+        {
+            return;
+        }
 
         // background-position — where the rendered image's top-left lands
         // inside the positioning area. A single value is the X offset (Y
@@ -1029,7 +1172,10 @@ public sealed class DisplayListBuilder
         var destBottom = Math.Min(clipRect.Bottom, imgY + renderH);
         var destW = destRight - destX;
         var destH = destBottom - destY;
-        if (destW <= 0 || destH <= 0) return;
+        if (destW <= 0 || destH <= 0)
+        {
+            return;
+        }
 
         // Map the clipped destination rect back to source pixel coords —
         // pixel-buffer dims here, because SourceRect addresses the buffer.
@@ -1070,8 +1216,15 @@ public sealed class DisplayListBuilder
         double? w = null, h = null;
         if (value is CssValueList list)
         {
-            if (list.Values.Count > 0) w = ResolveBgSizeDim(list.Values[0], boxW);
-            if (list.Values.Count > 1) h = ResolveBgSizeDim(list.Values[^1], boxH);
+            if (list.Values.Count > 0)
+            {
+                w = ResolveBgSizeDim(list.Values[0], boxW);
+            }
+
+            if (list.Values.Count > 1)
+            {
+                h = ResolveBgSizeDim(list.Values[^1], boxH);
+            }
         }
         else
         {
@@ -1079,9 +1232,21 @@ public sealed class DisplayListBuilder
         }
 
         // `auto` on one axis preserves aspect ratio against the other.
-        if (w is null && h is null) return (nativeW, nativeH);
-        if (w is null) return (nativeW * (h!.Value / nativeH), h.Value);
-        if (h is null) return (w.Value, nativeH * (w.Value / nativeW));
+        if (w is null && h is null)
+        {
+            return (nativeW, nativeH);
+        }
+
+        if (w is null)
+        {
+            return (nativeW * (h!.Value / nativeH), h.Value);
+        }
+
+        if (h is null)
+        {
+            return (w.Value, nativeH * (w.Value / nativeW));
+        }
+
         return (w.Value, h.Value);
     }
 
@@ -1099,8 +1264,15 @@ public sealed class DisplayListBuilder
         CssValue? xv = null, yv = null;
         if (value is CssValueList list)
         {
-            if (list.Values.Count > 0) xv = list.Values[0];
-            if (list.Values.Count > 1) yv = list.Values[^1];
+            if (list.Values.Count > 0)
+            {
+                xv = list.Values[0];
+            }
+
+            if (list.Values.Count > 1)
+            {
+                yv = list.Values[^1];
+            }
         }
         else
         {
@@ -1147,7 +1319,10 @@ public sealed class DisplayListBuilder
     private static void EmitReplacedImage(ImageBox imageBox, double frameX, double frameY, DisplayList list, Matrix2D current, Rect? cull, Func<Box, ComputedStyle?>? styleOverride)
     {
         var decoded = imageBox.Source;
-        if (decoded.Width <= 0 || decoded.Height <= 0) return;
+        if (decoded.Width <= 0 || decoded.Height <= 0)
+        {
+            return;
+        }
 
         // object-fit positions the replaced content inside the content box
         // (frame minus border and padding).
@@ -1155,7 +1330,10 @@ public sealed class DisplayListBuilder
         var contentY = frameY + imageBox.Border.Top + imageBox.Padding.Top;
         var contentW = imageBox.Frame.Width - imageBox.Border.Left - imageBox.Border.Right - imageBox.Padding.Left - imageBox.Padding.Right;
         var contentH = imageBox.Frame.Height - imageBox.Border.Top - imageBox.Border.Bottom - imageBox.Padding.Top - imageBox.Padding.Bottom;
-        if (contentW <= 0 || contentH <= 0) return;
+        if (contentW <= 0 || contentH <= 0)
+        {
+            return;
+        }
 
         var style = EffectiveStyle(imageBox, styleOverride);
         var fitName = style?.Get(PropertyId.ObjectFit) is CssKeyword fitKeyword ? fitKeyword.Name : "fill";
@@ -1196,7 +1374,11 @@ public sealed class DisplayListBuilder
                 {
                     // §4.5 — the smaller of `none` and `contain`.
                     var scale = Math.Min(contentW / naturalW, contentH / naturalH);
-                    if (hasNatural && scale > 1d) scale = 1d;
+                    if (hasNatural && scale > 1d)
+                    {
+                        scale = 1d;
+                    }
+
                     fitW = naturalW * scale;
                     fitH = naturalH * scale;
                     break;
@@ -1226,7 +1408,10 @@ public sealed class DisplayListBuilder
         var destBottom = Math.Min(contentY + contentH, imgY + fitH);
         var destW = destRight - destX;
         var destH = destBottom - destY;
-        if (destW <= 0 || destH <= 0) return;
+        if (destW <= 0 || destH <= 0)
+        {
+            return;
+        }
 
         // Map the cropped destination back to source pixel coords — the pixel
         // BUFFER dims, not the intrinsic dims, because SourceRect addresses
@@ -1269,14 +1454,20 @@ public sealed class DisplayListBuilder
             // Keyword pairs may come axis-swapped ("top left"): when the first
             // names the vertical axis or the second the horizontal one, swap.
             if (IsVerticalPositionKeyword(xv) || IsHorizontalPositionKeyword(yv))
+            {
                 (xv, yv) = (yv, xv);
+            }
+
             return (ResolvePositionAxis(xv, boxW, imgW), ResolvePositionAxis(yv, boxH, imgH));
         }
 
         // Single value: that axis is explicit, the other centres (the missing
         // axis pattern in ResolvePositionAxis handles the null).
         if (IsVerticalPositionKeyword(value))
+        {
             return (ResolvePositionAxis(null, boxW, imgW), ResolvePositionAxis(value, boxH, imgH));
+        }
+
         return (ResolvePositionAxis(value, boxW, imgW), ResolvePositionAxis(null, boxH, imgH));
     }
 
@@ -1333,12 +1524,18 @@ public sealed class DisplayListBuilder
             CssValue? xv = list.Values[0];
             CssValue? yv = list.Values.Count > 1 ? list.Values[1] : null;
             if (IsVerticalPositionKeyword(xv) || IsHorizontalPositionKeyword(yv))
+            {
                 (xv, yv) = (yv, xv);
+            }
+
             return (ResolveOriginAxis(xv, width), ResolveOriginAxis(yv, height));
         }
 
         if (IsVerticalPositionKeyword(value))
+        {
             return (width * 0.5, ResolveOriginAxis(value, height));
+        }
+
         return (ResolveOriginAxis(value, width), height * 0.5);
     }
 
@@ -1380,7 +1577,10 @@ public sealed class DisplayListBuilder
     /// </summary>
     private static MaskGeometry? TryResolveMaskGeometry(Box box, double frameX, double frameY, ComputedStyle style, IImageResolver? images)
     {
-        if (box.Frame.Width <= 0 || box.Frame.Height <= 0) return null;
+        if (box.Frame.Width <= 0 || box.Frame.Height <= 0)
+        {
+            return null;
+        }
 
         var maskValue = style.Get(PropertyId.MaskImage);
 
@@ -1389,9 +1589,20 @@ public sealed class DisplayListBuilder
 
         if (maskValue is CssUrl maskUrl)
         {
-            if (images is null) return null;
-            if (!images.TryResolveUrl(maskUrl.Value, out maskImage) || maskImage is null) return null;
-            if (maskImage.Width <= 0 || maskImage.Height <= 0) return null;
+            if (images is null)
+            {
+                return null;
+            }
+
+            if (!images.TryResolveUrl(maskUrl.Value, out maskImage) || maskImage is null)
+            {
+                return null;
+            }
+
+            if (maskImage.Width <= 0 || maskImage.Height <= 0)
+            {
+                return null;
+            }
         }
         else if (maskValue is CssFunctionValue maskGradientFn
                  && CssGradientParser.TryParseFunction(maskGradientFn, out var mg)
@@ -1411,7 +1622,10 @@ public sealed class DisplayListBuilder
         var nativeMaskW = maskImage?.IntrinsicWidth ?? boxW;
         var nativeMaskH = maskImage?.IntrinsicHeight ?? boxH;
         var (renderW, renderH) = ResolveBackgroundSize(style.Get(PropertyId.MaskSize), boxW, boxH, nativeMaskW, nativeMaskH);
-        if (renderW <= 0 || renderH <= 0) return null;
+        if (renderW <= 0 || renderH <= 0)
+        {
+            return null;
+        }
 
         var (offsetX, offsetY) = ResolveBackgroundPosition(style.Get(PropertyId.MaskPosition), boxW, boxH, renderW, renderH);
         var repeat = ResolveMaskRepeat(style.Get(PropertyId.MaskRepeat));
@@ -1430,7 +1644,11 @@ public sealed class DisplayListBuilder
     /// </summary>
     private static void FlushMaskBracket(DisplayList list, DisplayList innerList, MaskGeometry? geo)
     {
-        if (geo is null) return;
+        if (geo is null)
+        {
+            return;
+        }
+
         list.Add(new PushMask(
             geo.Bounds, geo.Radii,
             geo.Mask, geo.MaskGradient,
@@ -1438,7 +1656,10 @@ public sealed class DisplayListBuilder
             geo.OffsetX, geo.OffsetY,
             geo.Repeat, geo.Mode));
         foreach (var item in innerList.Items)
+        {
             list.Add(item);
+        }
+
         list.Add(PopMask.Instance);
     }
 
@@ -1500,17 +1721,34 @@ public sealed class DisplayListBuilder
     /// </summary>
     internal static Matrix2D? TryGetTransformMatrix(Box box, Func<Box, ComputedStyle?>? styleOverride, double frameX, double frameY)
     {
-        if (box.Frame.Width <= 0 && box.Frame.Height <= 0) return null;
+        if (box.Frame.Width <= 0 && box.Frame.Height <= 0)
+        {
+            return null;
+        }
+
         var style = EffectiveStyle(box, styleOverride);
-        if (style is null) return null;
+        if (style is null)
+        {
+            return null;
+        }
+
         var raw = style.Get(PropertyId.Transform);
-        if (raw is null or CssKeyword { Name: "none" }) return null;
+        if (raw is null or CssKeyword { Name: "none" })
+        {
+            return null;
+        }
 
         var transform = CssTransformParser.Parse(raw);
-        if (transform.IsNone) return null;
+        if (transform.IsNone)
+        {
+            return null;
+        }
 
         var local = transform.ToMatrix(box.Frame.Width, box.Frame.Height);
-        if (local.IsIdentity) return null;
+        if (local.IsIdentity)
+        {
+            return null;
+        }
 
         var (originOffsetX, originOffsetY) = ResolveTransformOrigin(
             style.Get(PropertyId.TransformOrigin), box.Frame.Width, box.Frame.Height);
@@ -1537,14 +1775,33 @@ public sealed class DisplayListBuilder
         var tr = ResolveRadius(style.Get(PropertyId.BorderTopRightRadius), width, height);
         var br = ResolveRadius(style.Get(PropertyId.BorderBottomRightRadius), width, height);
         var bl = ResolveRadius(style.Get(PropertyId.BorderBottomLeftRadius), width, height);
-        if (tl <= 0 && tr <= 0 && br <= 0 && bl <= 0) return CornerRadii.None;
+        if (tl <= 0 && tr <= 0 && br <= 0 && bl <= 0)
+        {
+            return CornerRadii.None;
+        }
 
         // §5.1 overlap clamp — scale every corner by the smallest side ratio.
         var scale = 1d;
-        if (tl + tr > 0) scale = Math.Min(scale, SafeRatio(width, tl + tr));
-        if (bl + br > 0) scale = Math.Min(scale, SafeRatio(width, bl + br));
-        if (tl + bl > 0) scale = Math.Min(scale, SafeRatio(height, tl + bl));
-        if (tr + br > 0) scale = Math.Min(scale, SafeRatio(height, tr + br));
+        if (tl + tr > 0)
+        {
+            scale = Math.Min(scale, SafeRatio(width, tl + tr));
+        }
+
+        if (bl + br > 0)
+        {
+            scale = Math.Min(scale, SafeRatio(width, bl + br));
+        }
+
+        if (tl + bl > 0)
+        {
+            scale = Math.Min(scale, SafeRatio(height, tl + bl));
+        }
+
+        if (tr + br > 0)
+        {
+            scale = Math.Min(scale, SafeRatio(height, tr + br));
+        }
+
         if (scale < 1d)
         {
             tl *= scale; tr *= scale; br *= scale; bl *= scale;
@@ -1638,7 +1895,9 @@ public sealed class DisplayListBuilder
         }
 
         if (top == 0 && right == 0 && bottom == 0 && left == 0)
+        {
             return (borderBounds, radii);
+        }
 
         var rect = new Rect(
             borderBounds.X + left,
@@ -1658,19 +1917,32 @@ public sealed class DisplayListBuilder
     private static void EmitBoxShadows(Box box, Rect bounds, CornerRadii radii, DisplayList list, Matrix2D current, Rect? cull, ComputedStyle style)
     {
         var raw = style.Get(PropertyId.BoxShadow);
-        if (raw is null or CssKeyword { Name: "none" }) return;
+        if (raw is null or CssKeyword { Name: "none" })
+        {
+            return;
+        }
+
         var shadow = CssBoxShadowParser.Parse(raw);
-        if (shadow.IsNone) return;
+        if (shadow.IsNone)
+        {
+            return;
+        }
 
         var textColor = style.GetColor(PropertyId.Color);
 
         for (var i = shadow.Layers.Count - 1; i >= 0; i--)
         {
             var layer = shadow.Layers[i];
-            if (layer.Inset) continue; // inner layers paint via EmitInsetBoxShadows
+            if (layer.Inset)
+            {
+                continue; // inner layers paint via EmitInsetBoxShadows
+            }
 
             var color = layer.Color ?? textColor;
-            if (color.A == 0) continue;
+            if (color.A == 0)
+            {
+                continue;
+            }
 
             var offsetX = Starling.Layout.Block.BlockLayout.ToPx(layer.OffsetX);
             var offsetY = Starling.Layout.Block.BlockLayout.ToPx(layer.OffsetY);
@@ -1707,9 +1979,16 @@ public sealed class DisplayListBuilder
     private static void EmitInsetBoxShadows(Box box, Rect bounds, CornerRadii radii, DisplayList list, Matrix2D current, Rect? cull, ComputedStyle style)
     {
         var raw = style.Get(PropertyId.BoxShadow);
-        if (raw is null or CssKeyword { Name: "none" }) return;
+        if (raw is null or CssKeyword { Name: "none" })
+        {
+            return;
+        }
+
         var shadow = CssBoxShadowParser.Parse(raw);
-        if (shadow.IsNone) return;
+        if (shadow.IsNone)
+        {
+            return;
+        }
 
         // Padding box: the border box inset by the used border widths. The
         // inner radii shrink per-side by the adjacent border widths (§5.1).
@@ -1719,7 +1998,11 @@ public sealed class DisplayListBuilder
         var bl = box.Border.Left;
         var padW = bounds.Width - bl - brd;
         var padH = bounds.Height - bt - bb;
-        if (padW <= 0 || padH <= 0) return;
+        if (padW <= 0 || padH <= 0)
+        {
+            return;
+        }
+
         var padding = new Rect(bounds.X + bl, bounds.Y + bt, padW, padH);
         var innerRadii = radii.IsZero ? radii : ShrinkRadiiPerSide(radii, bt, brd, bb, bl);
 
@@ -1728,10 +2011,16 @@ public sealed class DisplayListBuilder
         for (var i = shadow.Layers.Count - 1; i >= 0; i--)
         {
             var layer = shadow.Layers[i];
-            if (!layer.Inset) continue;
+            if (!layer.Inset)
+            {
+                continue;
+            }
 
             var color = layer.Color ?? textColor;
-            if (color.A == 0) continue;
+            if (color.A == 0)
+            {
+                continue;
+            }
 
             var offsetX = Starling.Layout.Block.BlockLayout.ToPx(layer.OffsetX);
             var offsetY = Starling.Layout.Block.BlockLayout.ToPx(layer.OffsetY);
@@ -1740,7 +2029,10 @@ public sealed class DisplayListBuilder
 
             // No offset, no blur, and no positive spread → the inner
             // silhouette covers the whole padding box; the ring is empty.
-            if (offsetX == 0 && offsetY == 0 && blur <= 0 && spread <= 0) continue;
+            if (offsetX == 0 && offsetY == 0 && blur <= 0 && spread <= 0)
+            {
+                continue;
+            }
 
             // Inner shadows never escape the padding box, so its rect is the AABB.
             Emit(list, new DrawBoxShadow(padding, innerRadii, offsetX, offsetY, blur, spread, color, Inset: true), padding, current, cull);
@@ -1753,7 +2045,10 @@ public sealed class DisplayListBuilder
         var right = box.Border.Right;
         var bottom = box.Border.Bottom;
         var left = box.Border.Left;
-        if (top + right + bottom + left == 0) return;
+        if (top + right + bottom + left == 0)
+        {
+            return;
+        }
 
         var topColor = style.GetColor(PropertyId.BorderTopColor);
         var rightColor = style.GetColor(PropertyId.BorderRightColor);
@@ -1868,7 +2163,11 @@ public sealed class DisplayListBuilder
     /// </summary>
     private static void EmitOutline(Box box, double x, double y, DisplayList list, Matrix2D current, Rect? cull, ComputedStyle style, CornerRadii radii)
     {
-        if (style.Get(PropertyId.OutlineStyle) is not CssKeyword styleKeyword) return;
+        if (style.Get(PropertyId.OutlineStyle) is not CssKeyword styleKeyword)
+        {
+            return;
+        }
+
         BorderSideStyle ringStyle;
         switch (styleKeyword.Name)
         {
@@ -1882,7 +2181,10 @@ public sealed class DisplayListBuilder
         }
 
         var width = ResolveOutlineWidth(style.Get(PropertyId.OutlineWidth));
-        if (width <= 0) return;
+        if (width <= 0)
+        {
+            return;
+        }
 
         // `outline-color: auto` (the initial value) and `currentcolor` both
         // resolve to the element's text color here (the UA accent color is not
@@ -1890,7 +2192,10 @@ public sealed class DisplayListBuilder
         var color = style.Get(PropertyId.OutlineColor) is CssColor c
             ? c
             : style.GetColor(PropertyId.Color);
-        if (color.A == 0) return;
+        if (color.A == 0)
+        {
+            return;
+        }
 
         var w = box.Frame.Width;
         var h = box.Frame.Height;
@@ -1901,7 +2206,10 @@ public sealed class DisplayListBuilder
         // CSS UI 4 §3.5 — clamp a large negative offset so the ring's inner
         // edge rectangle never inverts.
         var minHalf = Math.Min(w, h) / 2d;
-        if (offset < -minHalf) offset = -minHalf;
+        if (offset < -minHalf)
+        {
+            offset = -minHalf;
+        }
 
         // Ring inner edge = border box expanded by `offset` on every side; the
         // ring is `width` thick OUTSIDE that edge.
@@ -1954,7 +2262,11 @@ public sealed class DisplayListBuilder
     /// </summary>
     private static CornerRadii ExpandRadii(CornerRadii r, double by)
     {
-        if (r.IsZero) return CornerRadii.None;
+        if (r.IsZero)
+        {
+            return CornerRadii.None;
+        }
+
         static double G(double v, double by) => v <= 0 ? 0 : Math.Max(0, v + by);
         return new CornerRadii(
             G(r.TopLeftX, by), G(r.TopLeftY, by),
@@ -1977,20 +2289,35 @@ public sealed class DisplayListBuilder
     /// </summary>
     private static void EmitFormControlChrome(Box box, double x, double y, DisplayList list, Matrix2D current, Rect? cull, ComputedStyle style)
     {
-        if (box.Element is not { } element) return;
+        if (box.Element is not { } element)
+        {
+            return;
+        }
+
         var name = element.LocalName;
-        if (name is not ("input" or "select")) return;
+        if (name is not ("input" or "select"))
+        {
+            return;
+        }
 
         if (style.Get(PropertyId.Appearance) is not CssKeyword appearance
             || !string.Equals(appearance.Name, "auto", StringComparison.OrdinalIgnoreCase))
+        {
             return;
+        }
 
         var w = box.Frame.Width;
         var h = box.Frame.Height;
-        if (w <= 0 || h <= 0) return;
+        if (w <= 0 || h <= 0)
+        {
+            return;
+        }
 
         var color = style.GetColor(PropertyId.Color);
-        if (color.A == 0) return;
+        if (color.A == 0)
+        {
+            return;
+        }
 
         if (name == "select")
         {
@@ -1999,9 +2326,17 @@ public sealed class DisplayListBuilder
             // degenerate boxes where the chevron would not fit.
             const double chevronWidth = 8d;
             const double chevronInset = 5d;
-            if (w < chevronWidth + 2 * chevronInset) return;
+            if (w < chevronWidth + 2 * chevronInset)
+            {
+                return;
+            }
+
             var chevronHeight = Math.Min(4.5d, h * 0.4d);
-            if (chevronHeight <= 0) return;
+            if (chevronHeight <= 0)
+            {
+                return;
+            }
+
             var rightX = x + w - chevronInset;
             var midY = y + h / 2d;
             var topY = midY - chevronHeight / 2d;
@@ -2022,7 +2357,10 @@ public sealed class DisplayListBuilder
         var type = element.GetAttribute("type");
         if (string.Equals(type, "checkbox", StringComparison.OrdinalIgnoreCase))
         {
-            if (!HtmlFormControls.Checked(element)) return;
+            if (!HtmlFormControls.Checked(element))
+            {
+                return;
+            }
             // Check mark: two stroked segments through three points placed at
             // fractions of the border box, so the glyph scales with any
             // author-resized control.
@@ -2037,11 +2375,18 @@ public sealed class DisplayListBuilder
         }
         else if (string.Equals(type, "radio", StringComparison.OrdinalIgnoreCase))
         {
-            if (!HtmlFormControls.Checked(element)) return;
+            if (!HtmlFormControls.Checked(element))
+            {
+                return;
+            }
             // Inner dot: a filled circle at half the control's diameter,
             // centred in the border box.
             var d = Math.Min(w, h) * 0.5d;
-            if (d <= 0) return;
+            if (d <= 0)
+            {
+                return;
+            }
+
             var dotRect = new Rect(x + (w - d) / 2d, y + (h - d) / 2d, d, d);
             var r = d / 2d;
             Emit(list, new FillRoundedRect(dotRect, CornerRadii.Uniform(r, r, r, r), color), dotRect, current, cull);
@@ -2050,14 +2395,21 @@ public sealed class DisplayListBuilder
 
     private static void EmitTextFragments(TextBox text, double x, double y, DisplayList list, Matrix2D current, Rect? cull, Func<Box, ComputedStyle?>? styleOverride)
     {
-        if (text.Fragments.Count == 0) return;
+        if (text.Fragments.Count == 0)
+        {
+            return;
+        }
+
         var style = EffectiveStyle(text, styleOverride);
         var color = style?.GetColor(PropertyId.Color) ?? CssColor.Black;
         // HTML placeholder text renders muted (the UA ::placeholder default —
         // a mid gray) rather than in the element's own color. The box-tree
         // builder marks the synthesized placeholder TextBox.
         if (text.IsPlaceholder)
+        {
             color = PlaceholderColor;
+        }
+
         var fontSize = style?.Get(PropertyId.FontSize) switch
         {
             CssLength len => Starling.Layout.Block.BlockLayout.ToPx(len),
@@ -2076,7 +2428,11 @@ public sealed class DisplayListBuilder
 
         foreach (var frag in text.Fragments)
         {
-            if (frag.Text.Length == 0 || string.IsNullOrWhiteSpace(frag.Text)) continue;
+            if (frag.Text.Length == 0 || string.IsNullOrWhiteSpace(frag.Text))
+            {
+                continue;
+            }
+
             var baselineY = y + frag.Y + frag.Baseline;
             // Cull bounds: the glyph run sits on the baseline. Cover ascent
             // (≈ font size above the baseline) and a small descent below so the
@@ -2094,7 +2450,11 @@ public sealed class DisplayListBuilder
             {
                 var layer = shadow.Layers[i];
                 var layerColor = layer.Color ?? color;
-                if (layerColor.A == 0) continue;
+                if (layerColor.A == 0)
+                {
+                    continue;
+                }
+
                 var shadowBounds = new Rect(
                     glyphBounds.X + layer.OffsetX - layer.Blur,
                     glyphBounds.Y + layer.OffsetY - layer.Blur,
@@ -2154,13 +2514,19 @@ public sealed class DisplayListBuilder
 
     private static TextDecorationLines ResolveDecorationLines(ComputedStyle? style)
     {
-        if (style is null) return TextDecorationLines.None;
+        if (style is null)
+        {
+            return TextDecorationLines.None;
+        }
         // The `text-decoration` shorthand expands to text-decoration-line; keep
         // the legacy `text-decoration` carrier as a fallback for authors that
         // set the longhand-less shorthand value directly.
         var lines = LinesFromValue(style.Get(PropertyId.TextDecorationLine));
         if (lines == TextDecorationLines.None)
+        {
             lines = LinesFromValue(style.Get(PropertyId.TextDecoration));
+        }
+
         return lines;
     }
 
@@ -2174,7 +2540,10 @@ public sealed class DisplayListBuilder
                 break;
             case CssValueList list:
                 foreach (var item in list.Values.OfType<CssKeyword>())
+                {
                     result |= LineFromKeyword(item.Name);
+                }
+
                 break;
         }
         return result;
@@ -2202,7 +2571,11 @@ public sealed class DisplayListBuilder
     {
         // text-decoration-color defaults to currentColor; only an explicit typed
         // color overrides it (the keyword `currentColor` stays unresolved).
-        if (style?.Get(PropertyId.TextDecorationColor) is CssColor c) return c;
+        if (style?.Get(PropertyId.TextDecorationColor) is CssColor c)
+        {
+            return c;
+        }
+
         return currentColor;
     }
 
@@ -2244,9 +2617,17 @@ public sealed class DisplayListBuilder
     /// </summary>
     private static IReadOnlyList<FilterFunction>? TryGetFilterFunctions(Box box, Func<Box, ComputedStyle?>? styleOverride)
     {
-        if (box.Frame.Width <= 0 && box.Frame.Height <= 0) return null;
+        if (box.Frame.Width <= 0 && box.Frame.Height <= 0)
+        {
+            return null;
+        }
+
         var style = EffectiveStyle(box, styleOverride);
-        if (style is null) return null;
+        if (style is null)
+        {
+            return null;
+        }
+
         return ResolveFilterFunctions(style.Get(PropertyId.Filter), style.GetColor(PropertyId.Color));
     }
 
@@ -2259,10 +2640,22 @@ public sealed class DisplayListBuilder
     private static void EmitBackdropFilter(Rect bounds, CornerRadii radii, DisplayList list, Matrix2D current, Rect? cull, ComputedStyle style)
     {
         var raw = style.Get(PropertyId.BackdropFilter);
-        if (raw is null or CssKeyword) return; // none — the initial value
-        if (bounds.Width <= 0 || bounds.Height <= 0) return;
+        if (raw is null or CssKeyword)
+        {
+            return; // none — the initial value
+        }
+
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
         var filters = ResolveFilterFunctions(raw, style.GetColor(PropertyId.Color));
-        if (filters is null) return;
+        if (filters is null)
+        {
+            return;
+        }
+
         Emit(list, new DrawBackdropFilter(bounds, radii, filters), bounds, current, cull);
     }
 
@@ -2287,8 +2680,16 @@ public sealed class DisplayListBuilder
                     var resolved = new FilterFunction[chain.Values.Count];
                     for (var i = 0; i < chain.Values.Count; i++)
                     {
-                        if (chain.Values[i] is not CssFunctionValue fn) return null;
-                        if (ResolveFilterFunction(fn, currentColor) is not { } one) return null;
+                        if (chain.Values[i] is not CssFunctionValue fn)
+                        {
+                            return null;
+                        }
+
+                        if (ResolveFilterFunction(fn, currentColor) is not { } one)
+                        {
+                            return null;
+                        }
+
                         resolved[i] = one;
                     }
                     return resolved;
@@ -2358,7 +2759,11 @@ public sealed class DisplayListBuilder
             case CssPercentage p when p.Value >= 0: amount = p.Value / 100d; break;
             default: return null;
         }
-        if (clampToOne && amount > 1) amount = 1;
+        if (clampToOne && amount > 1)
+        {
+            amount = 1;
+        }
+
         return new FilterFunction(kind, amount);
     }
 
@@ -2402,7 +2807,11 @@ public sealed class DisplayListBuilder
             }
         }
 
-        if (ox is null || oy is null) return null; // both offsets are required
+        if (ox is null || oy is null)
+        {
+            return null; // both offsets are required
+        }
+
         return new FilterFunction(FilterFunctionKind.DropShadow, blur, ox.Value, oy.Value, color);
     }
 }

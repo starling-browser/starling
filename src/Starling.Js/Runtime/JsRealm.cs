@@ -395,17 +395,22 @@ public sealed class JsRealm
     {
         var obj = new JsObject(ObjectPrototype) { IsArgumentsExotic = true };
         for (var i = 0; i < args.Count; i++)
+        {
             obj.DefineOwnProperty(
                 i.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 PropertyDescriptor.Data(args[i], writable: true, enumerable: true, configurable: true));
+        }
+
         obj.DefineOwnProperty("length",
             PropertyDescriptor.Data(JsValue.Number(args.Count), writable: true, enumerable: false, configurable: true));
         // @@iterator = %Array.prototype.values% so `[...arguments]` / `for…of`
         // work. Resolve it off Array.prototype if the Array intrinsic is wired.
         var arrayIter = ArrayPrototype.GetOwnPropertyDescriptor(Intrinsics.SymbolCtor.Iterator);
         if (arrayIter is { } iterDesc && iterDesc.Value.IsObject)
+        {
             obj.DefineOwnProperty(Intrinsics.SymbolCtor.Iterator,
                 PropertyDescriptor.BuiltinMethod(iterDesc.Value));
+        }
         // §10.4.4.6 step 7 — strict-mode arguments objects expose a
         // non-configurable `callee` accessor that throws on get or set.
         if (strict)
@@ -432,15 +437,20 @@ public sealed class JsRealm
     {
         var obj = new JsMappedArguments(ObjectPrototype, locals, slotForIndex);
         for (var i = 0; i < args.Count; i++)
+        {
             obj.DefineOwnProperty(
                 i.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 PropertyDescriptor.Data(args[i], writable: true, enumerable: true, configurable: true));
+        }
+
         obj.DefineOwnProperty("length",
             PropertyDescriptor.Data(JsValue.Number(args.Count), writable: true, enumerable: false, configurable: true));
         var arrayIter = ArrayPrototype.GetOwnPropertyDescriptor(Intrinsics.SymbolCtor.Iterator);
         if (arrayIter is { } iterDesc && iterDesc.Value.IsObject)
+        {
             obj.DefineOwnProperty(Intrinsics.SymbolCtor.Iterator,
                 PropertyDescriptor.BuiltinMethod(iterDesc.Value));
+        }
         // §10.4.4.6 step 7.b — non-strict mapped arguments expose `callee` as the
         // function object itself (writable, non-enumerable, configurable).
         obj.DefineOwnProperty("callee",
@@ -498,7 +508,10 @@ public sealed class JsRealm
     internal JsObject BoxString(JsValue v)
     {
         if (v.IsString)
+        {
             return new JsStringObject(StringPrototype, v.AsString);
+        }
+
         return BoxPrimitive(StringPrototype, v);
     }
     internal JsObject BoxBigInt(JsValue v) => BoxPrimitive(BigIntPrototype, v);

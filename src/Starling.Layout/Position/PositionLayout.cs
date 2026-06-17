@@ -105,11 +105,23 @@ internal sealed class PositionLayout
             // when both set. So `left`/`top` win; otherwise either side can
             // shift (right = -right offset, bottom = -bottom offset).
             double dx = 0, dy = 0;
-            if (leftPx is { } lx) dx = lx;
-            else if (rightPx is { } rx) dx = -rx;
+            if (leftPx is { } lx)
+            {
+                dx = lx;
+            }
+            else if (rightPx is { } rx)
+            {
+                dx = -rx;
+            }
 
-            if (topPx is { } ty) dy = ty;
-            else if (bottomPx is { } by) dy = -by;
+            if (topPx is { } ty)
+            {
+                dy = ty;
+            }
+            else if (bottomPx is { } by)
+            {
+                dy = -by;
+            }
 
             var natural = NaturalFrameOf(box);
             CommitShift(box, natural, natural.Translate(dx, dy));
@@ -136,7 +148,9 @@ internal sealed class PositionLayout
         // frames are stored in parent-relative coords — but we keep it here
         // in case we want to add coverage later.
         foreach (var child in box.Children)
+        {
             ApplyRelativeOffsets(child, parentOriginX + box.Frame.X, parentOriginY + box.Frame.Y);
+        }
     }
 
     /// <summary>
@@ -299,7 +313,9 @@ internal sealed class PositionLayout
         // containing block for absolute descendants.
         var pushed = props.IsContainingBlockForAbsolute;
         if (pushed)
+        {
             ancestorStack.Push(paddingBoxRect);
+        }
 
         // A scroll container rebinds sticky descendants to itself: they stick
         // against the FIRST scroller up the chain, and outer scrollers move
@@ -308,18 +324,24 @@ internal sealed class PositionLayout
             && (Scroll.ScrollOverflowMeasurer.Classify(box) & Scroll.ScrollBoxFlags.ScrollContainer) != 0)
         {
             foreach (var child in box.Children)
+            {
                 Walk(child, contentOriginX, contentOriginY, ancestorStack,
                     box.Element, paddingBoxRect.X, paddingBoxRect.Y);
+            }
         }
         else
         {
             foreach (var child in box.Children)
+            {
                 Walk(child, contentOriginX, contentOriginY, ancestorStack,
                     scroller, scrollerPadX, scrollerPadY);
+            }
         }
 
         if (pushed)
+        {
             ancestorStack.Pop();
+        }
     }
 
     /// <summary>
@@ -349,9 +371,14 @@ internal sealed class PositionLayout
         var widthResolved = BlockLayout.ResolveLength(box.Style, PropertyId.Width, cbDocRect.Width, _viewport, allowAuto: true);
         var heightResolved = BlockLayout.ResolveLength(box.Style, PropertyId.Height, cbDocRect.Height, _viewport, allowAuto: true);
         if (widthResolved is { } wr)
+        {
             widthResolved = wr + box.Padding.Horizontal + box.Border.Horizontal;
+        }
+
         if (heightResolved is { } hr)
+        {
             heightResolved = hr + box.Padding.Vertical + box.Border.Vertical;
+        }
 
         // Resolve insets against the containing block's content-box
         // dimensions.
@@ -502,7 +529,11 @@ internal sealed class PositionLayout
 
     private static (double Width, double Height) ContainingBlockContentSizeOf(Box.Box? parent)
     {
-        if (parent is null) return (0, 0);
+        if (parent is null)
+        {
+            return (0, 0);
+        }
+
         var contentW = System.Math.Max(0, parent.Frame.Width - parent.Padding.Horizontal - parent.Border.Horizontal);
         var contentH = System.Math.Max(0, parent.Frame.Height - parent.Padding.Vertical - parent.Border.Vertical);
         return (contentW, contentH);

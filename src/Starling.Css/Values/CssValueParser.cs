@@ -51,7 +51,10 @@ public static class CssValueParser
     private static CssValue ParseDimension(double value, string unit)
     {
         if (Enum.TryParse<CssLengthUnit>(unit, ignoreCase: true, out var lengthUnit))
+        {
             return new CssLength(value, lengthUnit);
+        }
+
         return unit.ToLowerInvariant() switch
         {
             "deg" => new CssAngle(value, CssAngleUnit.Degrees),
@@ -73,11 +76,20 @@ public static class CssValueParser
     {
         var name = function.Name.ToLowerInvariant();
         if (name == "var")
+        {
             return ParseVar(function.Values);
+        }
+
         if (name == "env")
+        {
             return ParseEnv(function.Values);
+        }
+
         if (name == "attr")
+        {
             return ParseAttr(function.Values);
+        }
+
         if (name == "url")
         {
             // `url("…")` tokenizes as a function token (`url(` + string +
@@ -86,15 +98,22 @@ public static class CssValueParser
             // quoted vs. bare URLs.
             var args = SplitArguments(function.Values).ToList();
             if (args.Count > 0 && Parse(args[0]) is CssString s)
+            {
                 return new CssUrl(s.Value);
+            }
         }
 
         if (IsMathFunction(name))
+        {
             return CalcEvaluator.ParseFunction(name, function.Values);
+        }
+
         if (IsColorFunction(name))
         {
             if (ColorParser.TryParseFunction(name, function.Values, out var color))
+            {
                 return color;
+            }
         }
 
         return new CssFunctionValue(name, SplitArguments(function.Values).Select(Parse).ToList());
@@ -134,7 +153,9 @@ public static class CssValueParser
     {
         var args = SplitArguments(values).ToList();
         if (args.Count == 0)
+        {
             return new CssAttrReference(string.Empty, null, null);
+        }
         // First argument: name [type-or-unit]
         var firstTokens = args[0]
             .Where(v => v is not CssTokenValue { Token.Type: CssTokenType.Whitespace })

@@ -135,7 +135,9 @@ internal sealed class LayerTreeBuilder
         var contentOriginX = frameX + layerBox.Border.Left + layerBox.Padding.Left;
         var contentOriginY = frameY + layerBox.Border.Top + layerBox.Padding.Top;
         foreach (var child in layerBox.Children)
+        {
             CollectChildLayers(child, contentOriginX, contentOriginY, children, inheritedClip: null);
+        }
 
         // CSS-Position-3 §9 painting order: negative z-index below, then
         // auto/0 in tree order, then positive z-index — a stable sort by the
@@ -156,7 +158,9 @@ internal sealed class LayerTreeBuilder
         // hover brightness must still re-raster the layer.
         var contentHash = DisplayListContentHash.Compute(slice);
         if (rootFilters is not null)
+        {
             contentHash = DisplayListContentHash.Combine(contentHash, DisplayListContentHash.ComputeFilters(rootFilters));
+        }
 
         return new CompositorLayer(slice, bounds, transform ?? Matrix2D.Identity, opacity, clip, ordered,
             contentHash: contentHash, layerId: _layerIdFor?.Invoke(layerBox) ?? 0,
@@ -176,10 +180,18 @@ internal sealed class LayerTreeBuilder
     /// </summary>
     private IReadOnlyList<FilterFunction>? TryGetBackdropFilters(Box box)
     {
-        if (box.Frame.Width <= 0 || box.Frame.Height <= 0) return null;
+        if (box.Frame.Width <= 0 || box.Frame.Height <= 0)
+        {
+            return null;
+        }
+
         var style = _styleOverride?.Invoke(box) ?? box.Style;
         var raw = style?.Get(PropertyId.BackdropFilter);
-        if (raw is null or CssKeyword) return null; // none — the initial value
+        if (raw is null or CssKeyword)
+        {
+            return null; // none — the initial value
+        }
+
         return DisplayListBuilder.ResolveFilterFunctions(raw, style!.GetColor(PropertyId.Color));
     }
 
@@ -210,7 +222,9 @@ internal sealed class LayerTreeBuilder
         // An animating layer root is rebuilt in full (slice, transform, opacity,
         // hash, and its own subtree) so the fresh animation sample takes effect.
         if (node.SourceBox is { } box && (_isAnimatingLayerRoot?.Invoke(box) ?? false))
+        {
             return BuildLayer(box, node.OriginParentX, node.OriginParentY, node.InheritedClip);
+        }
 
         // Static node: reuse its slice/hash unchanged, but recurse so an animating
         // descendant layer still refreshes.
@@ -225,7 +239,10 @@ internal sealed class LayerTreeBuilder
                 if (refreshed is null)
                 {
                     refreshed = new List<CompositorLayer>(children.Count);
-                    for (var j = 0; j < i; j++) refreshed.Add(children[j]);
+                    for (var j = 0; j < i; j++)
+                    {
+                        refreshed.Add(children[j]);
+                    }
                 }
             }
             refreshed?.Add(r);
@@ -261,14 +278,24 @@ internal sealed class LayerTreeBuilder
         var contentOriginX = frameX + box.Border.Left + box.Padding.Left;
         var contentOriginY = frameY + box.Border.Top + box.Padding.Top;
         foreach (var child in box.Children)
+        {
             CollectChildLayers(child, contentOriginX, contentOriginY, sink, childInheritedClip);
+        }
     }
 
     /// <summary>Intersects two page-space clip rects; null means "no clip".</summary>
     private static Rect? IntersectClip(Rect? a, Rect? b)
     {
-        if (a is null) return b;
-        if (b is null) return a;
+        if (a is null)
+        {
+            return b;
+        }
+
+        if (b is null)
+        {
+            return a;
+        }
+
         var x = Math.Max(a.Value.X, b.Value.X);
         var y = Math.Max(a.Value.Y, b.Value.Y);
         var right = Math.Min(a.Value.X + a.Value.Width, b.Value.X + b.Value.Width);
@@ -293,12 +320,20 @@ internal sealed class LayerTreeBuilder
                     stack.Push(transform);
                     continue;
                 case PopTransform:
-                    if (stack.Count > 1) stack.Pop();
+                    if (stack.Count > 1)
+                    {
+                        stack.Pop();
+                    }
+
                     transform = stack.Peek();
                     continue;
             }
 
-            if (!DisplayItemBounds.TryGet(item, out var local)) continue;
+            if (!DisplayItemBounds.TryGet(item, out var local))
+            {
+                continue;
+            }
+
             var aabb = TransformedAabb(local, transform);
             if (!any)
             {
@@ -319,7 +354,11 @@ internal sealed class LayerTreeBuilder
 
     private static Rect TransformedAabb(Rect r, Matrix2D m)
     {
-        if (m.IsIdentity) return r;
+        if (m.IsIdentity)
+        {
+            return r;
+        }
+
         var (x0, y0) = m.Transform(r.X, r.Y);
         var (x1, y1) = m.Transform(r.X + r.Width, r.Y);
         var (x2, y2) = m.Transform(r.X + r.Width, r.Y + r.Height);
@@ -345,13 +384,19 @@ internal sealed class LayerTreeBuilder
     private Rect? EffectiveClip(Box box, double frameX, double frameY)
     {
         var style = _styleOverride?.Invoke(box) ?? box.Style;
-        if (style is null) return null;
+        if (style is null)
+        {
+            return null;
+        }
         // overflow:hidden clips the subtree to the box's frame (border box).
         // The `overflow` shorthand expands to overflow-x / overflow-y, so the
         // longhands are the carriers. Border-radius clipping is deferred (WP note).
         if (!IsOverflowHidden(style.Get(PropertyId.OverflowX))
             && !IsOverflowHidden(style.Get(PropertyId.OverflowY)))
+        {
             return null;
+        }
+
         return new Rect(frameX, frameY, box.Frame.Width, box.Frame.Height);
     }
 

@@ -32,7 +32,10 @@ internal sealed class InboundBuffer
     public void Consume(int count)
     {
         if (count < 0 || count > BufferedCount)
+        {
             throw new ArgumentOutOfRangeException(nameof(count));
+        }
+
         _start += count;
         if (_start == _end) { _start = 0; _end = 0; }
     }
@@ -43,7 +46,11 @@ internal sealed class InboundBuffer
     /// </summary>
     public async ValueTask<bool> ReadMoreAsync(CancellationToken ct)
     {
-        if (Eof) return false;
+        if (Eof)
+        {
+            return false;
+        }
+
         EnsureCapacityForMore();
         var n = await _stream.ReadAsync(_buf.AsMemory(_end, _buf.Length - _end), ct)
             .ConfigureAwait(false);
@@ -61,7 +68,10 @@ internal sealed class InboundBuffer
         var span = Peek();
         for (var i = 0; i + 1 < span.Length; i++)
         {
-            if (span[i] == 0x0D && span[i + 1] == 0x0A) return i;
+            if (span[i] == 0x0D && span[i + 1] == 0x0A)
+            {
+                return i;
+            }
         }
         return -1;
     }
@@ -77,7 +87,9 @@ internal sealed class InboundBuffer
         {
             if (span[i] == 0x0D && span[i + 1] == 0x0A
                 && span[i + 2] == 0x0D && span[i + 3] == 0x0A)
+            {
                 return i;
+            }
         }
         return -1;
     }
@@ -91,9 +103,20 @@ internal sealed class InboundBuffer
         while (true)
         {
             var idx = IndexOfCrLf();
-            if (idx >= 0) return true;
-            if (BufferedCount > maxLineLength) return false;
-            if (!await ReadMoreAsync(ct).ConfigureAwait(false)) return false;
+            if (idx >= 0)
+            {
+                return true;
+            }
+
+            if (BufferedCount > maxLineLength)
+            {
+                return false;
+            }
+
+            if (!await ReadMoreAsync(ct).ConfigureAwait(false))
+            {
+                return false;
+            }
         }
     }
 
@@ -120,7 +143,11 @@ internal sealed class InboundBuffer
     /// </summary>
     public async ValueTask<byte[]> ReadExactAsync(int count, CancellationToken ct)
     {
-        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count));
+        }
+
         var result = new byte[count];
         var written = 0;
 
@@ -157,7 +184,11 @@ internal sealed class InboundBuffer
         using var ms = new MemoryStream();
         if (BufferedCount > 0)
         {
-            if (BufferedCount > maxBytes) throw new InvalidDataException("Body exceeded cap.");
+            if (BufferedCount > maxBytes)
+            {
+                throw new InvalidDataException("Body exceeded cap.");
+            }
+
             ms.Write(_buf, _start, BufferedCount);
             Consume(BufferedCount);
         }
@@ -165,10 +196,18 @@ internal sealed class InboundBuffer
         var temp = new byte[8 * 1024];
         while (true)
         {
-            if (ms.Length > maxBytes) throw new InvalidDataException("Body exceeded cap.");
+            if (ms.Length > maxBytes)
+            {
+                throw new InvalidDataException("Body exceeded cap.");
+            }
+
             var n = await _stream.ReadAsync(temp, ct).ConfigureAwait(false);
             if (n == 0) { Eof = true; break; }
-            if (ms.Length + n > maxBytes) throw new InvalidDataException("Body exceeded cap.");
+            if (ms.Length + n > maxBytes)
+            {
+                throw new InvalidDataException("Body exceeded cap.");
+            }
+
             ms.Write(temp, 0, n);
         }
         return ms.ToArray();

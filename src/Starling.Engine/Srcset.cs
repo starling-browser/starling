@@ -45,12 +45,16 @@ internal static class Srcset
     {
         var candidates = Parse(srcset);
         if (candidates.Count == 0)
+        {
             return (fallbackSrc ?? string.Empty, 0, 0);
+        }
 
         var sourceSize = ParseSourceSize(sizes, viewportWidthCssPx, fontSizeCssPx);
         var (picked, density) = PickCandidate(candidates, sourceSize);
         if (picked is null)
+        {
             return (fallbackSrc ?? string.Empty, 0, 0);
+        }
 
         // Density-corrected width: source-size in CSS px when a w-candidate
         // was picked, or 0 (= use source pixel dims) for pure x-candidates
@@ -72,7 +76,10 @@ internal static class Srcset
     public static List<Candidate> Parse(string? srcset)
     {
         var list = new List<Candidate>();
-        if (string.IsNullOrWhiteSpace(srcset)) return list;
+        if (string.IsNullOrWhiteSpace(srcset))
+        {
+            return list;
+        }
 
         // Split on commas, but respect URLs that may contain commas — the
         // HTML spec's tokenizer is whitespace-driven; we approximate by
@@ -82,7 +89,10 @@ internal static class Srcset
         foreach (var raw in SplitCandidates(srcset))
         {
             var trimmed = raw.Trim();
-            if (trimmed.Length == 0) continue;
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
 
             // Last whitespace separates URL from descriptor (if any).
             var lastWs = LastWhitespace(trimmed);
@@ -98,7 +108,10 @@ internal static class Srcset
                 descriptor = trimmed[(lastWs + 1)..];
             }
 
-            if (url.Length == 0) continue;
+            if (url.Length == 0)
+            {
+                continue;
+            }
 
             double w = 0, d = 1.0;
             if (descriptor is { Length: > 0 })
@@ -106,10 +119,22 @@ internal static class Srcset
                 var unit = descriptor[^1];
                 var numText = descriptor[..^1];
                 if (!double.TryParse(numText, NumberStyles.Float, CultureInfo.InvariantCulture, out var n))
+                {
                     continue;
-                if (unit is 'w' or 'W') w = n;
-                else if (unit is 'x' or 'X') d = n;
-                else continue;
+                }
+
+                if (unit is 'w' or 'W')
+                {
+                    w = n;
+                }
+                else if (unit is 'x' or 'X')
+                {
+                    d = n;
+                }
+                else
+                {
+                    continue;
+                }
             }
             list.Add(new Candidate(url, w, d));
         }
@@ -121,27 +146,51 @@ internal static class Srcset
         var start = 0;
         for (var i = 0; i < srcset.Length; i++)
         {
-            if (srcset[i] != ',') continue;
+            if (srcset[i] != ',')
+            {
+                continue;
+            }
             // Treat as separator only when followed by whitespace or end.
-            if (i + 1 < srcset.Length && !char.IsWhiteSpace(srcset[i + 1])) continue;
+            if (i + 1 < srcset.Length && !char.IsWhiteSpace(srcset[i + 1]))
+            {
+                continue;
+            }
+
             yield return srcset[start..i];
             start = i + 1;
         }
-        if (start < srcset.Length) yield return srcset[start..];
+        if (start < srcset.Length)
+        {
+            yield return srcset[start..];
+        }
     }
 
     private static int LastWhitespace(string s)
     {
         for (var i = s.Length - 1; i >= 0; i--)
-            if (char.IsWhiteSpace(s[i])) return i;
+        {
+            if (char.IsWhiteSpace(s[i]))
+            {
+                return i;
+            }
+        }
+
         return -1;
     }
 
     private static bool IsDescriptor(ReadOnlySpan<char> token)
     {
-        if (token.Length < 2) return false;
+        if (token.Length < 2)
+        {
+            return false;
+        }
+
         var tail = token[^1];
-        if (tail is not ('w' or 'W' or 'x' or 'X')) return false;
+        if (tail is not ('w' or 'W' or 'x' or 'X'))
+        {
+            return false;
+        }
+
         return double.TryParse(token[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out _);
     }
 
@@ -152,29 +201,44 @@ internal static class Srcset
     /// </summary>
     public static double ParseSourceSize(string? sizes, double viewportWidthCssPx, double fontSizeCssPx)
     {
-        if (string.IsNullOrWhiteSpace(sizes)) return 0;
+        if (string.IsNullOrWhiteSpace(sizes))
+        {
+            return 0;
+        }
 
         foreach (var raw in sizes.Split(','))
         {
             var clause = raw.Trim();
-            if (clause.Length == 0) continue;
+            if (clause.Length == 0)
+            {
+                continue;
+            }
 
             // Either "<media-query> <length>" or bare "<length>".
             string lengthPart;
             if (clause[0] == '(')
             {
                 var close = clause.IndexOf(')');
-                if (close < 0) continue;
+                if (close < 0)
+                {
+                    continue;
+                }
+
                 var query = clause[1..close].Trim();
                 lengthPart = clause[(close + 1)..].Trim();
-                if (!EvaluateMediaQuery(query, viewportWidthCssPx, fontSizeCssPx)) continue;
+                if (!EvaluateMediaQuery(query, viewportWidthCssPx, fontSizeCssPx))
+                {
+                    continue;
+                }
             }
             else
             {
                 lengthPart = clause;
             }
             if (ResolveLengthCssPx(lengthPart, viewportWidthCssPx, fontSizeCssPx) is { } px && px > 0)
+            {
                 return px;
+            }
         }
         return 0;
     }
@@ -182,10 +246,18 @@ internal static class Srcset
     private static bool EvaluateMediaQuery(string query, double viewportWidth, double fontSize)
     {
         var colon = query.IndexOf(':');
-        if (colon < 0) return false;
+        if (colon < 0)
+        {
+            return false;
+        }
+
         var feature = query[..colon].Trim().ToLowerInvariant();
         var value = query[(colon + 1)..].Trim();
-        if (ResolveLengthCssPx(value, viewportWidth, fontSize) is not { } px) return false;
+        if (ResolveLengthCssPx(value, viewportWidth, fontSize) is not { } px)
+        {
+            return false;
+        }
+
         return feature switch
         {
             "min-width" => viewportWidth >= px,
@@ -197,7 +269,10 @@ internal static class Srcset
     private static double? ResolveLengthCssPx(string raw, double viewportWidth, double fontSize)
     {
         raw = raw.Trim();
-        if (raw.Length == 0) return null;
+        if (raw.Length == 0)
+        {
+            return null;
+        }
 
         string num; string unit;
         var unitStart = raw.Length;
@@ -214,7 +289,9 @@ internal static class Srcset
         unit = raw[unitStart..].Trim().ToLowerInvariant();
 
         if (!double.TryParse(num, NumberStyles.Float, CultureInfo.InvariantCulture, out var n))
+        {
             return null;
+        }
 
         return unit switch
         {
@@ -239,13 +316,30 @@ internal static class Srcset
             Candidate? largest = null;
             foreach (var c in candidates)
             {
-                if (c.Width <= 0) continue;
-                if (largest is null || c.Width > largest.Value.Width) largest = c;
+                if (c.Width <= 0)
+                {
+                    continue;
+                }
+
+                if (largest is null || c.Width > largest.Value.Width)
+                {
+                    largest = c;
+                }
+
                 if (c.Width >= sourceSize && (bestFit is null || c.Width < bestFit.Value.Width))
+                {
                     bestFit = c;
+                }
             }
-            if (bestFit is { } b) return (b, b.Width / sourceSize);
-            if (largest is { } l) return (l, l.Width / sourceSize);
+            if (bestFit is { } b)
+            {
+                return (b, b.Width / sourceSize);
+            }
+
+            if (largest is { } l)
+            {
+                return (l, l.Width / sourceSize);
+            }
         }
 
         // No sizes: prefer the highest density x-candidate; if only
@@ -257,15 +351,29 @@ internal static class Srcset
         {
             if (c.Width > 0)
             {
-                if (bestW is null || c.Width > bestW.Value.Width) bestW = c;
+                if (bestW is null || c.Width > bestW.Value.Width)
+                {
+                    bestW = c;
+                }
             }
             else
             {
-                if (bestX is null || c.Density > bestX.Value.Density) bestX = c;
+                if (bestX is null || c.Density > bestX.Value.Density)
+                {
+                    bestX = c;
+                }
             }
         }
-        if (bestX is { } x) return (x, x.Density);
-        if (bestW is { } w) return (w, 1.0);
+        if (bestX is { } x)
+        {
+            return (x, x.Density);
+        }
+
+        if (bestW is { } w)
+        {
+            return (w, 1.0);
+        }
+
         return (null, 1.0);
     }
 }

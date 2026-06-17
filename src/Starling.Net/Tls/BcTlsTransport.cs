@@ -40,10 +40,20 @@ public sealed class BcTlsTransport : ITlsTransport
         TlsClientOptions options,
         CancellationToken ct = default)
     {
-        if (tcpConnection is null) throw new ArgumentNullException(nameof(tcpConnection));
-        if (options is null) throw new ArgumentNullException(nameof(options));
+        if (tcpConnection is null)
+        {
+            throw new ArgumentNullException(nameof(tcpConnection));
+        }
+
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
         if (string.IsNullOrWhiteSpace(options.ServerName) || options.ApplicationProtocols.Count == 0)
+        {
             return Result<BcTlsTransport, TlsError>.Err(TlsError.InvalidOptions);
+        }
 
         var tcpStream = new TcpConnectionStream(tcpConnection);
         var client = new StarlingTlsClient(
@@ -77,7 +87,11 @@ public sealed class BcTlsTransport : ITlsTransport
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         // Disposing the duplex stream sends close_notify (best-effort) and tears
         // down the wrapped TCP connection.

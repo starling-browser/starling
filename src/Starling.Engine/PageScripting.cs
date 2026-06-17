@@ -76,7 +76,11 @@ public sealed class PageScripting : IDisposable
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(evt);
-        if (_disposed) return false;
+        if (_disposed)
+        {
+            return false;
+        }
+
         return _session.DispatchEvent(target, evt);
     }
 
@@ -89,7 +93,10 @@ public sealed class PageScripting : IDisposable
     /// </summary>
     public bool PumpFrame(long elapsedMs)
     {
-        if (_disposed) return false;
+        if (_disposed)
+        {
+            return false;
+        }
         // HTML event loop ordering: the scroll steps run before this frame's
         // requestAnimationFrame callbacks (which fire inside the session's
         // pump below). A rAF scheduled by a scroll listener still lands in
@@ -112,7 +119,11 @@ public sealed class PageScripting : IDisposable
     private bool RunScrollSteps()
     {
         var store = _scrollState;
-        if (store is null || _inScrollSteps || !store.HasPendingEvents) return false;
+        if (store is null || _inScrollSteps || !store.HasPendingEvents)
+        {
+            return false;
+        }
+
         _inScrollSteps = true;
         try
         {
@@ -136,13 +147,21 @@ public sealed class PageScripting : IDisposable
     /// </summary>
     public bool UpdateIntersectionObservations(double viewportX, double viewportY, double viewportWidth, double viewportHeight)
     {
-        if (_disposed) return false;
+        if (_disposed)
+        {
+            return false;
+        }
+
         return _session.UpdateIntersectionObservations(viewportX, viewportY, viewportWidth, viewportHeight);
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         _session.FireBeforeUnload();
         _session.FireUnload();

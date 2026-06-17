@@ -108,7 +108,10 @@ internal static class ScrollOverflowMeasurer
     internal static ScrollBoxFlags Classify(Box.Box box)
     {
         var f = box.ScrollFlags;
-        if ((f & ScrollBoxFlags.Computed) != 0) return f;
+        if ((f & ScrollBoxFlags.Computed) != 0)
+        {
+            return f;
+        }
 
         f = ScrollBoxFlags.Computed;
         if (box.Style is { } style)
@@ -116,12 +119,19 @@ internal static class ScrollOverflowMeasurer
             var ox = style.Get(PropertyId.OverflowX);
             var oy = style.Get(PropertyId.OverflowY);
             if (IsScrollKeyword(ox) || IsScrollKeyword(oy))
+            {
                 f |= ScrollBoxFlags.ScrollContainer | ScrollBoxFlags.ClipsOverflow;
+            }
             else if (IsClipKeyword(ox) || IsClipKeyword(oy))
+            {
                 f |= ScrollBoxFlags.ClipsOverflow;
+            }
+
             if (style.Get(PropertyId.Position) is CssKeyword { Name: var p }
                 && p.Equals("fixed", StringComparison.OrdinalIgnoreCase))
+            {
                 f |= ScrollBoxFlags.FixedPosition;
+            }
         }
         box.ScrollFlags = f;
         return f;
@@ -138,10 +148,19 @@ internal static class ScrollOverflowMeasurer
     /// </summary>
     internal static bool IsStampReachable(Box.Box box)
     {
-        if (box.Kind != BoxKind.BlockContainer) return false;
+        if (box.Kind != BoxKind.BlockContainer)
+        {
+            return false;
+        }
+
         for (var b = box.Parent; b is not null; b = b.Parent)
+        {
             if (b.Kind == BoxKind.Inline)
+            {
                 return false;
+            }
+        }
+
         return true;
     }
 
@@ -161,7 +180,11 @@ internal static class ScrollOverflowMeasurer
     {
         for (var b = box; b is not null; b = b.Parent)
         {
-            if (!b.ScrollExtentValid && !ReferenceEquals(b, box)) break;
+            if (!b.ScrollExtentValid && !ReferenceEquals(b, box))
+            {
+                break;
+            }
+
             b.ScrollExtentValid = false;
         }
     }
@@ -176,11 +199,15 @@ internal static class ScrollOverflowMeasurer
         cacheable = cacheable && box.Kind is BoxKind.BlockContainer or BoxKind.AnonymousBlock;
 
         if (box.Element is not null && (Classify(box) & ScrollBoxFlags.ScrollContainer) != 0)
+        {
             MeasureContainer(box, store, trustCaches: false,
                 cacheableInterior: cacheable && box.Kind == BoxKind.BlockContainer);
+        }
 
         foreach (var child in box.Children)
+        {
             Visit(child, store, cacheable);
+        }
     }
 
     /// <summary>Document scroller: scrollport = viewport, scrollable overflow
@@ -215,19 +242,33 @@ internal static class ScrollOverflowMeasurer
         var cdy = box.Padding.Top;
         foreach (var child in box.Children)
         {
-            if ((Classify(child) & ScrollBoxFlags.FixedPosition) != 0) continue;
+            if ((Classify(child) & ScrollBoxFlags.FixedPosition) != 0)
+            {
+                continue;
+            }
+
             var (cr, cb) = SubtreeExtent(child, cacheableInterior, trustCaches);
             var r = cdx + child.Frame.X + cr;
             var b = cdy + child.Frame.Y + cb;
-            if (r > right) right = r;
-            if (b > bottom) bottom = b;
+            if (r > right)
+            {
+                right = r;
+            }
+
+            if (b > bottom)
+            {
+                bottom = b;
+            }
         }
 
         // Block-end padding joins the scrollable overflow once content
         // overflows past the content box's block end (Chromium: padding:10px
         // + a 300px child in a 100px-tall scroller => scrollHeight 320). The
         // inline axis stays content-only, matching Chromium block containers.
-        if (bottom > portH - box.Padding.Bottom) bottom += box.Padding.Bottom;
+        if (bottom > portH - box.Padding.Bottom)
+        {
+            bottom += box.Padding.Bottom;
+        }
 
         // CSS Overflow 3 §2.2: the scrollable overflow rectangle always
         // contains the padding box, so it never measures under the scrollport.
@@ -249,7 +290,9 @@ internal static class ScrollOverflowMeasurer
     {
         cacheable = cacheable && box.Kind is BoxKind.BlockContainer or BoxKind.AnonymousBlock;
         if (cacheable && trustCaches && box.ScrollExtentValid)
+        {
             return (box.ScrollExtentRight, box.ScrollExtentBottom);
+        }
 
         double right, bottom;
         if (box is TextBox text)
@@ -260,8 +303,15 @@ internal static class ScrollOverflowMeasurer
             {
                 var fr = f.X + f.Width;
                 var fb = f.Y + f.Height;
-                if (fr > right) right = fr;
-                if (fb > bottom) bottom = fb;
+                if (fr > right)
+                {
+                    right = fr;
+                }
+
+                if (fb > bottom)
+                {
+                    bottom = fb;
+                }
             }
         }
         else
@@ -280,12 +330,23 @@ internal static class ScrollOverflowMeasurer
                 {
                     // Fixed-position boxes anchor to the viewport; they are in
                     // no ancestor's scrolling area (CSS Overflow 3 §2.2).
-                    if ((Classify(child) & ScrollBoxFlags.FixedPosition) != 0) continue;
+                    if ((Classify(child) & ScrollBoxFlags.FixedPosition) != 0)
+                    {
+                        continue;
+                    }
+
                     var (cr, cb) = SubtreeExtent(child, cacheable, trustCaches);
                     var r = cdx + child.Frame.X + cr;
                     var b = cdy + child.Frame.Y + cb;
-                    if (r > right) right = r;
-                    if (b > bottom) bottom = b;
+                    if (r > right)
+                    {
+                        right = r;
+                    }
+
+                    if (b > bottom)
+                    {
+                        bottom = b;
+                    }
                 }
             }
         }

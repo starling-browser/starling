@@ -54,7 +54,10 @@ public sealed class SelectorMatchContext
     {
         if (_hasMatchCache is not null &&
             _hasMatchCache.TryGetValue(new HasMatchCacheKey(scope, list, HasDepth), out matched))
+        {
             return true;
+        }
+
         matched = false;
         return false;
     }
@@ -109,7 +112,9 @@ public static class SelectorMatcher
         for (var i = 0; i < selectors.Count; i++)
         {
             if (Matches(selectors[i], element, context))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -131,18 +136,27 @@ public static class SelectorMatcher
         ArgumentNullException.ThrowIfNull(selector);
         ArgumentNullException.ThrowIfNull(element);
         context ??= new SelectorMatchContext();
-        if (selector.Parts.Count == 0) return SelectorMatchResult.NoMatch;
+        if (selector.Parts.Count == 0)
+        {
+            return SelectorMatchResult.NoMatch;
+        }
 
         // Caller filters by pseudo-element kind: if the caller supplied a PseudoElement filter,
         // the selector must target the same one (or null = originating-element-only rules).
         var target = selector.TargetPseudoElement;
         if (context.PseudoElement is { } requested)
         {
-            if (target != requested) return SelectorMatchResult.NoMatch;
+            if (target != requested)
+            {
+                return SelectorMatchResult.NoMatch;
+            }
         }
         else
         {
-            if (target is not null) return SelectorMatchResult.NoMatch;
+            if (target is not null)
+            {
+                return SelectorMatchResult.NoMatch;
+            }
         }
 
         return MatchesFrom(selector, selector.Parts.Count - 1, element, context)
@@ -158,9 +172,14 @@ public static class SelectorMatcher
     {
         var part = selector.Parts[partIndex];
         if (!MatchesCompound(part.Compound, element, context))
+        {
             return false;
+        }
+
         if (partIndex == 0)
+        {
             return true;
+        }
 
         // Explicit pointer walks (nearest-first, same order as the old Ancestors()/
         // PreviousElementSiblings() iterators): the LINQ Any + iterator pair here was a
@@ -174,7 +193,9 @@ public static class SelectorMatcher
                 for (var ancestor = ParentElement(element); ancestor is not null; ancestor = ParentElement(ancestor))
                 {
                     if (MatchesFrom(selector, partIndex - 1, ancestor, context))
+                    {
                         return true;
+                    }
                 }
                 return false;
             case SelectorCombinator.NextSibling:
@@ -184,7 +205,9 @@ public static class SelectorMatcher
                 for (var prior = PreviousElementSibling(element); prior is not null; prior = PreviousElementSibling(prior))
                 {
                     if (MatchesFrom(selector, partIndex - 1, prior, context))
+                    {
                         return true;
+                    }
                 }
                 return false;
             case SelectorCombinator.Column: // column combinator '||' is not implemented yet
@@ -212,9 +235,14 @@ public static class SelectorMatcher
             // Pseudo-element selectors are filtered at the ComplexSelector level via MatchWithResult.
             // They don't add a per-element constraint, so they pass here as long as they're terminal.
             if (simple is PseudoElementSelector)
+            {
                 continue;
+            }
+
             if (!MatchesSimple(simple, element, context))
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -235,7 +263,10 @@ public static class SelectorMatcher
     private static bool MatchesType(TypeSelector selector, Element element)
     {
         if (!element.LocalName.Equals(selector.LocalName, StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
+
         return MatchesNamespace(selector.Namespace, element);
     }
 
@@ -246,9 +277,21 @@ public static class SelectorMatcher
     {
         // v1: treat namespace as opaque; only enforce when an explicit prefix is supplied.
         // TODO: integrate @namespace at-rule + default namespace once the rule pipeline exposes it.
-        if (ns is null) return true;
-        if (ns == "*") return true;
-        if (ns.Length == 0) return string.IsNullOrEmpty(element.Namespace);
+        if (ns is null)
+        {
+            return true;
+        }
+
+        if (ns == "*")
+        {
+            return true;
+        }
+
+        if (ns.Length == 0)
+        {
+            return string.IsNullOrEmpty(element.Namespace);
+        }
+
         return element.Prefix?.Equals(ns, StringComparison.OrdinalIgnoreCase) ?? true;
     }
 
@@ -256,9 +299,14 @@ public static class SelectorMatcher
     {
         var actual = element.GetAttribute(selector.Name);
         if (actual is null)
+        {
             return false;
+        }
+
         if (selector.Operator == AttributeOperator.Exists)
+        {
             return true;
+        }
 
         var expected = selector.Value ?? string.Empty;
         var comparison = selector.CaseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
@@ -357,10 +405,15 @@ public static class SelectorMatcher
             NthPattern np => (np, (SelectorList?)null),
             _ => (null!, (SelectorList?)null),
         };
-        if (pattern is null) return false;
+        if (pattern is null)
+        {
+            return false;
+        }
 
         if (ofSelector is null)
+        {
             return pattern.Matches(ElementIndex(element, ofType, fromEnd));
+        }
 
         // "of S" form: index counts only siblings matching S.
         var siblings = fromEnd
@@ -370,32 +423,53 @@ public static class SelectorMatcher
         foreach (var sibling in siblings)
         {
             if (Matches(ofSelector, sibling, context))
+            {
                 index++;
+            }
+
             if (sibling == element)
+            {
                 return Matches(ofSelector, element, context) && pattern.Matches(index);
+            }
         }
         return false;
     }
 
     private static bool MatchesHas(object? argument, Element element, SelectorMatchContext context)
     {
-        if (argument is not SelectorList list) return false;
-        if (context.HasDepth >= MaxHasDepth) return false; // depth bound — Selectors 4 §16.8
+        if (argument is not SelectorList list)
+        {
+            return false;
+        }
+
+        if (context.HasDepth >= MaxHasDepth)
+        {
+            return false; // depth bound — Selectors 4 §16.8
+        }
+
         if (context.TryGetHasMatch(element, list, out var cached))
+        {
             return cached;
+        }
 
         var childContext = context.WithHasDepth(context.HasDepth + 1).WithScope(element);
 
         foreach (var selector in list.Selectors)
         {
-            if (selector.Parts.Count == 0) continue;
+            if (selector.Parts.Count == 0)
+            {
+                continue;
+            }
+
             var search = ElementsForHas(element, selector);
             foreach (var candidate in search)
+            {
                 if (MatchesScoped(selector, candidate, element, childContext))
                 {
                     context.SetHasMatch(element, list, true);
                     return true;
                 }
+            }
         }
         context.SetHasMatch(element, list, false);
         return false;
@@ -419,14 +493,20 @@ public static class SelectorMatcher
     private static IEnumerable<Element> ChildElements(Element scope)
     {
         for (var child = scope.FirstChild; child is not null; child = child.NextSibling)
+        {
             if (child is Element childElement)
+            {
                 yield return childElement;
+            }
+        }
     }
 
     private static IEnumerable<Element> SingleElement(Element? element)
     {
         if (element is not null)
+        {
             yield return element;
+        }
     }
 
     private static IEnumerable<Element> NextElementSiblingsAndDescendants(Element scope)
@@ -435,7 +515,9 @@ public static class SelectorMatcher
         {
             yield return sibling;
             foreach (var d in sibling.Descendants().OfType<Element>())
+            {
                 yield return d;
+            }
         }
     }
 
@@ -459,7 +541,9 @@ public static class SelectorMatcher
     {
         var part = selector.Parts[partIndex];
         if (!MatchesCompound(part.Compound, element, context))
+        {
             return false;
+        }
 
         if (partIndex == 0)
         {
@@ -485,7 +569,9 @@ public static class SelectorMatcher
                 for (var ancestor = ParentElement(element); ancestor is not null; ancestor = ParentElement(ancestor))
                 {
                     if (MatchScopedFrom(selector, partIndex - 1, ancestor, scope, context))
+                    {
                         return true;
+                    }
                 }
                 return false;
             case SelectorCombinator.NextSibling:
@@ -495,7 +581,9 @@ public static class SelectorMatcher
                 for (var prior = PreviousElementSibling(element); prior is not null; prior = PreviousElementSibling(prior))
                 {
                     if (MatchScopedFrom(selector, partIndex - 1, prior, scope, context))
+                    {
                         return true;
+                    }
                 }
                 return false;
             default:
@@ -515,7 +603,9 @@ public static class SelectorMatcher
                 _ => false,
             };
             if (nonEmpty)
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -525,14 +615,24 @@ public static class SelectorMatcher
     private static bool MatchesHeading(object? argument, Element element)
     {
         var level = HeadingLevel(element);
-        if (level == 0) return false;
+        if (level == 0)
+        {
+            return false;
+        }
 
         // Bare :heading (no argument) matches any heading element.
-        if (argument is null) return true;
+        if (argument is null)
+        {
+            return true;
+        }
 
         if (argument is HeadingArgument heading)
         {
-            if (!heading.IsValid) return false;
+            if (!heading.IsValid)
+            {
+                return false;
+            }
+
             return heading.Levels.Contains(level);
         }
 
@@ -544,10 +644,16 @@ public static class SelectorMatcher
     {
         var name = element.LocalName;
         if (name.Length != 2 || (name[0] != 'h' && name[0] != 'H'))
+        {
             return 0;
+        }
+
         var digit = name[1];
         if (digit is >= '1' and <= '6')
+        {
             return digit - '0';
+        }
+
         return 0;
     }
 
@@ -557,7 +663,10 @@ public static class SelectorMatcher
         {
             var actual = current.GetAttribute("lang");
             if (actual is null)
+            {
                 continue;
+            }
+
             return actual.Equals(language, StringComparison.OrdinalIgnoreCase) ||
                 actual.StartsWith(language + "-", StringComparison.OrdinalIgnoreCase);
         }
@@ -581,17 +690,27 @@ public static class SelectorMatcher
             if (attr is not null)
             {
                 if (attr.Equals("ltr", StringComparison.OrdinalIgnoreCase))
+                {
                     return "ltr";
+                }
+
                 if (attr.Equals("rtl", StringComparison.OrdinalIgnoreCase))
+                {
                     return "rtl";
+                }
+
                 if (attr.Equals("auto", StringComparison.OrdinalIgnoreCase))
+                {
                     return AutoDirectionality(current);
+                }
             }
 
             // No dir attribute, or an invalid value (e.g. "foo"): a <bdi> with no valid dir
             // defaults to auto (HTML directionality); any other element inherits — keep walking up.
             if (current.LocalName.Equals("bdi", StringComparison.OrdinalIgnoreCase))
+            {
                 return AutoDirectionality(current);
+            }
         }
 
         // The default directionality of the document is ltr.
@@ -606,8 +725,15 @@ public static class SelectorMatcher
         foreach (var ch in text)
         {
             var strong = StrongDirection(ch);
-            if (strong == 'L') return "ltr";
-            if (strong == 'R') return "rtl";
+            if (strong == 'L')
+            {
+                return "ltr";
+            }
+
+            if (strong == 'R')
+            {
+                return "rtl";
+            }
         }
         return "ltr";
     }
@@ -625,7 +751,9 @@ public static class SelectorMatcher
                 : string.Empty;
         }
         if (element.LocalName.Equals("textarea", StringComparison.OrdinalIgnoreCase))
+        {
             return element.InputValue ?? element.TextContent;
+        }
 
         return element.TextContent;
     }
@@ -648,15 +776,22 @@ public static class SelectorMatcher
     {
         // Basic Latin and common LTR letters.
         if (c is >= 'A' and <= 'Z' or >= 'a' and <= 'z')
+        {
             return 'L';
+        }
         // Hebrew + Hebrew presentation forms (U+0590-U+05FF, U+FB1D-U+FB4F).
         if (c is >= '֐' and <= '׿' or >= 'יִ' and <= 'ﭏ')
+        {
             return 'R';
+        }
         // Arabic / Syriac / Thaana / NKo / Samaritan / Mandaic (U+0600-U+08FF) and
         // Arabic presentation forms A & B (U+FB50-U+FDFF, U+FE70-U+FEFF).
         if (c is >= '؀' and <= 'ࣿ' or >= 'ﭐ' and <= '﷿'
             or >= 'ﹰ' and <= '﻿')
+        {
             return 'R';
+        }
+
         return '\0';
     }
 
@@ -666,7 +801,9 @@ public static class SelectorMatcher
     private static bool IsReadOnly(Element element)
     {
         if (element.LocalName is "input" or "textarea")
+        {
             return element.HasAttribute("readonly") || element.HasAttribute("disabled");
+        }
         // Non-form, non-contenteditable elements are :read-only by default.
         return !IsEditable(element);
     }
@@ -674,13 +811,27 @@ public static class SelectorMatcher
     private static bool IsEditable(Element element)
     {
         if (element.LocalName is "input" or "textarea")
+        {
             return !element.HasAttribute("readonly") && !element.HasAttribute("disabled");
+        }
+
         for (Element? cur = element; cur is not null; cur = ParentElement(cur))
         {
             var ce = cur.GetAttribute("contenteditable");
-            if (ce is null) continue;
-            if (ce.Length == 0 || ce.Equals("true", StringComparison.OrdinalIgnoreCase)) return true;
-            if (ce.Equals("false", StringComparison.OrdinalIgnoreCase)) return false;
+            if (ce is null)
+            {
+                continue;
+            }
+
+            if (ce.Length == 0 || ce.Equals("true", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (ce.Equals("false", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
         }
         return false;
     }
@@ -690,18 +841,38 @@ public static class SelectorMatcher
 
     private static bool IsVisited(Element element, SelectorMatchContext context)
     {
-        if (context.VisitedHrefs is null) return false;
+        if (context.VisitedHrefs is null)
+        {
+            return false;
+        }
+
         var href = element.GetAttribute("href");
         return href is not null && context.VisitedHrefs.Contains(href);
     }
 
     private static bool IsLocalLink(Element element, SelectorMatchContext context)
     {
-        if (!IsAnyLink(element)) return false;
-        if (context.DocumentUrl is null) return false;
+        if (!IsAnyLink(element))
+        {
+            return false;
+        }
+
+        if (context.DocumentUrl is null)
+        {
+            return false;
+        }
+
         var href = element.GetAttribute("href");
-        if (string.IsNullOrEmpty(href)) return false;
-        if (!Uri.TryCreate(context.DocumentUrl, href, out var resolved)) return false;
+        if (string.IsNullOrEmpty(href))
+        {
+            return false;
+        }
+
+        if (!Uri.TryCreate(context.DocumentUrl, href, out var resolved))
+        {
+            return false;
+        }
+
         return resolved.Scheme == context.DocumentUrl.Scheme &&
             resolved.Host.Equals(context.DocumentUrl.Host, StringComparison.OrdinalIgnoreCase) &&
             resolved.AbsolutePath.Equals(context.DocumentUrl.AbsolutePath, StringComparison.Ordinal);
@@ -713,7 +884,9 @@ public static class SelectorMatcher
         // first/last/only child, so child-indexed pseudos count it at index 1. WPT
         // child-indexed-pseudo-class.html asserts a detached div matches :nth-child(1)/:nth-child(n).
         if (element.ParentNode is null)
+        {
             return 1;
+        }
 
         // Walk sibling pointers from the element itself instead of enumerating the parent's
         // child list (avoids the ChildNodes iterator + OfType/Reverse wrappers per nth check).
@@ -723,7 +896,9 @@ public static class SelectorMatcher
             for (var sibling = NextElementSibling(element); sibling is not null; sibling = NextElementSibling(sibling))
             {
                 if (!ofType || SameType(sibling, element))
+                {
                     index++;
+                }
             }
         }
         else
@@ -731,7 +906,9 @@ public static class SelectorMatcher
             for (var sibling = PreviousElementSibling(element); sibling is not null; sibling = PreviousElementSibling(sibling))
             {
                 if (!ofType || SameType(sibling, element))
+                {
                     index++;
+                }
             }
         }
 
@@ -755,7 +932,9 @@ public static class SelectorMatcher
         for (var current = ParentElement(element); current is not null; current = ParentElement(current))
         {
             if (current == candidate)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -765,7 +944,9 @@ public static class SelectorMatcher
         for (var sibling = PreviousElementSibling(element); sibling is not null; sibling = PreviousElementSibling(sibling))
         {
             if (sibling == candidate)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -775,7 +956,9 @@ public static class SelectorMatcher
         for (var sibling = PreviousElementSibling(element); sibling is not null; sibling = PreviousElementSibling(sibling))
         {
             if (SameType(sibling, element))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -785,7 +968,9 @@ public static class SelectorMatcher
         for (var sibling = NextElementSibling(element); sibling is not null; sibling = NextElementSibling(sibling))
         {
             if (SameType(sibling, element))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -793,22 +978,34 @@ public static class SelectorMatcher
     private static Element? PreviousElementSibling(Element element)
     {
         for (var sibling = element.PreviousSibling; sibling is not null; sibling = sibling.PreviousSibling)
+        {
             if (sibling is Element siblingElement)
+            {
                 return siblingElement;
+            }
+        }
+
         return null;
     }
 
     private static Element? NextElementSibling(Element element)
     {
         for (var sibling = element.NextSibling; sibling is not null; sibling = sibling.NextSibling)
+        {
             if (sibling is Element siblingElement)
+            {
                 return siblingElement;
+            }
+        }
+
         return null;
     }
 
     private static IEnumerable<Element> NextElementSiblings(Element element)
     {
         for (var sibling = NextElementSibling(element); sibling is not null; sibling = NextElementSibling(sibling))
+        {
             yield return sibling;
+        }
     }
 }

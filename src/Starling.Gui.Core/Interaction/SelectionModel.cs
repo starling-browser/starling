@@ -50,7 +50,10 @@ public static class SelectionModel
     public static Caret CaretFromPoint(
         IReadOnlyList<BoxHitTester.PlacedFragment> fragments, double x, double y)
     {
-        if (fragments.Count == 0) return Caret.None;
+        if (fragments.Count == 0)
+        {
+            return Caret.None;
+        }
 
         var best = -1;
         var bestPenalty = double.MaxValue;
@@ -58,12 +61,24 @@ public static class SelectionModel
         {
             var f = fragments[i];
             var dy = 0.0;
-            if (y < f.Y) dy = f.Y - y;
-            else if (y >= f.Y + f.Height) dy = y - (f.Y + f.Height) + 1;
+            if (y < f.Y)
+            {
+                dy = f.Y - y;
+            }
+            else if (y >= f.Y + f.Height)
+            {
+                dy = y - (f.Y + f.Height) + 1;
+            }
 
             var dx = 0.0;
-            if (x < f.X) dx = f.X - x;
-            else if (x > f.X + f.Width) dx = x - (f.X + f.Width);
+            if (x < f.X)
+            {
+                dx = f.X - x;
+            }
+            else if (x > f.X + f.Width)
+            {
+                dx = x - (f.X + f.Width);
+            }
 
             // A vertical mismatch outweighs any horizontal distance so the
             // caret stays on whatever line the user is dragging across.
@@ -78,9 +93,21 @@ public static class SelectionModel
     /// <summary>Returns the canonical (start ≤ end) ordering of two carets.</summary>
     public static Range Order(Caret a, Caret b)
     {
-        if (!a.IsValid || !b.IsValid) return new Range(Caret.None, Caret.None);
-        if (a.FragmentIndex < b.FragmentIndex) return new Range(a, b);
-        if (a.FragmentIndex > b.FragmentIndex) return new Range(b, a);
+        if (!a.IsValid || !b.IsValid)
+        {
+            return new Range(Caret.None, Caret.None);
+        }
+
+        if (a.FragmentIndex < b.FragmentIndex)
+        {
+            return new Range(a, b);
+        }
+
+        if (a.FragmentIndex > b.FragmentIndex)
+        {
+            return new Range(b, a);
+        }
+
         return a.CharOffset <= b.CharOffset ? new Range(a, b) : new Range(b, a);
     }
 
@@ -93,14 +120,20 @@ public static class SelectionModel
         IReadOnlyList<BoxHitTester.PlacedFragment> fragments, Range range)
     {
         var rects = new List<HighlightRect>();
-        if (range.IsEmpty || !range.Start.IsValid) return rects;
+        if (range.IsEmpty || !range.Start.IsValid)
+        {
+            return rects;
+        }
 
         for (var i = range.Start.FragmentIndex; i <= range.End.FragmentIndex; i++)
         {
             var f = fragments[i];
             var startChar = i == range.Start.FragmentIndex ? range.Start.CharOffset : 0;
             var endChar = i == range.End.FragmentIndex ? range.End.CharOffset : f.Text.Length;
-            if (startChar >= endChar) continue;
+            if (startChar >= endChar)
+            {
+                continue;
+            }
 
             var (left, right) = SubFragmentBounds(f, startChar, endChar);
             rects.Add(new HighlightRect(f.X + left, f.Y, right - left, f.Height));
@@ -117,7 +150,10 @@ public static class SelectionModel
     public static string TextFor(
         IReadOnlyList<BoxHitTester.PlacedFragment> fragments, Range range)
     {
-        if (range.IsEmpty || !range.Start.IsValid) return string.Empty;
+        if (range.IsEmpty || !range.Start.IsValid)
+        {
+            return string.Empty;
+        }
 
         var sb = new StringBuilder();
         var prevY = double.NaN;
@@ -128,7 +164,10 @@ public static class SelectionModel
             var f = fragments[i];
             var startChar = i == range.Start.FragmentIndex ? range.Start.CharOffset : 0;
             var endChar = i == range.End.FragmentIndex ? range.End.CharOffset : f.Text.Length;
-            if (startChar >= endChar) continue;
+            if (startChar >= endChar)
+            {
+                continue;
+            }
 
             var thisIsWord = !string.IsNullOrWhiteSpace(f.Text);
             if (sb.Length > 0 && !double.IsNaN(prevY)
@@ -147,9 +186,20 @@ public static class SelectionModel
 
     private static int CharOffsetAtX(BoxHitTester.PlacedFragment f, double localX)
     {
-        if (f.Text.Length == 0 || f.Width <= 0) return 0;
-        if (localX <= 0) return 0;
-        if (localX >= f.Width) return f.Text.Length;
+        if (f.Text.Length == 0 || f.Width <= 0)
+        {
+            return 0;
+        }
+
+        if (localX <= 0)
+        {
+            return 0;
+        }
+
+        if (localX >= f.Width)
+        {
+            return f.Text.Length;
+        }
 
         var boundaries = GraphemeBoundaries(f.Text);
         var clusterCount = boundaries.Length - 1;
@@ -165,7 +215,10 @@ public static class SelectionModel
             var left = XForBoundary(f, boundaries, i, glyphsAlignToChars);
             var right = XForBoundary(f, boundaries, i + 1, glyphsAlignToChars);
             var mid = (left + right) / 2.0;
-            if (localX < mid) return boundaries[i];
+            if (localX < mid)
+            {
+                return boundaries[i];
+            }
         }
         return f.Text.Length;
     }
@@ -173,7 +226,10 @@ public static class SelectionModel
     private static (double Left, double Right) SubFragmentBounds(
         BoxHitTester.PlacedFragment f, int startChar, int endChar)
     {
-        if (f.Text.Length == 0 || f.Width <= 0) return (0, 0);
+        if (f.Text.Length == 0 || f.Width <= 0)
+        {
+            return (0, 0);
+        }
 
         var shaped = f.Shaped;
         if (shaped is not null && shaped.Glyphs.Length == f.Text.Length)
@@ -192,7 +248,11 @@ public static class SelectionModel
         // so mixed ASCII/emoji text gets a visually proportional slice.
         var boundaries = GraphemeBoundaries(f.Text);
         var clusterCount = boundaries.Length - 1;
-        if (clusterCount == 0) return (0, 0);
+        if (clusterCount == 0)
+        {
+            return (0, 0);
+        }
+
         var per = f.Width / clusterCount;
         return (ClusterIndexOf(boundaries, startChar) * per,
                 ClusterIndexOf(boundaries, endChar) * per);
@@ -206,11 +266,18 @@ public static class SelectionModel
     /// </summary>
     private static int[] GraphemeBoundaries(string text)
     {
-        if (text.Length == 0) return [0];
+        if (text.Length == 0)
+        {
+            return [0];
+        }
 
         var bounds = new List<int>(text.Length + 1);
         var e = StringInfo.GetTextElementEnumerator(text);
-        while (e.MoveNext()) bounds.Add(e.ElementIndex);
+        while (e.MoveNext())
+        {
+            bounds.Add(e.ElementIndex);
+        }
+
         bounds.Add(text.Length);
         return [.. bounds];
     }
@@ -243,8 +310,15 @@ public static class SelectionModel
     {
         for (var i = 0; i < boundaries.Length; i++)
         {
-            if (boundaries[i] == codeUnit) return i;
-            if (boundaries[i] > codeUnit) return Math.Max(0, i - 1);
+            if (boundaries[i] == codeUnit)
+            {
+                return i;
+            }
+
+            if (boundaries[i] > codeUnit)
+            {
+                return Math.Max(0, i - 1);
+            }
         }
         return boundaries.Length - 1;
     }

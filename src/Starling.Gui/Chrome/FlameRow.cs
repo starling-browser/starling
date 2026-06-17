@@ -34,7 +34,10 @@ public sealed class FlameRow : Control
     public override void Render(DrawingContext context)
     {
         var rect = new Rect(Bounds.Size);
-        if (Total <= 0 || rect.Width <= 0 || rect.Height <= 0) return;
+        if (Total <= 0 || rect.Width <= 0 || rect.Height <= 0)
+        {
+            return;
+        }
 
         double w = rect.Width, h = rect.Height;
 
@@ -42,7 +45,10 @@ public sealed class FlameRow : Control
         {
             var x = bar.T / Total * w;
             var bw = bar.D / Total * w;
-            if (bw < 0.5) continue;
+            if (bw < 0.5)
+            {
+                continue;
+            }
 
             var catColor = Tokens[bar.Cat];
             var fill = new SolidColorBrush(catColor, BarOpacity);

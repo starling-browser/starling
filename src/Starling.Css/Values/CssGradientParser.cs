@@ -26,7 +26,10 @@ public static class CssGradientParser
         }
         gradient = null!;
         if (value is not CssFunctionValue fn)
+        {
             return false;
+        }
+
         return TryParseFunction(fn, out gradient);
     }
 
@@ -50,7 +53,9 @@ public static class CssGradientParser
     {
         gradient = null!;
         if (args.Count == 0)
+        {
             return false;
+        }
 
         var idx = 0;
 
@@ -72,7 +77,9 @@ public static class CssGradientParser
         }
 
         if (!TryParseStops(args, idx, out var stops))
+        {
             return false;
+        }
 
         gradient = new CssGradient(CssGradientKind.Linear, repeating, stops, Line: line, Interpolation: interp);
         return true;
@@ -82,7 +89,9 @@ public static class CssGradientParser
     {
         gradient = null!;
         if (args.Count == 0)
+        {
             return false;
+        }
 
         var idx = 0;
 
@@ -96,10 +105,14 @@ public static class CssGradientParser
 
         // Next argument may describe the ending shape: `[<shape> || <size>] [at <position>]`.
         if (idx < args.Count && TryParseRadialPrelude(args[idx], ref shape, ref size, ref position))
+        {
             idx++;
+        }
 
         if (!TryParseStops(args, idx, out var stops))
+        {
             return false;
+        }
 
         gradient = new CssGradient(CssGradientKind.Radial, repeating, stops, Shape: shape, Size: size, Position: position, Interpolation: interp);
         return true;
@@ -109,7 +122,9 @@ public static class CssGradientParser
     {
         gradient = null!;
         if (args.Count == 0)
+        {
             return false;
+        }
 
         var idx = 0;
 
@@ -123,10 +138,14 @@ public static class CssGradientParser
         CssGradientLine? line = null;
         CssGradientPosition? position = null;
         if (idx < args.Count && TryParseConicPrelude(args[idx], out line, out position))
+        {
             idx++;
+        }
 
         if (!TryParseStops(args, idx, out var stops))
+        {
             return false;
+        }
 
         gradient = new CssGradient(CssGradientKind.Conic, repeating, stops, Line: line, Position: position, Interpolation: interp);
         return true;
@@ -145,7 +164,10 @@ public static class CssGradientParser
     private static bool TryParseInterpolationPrelude(IReadOnlyList<CssValue> args, ref int idx, out GradientInterpolationMethod? method)
     {
         method = null;
-        if (idx >= args.Count) return false;
+        if (idx >= args.Count)
+        {
+            return false;
+        }
 
         // The interp prelude is a whitespace-separated token list starting with `in`
         // inside a single comma-arg. It is either:
@@ -163,12 +185,30 @@ public static class CssGradientParser
             _ => [],
         };
 
-        if (tokens.Count == 0) return false;
-        if (tokens[0] is not CssKeyword { Name: "in" }) return false;
-        if (tokens.Count < 2) return false;
+        if (tokens.Count == 0)
+        {
+            return false;
+        }
 
-        if (tokens[1] is not CssKeyword csKw) return false;
-        if (!TryParseColorSpace(csKw.Name, out var cs)) return false;
+        if (tokens[0] is not CssKeyword { Name: "in" })
+        {
+            return false;
+        }
+
+        if (tokens.Count < 2)
+        {
+            return false;
+        }
+
+        if (tokens[1] is not CssKeyword csKw)
+        {
+            return false;
+        }
+
+        if (!TryParseColorSpace(csKw.Name, out var cs))
+        {
+            return false;
+        }
 
         // Optional hue interpolation method: `<method> hue` (two tokens: keyword + "hue").
         var hue = HueInterpolationMethod.Shorter;
@@ -230,7 +270,9 @@ public static class CssGradientParser
 
         // A bare color (stop) is not a prelude.
         if (LooksLikeColorStop(value))
+        {
             return false;
+        }
 
         var tokens = value switch
         {
@@ -245,7 +287,10 @@ public static class CssGradientParser
         {
             i++;
             if (i >= tokens.Count || !TryConicAngle(tokens[i], out var deg))
+            {
                 return false; // `from` with no angle is invalid syntax.
+            }
+
             line = CssGradientLine.FromAngle(deg);
             i++;
             matched = true;
@@ -254,7 +299,10 @@ public static class CssGradientParser
         if (i < tokens.Count && tokens[i] is CssKeyword { Name: "at" })
         {
             if (!TryParsePosition(tokens, i + 1, out var pos))
+            {
                 return false;
+            }
+
             position = pos;
             i = tokens.Count;
             matched = true;
@@ -307,14 +355,22 @@ public static class CssGradientParser
         sx = CssGradientSideX.None;
         sy = CssGradientSideY.None;
         if (values.Count < 2)
+        {
             return false;
+        }
+
         if (values[0] is not CssKeyword { Name: "to" })
+        {
             return false;
+        }
 
         for (var i = 1; i < values.Count; i++)
         {
             if (values[i] is not CssKeyword kw)
+            {
                 return false;
+            }
+
             switch (kw.Name)
             {
                 case "left": sx = CssGradientSideX.Left; break;
@@ -339,7 +395,9 @@ public static class CssGradientParser
 
         // If the first token already looks like a color stop, this isn't a prelude.
         if (LooksLikeColorStop(value))
+        {
             return false;
+        }
 
         var matchedAny = false;
         var i = 0;
@@ -397,10 +455,26 @@ public static class CssGradientParser
                 case CssKeyword { Name: "top" }: y = 0; break;
                 case CssKeyword { Name: "bottom" }: y = 1; break;
                 case CssKeyword { Name: "center" }:
-                    if (x is null) x = 0.5; else y = 0.5;
+                    if (x is null)
+                    {
+                        x = 0.5;
+                    }
+                    else
+                    {
+                        y = 0.5;
+                    }
+
                     break;
                 case CssPercentage pct:
-                    if (x is null) x = pct.Value / 100.0; else y = pct.Value / 100.0;
+                    if (x is null)
+                    {
+                        x = pct.Value / 100.0;
+                    }
+                    else
+                    {
+                        y = pct.Value / 100.0;
+                    }
+
                     break;
                 default:
                     return false;
@@ -418,14 +492,18 @@ public static class CssGradientParser
         for (var i = start; i < args.Count; i++)
         {
             if (!TryParseStop(args[i], result))
+            {
                 return Fail(out stops);
+            }
         }
 
         // CSS Images 4 §3.4 — transition hints are not color stops and do not count
         // toward the two-stop minimum; count only real stops.
         var realStopCount = result.Count(s => !s.IsHint);
         if (realStopCount < 2)
+        {
             return Fail(out stops);
+        }
 
         stops = result;
         return true;
@@ -457,7 +535,15 @@ public static class CssGradientParser
                                 color = c;
                                 break;
                             case CssLength or CssPercentage or CssAngle when TryStopPosition(item, out var p):
-                                if (firstPos is null) firstPos = p; else secondPos = p;
+                                if (firstPos is null)
+                                {
+                                    firstPos = p;
+                                }
+                                else
+                                {
+                                    secondPos = p;
+                                }
+
                                 break;
                             case CssLength:
                                 // Relative-unit position we can't resolve at parse
@@ -468,12 +554,17 @@ public static class CssGradientParser
                         }
                     }
                     if (color is null)
+                    {
                         return false;
+                    }
                     // CSS Images 4 two-position color-stop shorthand: `red 10% 40%`
                     // expands to two stops with the same color.
                     into.Add(new CssColorStop(color, firstPos));
                     if (secondPos is not null)
+                    {
                         into.Add(new CssColorStop(color, secondPos));
+                    }
+
                     return true;
                 }
             // CSS Images 4 §3.4 — transition hint: a bare <percentage> or absolute

@@ -55,7 +55,9 @@ public abstract class CssStyleValue
             .ToList();
 
         if (meaningful.Count != 1)
+        {
             return new CssUnparsedValue(cssText);
+        }
 
         var token = meaningful[0];
         return token.Type switch

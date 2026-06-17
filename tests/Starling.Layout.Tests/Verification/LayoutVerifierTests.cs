@@ -164,9 +164,19 @@ public sealed class LayoutVerifierTests
 
     private static Box.Box? FindById(Box.Box box, string id)
     {
-        if (box.Element?.Id == id) return box;
+        if (box.Element?.Id == id)
+        {
+            return box;
+        }
+
         foreach (var child in box.Children)
-            if (FindById(child, id) is { } found) return found;
+        {
+            if (FindById(child, id) is { } found)
+            {
+                return found;
+            }
+        }
+
         return null;
     }
 
@@ -176,7 +186,11 @@ public sealed class LayoutVerifierTests
         for (var i = 0; i < 12 && dir is not null; i++)
         {
             var candidate = Path.Combine(dir, "testdata", "sites");
-            if (Directory.Exists(candidate)) return candidate;
+            if (Directory.Exists(candidate))
+            {
+                return candidate;
+            }
+
             dir = Path.GetDirectoryName(dir.TrimEnd(Path.DirectorySeparatorChar));
         }
         return null;
@@ -200,7 +214,11 @@ public sealed class LayoutVerifierTests
             public bool IsEnabled(LogLevel l) => true;
             public void Log<TState>(LogLevel l, EventId id, TState s, Exception? ex,
                 Func<TState, Exception?, string> fmt)
-            { lock (o.Entries) o.Entries.Add((cat, l, fmt(s, ex))); }
+            { lock (o.Entries)
+                {
+                    o.Entries.Add((cat, l, fmt(s, ex)));
+                }
+            }
         }
     }
 
@@ -212,7 +230,11 @@ public sealed class LayoutVerifierTests
         public MetricRecorder()
         {
             _l.InstrumentPublished = (inst, lst) =>
-            { if (inst.Meter.Name == StarlingTelemetry.SourceName) lst.EnableMeasurementEvents(inst); };
+            { if (inst.Meter.Name == StarlingTelemetry.SourceName)
+                {
+                    lst.EnableMeasurementEvents(inst);
+                }
+            };
             _l.SetMeasurementEventCallback<double>((inst, m, t, s) => Add(inst.Name, m));
             _l.SetMeasurementEventCallback<long>((inst, m, t, s) => Add(inst.Name, m));
             _l.Start();

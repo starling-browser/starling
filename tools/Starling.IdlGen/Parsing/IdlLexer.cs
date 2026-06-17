@@ -28,7 +28,10 @@ public sealed class IdlLexer
         {
             var tok = Next();
             tokens.Add(tok);
-            if (tok.Kind == IdlTokenKind.Eof) break;
+            if (tok.Kind == IdlTokenKind.Eof)
+            {
+                break;
+            }
         }
         return tokens;
     }
@@ -46,7 +49,10 @@ public sealed class IdlLexer
     private IdlToken Next()
     {
         SkipTrivia();
-        if (_pos >= _src.Length) return new IdlToken(IdlTokenKind.Eof, "", _line, _col);
+        if (_pos >= _src.Length)
+        {
+            return new IdlToken(IdlTokenKind.Eof, "", _line, _col);
+        }
 
         int startLine = _line, startCol = _col;
         char c = Cur;
@@ -65,9 +71,16 @@ public sealed class IdlLexer
         if (c == '_' || char.IsAsciiLetter(c))
         {
             int start = _pos;
-            if (c == '_') Advance();   // strip a single leading underscore
+            if (c == '_')
+            {
+                Advance();   // strip a single leading underscore
+            }
+
             int nameStart = _pos;
-            while (Cur is '_' or '-' || char.IsAsciiLetterOrDigit(Cur)) Advance();
+            while (Cur is '_' or '-' || char.IsAsciiLetterOrDigit(Cur))
+            {
+                Advance();
+            }
             // If the only char was '_' treat the underscore as part of the name.
             string text = nameStart < _pos ? _src[nameStart.._pos] : _src[start.._pos];
             return new IdlToken(IdlTokenKind.Identifier, text, startLine, startCol);
@@ -95,23 +108,45 @@ public sealed class IdlLexer
     {
         int start = _pos;
         bool isDecimal = false;
-        if (Cur == '-') Advance();
+        if (Cur == '-')
+        {
+            Advance();
+        }
 
         // Hex.
         if (Cur == '0' && (Peek() is 'x' or 'X'))
         {
             Advance(); Advance();
-            while (Uri.IsHexDigit(Cur)) Advance();
+            while (Uri.IsHexDigit(Cur))
+            {
+                Advance();
+            }
+
             return new IdlToken(IdlTokenKind.Integer, _src[start.._pos], line, col);
         }
 
-        while (char.IsAsciiDigit(Cur)) Advance();
-        if (Cur == '.') { isDecimal = true; Advance(); while (char.IsAsciiDigit(Cur)) Advance(); }
+        while (char.IsAsciiDigit(Cur))
+        {
+            Advance();
+        }
+
+        if (Cur == '.') { isDecimal = true; Advance(); while (char.IsAsciiDigit(Cur))
+            {
+                Advance();
+            }
+        }
         if (Cur is 'e' or 'E')
         {
             isDecimal = true; Advance();
-            if (Cur is '+' or '-') Advance();
-            while (char.IsAsciiDigit(Cur)) Advance();
+            if (Cur is '+' or '-')
+            {
+                Advance();
+            }
+
+            while (char.IsAsciiDigit(Cur))
+            {
+                Advance();
+            }
         }
         return new IdlToken(isDecimal ? IdlTokenKind.Decimal : IdlTokenKind.Integer, _src[start.._pos], line, col);
     }
@@ -124,13 +159,21 @@ public sealed class IdlLexer
             if (c is ' ' or '\t' or '\r' or '\n') { Advance(); continue; }
             if (c == '/' && Peek() == '/')
             {
-                while (Cur is not '\n' and not '\0') Advance();
+                while (Cur is not '\n' and not '\0')
+                {
+                    Advance();
+                }
+
                 continue;
             }
             if (c == '/' && Peek() == '*')
             {
                 Advance(); Advance();
-                while (!(Cur == '*' && Peek() == '/') && Cur != '\0') Advance();
+                while (!(Cur == '*' && Peek() == '/') && Cur != '\0')
+                {
+                    Advance();
+                }
+
                 Advance(); Advance();
                 continue;
             }

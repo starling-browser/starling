@@ -18,7 +18,9 @@ public static class ViewTransitionParser
         {
             if (rule is AtRule atRule
                 && string.Equals(atRule.Name, "view-transition", StringComparison.OrdinalIgnoreCase))
+            {
                 yield return Parse(atRule);
+            }
         }
     }
 
@@ -36,13 +38,21 @@ public static class ViewTransitionParser
                 case "navigation":
                     var nav = FirstIdent(decl.Value);
                     if (nav is "auto" or "none")
+                    {
                         navigation = nav;
+                    }
+
                     break;
                 case "types":
                     foreach (var v in decl.Value)
+                    {
                         if (v is CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var t } }
                             && !t.Equals("none", StringComparison.OrdinalIgnoreCase))
+                        {
                             types.Add(t);
+                        }
+                    }
+
                     break;
             }
         }
@@ -53,8 +63,13 @@ public static class ViewTransitionParser
     private static string? FirstIdent(IReadOnlyList<CssComponentValue> value)
     {
         foreach (var v in value)
+        {
             if (v is CssTokenValue { Token: { Type: CssTokenType.Ident, Value: var ident } })
+            {
                 return ident.ToLowerInvariant();
+            }
+        }
+
         return null;
     }
 }

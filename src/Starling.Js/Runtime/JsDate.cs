@@ -30,13 +30,21 @@ public sealed class JsDate : JsObject
     /// out-of-range.</summary>
     public System.DateTimeOffset? ToDto()
     {
-        if (!IsValid) return null;
+        if (!IsValid)
+        {
+            return null;
+        }
+
         var ms = TimeValueMs;
         // DateTimeOffset.FromUnixTimeMilliseconds rejects values outside
         // [-62135596800000, 253402300799999]. Clamp via try/catch so we mirror
         // the JS notion of an invalid date for absurd inputs rather than
         // throwing into user code.
-        if (ms < -62135596800000d || ms > 253402300799999d) return null;
+        if (ms < -62135596800000d || ms > 253402300799999d)
+        {
+            return null;
+        }
+
         try
         {
             return System.DateTimeOffset.FromUnixTimeMilliseconds((long)ms);

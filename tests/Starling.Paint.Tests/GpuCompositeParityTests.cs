@@ -61,7 +61,9 @@ public sealed class GpuCompositeParityTests
                 && Math.Abs(pa[i + 1] - pb[i + 1]) <= tol
                 && Math.Abs(pa[i + 2] - pb[i + 2]) <= tol
                 && Math.Abs(pa[i + 3] - pb[i + 3]) <= tol)
+            {
                 near++;
+            }
         }
         return (double)near / pixels;
     }

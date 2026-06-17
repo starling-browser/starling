@@ -85,7 +85,11 @@ public sealed partial class HtmlTokenizer
         HtmlToken token = _tagIsEnd
             ? new EndTagToken(name, [.. _tagAttrs], _tagSelfClosing)
             : new StartTagToken(name, [.. _tagAttrs], _tagSelfClosing);
-        if (!_tagIsEnd) _lastStartTagName = name;
+        if (!_tagIsEnd)
+        {
+            _lastStartTagName = name;
+        }
+
         _emitted.Enqueue(token);
         _tagName.Clear();
         _tagAttrs.Clear();
@@ -258,7 +262,11 @@ public sealed partial class HtmlTokenizer
     // -----------------------------------------------------------------------
     private void StepBeforeAttrName(int c)
     {
-        if (IsAsciiWhitespace(c)) return;
+        if (IsAsciiWhitespace(c))
+        {
+            return;
+        }
+
         if (c == '/' || c == '>' || c == -1)
         {
             Reconsume(c, TokenizerState.AfterAttributeName);
@@ -320,7 +328,11 @@ public sealed partial class HtmlTokenizer
     // -----------------------------------------------------------------------
     private void StepAfterAttrName(int c)
     {
-        if (IsAsciiWhitespace(c)) return;
+        if (IsAsciiWhitespace(c))
+        {
+            return;
+        }
+
         switch (c)
         {
             case '/':
@@ -343,7 +355,11 @@ public sealed partial class HtmlTokenizer
     // -----------------------------------------------------------------------
     private void StepBeforeAttrValue(int c)
     {
-        if (IsAsciiWhitespace(c)) return;
+        if (IsAsciiWhitespace(c))
+        {
+            return;
+        }
+
         switch (c)
         {
             case '"':

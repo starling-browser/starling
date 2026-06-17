@@ -80,8 +80,16 @@ public sealed class InternalsPanel : Grid, IDisposable
         Children.Add(scroll); SetRow(scroll, 1);
 
         // Snapshot first.
-        foreach (var a in stream.Activities.Snapshot()) BumpCount(a);
-        foreach (var m in stream.Metrics.Snapshot()) PushMetric(m);
+        foreach (var a in stream.Activities.Snapshot())
+        {
+            BumpCount(a);
+        }
+
+        foreach (var m in stream.Metrics.Snapshot())
+        {
+            PushMetric(m);
+        }
+
         RefreshChips();
         RefreshMetrics();
 
@@ -133,7 +141,9 @@ public sealed class InternalsPanel : Grid, IDisposable
     {
         _recentMetrics.Add(record);
         if (_recentMetrics.Count > MaxRecentMetrics)
+        {
             _recentMetrics.RemoveRange(0, _recentMetrics.Count - MaxRecentMetrics);
+        }
     }
 
     private void RefreshChips()
@@ -145,7 +155,9 @@ public sealed class InternalsPanel : Grid, IDisposable
             return;
         }
         foreach (var kv in _opCounts.OrderBy(p => p.Key, StringComparer.Ordinal))
+        {
             _chips.Children.Add(Chip(kv.Key, kv.Value));
+        }
     }
 
     private Control Chip(string area, int count)
@@ -233,13 +245,41 @@ public sealed class InternalsPanel : Grid, IDisposable
     private static Category CategoryFor(string area)
     {
         var lower = area.ToLowerInvariant();
-        if (lower.Contains("paint")) return Category.Paint;
-        if (lower.Contains("layout")) return Category.Layout;
-        if (lower.Contains("css") || lower.Contains("style")) return Category.Css;
-        if (lower.Contains("js")) return Category.Js;
-        if (lower.Contains("html") || lower.Contains("parse")) return Category.Html;
-        if (lower.Contains("gc")) return Category.Gc;
-        if (lower.Contains("net") || lower.Contains("http") || lower.Contains("gui")) return Category.Net;
+        if (lower.Contains("paint"))
+        {
+            return Category.Paint;
+        }
+
+        if (lower.Contains("layout"))
+        {
+            return Category.Layout;
+        }
+
+        if (lower.Contains("css") || lower.Contains("style"))
+        {
+            return Category.Css;
+        }
+
+        if (lower.Contains("js"))
+        {
+            return Category.Js;
+        }
+
+        if (lower.Contains("html") || lower.Contains("parse"))
+        {
+            return Category.Html;
+        }
+
+        if (lower.Contains("gc"))
+        {
+            return Category.Gc;
+        }
+
+        if (lower.Contains("net") || lower.Contains("http") || lower.Contains("gui"))
+        {
+            return Category.Net;
+        }
+
         return Category.Idle;
     }
 

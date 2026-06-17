@@ -107,7 +107,11 @@ internal static class FlexParser
     /// </summary>
     private static double? ParseBasis(ComputedStyle? style)
     {
-        if (style is null) return null;
+        if (style is null)
+        {
+            return null;
+        }
+
         var value = style.Get(PropertyId.FlexBasis);
         return value switch
         {
@@ -125,7 +129,11 @@ internal static class FlexParser
 
     private static double ResolveGap(ComputedStyle? style, PropertyId id, double basis, Size? viewport)
     {
-        if (style is null) return 0;
+        if (style is null)
+        {
+            return 0;
+        }
+
         var value = style.Get(id);
         return value switch
         {
@@ -139,7 +147,11 @@ internal static class FlexParser
 
     private static string Keyword(ComputedStyle? style, PropertyId id, string fallback)
     {
-        if (style is null) return fallback;
+        if (style is null)
+        {
+            return fallback;
+        }
+
         return style.Get(id) is CssKeyword k ? k.Name.ToLowerInvariant() : fallback;
     }
 
@@ -148,7 +160,11 @@ internal static class FlexParser
 
     private static double NumberOr(ComputedStyle? style, PropertyId id, double fallback)
     {
-        if (style is null) return fallback;
+        if (style is null)
+        {
+            return fallback;
+        }
+
         return style.Get(id) switch
         {
             CssNumber n => Math.Max(0, n.Value),

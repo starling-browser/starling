@@ -25,7 +25,9 @@ internal static class SvgPathParser
     public static IPath? Parse(string? d)
     {
         if (string.IsNullOrWhiteSpace(d))
+        {
             return null;
+        }
 
         var tok = new PathTokenizer(d);
         var pb = new PathBuilder();
@@ -47,9 +49,17 @@ internal static class SvgPathParser
                 case 'M':
                     {
                         // First pair is a moveto; subsequent pairs are implicit linetos.
-                        if (!tok.TryReadFloat(out var x) || !tok.TryReadFloat(out var y)) return Done(pb, any);
+                        if (!tok.TryReadFloat(out var x) || !tok.TryReadFloat(out var y))
+                        {
+                            return Done(pb, any);
+                        }
+
                         var p = rel ? current + new Vector2(x, y) : new Vector2(x, y);
-                        if (open) pb.StartFigure();
+                        if (open)
+                        {
+                            pb.StartFigure();
+                        }
+
                         pb.MoveTo(ToPoint(p));
                         current = start = p;
                         open = true;
@@ -57,7 +67,11 @@ internal static class SvgPathParser
                         // implicit linetos
                         while (tok.TryReadFloat(out var lx))
                         {
-                            if (!tok.TryReadFloat(out var ly)) break;
+                            if (!tok.TryReadFloat(out var ly))
+                            {
+                                break;
+                            }
+
                             var lp = rel ? current + new Vector2(lx, ly) : new Vector2(lx, ly);
                             pb.LineTo(ToPoint(lp));
                             current = lp; any = true; lastCmd = 'L';
@@ -68,7 +82,11 @@ internal static class SvgPathParser
                     {
                         while (tok.TryReadFloat(out var x))
                         {
-                            if (!tok.TryReadFloat(out var y)) break;
+                            if (!tok.TryReadFloat(out var y))
+                            {
+                                break;
+                            }
+
                             var p = rel ? current + new Vector2(x, y) : new Vector2(x, y);
                             pb.LineTo(ToPoint(p));
                             current = p; any = true;
@@ -104,7 +122,11 @@ internal static class SvgPathParser
                         {
                             if (!tok.TryReadFloat(out var y1) ||
                                 !tok.TryReadFloat(out var x2) || !tok.TryReadFloat(out var y2) ||
-                                !tok.TryReadFloat(out var x) || !tok.TryReadFloat(out var y)) break;
+                                !tok.TryReadFloat(out var x) || !tok.TryReadFloat(out var y))
+                            {
+                                break;
+                            }
+
                             var c1 = rel ? current + new Vector2(x1, y1) : new Vector2(x1, y1);
                             var c2 = rel ? current + new Vector2(x2, y2) : new Vector2(x2, y2);
                             var p = rel ? current + new Vector2(x, y) : new Vector2(x, y);
@@ -119,7 +141,10 @@ internal static class SvgPathParser
                         while (tok.TryReadFloat(out var x2))
                         {
                             if (!tok.TryReadFloat(out var y2) ||
-                                !tok.TryReadFloat(out var x) || !tok.TryReadFloat(out var y)) break;
+                                !tok.TryReadFloat(out var x) || !tok.TryReadFloat(out var y))
+                            {
+                                break;
+                            }
                             // Reflect previous cubic control point if last was C/S.
                             var c1 = (lastCmd is 'C' or 'S')
                                 ? current + (current - lastCubicCtrl)
@@ -137,7 +162,11 @@ internal static class SvgPathParser
                         while (tok.TryReadFloat(out var x1))
                         {
                             if (!tok.TryReadFloat(out var y1) ||
-                                !tok.TryReadFloat(out var x) || !tok.TryReadFloat(out var y)) break;
+                                !tok.TryReadFloat(out var x) || !tok.TryReadFloat(out var y))
+                            {
+                                break;
+                            }
+
                             var c = rel ? current + new Vector2(x1, y1) : new Vector2(x1, y1);
                             var p = rel ? current + new Vector2(x, y) : new Vector2(x, y);
                             pb.AddQuadraticBezier(ToPoint(current), ToPoint(c), ToPoint(p));
@@ -150,7 +179,11 @@ internal static class SvgPathParser
                     {
                         while (tok.TryReadFloat(out var x))
                         {
-                            if (!tok.TryReadFloat(out var y)) break;
+                            if (!tok.TryReadFloat(out var y))
+                            {
+                                break;
+                            }
+
                             var c = (lastCmd is 'Q' or 'T')
                                 ? current + (current - lastQuadCtrl)
                                 : current;
@@ -169,7 +202,11 @@ internal static class SvgPathParser
                                 !tok.TryReadFloat(out var xRot) ||
                                 !tok.TryReadFlag(out var largeArc) ||
                                 !tok.TryReadFlag(out var sweep) ||
-                                !tok.TryReadFloat(out var x) || !tok.TryReadFloat(out var y)) break;
+                                !tok.TryReadFloat(out var x) || !tok.TryReadFloat(out var y))
+                            {
+                                break;
+                            }
+
                             var p = rel ? current + new Vector2(x, y) : new Vector2(x, y);
                             AppendArc(pb, current, p, rx, ry, xRot, largeArc, sweep);
                             current = p; any = true;
@@ -212,7 +249,11 @@ internal static class SvgPathParser
         float rx, float ry, float xAxisRotationDeg, bool largeArc, bool sweep)
     {
         // Out-of-range radii: treat coincident endpoints / zero radius as a line.
-        if (from == to) return;
+        if (from == to)
+        {
+            return;
+        }
+
         rx = Math.Abs(rx);
         ry = Math.Abs(ry);
         if (rx == 0f || ry == 0f)
@@ -246,7 +287,11 @@ internal static class SvgPathParser
         double num = rxs * rys - rxs * y1ps - rys * x1ps;
         double den = rxs * y1ps + rys * x1ps;
         double factor = den == 0 ? 0 : Math.Sqrt(Math.Max(0.0, num / den));
-        if (largeArc == sweep) factor = -factor;
+        if (largeArc == sweep)
+        {
+            factor = -factor;
+        }
+
         double cxp = factor * (rx * y1p / ry);
         double cyp = factor * -(ry * x1p / rx);
 
@@ -261,12 +306,22 @@ internal static class SvgPathParser
         double theta1 = Angle(1, 0, ux, uy);
         double deltaTheta = Angle(ux, uy, vx, vy);
 
-        if (!sweep && deltaTheta > 0) deltaTheta -= 2 * Math.PI;
-        else if (sweep && deltaTheta < 0) deltaTheta += 2 * Math.PI;
+        if (!sweep && deltaTheta > 0)
+        {
+            deltaTheta -= 2 * Math.PI;
+        }
+        else if (sweep && deltaTheta < 0)
+        {
+            deltaTheta += 2 * Math.PI;
+        }
 
         // Split into ≤90° segments and emit a cubic for each.
         int segments = (int)Math.Ceiling(Math.Abs(deltaTheta) / (Math.PI / 2.0));
-        if (segments == 0) segments = 1;
+        if (segments == 0)
+        {
+            segments = 1;
+        }
+
         double delta = deltaTheta / segments;
         double t = (4.0 / 3.0) * Math.Tan(delta / 4.0);
 
@@ -319,7 +374,11 @@ internal static class SvgPathParser
         double len = Math.Sqrt((ux * ux + uy * uy) * (vx * vx + vy * vy));
         double cos = len == 0 ? 0 : Math.Clamp(dot / len, -1.0, 1.0);
         double ang = Math.Acos(cos);
-        if (ux * vy - uy * vx < 0) ang = -ang;
+        if (ux * vy - uy * vx < 0)
+        {
+            ang = -ang;
+        }
+
         return ang;
     }
 
@@ -338,7 +397,11 @@ internal static class SvgPathParser
         public bool TryReadCommand(ref char cmd)
         {
             SkipSeparators();
-            if (_i >= _s.Length) return false;
+            if (_i >= _s.Length)
+            {
+                return false;
+            }
+
             char c = _s[_i];
             // A command is a single ASCII letter (M/L/H/V/C/S/Q/T/A/Z, any
             // case). 'e'/'E' never start a command — they only appear inside
@@ -360,11 +423,18 @@ internal static class SvgPathParser
             value = 0;
             SkipSeparators();
             int startTok = _i;
-            if (_i >= _s.Length) return false;
+            if (_i >= _s.Length)
+            {
+                return false;
+            }
 
             int start = _i;
             // optional sign
-            if (_s[_i] is '+' or '-') _i++;
+            if (_s[_i] is '+' or '-')
+            {
+                _i++;
+            }
+
             bool sawDigit = false, sawDot = false;
             while (_i < _s.Length)
             {
@@ -374,9 +444,15 @@ internal static class SvgPathParser
                 else if ((c is 'e' or 'E') && sawDigit)
                 {
                     _i++;
-                    if (_i < _s.Length && _s[_i] is '+' or '-') _i++;
+                    if (_i < _s.Length && _s[_i] is '+' or '-')
+                    {
+                        _i++;
+                    }
                 }
-                else break;
+                else
+                {
+                    break;
+                }
             }
             if (!sawDigit) { _i = startTok; return false; }
 
@@ -394,7 +470,11 @@ internal static class SvgPathParser
         {
             value = false;
             SkipSeparators();
-            if (_i >= _s.Length) return false;
+            if (_i >= _s.Length)
+            {
+                return false;
+            }
+
             char c = _s[_i];
             if (c == '0') { _i++; value = false; return true; }
             if (c == '1') { _i++; value = true; return true; }
@@ -406,8 +486,14 @@ internal static class SvgPathParser
             while (_i < _s.Length)
             {
                 char c = _s[_i];
-                if (c is ' ' or '\t' or '\r' or '\n' or ',') _i++;
-                else break;
+                if (c is ' ' or '\t' or '\r' or '\n' or ',')
+                {
+                    _i++;
+                }
+                else
+                {
+                    break;
+                }
             }
         }
     }

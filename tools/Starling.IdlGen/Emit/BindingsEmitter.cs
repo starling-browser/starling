@@ -81,7 +81,10 @@ public sealed class BindingsEmitter(WebIdlModel model, ClrMap clr, OverrideSet o
         sb.AppendLine("    internal static void InstallAll(JsRealm realm)");
         sb.AppendLine("    {");
         foreach (string ifaceName in interfaceNames)
+        {
             sb.AppendLine(CultureInfo.InvariantCulture, $"        Install{ifaceName}(realm);");
+        }
+
         sb.AppendLine("    }");
 
         bool firstMethod = true;
@@ -97,7 +100,11 @@ public sealed class BindingsEmitter(WebIdlModel model, ClrMap clr, OverrideSet o
             // (e.g. Comment), which reads as 100% — nothing of its own to bind.
             Cov(ifaceName);
 
-            if (!firstMethod) sb.AppendLine();
+            if (!firstMethod)
+            {
+                sb.AppendLine();
+            }
+
             firstMethod = false;
 
             sb.AppendLine(CultureInfo.InvariantCulture, $"    // {ifaceName} -> {clrType.FullName}");
@@ -203,7 +210,9 @@ public sealed class BindingsEmitter(WebIdlModel model, ClrMap clr, OverrideSet o
             // Add layer: verbatim binding statements for members the IDL does not
             // describe (host extras supplied in overrides.json).
             foreach (string line in overrides.AddsFor(ifaceName))
+            {
                 sb.AppendLine(CultureInfo.InvariantCulture, $"        {line}");
+            }
 
             sb.AppendLine("    }");
         }
@@ -316,12 +325,20 @@ public sealed class BindingsEmitter(WebIdlModel model, ClrMap clr, OverrideSet o
         {
             var staticArgs = new List<string> { "receiver" };
             staticArgs.AddRange(callArgs);
-            if (d.PassRealm) staticArgs.Add("realm");
+            if (d.PassRealm)
+            {
+                staticArgs.Add("realm");
+            }
+
             call = $"{d.Impl}({string.Join(", ", staticArgs)})";
         }
         else
         {
-            if (d.PassRealm) callArgs.Add("realm");
+            if (d.PassRealm)
+            {
+                callArgs.Add("realm");
+            }
+
             call = $"receiver.{d.Impl}({string.Join(", ", callArgs)})";
         }
 

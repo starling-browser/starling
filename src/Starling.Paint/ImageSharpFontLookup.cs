@@ -36,7 +36,10 @@ internal static class ImageSharpFontLookup
         var aliases = AddRegisteredWebFonts(collection, webFonts);
         TryAddSystemFonts(collection, log);
         if (aliases.Count > 0)
+        {
             s_webFontAliases.AddOrUpdate(collection, aliases);
+        }
+
         return collection;
     }
 
@@ -84,16 +87,22 @@ internal static class ImageSharpFontLookup
         foreach (var candidate in EnumerateCandidates(spec.Families))
         {
             if (TryResolveFamily(collection, aliases, candidate, style, out var family))
+            {
                 return family.CreateFont(size, ResolveStyle(family, style));
+            }
         }
 
         // Last-resort fallback: prefer the bundled Open Sans (the documented
         // terminal fallback), then the first available family as a true last resort.
         if (TryResolveFamily(collection, aliases, "Open Sans", style, out var openSans))
+        {
             return openSans.CreateFont(size, ResolveStyle(openSans, style));
+        }
 
         foreach (var family in collection.Families)
+        {
             return family.CreateFont(size, ResolveStyle(family, style));
+        }
 
         throw new InvalidOperationException(
             "ImageSharpFontLookup: no fonts available. Ensure Starling.Paint.dll bundles at least one TTF/OTF embedded resource.");
@@ -125,7 +134,13 @@ internal static class ImageSharpFontLookup
     private static FontFamily PickByStyle(IReadOnlyList<FontFamily> families, FontStyle style)
     {
         foreach (var f in families)
-            if (HasStyle(f, style)) return f;
+        {
+            if (HasStyle(f, style))
+            {
+                return f;
+            }
+        }
+
         return families[0];
     }
 
@@ -137,8 +152,16 @@ internal static class ImageSharpFontLookup
     /// </summary>
     private static FontStyle ResolveStyle(FontFamily family, FontStyle requested)
     {
-        if (HasStyle(family, requested)) return requested;
-        if (HasStyle(family, FontStyle.Regular)) return FontStyle.Regular;
+        if (HasStyle(family, requested))
+        {
+            return requested;
+        }
+
+        if (HasStyle(family, FontStyle.Regular))
+        {
+            return FontStyle.Regular;
+        }
+
         var styles = family.GetAvailableStyles().Span;
         return styles.Length > 0 ? styles[0] : FontStyle.Regular;
     }
@@ -147,7 +170,13 @@ internal static class ImageSharpFontLookup
     {
         var styles = family.GetAvailableStyles().Span;
         for (var i = 0; i < styles.Length; i++)
-            if (styles[i] == style) return true;
+        {
+            if (styles[i] == style)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -162,7 +191,9 @@ internal static class ImageSharpFontLookup
             var name = FontFamilyKey.Normalize(family);
             yield return name;
             foreach (var sub in ExpandGeneric(name))
+            {
                 yield return sub;
+            }
         }
     }
 
@@ -200,9 +231,16 @@ internal static class ImageSharpFontLookup
         {
             if (!name.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase)
                 && !name.EndsWith(".otf", StringComparison.OrdinalIgnoreCase))
+            {
                 continue;
+            }
+
             using var stream = asm.GetManifestResourceStream(name);
-            if (stream is null) continue;
+            if (stream is null)
+            {
+                continue;
+            }
+
             try { collection.Add(stream); }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
@@ -235,7 +273,11 @@ internal static class ImageSharpFontLookup
     private static IReadOnlyDictionary<string, IReadOnlyList<FontFamily>> AddRegisteredWebFonts(
         FontCollection collection, FontFaceRegistry? webFonts)
     {
-        if (webFonts is null) return s_noAliases;
+        if (webFonts is null)
+        {
+            return s_noAliases;
+        }
+
         return webFonts.AddTo(collection);
     }
 }

@@ -45,10 +45,14 @@ public static class StackingContextResolver
 
         // §9: "the root element."
         if (isRoot)
+        {
             hints |= LayerHint.Root;
+        }
 
         if (style is null)
+        {
             return hints;
+        }
 
         var position = PositionKeyword(style);
 
@@ -57,45 +61,64 @@ public static class StackingContextResolver
         // any positioned box with an explicit z-index is promoted.)
         if (position is "relative" or "absolute" or "fixed" or "sticky"
             && ZIndexIsNotAuto(style))
+        {
             hints |= LayerHint.Promoted;
+        }
 
         // §9: "an element with a position value fixed or sticky." Tagged with
         // dedicated bits so the compositor can treat scroll-affected boxes
         // specially. Sticky is tagged unconditionally — its effective position
         // depends on scroll, so the compositor decides promotion at frame time.
         if (position == "fixed")
+        {
             hints |= LayerHint.Fixed;
+        }
+
         if (position == "sticky")
+        {
             hints |= LayerHint.Sticky;
+        }
 
         // §9: "an element with an opacity value less than 1."
         if (OpacityLessThanOne(style))
+        {
             hints |= LayerHint.OpacityLessThanOne;
+        }
 
         // CSS-Transforms-1 §5: "any value other than none for the transform
         // property results in the creation of a stacking context."
         if (HasTransform(style))
+        {
             hints |= LayerHint.Transform3D;
+        }
 
         // §9: "an element with a will-change value specifying any property that
         // would create a stacking context on non-initial value."
         if (WillChangePromotes(style))
+        {
             hints |= LayerHint.WillChange;
+        }
 
         // §9: "an element with a filter value other than none."
         if (HasFilter(style))
+        {
             hints |= LayerHint.Filter;
+        }
 
         // §9: "an element with an isolation value isolate."
         if (IsIsolated(style))
+        {
             hints |= LayerHint.Isolation;
+        }
 
         // Filter Effects 2 §6: "A computed value of other than none results in
         // the creation of a stacking context". The compositor also needs the
         // box on its own layer so the backdrop snapshot can be taken before
         // the element's own content paints.
         if (HasBackdropFilter(style))
+        {
             hints |= LayerHint.BackdropFilter;
+        }
 
         return hints;
     }
@@ -126,7 +149,9 @@ public static class StackingContextResolver
     {
         var raw = style.Get(PropertyId.Transform);
         if (raw is null or CssKeyword { Name: "none" })
+        {
             return false;
+        }
         // A declaration that parses to an empty/identity list is treated as none.
         return !CssTransformParser.Parse(raw).IsNone;
     }

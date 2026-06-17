@@ -71,7 +71,11 @@ public static class StarlingTelemetry
     public static void Snapshot(string label, ReadOnlySpan<byte> bytes)
     {
         var current = Activity.Current;
-        if (current is null) return;
+        if (current is null)
+        {
+            return;
+        }
+
         var tags = new ActivityTagsCollection { { "bytes", bytes.Length } };
         current.AddEvent(new ActivityEvent($"snapshot:{label}", tags: tags));
     }
@@ -86,7 +90,11 @@ public static class StarlingTelemetry
     {
         ArgumentNullException.ThrowIfNull(exception);
         var current = Activity.Current;
-        if (current is null) return;
+        if (current is null)
+        {
+            return;
+        }
+
         var tags = new ActivityTagsCollection
         {
             { "exception.type", exception.GetType().FullName },

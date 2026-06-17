@@ -60,7 +60,11 @@ public sealed class ImeComposition
     public void Insert(string text)
     {
         _preedit = "";
-        if (string.IsNullOrEmpty(text)) return;
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
         _committed = string.Concat(_committed.AsSpan(0, _caret), text, _committed.AsSpan(_caret));
         _caret += text.Length;
     }
@@ -68,7 +72,11 @@ public sealed class ImeComposition
     /// <summary>Commits the active preedit into the text.</summary>
     public void CommitPreedit()
     {
-        if (_preedit.Length == 0) return;
+        if (_preedit.Length == 0)
+        {
+            return;
+        }
+
         var p = _preedit;
         Insert(p); // Insert clears the preedit first, then inserts the final text
     }
@@ -94,7 +102,11 @@ public sealed class ImeComposition
     /// <summary>Moves the caret (only meaningful when not composing).</summary>
     public void MoveCaret(int caret)
     {
-        if (_preedit.Length > 0) return;
+        if (_preedit.Length > 0)
+        {
+            return;
+        }
+
         _caret = Math.Clamp(caret, 0, _committed.Length);
     }
 }

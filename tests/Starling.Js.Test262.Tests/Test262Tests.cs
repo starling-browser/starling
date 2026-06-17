@@ -92,10 +92,16 @@ public class Test262Tests
         report.AppendLine();
         report.AppendLine("By category (pass/total):");
         foreach (var (cat, c) in byCat)
+        {
             report.AppendLine($"  {c.pass,7}/{c.total,-7} {100d * c.pass / Math.Max(1, c.total),6:F1}%  {cat}");
+        }
+
         report.AppendLine();
         report.AppendLine($"Failure samples ({failSamples.Count} shown):");
-        foreach (var s in failSamples) report.AppendLine("  " + s);
+        foreach (var s in failSamples)
+        {
+            report.AppendLine("  " + s);
+        }
 
         var resultsDir = Path.Combine(root, "results");
         Directory.CreateDirectory(resultsDir);
@@ -112,12 +118,17 @@ public class Test262Tests
         TestContext.WriteLine("report: " + reportPath);
 
         if (floor > 0)
+        {
             Assert.IsTrue(rate >= floor, $"Test262 pass rate {rate:F2}% < floor {floor:F2}% — see {reportPath}");
+        }
     }
 
     private static void RecordSample(List<string> samples, ScenarioResult r)
     {
-        if (samples.Count < 60) samples.Add($"[{r.Mode}] {r.File} :: {r.Detail}");
+        if (samples.Count < 60)
+        {
+            samples.Add($"[{r.Mode}] {r.File} :: {r.Detail}");
+        }
     }
 
     private static string Category(string relFile) => Test262Corpus.Category(relFile);

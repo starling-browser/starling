@@ -78,7 +78,10 @@ public sealed class InlineThemePaintTests
             for (var x = 30; x < 240; x++)
             {
                 var (r, g, b, _) = bmp.GetPixel(x, y);
-                if (b > 100 && b > r + 40 && b > g + 20) blueText++;
+                if (b > 100 && b > r + 40 && b > g + 20)
+                {
+                    blueText++;
+                }
             }
         }
         blueText.Should().BeGreaterThan(20,

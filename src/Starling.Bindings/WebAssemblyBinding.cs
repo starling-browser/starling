@@ -58,7 +58,10 @@ public static class WebAssemblyBinding
         ArgumentNullException.ThrowIfNull(runtime);
 
         var realm = runtime.Realm;
-        if (realm.GlobalObject.GetOwnPropertyDescriptor("WebAssembly") is not null) return;
+        if (realm.GlobalObject.GetOwnPropertyDescriptor("WebAssembly") is not null)
+        {
+            return;
+        }
 
         var state = new WasmRealmState(SharedEngine);
         var moduleProto = new JsObject(realm.ObjectPrototype);
@@ -97,7 +100,9 @@ public static class WebAssemblyBinding
         {
             var descriptor = Arg(args, 0);
             if (!descriptor.IsObject)
+            {
                 throw new JsThrow(realm.NewTypeError("WebAssembly.Memory requires a descriptor object"));
+            }
 
             var obj = descriptor.AsObject;
             var initial = ToNonNegativeInt(realm, obj.Get("initial"), "initial");
@@ -129,7 +134,9 @@ public static class WebAssemblyBinding
         {
             var descriptor = Arg(args, 0);
             if (!descriptor.IsObject)
+            {
                 throw new JsThrow(realm.NewTypeError("WebAssembly.Table requires a descriptor object"));
+            }
 
             var obj = descriptor.AsObject;
             var element = JsValue.ToStringValue(obj.Get("element"));
@@ -340,7 +347,9 @@ public static class WebAssemblyBinding
         {
             var prototype = AbstractOperations.Get(realm.ActiveVm, newTarget.AsObject, "prototype");
             if (prototype.IsObject)
+            {
                 return prototype.AsObject;
+            }
         }
 
         return defaultPrototype;
@@ -412,21 +421,30 @@ public static class WebAssemblyBinding
     private static WasmModule RequireModule(JsRealm realm, JsValue value)
     {
         if (value.IsObject && value.AsObject is WasmModuleObject module)
+        {
             return module.Module;
+        }
+
         throw new JsThrow(realm.NewTypeError("Expected WebAssembly.Module"));
     }
 
     private static WasmMemoryObject RequireMemory(JsRealm realm, JsValue value)
     {
         if (value.IsObject && value.AsObject is WasmMemoryObject memory)
+        {
             return memory;
+        }
+
         throw new JsThrow(realm.NewTypeError("Expected WebAssembly.Memory"));
     }
 
     private static WasmTableObject RequireTable(JsRealm realm, JsValue value)
     {
         if (value.IsObject && value.AsObject is WasmTableObject table)
+        {
             return table;
+        }
+
         throw new JsThrow(realm.NewTypeError("Expected WebAssembly.Table"));
     }
 
@@ -500,13 +518,22 @@ public static class WebAssemblyBinding
     private static JsValue ResolveImport(JsValue importObject, Wasmtime.Import import, JsObject linkErrorProto)
     {
         if (!importObject.IsObject)
+        {
             throw MissingImport(import, linkErrorProto);
+        }
+
         var moduleValue = importObject.AsObject.Get(import.ModuleName);
         if (!moduleValue.IsObject)
+        {
             throw MissingImport(import, linkErrorProto);
+        }
+
         var value = moduleValue.AsObject.Get(import.Name);
         if (value.IsUndefined)
+        {
             throw MissingImport(import, linkErrorProto);
+        }
+
         return value;
     }
 
@@ -534,7 +561,9 @@ public static class WebAssemblyBinding
             {
                 var jsArgs = new JsValue[args.Length];
                 for (var i = 0; i < jsArgs.Length; i++)
+                {
                     jsArgs[i] = FromWasmValue(realm, args[i], import.Parameters[i]);
+                }
 
                 JsValue result;
                 try
@@ -549,12 +578,17 @@ public static class WebAssemblyBinding
                 }
 
                 if (results.Length == 1)
+                {
                     results[0] = ToWasmValue(realm, result, import.Results[0]);
+                }
                 else if (results.Length > 1)
                 {
                     if (!result.IsObject)
+                    {
                         throw new JsThrow(realm.NewTypeError(
                             $"WebAssembly import {import.ModuleName}.{import.Name} must return an array"));
+                    }
+
                     var obj = result.AsObject;
                     for (var i = 0; i < results.Length; i++)
                     {
@@ -728,7 +762,9 @@ public static class WebAssemblyBinding
     {
         var parameters = new WasmValueBox[function.Parameters.Count];
         for (var i = 0; i < parameters.Length; i++)
+        {
             parameters[i] = ToWasmValue(realm, Arg(args, i), function.Parameters[i]);
+        }
 
         object? result;
         try
@@ -773,7 +809,9 @@ public static class WebAssemblyBinding
         {
             var message = value.AsObject.Get("message");
             if (!message.IsUndefined)
+            {
                 return JsValue.ToStringValue(message);
+            }
         }
 
         return JsValue.ToStringValue(value);
@@ -840,14 +878,24 @@ public static class WebAssemblyBinding
         object? value)
     {
         if (value is null)
+        {
             return JsValue.Null;
+        }
+
         if (value is not WasmFunction function)
+        {
             throw new JsThrow(realm.NewTypeError("Unsupported WebAssembly.Table value"));
+        }
+
         if (function.IsNull)
+        {
             return JsValue.Null;
+        }
 
         if (table.FunctionCache.TryGetValue(function, out var cached))
+        {
             return cached;
+        }
 
         var exportName = table.Owner is null ? null : FindFunctionExportName(table.Owner, function);
         var fn = new JsNativeFunction(realm, exportName ?? "wasm table function",
@@ -873,7 +921,10 @@ public static class WebAssemblyBinding
         bool defaultToNull)
     {
         if (value.IsNull || (defaultToNull && value.IsUndefined))
+        {
             return WasmFunction.Null;
+        }
+
         if (!value.IsObject ||
             !WasmFunctionReferences.TryGetValue(value.AsObject, out var reference))
         {
@@ -888,7 +939,9 @@ public static class WebAssemblyBinding
         foreach (var (name, exported) in instance.GetFunctions())
         {
             if (ReferenceEquals(exported, function))
+            {
                 return name;
+            }
         }
 
         return null;
@@ -905,7 +958,10 @@ public static class WebAssemblyBinding
 
         var arrayObject = new JsArray(realm);
         for (var i = 0; i < values.Length && i < types.Count; i++)
+        {
             arrayObject.Push(FromWasmObject(realm, values[i], types[i]));
+        }
+
         return JsValue.Object(arrayObject);
     }
 
@@ -913,7 +969,10 @@ public static class WebAssemblyBinding
     {
         var values = new object?[tuple.Length];
         for (var i = 0; i < values.Length; i++)
+        {
             values[i] = tuple[i];
+        }
+
         return values;
     }
 
@@ -925,7 +984,10 @@ public static class WebAssemblyBinding
     {
         var number = JsValue.ToNumber(value);
         if (double.IsNaN(number) || number < 0 || number > int.MaxValue)
+        {
             throw new JsThrow(realm.NewTypeError($"{owner} '{name}' must be a non-negative integer"));
+        }
+
         return (int)number;
     }
 
@@ -951,10 +1013,16 @@ public static class WebAssemblyBinding
         {
             var response = Arg(args, 0);
             if (!response.IsObject)
+            {
                 throw new JsThrow(realm.NewTypeError("WebAssembly streaming source must resolve to a Response"));
+            }
+
             var arrayBuffer = response.AsObject.Get("arrayBuffer");
             if (!AbstractOperations.IsCallable(arrayBuffer))
+            {
                 throw new JsThrow(realm.NewTypeError("WebAssembly streaming source has no arrayBuffer method"));
+            }
+
             return AbstractOperations.Call(realm.ActiveVm, arrayBuffer, response, Array.Empty<JsValue>());
         }, isConstructor: false));
 
@@ -968,7 +1036,10 @@ public static class WebAssemblyBinding
     private static JsValue PromiseResolve(JsRealm realm, JsValue value)
     {
         if (realm.PromiseConstructor is null)
+        {
             throw new InvalidOperationException("Promise not installed");
+        }
+
         var resolve = realm.PromiseConstructor.Get("resolve");
         return AbstractOperations.Call(realm.ActiveVm, resolve,
             JsValue.Object(realm.PromiseConstructor), new[] { value });
@@ -977,10 +1048,16 @@ public static class WebAssemblyBinding
     private static JsValue PromiseThen(JsRealm realm, JsValue promise, JsObject onFulfilled)
     {
         if (!promise.IsObject)
+        {
             throw new JsThrow(realm.NewTypeError("Expected Promise"));
+        }
+
         var then = promise.AsObject.Get("then");
         if (!AbstractOperations.IsCallable(then))
+        {
             throw new JsThrow(realm.NewTypeError("Expected thenable Promise"));
+        }
+
         return AbstractOperations.Call(realm.ActiveVm, then, promise,
             new[] { JsValue.Object(onFulfilled) });
     }
@@ -998,13 +1075,17 @@ internal sealed class WasmRealmState
     public void RegisterMemory(WasmMemoryObject memory)
     {
         if (!_memories.Contains(memory))
+        {
             _memories.Add(memory);
+        }
     }
 
     public void SyncMemoryObjectsFromWasm()
     {
         foreach (var memory in _memories)
+        {
             memory.SyncFromWasm();
+        }
     }
 }
 
@@ -1040,9 +1121,13 @@ internal sealed class WasmMemoryObject : JsObject
     public JsArrayBuffer GetBuffer(JsObject? prototype)
     {
         if (Buffer is null)
+        {
             Buffer = JsArrayBuffer.Wrap(prototype, new WasmMemoryBufferStorage(Memory));
+        }
         else
+        {
             Buffer.RefreshByteLength();
+        }
 
         return Buffer;
     }

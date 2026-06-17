@@ -16,12 +16,16 @@ public static class GamutMapper
     {
         // Skip work if the source is already in sRGB and obviously in gamut.
         if (sourceSpace == ColorSpace.Srgb && InUnitRange(c1, c2, c3))
+        {
             return (c1, c2, c3);
+        }
 
         var (x, y, z) = ColorConversion.ToXyzD65(sourceSpace, c1, c2, c3);
         var (r, g, b) = ColorConversion.XyzD65ToSrgb(x, y, z);
         if (InUnitRange(r, g, b))
+        {
             return (r, g, b);
+        }
 
         // Convert origin to Oklch for chroma reduction.
         var (oL, oA, oB) = ColorConversion.XyzD65ToOklab(x, y, z);
@@ -29,8 +33,15 @@ public static class GamutMapper
         var oH = Math.Atan2(oB, oA);
 
         // Lightness rails per spec.
-        if (oL >= 1.0) return (1, 1, 1);
-        if (oL <= 0.0) return (0, 0, 0);
+        if (oL >= 1.0)
+        {
+            return (1, 1, 1);
+        }
+
+        if (oL <= 0.0)
+        {
+            return (0, 0, 0);
+        }
 
         var min = 0.0;
         var max = oC;
@@ -54,7 +65,10 @@ public static class GamutMapper
             if (e < JustNoticeableDifference)
             {
                 if (JustNoticeableDifference - e < Epsilon)
+                {
                     return clipped;
+                }
+
                 minInGamut = false;
                 min = chroma;
             }

@@ -50,8 +50,16 @@ public sealed class RevocationSet
         IEnumerable<string> blockedSpki,
         IEnumerable<(string IssuerSpki, string Serial)> revokedSerials)
     {
-        if (blockedSpki is null) throw new ArgumentNullException(nameof(blockedSpki));
-        if (revokedSerials is null) throw new ArgumentNullException(nameof(revokedSerials));
+        if (blockedSpki is null)
+        {
+            throw new ArgumentNullException(nameof(blockedSpki));
+        }
+
+        if (revokedSerials is null)
+        {
+            throw new ArgumentNullException(nameof(revokedSerials));
+        }
+
         return new RevocationSet(
             blockedSpki.Select(Normalize).ToHashSet(),
             revokedSerials.Select(e => (Normalize(e.IssuerSpki), Normalize(e.Serial))).ToHashSet());
@@ -63,12 +71,25 @@ public sealed class RevocationSet
     /// </summary>
     public bool IsRevoked(X509Certificate certificate, X509Certificate issuer)
     {
-        if (certificate is null) throw new ArgumentNullException(nameof(certificate));
-        if (issuer is null) throw new ArgumentNullException(nameof(issuer));
-        if (IsEmpty) return false;
+        if (certificate is null)
+        {
+            throw new ArgumentNullException(nameof(certificate));
+        }
+
+        if (issuer is null)
+        {
+            throw new ArgumentNullException(nameof(issuer));
+        }
+
+        if (IsEmpty)
+        {
+            return false;
+        }
 
         if (_blockedSpki.Count > 0 && _blockedSpki.Contains(SpkiHash(certificate)))
+        {
             return true;
+        }
 
         return _revokedSerials.Count > 0
             && _revokedSerials.Contains((SpkiHash(issuer), SerialHex(certificate)));
@@ -77,7 +98,11 @@ public sealed class RevocationSet
     /// <summary>SHA-256 of the cert's Subject Public Key Info, as upper-hex.</summary>
     public static string SpkiHash(X509Certificate certificate)
     {
-        if (certificate is null) throw new ArgumentNullException(nameof(certificate));
+        if (certificate is null)
+        {
+            throw new ArgumentNullException(nameof(certificate));
+        }
+
         var spki = Org.BouncyCastle.X509.SubjectPublicKeyInfoFactory
             .CreateSubjectPublicKeyInfo(certificate.GetPublicKey())
             .GetDerEncoded();
@@ -87,7 +112,11 @@ public sealed class RevocationSet
     /// <summary>The cert's serial number as upper-hex of its unsigned big-endian bytes.</summary>
     public static string SerialHex(X509Certificate certificate)
     {
-        if (certificate is null) throw new ArgumentNullException(nameof(certificate));
+        if (certificate is null)
+        {
+            throw new ArgumentNullException(nameof(certificate));
+        }
+
         return Convert.ToHexString(certificate.SerialNumber.ToByteArrayUnsigned());
     }
 
@@ -101,7 +130,11 @@ public sealed class RevocationSet
     /// </summary>
     public static RevocationSet FromText(Stream textStream)
     {
-        if (textStream is null) throw new ArgumentNullException(nameof(textStream));
+        if (textStream is null)
+        {
+            throw new ArgumentNullException(nameof(textStream));
+        }
+
         var blockedSpki = new HashSet<string>();
         var revokedSerials = new HashSet<(string, string)>();
 
@@ -110,7 +143,10 @@ public sealed class RevocationSet
         while ((line = reader.ReadLine()) is not null)
         {
             var trimmed = line.Trim();
-            if (trimmed.Length == 0 || trimmed[0] == '#') continue;
+            if (trimmed.Length == 0 || trimmed[0] == '#')
+            {
+                continue;
+            }
 
             var parts = trimmed.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
             switch (parts[0].ToLowerInvariant())
@@ -141,7 +177,10 @@ public sealed class RevocationSet
         var assembly = typeof(RevocationSet).Assembly;
         var resourceName = assembly.GetManifestResourceNames()
             .FirstOrDefault(name => name.EndsWith(resourceSuffix, StringComparison.Ordinal));
-        if (resourceName is null) return Empty;
+        if (resourceName is null)
+        {
+            return Empty;
+        }
 
         using var stream = assembly.GetManifestResourceStream(resourceName);
         return stream is null ? Empty : FromText(stream);

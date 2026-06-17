@@ -49,7 +49,10 @@ public static class IteratorIntrinsics
     public static JsValue CreateArrayIterator(JsRealm realm, JsValue thisV, ArrayIteratorKind kind)
     {
         if (thisV.IsNullish)
+        {
             throw new JsThrow(realm.NewTypeError("Array iterator requires an object"));
+        }
+
         var obj = thisV.IsObject ? thisV.AsObject : AbstractOperations.ToObject(realm, thisV);
         return JsValue.Object(new JsArrayIterator(realm, obj, kind));
     }
@@ -66,7 +69,10 @@ public static class IteratorIntrinsics
     private static JsValue ArrayIteratorNext(JsRealm realm, JsValue thisV)
     {
         if (!thisV.IsObject || thisV.AsObject is not JsArrayIterator it)
+        {
             throw new JsThrow(realm.NewTypeError("Array Iterator.prototype.next called on incompatible receiver"));
+        }
+
         return it.Next(realm);
     }
 
@@ -77,7 +83,10 @@ public static class IteratorIntrinsics
     private static JsValue StringIteratorNext(JsRealm realm, JsValue thisV)
     {
         if (!thisV.IsObject || thisV.AsObject is not JsStringIterator it)
+        {
             throw new JsThrow(realm.NewTypeError("String Iterator.prototype.next called on incompatible receiver"));
+        }
+
         return it.Next(realm);
     }
 
@@ -138,7 +147,11 @@ public sealed class JsArrayIterator : JsObject
 
     public JsValue Next(JsRealm realm)
     {
-        if (_done) return IteratorIntrinsics.MakeResult(realm, JsValue.Undefined, done: true);
+        if (_done)
+        {
+            return IteratorIntrinsics.MakeResult(realm, JsValue.Undefined, done: true);
+        }
+
         var len = GetLength(_iterated);
         if (_nextIndex >= len)
         {
@@ -165,17 +178,33 @@ public sealed class JsArrayIterator : JsObject
 
     private static int GetLength(JsObject obj)
     {
-        if (obj is JsArray arr) return arr.Length;
+        if (obj is JsArray arr)
+        {
+            return arr.Length;
+        }
+
         var v = obj.Get("length");
         var n = JsValue.ToNumber(v);
-        if (double.IsNaN(n) || n <= 0) return 0;
-        if (n > int.MaxValue) return int.MaxValue;
+        if (double.IsNaN(n) || n <= 0)
+        {
+            return 0;
+        }
+
+        if (n > int.MaxValue)
+        {
+            return int.MaxValue;
+        }
+
         return (int)Math.Min(Math.Truncate(n), (double)(1L << 53) - 1);
     }
 
     private static JsValue GetElement(JsObject obj, int i)
     {
-        if (obj is JsArray arr) return arr[i];
+        if (obj is JsArray arr)
+        {
+            return arr[i];
+        }
+
         return obj.Get(i.ToString(CultureInfo.InvariantCulture));
     }
 }
@@ -198,7 +227,11 @@ public sealed class JsStringIterator : JsObject
 
     public JsValue Next(JsRealm realm)
     {
-        if (_done) return IteratorIntrinsics.MakeResult(realm, JsValue.Undefined, done: true);
+        if (_done)
+        {
+            return IteratorIntrinsics.MakeResult(realm, JsValue.Undefined, done: true);
+        }
+
         if (_nextIndex >= _source.Length)
         {
             _done = true;

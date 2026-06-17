@@ -39,10 +39,19 @@ public sealed class StickyConstraintTests
 
     private static Box.Box FindBox(Box.Box box, Element el)
     {
-        if (ReferenceEquals(box.Element, el)) return box;
+        if (ReferenceEquals(box.Element, el))
+        {
+            return box;
+        }
+
         foreach (var child in box.Children)
+        {
             if (FindBox(child, el) is { } hit)
+            {
                 return hit;
+            }
+        }
+
         return null!;
     }
 

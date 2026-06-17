@@ -53,7 +53,11 @@ public class H2FrameTests
         // 25-byte block with a 10-byte peer frame size → HEADERS(10) +
         // CONTINUATION(10) + CONTINUATION(5, END_HEADERS).
         var block = new byte[25];
-        for (var i = 0; i < block.Length; i++) block[i] = (byte)i;
+        for (var i = 0; i < block.Length; i++)
+        {
+            block[i] = (byte)i;
+        }
+
         await writer.WriteHeadersAsync(1, block, endStream: true, peerMaxFrameSize: 10, CancellationToken.None);
 
         ms.Position = 0;
