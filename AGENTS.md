@@ -119,6 +119,21 @@ dotnet build -c Debug
 dotnet test  -c Debug
 ```
 
+**Convention gate (CI `lint` job).** `tools/check-conventions.sh` fails a PR that
+*adds* a null-forgiving operator (`!`) or a brace-less single-line control
+statement, and warns when `src/` changes without a test change. It is
+diff-scoped — only the lines you add are checked — so the existing codebase is
+never flagged. Run it before pushing:
+
+```bash
+tools/check-conventions.sh            # compares HEAD against origin/main
+```
+
+These two rules are not yet build-enforced repo-wide: braces (IDE0011) cannot be
+turned on until the existing brace-less code is reformatted and
+`Starling.Telemetry.Daemon` builds, and the `!` operator has ~334 existing uses
+to clear first. The gate stops new violations meanwhile.
+
 Most test projects use MSTest 4 on Microsoft Testing Platform. The exception is
 `tests/Starling.Gui.Headless.Tests`, which uses `xunit.v3` because
 `Avalonia.Headless.XUnit` requires it. Run GUI checks with:

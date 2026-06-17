@@ -85,6 +85,8 @@ jobs:
           # lib/starling-regexp is a submodule; dotnet format compiles, so the
           # build graph still needs the submodule sources present.
           submodules: recursive
+          # Full history so the diff-scoped convention gate can reach the PR base.
+          fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
           # Match the SDK pinned in global.json (the .NET 11 preview).
@@ -94,6 +96,17 @@ jobs:
         # secret). The interop-policy grep below needs no build and still runs.
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: dotnet format --verify-no-changes
+      - name: convention gate (no new null-forgiving / brace-less; test presence)
+        # Diff-scoped: only lines added vs the PR base are checked, so the
+        # existing codebase is never flagged. No build needed, so this runs on
+        # fork PRs too. See tools/check-conventions.sh.
+        if: github.event_name == 'pull_request'
+        env:
+          # Pass via env (not inline ${{ }}) to avoid any shell injection.
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags --depth=200 origin "$BASE_REF"
+          tools/check-conventions.sh "origin/$BASE_REF"
       - name: interop seam policy — confine native interop
         # Interop seam policy: native LibraryImport/DllImport is confined to the
         # designated interop project — Starling.Codecs (image decode). Every
