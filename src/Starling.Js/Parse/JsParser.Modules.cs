@@ -22,14 +22,29 @@ public ref partial struct JsParser
             var next = _lex.Peek().Kind;
             if (next is JsTokenKind.LParen or JsTokenKind.Dot)
                 return ParseStatement();
+            // §16.2.2 — a static ImportDeclaration is a module-only production.
+            // In a script (the default goal) a top-level `import …` is an early
+            // SyntaxError (sec-scripts: a ScriptBody is just a StatementList,
+            // which contains no module items).
+            if (!_module)
+                throw new JsParseException(
+                    "import declarations may only appear at the top level of a module",
+                    _current.Start);
             return ParseImportDeclaration();
         }
 
-        return _current.Kind switch
+        if (_current.Kind == JsTokenKind.Export)
         {
-            JsTokenKind.Export => ParseExportDeclaration(),
-            _ => ParseStatement(),
-        };
+            // §16.2.3 — ExportDeclaration is module-only; a top-level `export …`
+            // in a script is an early SyntaxError for the same reason.
+            if (!_module)
+                throw new JsParseException(
+                    "export declarations may only appear at the top level of a module",
+                    _current.Start);
+            return ParseExportDeclaration();
+        }
+
+        return ParseStatement();
     }
 
     /// <summary>wp:M3-03c — parse the expression-context forms of <c>import</c>:
