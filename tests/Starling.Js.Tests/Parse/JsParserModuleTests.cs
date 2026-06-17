@@ -89,7 +89,7 @@ public class JsParserModuleTests
 
     [TestMethod]
     public void Import_allows_asi_after_source()
-        => ParseProgram("import x from 'm'\nimport y from 'n'").Body.Should().HaveCount(2);
+        => ParseModule("import x from 'm'\nimport y from 'n'").Body.Should().HaveCount(2);
 
     [TestMethod]
     public void Import_missing_from_throws()
@@ -146,7 +146,10 @@ public class JsParserModuleTests
     [TestMethod]
     public void Export_named_list()
     {
-        var export = ParseSingle<ExportNamedDeclaration>("export { a, b as c, default as d };");
+        // The local names must be declared in the module, else the export is an
+        // early error ("export X is not defined in module").
+        var body = ParseModule("let a, b, d; export { a, b as c, d };").Body;
+        var export = body[^1].Should().BeOfType<ExportNamedDeclaration>().Subject;
         export.Source.Should().BeNull();
         export.Specifiers.Should().HaveCount(3);
         ((Identifier)export.Specifiers[1].Exported).Name.Should().Be("c");
@@ -155,7 +158,8 @@ public class JsParserModuleTests
     [TestMethod]
     public void Export_named_list_with_string_export_name()
     {
-        var spec = ParseSingle<ExportNamedDeclaration>("export { internal as 'public-name' };")
+        var body = ParseModule("let internal; export { internal as 'public-name' };").Body;
+        var spec = body[^1].Should().BeOfType<ExportNamedDeclaration>().Subject
             .Specifiers.Should().ContainSingle().Subject;
         ((Identifier)spec.Local).Name.Should().Be("internal");
         ((StringLiteral)spec.Exported).Value.Should().Be("public-name");
@@ -236,23 +240,62 @@ public class JsParserModuleTests
     [TestMethod]
     public void Program_can_mix_imports_exports_and_statements()
     {
-        var program = ParseProgram("import x from 'm'; export { x }; x();");
+        var program = ParseModule("import x from 'm'; export { x }; x();");
         program.Body[0].Should().BeOfType<ImportDeclaration>();
         program.Body[1].Should().BeOfType<ExportNamedDeclaration>();
         program.Body[2].Should().BeOfType<ExpressionStatement>();
     }
 
+    // Static import/export are module-only productions (§16.2). In a script (the
+    // default goal) a top-level import/export is an early SyntaxError.
+    [TestMethod]
+    public void Script_import_declaration_throws()
+        => FailsAsScript("import x from 'mod';");
+
+    [TestMethod]
+    public void Script_side_effect_import_throws()
+        => FailsAsScript("import 'polyfill';");
+
+    [TestMethod]
+    public void Script_export_named_throws()
+        => FailsAsScript("var x; export { x };");
+
+    [TestMethod]
+    public void Script_export_default_throws()
+        => FailsAsScript("export default 1;");
+
+    [TestMethod]
+    public void Script_export_local_declaration_throws()
+        => FailsAsScript("export const a = 1;");
+
+    // import(...) is an expression form, not a module item, so it parses in a script.
+    [TestMethod]
+    public void Script_dynamic_import_call_parses()
+    {
+        var stmt = ParseScript("import('mod');").Body.Should().ContainSingle().Subject;
+        stmt.Should().BeOfType<ExpressionStatement>()
+            .Which.Expression.Should().BeOfType<ImportCallExpression>();
+    }
+
     private static T ParseSingle<T>(string source) where T : Statement
     {
-        var statement = ParseProgram(source).Body.Should().ContainSingle().Subject;
+        var statement = ParseModule(source).Body.Should().ContainSingle().Subject;
         return statement.Should().BeOfType<T>().Subject;
     }
 
-    private static Program ParseProgram(string source) => new JsParser(source).ParseProgram();
+    private static Program ParseModule(string source) => new JsParser(source).ParseModule();
+
+    private static Program ParseScript(string source) => new JsParser(source).ParseProgram();
 
     private static void Fails(string source)
     {
-        var act = () => ParseProgram(source);
+        var act = () => ParseModule(source);
+        act.Should().Throw<JsParseException>();
+    }
+
+    private static void FailsAsScript(string source)
+    {
+        var act = () => ParseScript(source);
         act.Should().Throw<JsParseException>();
     }
 }
