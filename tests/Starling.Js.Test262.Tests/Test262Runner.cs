@@ -366,7 +366,7 @@ public sealed class Test262Runner
 
     /// <summary>Read the <c>name</c> property of a thrown error value (e.g.
     /// "TypeError"); null when the throw isn't an error-shaped object.</summary>
-    private static string? ErrorName(JsValue value)
+    internal static string? ErrorName(JsValue value)
     {
         if (!value.IsObject) return null;
         var obj = value.AsObject;
