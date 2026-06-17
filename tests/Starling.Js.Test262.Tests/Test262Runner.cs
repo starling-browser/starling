@@ -366,11 +366,23 @@ public sealed class Test262Runner
 
     /// <summary>Read the <c>name</c> property of a thrown error value (e.g.
     /// "TypeError"); null when the throw isn't an error-shaped object.</summary>
-    private static string? ErrorName(JsValue value)
+    internal static string? ErrorName(JsValue value)
     {
         if (!value.IsObject) return null;
-        var n = value.AsObject.Get("name");
-        return n.IsString ? n.AsString : null;
+        var obj = value.AsObject;
+        // Built-in errors expose their type via `name` (TypeError.prototype.name
+        // etc.). The harness's Test262Error and other plain error classes set no
+        // `name` at all, so fall back to the constructor's name — which is what
+        // the official test262 runner matches a negative `type` against.
+        var n = obj.Get("name");
+        if (n.IsString) return n.AsString;
+        var ctor = obj.Get("constructor");
+        if (ctor.IsObject)
+        {
+            var cn = ctor.AsObject.Get("name");
+            if (cn.IsString) return cn.AsString;
+        }
+        return null;
     }
 
     private static string ExtractMessage(Exception ex) =>
