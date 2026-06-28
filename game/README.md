@@ -23,6 +23,21 @@ python3 -m http.server 8099
 Works with mouse, touch, or any pointer — press and hold to magnetize a disc,
 move to carry it, release over its slot to lock it in.
 
+## Play on your phone (same Wi-Fi)
+
+Run the helper on a computer that's on the same Wi-Fi as the phone:
+
+```bash
+cd game
+python3 serve.py        # or: python3 serve.py 9000 to pick a port
+```
+
+It prints a `http://<your-computer-ip>:<port>/` link — open that on the phone.
+The phone must be on the same network (not a guest/isolated Wi-Fi), and the
+computer's firewall has to allow the port. The plain
+`python3 -m http.server 8099 --bind 0.0.0.0` works too; `serve.py` just detects
+and prints the right address for you.
+
 ## How it feels magnetic
 
 - A disc is grabbed if the magnet's pole comes within range, so you don't have
