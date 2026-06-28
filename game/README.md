@@ -4,8 +4,11 @@ A pointer/touch toy inspired by a wooden magnetic letter board. Drag the magnet
 near a colored letter disc to pull it from the tray, then drop it on the slot
 with the matching letter. Fill all 26 slots to win, then tap to play again.
 
-Built with [Phaser 3](https://phaser.io/) (vendored under `vendor/` so it runs
-offline — no CDN or build step).
+Built with [Phaser 3](https://phaser.io/). It has a soft, cartoony storybook
+look: glossy candy-button letters, a wooden board with a sunny sky, drifting
+clouds, rolling hills, sparkles on pickup, and a confetti win screen. Phaser and
+the rounded Baloo 2 font are vendored under `vendor/`, so the whole thing runs
+offline — no CDN or build step.
 
 ## Play
 
@@ -33,5 +36,6 @@ move to carry it, release over its slot to lock it in.
 
 - `index.html` — page shell, loads Phaser and the game.
 - `main.js` — all game logic (board, discs, magnet, win/restart).
-- `style.css` — page layout and the board's drop shadow.
+- `style.css` — page backdrop, layout, and the board's drop shadow.
 - `vendor/phaser.min.js` — Phaser 3.80.1 (MIT licensed).
+- `vendor/fonts/baloo2-*.woff2` — Baloo 2 font (SIL Open Font License).
