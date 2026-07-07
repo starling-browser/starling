@@ -48,7 +48,7 @@ jobs:
       - name: Test (golden-image)
         run: dotnet test --no-build -c Release --filter Category=GoldenImage
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         # Coverage comes from the unit step above. Upload it even if a later
         # test step failed so the report still lands. A Codecov outage must not
         # fail the build, so fail_ci_if_error stays false.
