@@ -20,7 +20,7 @@ jobs:
     env:
       SIXLABORS_LICENSE_KEY: ${{ secrets.SIXLABORS_LICENSE_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # lib/starling-regexp is a submodule; the build fails without it.
           submodules: recursive
@@ -71,7 +71,7 @@ jobs:
     env:
       SIXLABORS_LICENSE_KEY: ${{ secrets.SIXLABORS_LICENSE_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # lib/starling-regexp is a submodule; dotnet format compiles, so the
           # build graph still needs the submodule sources present.
@@ -126,7 +126,7 @@ jobs:
       STARLING_ALLOW_NETWORK: "1"
       SIXLABORS_LICENSE_KEY: ${{ secrets.SIXLABORS_LICENSE_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # lib/starling-regexp is a submodule; the build fails without it.
           submodules: recursive
